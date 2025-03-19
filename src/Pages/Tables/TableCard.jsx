@@ -42,7 +42,7 @@ const TableCard = ({ index, status,name,initial }) => {
         }
 
         dispatch(updateTableOrder({tableName: name}))
-        navigate(`/menu?table=${index}`); // ✅ Pass table number in the URL
+        navigate(`/menu?table=${index}`);
     };
 
     return (

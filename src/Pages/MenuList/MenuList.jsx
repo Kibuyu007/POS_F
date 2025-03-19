@@ -1,22 +1,16 @@
 import { useEffect, useState } from "react";
-import { useLocation } from "react-router-dom"; // Import useLocation
 import MenuCard from "./MenuCard";
 import CustomerInfo from "./CustomerInfo";
 import CartInfo from "./CartInfo";
-import { useSelector } from "react-redux";
 import CartBill from "./CartBill";
 import { FaSearch } from "react-icons/fa";
 
 const MenuList = () => {
   const [currentTime, setCurrentTime] = useState(new Date());
 
-  //Redux Details
-  const customerData = useSelector(state => state.order)
 
-  // ✅ Extract table number from URL query params
-  const location = useLocation();
-  const searchParams = new URLSearchParams(location.search);
-  const tableNumber = searchParams.get("table") || "Unknown"; // Default to 'Unknown' if not found
+
+  
 
   // Function to format the date
   const formatDate = (date) => {
@@ -26,6 +20,8 @@ const MenuList = () => {
     ];
     return `${months[date.getMonth()]} ${String(date.getDate()).padStart(2, "0")}, ${date.getFullYear()}`;
   };
+
+
 
   // Function to format the time (hh:mm:ss)
   const formatTime = (date) => {
@@ -37,6 +33,7 @@ const MenuList = () => {
     });
   };
 
+
   // Update the time every second
   useEffect(() => {
     const interval = setInterval(() => {
@@ -45,9 +42,15 @@ const MenuList = () => {
     return () => clearInterval(interval);
   }, []);
 
+
+  
+
   return (
     <section className="h-[90vh] flex flex-col md:flex-row gap-3 pt-24 px-2 sm:px-4 md:px-6 lg:px-8 xl:px-12 overflow-hidden">
-      {/* Right Section */}
+
+
+
+      {/* Right Section ################################################*/}
       <div className="flex-[3] bg-secondary rounded-xl p-4 sm:p-6 shadow-md overflow-auto min-h-[50vh] md:min-h-[auto]">
         
         {/* Display Table Number */}
@@ -74,7 +77,10 @@ const MenuList = () => {
         <MenuCard />
       </div>
 
-      {/* Left Section */}
+
+
+
+      {/* Left Section  ####################################################### */}
       <div className="flex-[1] bg-secondary rounded-xl p-4 sm:p-6 shadow-md text-black w-full md:w-auto overflow-y-auto max-h-[60vh] md:max-h-[100vh] scrollbar-hide">
         <div className="flex-[1] bg-white mt-4 mr-3 h-[680px] rounded-lg pt-2">
           {/* Customer Info */}

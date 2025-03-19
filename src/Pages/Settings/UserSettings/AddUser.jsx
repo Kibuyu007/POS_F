@@ -2,7 +2,7 @@ import { useState } from "react";
 import axios from "axios";
 import { MdCancel } from "react-icons/md";
 
-const AddUser = ({ showModal, setShowModal }) => {
+const AddUser = ({ showModal, setShowModal,onUserAdded }) => {
   const [newUser, setNewUser] = useState({
     firstName: "",
     secondName: "",
@@ -103,6 +103,7 @@ const AddUser = ({ showModal, setShowModal }) => {
       });
       setFile(null);
       setShowModal(false);
+      onUserAdded()
     } catch (error) {
       console.log("Error adding user:", error);
     }

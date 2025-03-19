@@ -16,8 +16,7 @@ const Navigation = () => {
 
   const navItems = [
     { path: "/home", label: "Home", icon: <FaHome size={20} /> },
-    { path: "/orders", label: "Orders", icon: <TiShoppingCart size={20} /> },
-    { path: "/tables", label: "Tables", icon: <TbTableDashed size={20} /> },
+    { path: "/menu", label: "menu", icon: <TiShoppingCart size={20} /> },
     { path: "/reports", label: "Reports", icon: <TbReportSearch size={20} /> },
     { path: "/settings", label: "Settings", icon: <IoSettings size={20} /> },
   ]
