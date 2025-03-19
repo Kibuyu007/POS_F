@@ -45,7 +45,7 @@ const CartInfo = () => {
                 <h1 className="text-black font-bold tracking-wide text-xl">
                   {items.name}
                 </h1>
-                <p className="text-black font-semibold text-2xl">x{items.quantity}</p>
+                <p className="text-black font-semibold text-2xl bg-orange-600 rounded-full px-3">{items.quantity}</p>
               </div>
 
               <div className="flex items-center justify-between mt-3">
@@ -60,7 +60,7 @@ const CartInfo = () => {
                     size={20}
                   />
                 </div>
-                <p className="text-black font-bold text-2xl bg-green-400/40 px-3 py-1 rounded-md">{items.pricePerQuantity} Tsh</p>
+                <p className="text-black font-bold text-2xl bg-green-400/40 px-3 shadow-md py-1 rounded-md">{items.pricePerQuantity} Tsh</p>
               </div>
             </div>
           ))

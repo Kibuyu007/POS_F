@@ -40,9 +40,9 @@ const COLORS = ['#00000', '#00C49F', '#4caf50', '#c8e6c9'];
 
 const Charts = () => {
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
+    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4 ">
       {/* Composed Chart */}
-      <div className="bg-greyBackg p-4 rounded-xl shadow-md">
+      <div className="bg-greyBackg p-4 rounded-xl  shadow-[0_3px_10px_rgb(0,0,0,0.2)]">
         <h2 className="text-xl font-semibold text-center mb-2">Multi-Metric Analysis</h2>
         <ResponsiveContainer width="100%" height={270}>
           <ComposedChart data={composedData} margin={{ top: 20, right: 20, bottom: 20, left: 20 }}>
@@ -59,7 +59,7 @@ const Charts = () => {
       </div>
 
       {/* Pie Chart */}
-      <div className="bg-greyBackg p-4 rounded-xl shadow-md">
+      <div className="bg-greyBackg p-4 rounded-xl shadow-[0_3px_10px_rgb(0,0,0,0.2)]">
         <h2 className="text-xl font-semibold text-center mb-3">Revenue Breakdown</h2>
         <ResponsiveContainer width="100%" height={270}>
         <PieChart>

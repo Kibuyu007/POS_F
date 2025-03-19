@@ -15,7 +15,7 @@ const Navigation = () => {
   const location = useLocation();
 
   const navItems = [
-    { path: "/", label: "Home", icon: <FaHome size={20} /> },
+    { path: "/home", label: "Home", icon: <FaHome size={20} /> },
     { path: "/orders", label: "Orders", icon: <TiShoppingCart size={20} /> },
     { path: "/tables", label: "Tables", icon: <TbTableDashed size={20} /> },
     { path: "/reports", label: "Reports", icon: <TbReportSearch size={20} /> },
@@ -31,15 +31,12 @@ const Navigation = () => {
   const [customerName, setCustomerName] = useState("");
   const [customerAddress, setCustomerAddress] = useState("");
   const [customerContact, setCustomerContact] = useState("");
-  const [customerCount, setCustomerCount] = useState(0);
   const [tableNumber, setTableNumber] = useState("");
 
   //Filter only available tables
   const availableTables = table.filter((t) => t.status.toLowerCase() === "available");
 
-  // Number of guest customers
-  const increment = () => setCustomerCount((prev) => (prev >= 10 ? 10 : prev + 1));
-  const decrement = () => setCustomerCount((prev) => (prev <= 0 ? 0 : prev - 1));
+
 
   // Handle table selection and update Redux
   const handleTableSelection = (e) => {
@@ -54,7 +51,7 @@ const Navigation = () => {
       alert("Please select a table number!");
       return;
     }
-    dispatch(setCustomerOrder({ customerName, customerAddress, customerContact, guestCustomer: customerCount, tableNo: tableNumber }));
+    dispatch(setCustomerOrder({ customerName, customerAddress, customerContact, tableNo: tableNumber }));
     navigate("/tables");
   };
 

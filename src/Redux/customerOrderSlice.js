@@ -26,7 +26,7 @@ const customerSlice = createSlice({
       state.customerAddress = customerAddress;
       state.customerContact = customerContact;
       state.guestCustomer = guestCustomer;
-      state.tableNo = tableNo; // ✅ Now stores table number
+      state.tableNo = tableNo;
     },
 
     cleanOrderDetail: (state) => {
