@@ -1,12 +1,59 @@
 import { useState, useEffect } from "react";
+import axios from "axios";
+
+//icons
 import { FaSearch } from "react-icons/fa";
 import { FaUserEdit } from "react-icons/fa";
-import { AiTwotoneStop } from "react-icons/ai";
+import { BsToggleOff, BsToggleOn } from "react-icons/bs";
+import { IoIosArrowBack } from "react-icons/io";
+import { IoIosArrowForward } from "react-icons/io";
+
 import AddUser from "./AddUser";
+import EditUser from "./EditUser";
 
 const UserManagement = () => {
   const [users, setUsers] = useState([]);
   const [showError, setShowError] = useState("");
+
+
+  //User Status Filter & Searching
+  const [filterStatus, setFilterStatus] = useState("All"); 
+  const [searchQuery, setSearchQuery] = useState("");
+
+  //Pagination
+  const [currentPage, setCurrentPage] = useState(1);
+  const usersPerPage = 5;
+
+  const filteredUsers = users.filter(user => 
+    (filterStatus === "All" || user.status === filterStatus) &&
+    (
+      user.firstName.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      user.secondName.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      user.lastName.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      user.email.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      user.contacts.toLowerCase().includes(searchQuery.toLowerCase())
+    )
+  )
+
+  const indexOfLastUser = currentPage * usersPerPage;
+  const indexOfFirstUser = indexOfLastUser - usersPerPage;
+  const currentUsers = filteredUsers.slice(indexOfFirstUser, indexOfLastUser);
+
+
+  //funx
+  const totalPages = Math.ceil(filteredUsers.length / usersPerPage);
+
+  const nextPage = () => {
+    if (currentPage < totalPages) {
+      setCurrentPage(currentPage + 1);
+    }
+  };
+
+  const prevPage = () => {
+    if (currentPage > 1) {
+      setCurrentPage(currentPage - 1);
+    }
+  };
 
   // Fetch data from API or use dummy data
   const fetchData = async () => {
@@ -34,41 +81,26 @@ const UserManagement = () => {
   };
 
   //////////////////////
-  const toggleUserStatus = async (userId) => {
+  const toggleUserStatus = async (userId, currentStatus) => {
     try {
-      const response = await fetch(
+      const newStatus = currentStatus === "Active" ? "Inactive" : "Active";
+
+      const response = await axios.put(
         `http://localhost:4004/api/users/status/${userId}`,
         {
-          method: "PATCH",
-          headers: { "Content-Type": "application/json" },
+          status: newStatus,
         }
       );
 
-      if (!response.ok) {
-        throw new Error("Failed to update user status.");
-      }
-
-      const data = await response.json();
-      alert(`User status updated to ${data.status}`);
-
-      // Refresh the user list
-      setUsers(
-        users.map((user) =>
-          user._id === userId ? { ...user, status: data.status } : user
-        )
-      );
-    } catch (error) {
-      // Extract the correct error message from backend
-      if (error.response && error.response.data) {
-        setShowError(
-          error.response.data.error ||
-            "Login failed. Please check your credentials."
+      if (response.status === 200) {
+        setUsers((prevUsers) =>
+          prevUsers.map((user) =>
+            user._id === userId ? { ...user, status: newStatus } : user
+          )
         );
-      } else {
-        setShowError("An error occurred. Please Contact System Adminstrator.");
       }
-
-      console.error("Login failed", error);
+    } catch (error) {
+      console.error("Error updating user status:", error);
     }
   };
 
@@ -78,6 +110,8 @@ const UserManagement = () => {
 
   // Modala
   const [showModalAdd, setShowModalAdd] = useState(false);
+  const [showModalEdit, setShowModalEdit] = useState(false);
+  const [modifiedUser, setModifiedUser] = useState(null);
 
   return (
     <div className="sm:px-6 w-full">
@@ -91,41 +125,36 @@ const UserManagement = () => {
       </div>
 
       <div className="sm:flex items-center justify-between ml-9">
-        <div className="flex items-center">
-          <a
-            className="rounded-full focus:outline-none focus:ring-2  focus:bg-indigo-50 focus:ring-indigo-800"
-            href=" javascript:void(0)"
-          >
-            <div className="py-2 px-8 bg-green-300 text-black rounded-full border-y-gray-400">
-              <p>All</p>
-            </div>
-          </a>
-          <a
-            className="rounded-full focus:outline-none bg-gray-200 shadow-sm focus:ring-2 focus:bg-indigo-50 focus:ring-green-300 ml-4 sm:ml-8"
-            href="javascript:void(0) border-y-gray-400"
-          >
-            <div className="py-2 px-8 text-gray-600 hover:text-black hover:bg-indigo-100 rounded-full border-y-gray-400">
-              <p>Active</p>
-            </div>
-          </a>
-          <a
-            className="rounded-full bg-gray-200 shadow-sm  focus:outline-none focus:ring-2 focus:bg-indigo-50 focus:ring-green-300 ml-4 sm:ml-8"
-            href="javascript:void(0)"
-          >
-            <div className="py-2 px-8 text-gray-600 hover:text-black hover:bg-indigo-100 rounded-full ">
-              <p>Inactive</p>
-            </div>
-          </a>
+      <div className="flex items-center">
+          {["All", "Active", "Inactive"].map((status) => (
+            <button
+              key={status}
+              className={`rounded-full py-2 px-8 mx-2 ${
+                filterStatus === status ? "bg-green-300 text-black" : "bg-gray-200 text-gray-600"
+              } hover:text-black hover:bg-indigo-100 border-gray-400`}
+              onClick={() => {
+                setFilterStatus(status);
+                setCurrentPage(1);
+              }}
+            >
+              {status}
+            </button>
+          ))}
         </div>
 
         {/* Search Bar */}
         <div className="hidden sm:flex items-center bg-gray-100 rounded-[30px] px-3 sm:px-4 py-1 sm:py-2 w-full max-w-[300px] border border-gray-400">
           <FaSearch className="w-4 h-4 sm:w-5 sm:h-5 mr-2 text-black" />
           <input
-            type="text"
-            placeholder="Search"
-            className="bg-transparent outline-none px-2 py-1 w-full text-black"
-          />
+  type="text"
+  placeholder="Search"
+  className="bg-transparent outline-none px-2 py-1 w-full text-black"
+  value={searchQuery} // Bind input to state
+  onChange={(e) => {
+    setSearchQuery(e.target.value);
+    setCurrentPage(1); // Reset pagination when searching
+  }}
+/>
         </div>
 
         <button
@@ -154,6 +183,10 @@ const UserManagement = () => {
             <thead className="bg-gray-200 text-black">
               <tr>
                 <th className="border border-gray-300 px-4 py-2 text-left">
+                  SN
+                </th>
+
+                <th className="border border-gray-300 px-4 py-2 text-left">
                   Name
                 </th>
                 <th className="border border-gray-300 px-4 py-2 text-left">
@@ -180,12 +213,18 @@ const UserManagement = () => {
             <tr className="h-3" />
 
             <tbody>
-              {users.map((user) => (
+              {currentUsers.map((user, index) => (
                 <>
                   <tr
                     key={user.id}
                     className="focus:outline-none h-16 border-gray-500 shadow-md bg-gray-100"
                   >
+                    <td className="pl-5 font-bold">
+                      <p className="text-sm leading-none text-gray-600">
+                        {indexOfFirstUser + index + 1}
+                      </p>
+                    </td>
+
                     <td className="pl-4 bg-gray-200 font-bold">
                       <div className="flex items-center">
                         <p className="text-sm leading-none text-gray-600 ml-2">
@@ -231,23 +270,28 @@ const UserManagement = () => {
                     </td>
 
                     <td className="pl-4 gap-2 font-bold">
-                      <button className="focus:ring-1 focus:ring-offset-2 focus:ring-blue-300 text-sm leading-none text-gray-600 py-3 px-5 bg-gray-100 rounded hover:bg-gray-200 focus:outline-none">
+                      <button
+                        onClick={() => {
+                          setShowModalEdit(true);
+                          setModifiedUser(user);
+                        }}
+                        className="focus:ring-1 focus:ring-offset-2 focus:ring-blue-300 text-sm leading-none text-gray-600 py-3 px-5 bg-gray-100 rounded hover:bg-gray-200 focus:outline-none"
+                      >
                         <FaUserEdit size={20} />
                       </button>
                     </td>
 
                     <td>
-                      <div className="relative">
-                        <input
-                          type="checkbox"
-                          name={user._id}
-                          checked={user.status === "Active"}
-                          onChange={() => toggleUserStatus(user._id)}
-                          className="peer sr-only"
-                        />
-                        <div className="block h-8 rounded-full dark:bg-dark-2 bg-gray-200 w-14 border-t-2" />
-                        <div className="absolute w-6 h-6 transition bg-red-600 rounded-full dot dark:bg-dark-4 left-1 top-1 peer-checked:translate-x-full peer-checked:bg-green-500" />
-                      </div>
+                      <button
+                        className="focus:ring-1 focus:ring-offset-2 focus:ring-red-300 text-sm leading-none text-gray-600 py-3 px-5 bg-gray-100 rounded hover:bg-gray-200 focus:outline-none"
+                        onClick={() => toggleUserStatus(user._id, user.status)}
+                      >
+                        {user.status === "Active" ? (
+                          <BsToggleOff size={20} />
+                        ) : (
+                          <BsToggleOn size={20} />
+                        )}
+                      </button>
                     </td>
                   </tr>
                   <tr className="h-4" />
@@ -256,10 +300,68 @@ const UserManagement = () => {
             </tbody>
           </table>
 
+          <div className="flex items-center justify-between border-t border-gray-200 bg-white py-3 sm:px-6">
+            <p className="text-sm text-gray-700">
+              Showing{" "}
+              <span className="font-medium">{indexOfFirstUser + 1}</span> to{" "}
+              <span className="font-medium">
+                {Math.min(indexOfLastUser, users.length)}
+              </span>{" "}
+              of <span className="font-medium">{users.length}</span> results
+            </p>
+
+            <nav
+              aria-label="Pagination"
+              className="isolate inline-flex -space-x-px rounded-md shadow-xs"
+            >
+              <button
+                onClick={prevPage}
+                disabled={currentPage === 1}
+                className={`relative inline-flex items-center rounded-l-md px-2 py-2 text-gray-400 ring-1 ring-gray-300 ring-inset hover:bg-gray-50 focus:z-20 focus:outline-offset-0 ${
+                  currentPage === 1 ? "opacity-50 cursor-not-allowed" : ""
+                }`}
+              >
+                <IoIosArrowBack aria-hidden="true" className="size-5" />
+              </button>
+
+              {[...Array(totalPages)].map((_, i) => (
+                <button
+                  key={i + 1}
+                  onClick={() => setCurrentPage(i + 1)}
+                  className={`relative inline-flex items-center px-4 py-2 text-sm font-semibold text-gray-900 ring-1 ring-gray-300 ring-inset hover:bg-gray-50 focus:z-20 focus:outline-offset-0 ${
+                    currentPage === i + 1 ? "bg-green-500/80 text-white" : ""
+                  }`}
+                >
+                  {i + 1}
+                </button>
+              ))}
+
+              <button
+                onClick={nextPage}
+                disabled={currentPage === totalPages}
+                className={`relative inline-flex items-center rounded-r-md px-2 py-2 text-gray-400 ring-1 ring-gray-300 ring-inset hover:bg-gray-50 focus:z-20 focus:outline-offset-0 ${
+                  currentPage === totalPages
+                    ? "opacity-50 cursor-not-allowed"
+                    : ""
+                }`}
+              >
+                <IoIosArrowForward aria-hidden="true" className="size-5" />
+              </button>
+            </nav>
+          </div>
+
           <AddUser
             showModal={showModalAdd}
             setShowModal={setShowModalAdd}
             onUserAdded={fetchData}
+            modifiedUser={modifiedUser}
+          />
+
+          <EditUser
+            showModal={showModalEdit}
+            setShowModal={setShowModalEdit}
+            onUserAdded={fetchData}
+            modifiedUser={modifiedUser}
           />
         </div>
       </div>

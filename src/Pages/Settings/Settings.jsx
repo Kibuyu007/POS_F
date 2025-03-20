@@ -24,15 +24,8 @@ const Settings = () => {
         />
 
         <SettingsList
-          title="Tables Management"
-          settings={["Changes Reports", "Permissions Reports", "Activities Reports"]}
-          selectedSetting={selectedSetting}
-          handleSelect={setSelectedSetting}
-        />
-
-        <SettingsList
           title="User Management"
-          settings={["All Users", "Manage User"]}
+          settings={["All Users", "User Logs"]}
           selectedSetting={selectedSetting}
           handleSelect={setSelectedSetting}
         />

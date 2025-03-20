@@ -2,12 +2,12 @@ import { useState } from "react";
 import axios from "axios";
 import { MdCancel } from "react-icons/md";
 
-const AddUser = ({ showModal, setShowModal,onUserAdded }) => {
+const AddUser = ({ showModal, setShowModal, onUserAdded }) => {
   const [newUser, setNewUser] = useState({
     firstName: "",
     secondName: "",
     lastName: "",
-    userName:"",
+    userName: "",
     dateOfBirth: "",
     gender: "",
     email: "",
@@ -23,6 +23,8 @@ const AddUser = ({ showModal, setShowModal,onUserAdded }) => {
     },
     password: "",
   });
+
+  const [showError, setShowError] = useState("");
 
   const [file, setFile] = useState();
   const [photoPreview, setPhotoPreview] = useState(null);
@@ -72,13 +74,9 @@ const AddUser = ({ showModal, setShowModal,onUserAdded }) => {
       formData.append("roles", JSON.stringify(newUser.roles));
       formData.append("password", newUser.password);
 
-      await axios.post(
-        "http://localhost:4004/api/auth/register",
-        formData,
-        {
-          headers: { "Content-Type": "multipart/form-data" },
-        }
-      );
+      await axios.post("http://localhost:4004/api/auth/register", formData, {
+        headers: { "Content-Type": "multipart/form-data" },
+      });
       console.log("User added:");
 
       setNewUser({
@@ -99,13 +97,23 @@ const AddUser = ({ showModal, setShowModal,onUserAdded }) => {
           canSeeReports: false,
           canAccessSettings: false,
         },
-        password:"",
+        password: "",
       });
       setFile(null);
       setShowModal(false);
-      onUserAdded()
+      onUserAdded();
     } catch (error) {
-      console.log("Error adding user:", error);
+      // Extract the correct error message from backend
+      if (error.response && error.response.data) {
+        setShowError(
+          error.response.data.error ||
+            "Login failed. Please check your credentials."
+        );
+      } else {
+        setShowError("An error occurred. Please Contact System Adminstrator.");
+      }
+
+      console.error("Login failed", error);
     }
   };
 
@@ -123,7 +131,6 @@ const AddUser = ({ showModal, setShowModal,onUserAdded }) => {
               </div>
 
               <div className="p-6">
-
                 <form
                   onSubmit={handleAddNewUser}
                   className="grid grid-cols-2 gap-4"
@@ -146,7 +153,15 @@ const AddUser = ({ showModal, setShowModal,onUserAdded }) => {
                           name.slice(1).replace(/([A-Z])/g, " $1")}
                       </label>
                       <input
-                        type={name === "dateOfBirth" ? "date" : name === "password" ? "password" : name === "email" ? "email" : "text"}
+                        type={
+                          name === "dateOfBirth"
+                            ? "date"
+                            : name === "password"
+                            ? "password"
+                            : name === "email"
+                            ? "email"
+                            : "text"
+                        }
                         name={name}
                         value={newUser[name]}
                         onChange={handleChange}
@@ -175,9 +190,10 @@ const AddUser = ({ showModal, setShowModal,onUserAdded }) => {
                     </select>
                   </div>
 
-
                   <div className="flex col-span-2">
-                    <label className="block text-sm font-bold text-gray-900">Photo</label>
+                    <label className="block text-sm font-bold text-gray-900">
+                      Photo
+                    </label>
                     <input type="file" onChange={handleFileChange} />
                     {photoPreview && (
                       <img
@@ -233,6 +249,16 @@ const AddUser = ({ showModal, setShowModal,onUserAdded }) => {
                 >
                   Close
                 </button>
+              </div>
+              <div className="flex items-center justify-center p-4 border-t">
+                {showError && (
+                  <div
+                    className="mt-2 bg-red-100/70 border border-red-200 text-sm text-red-800 rounded-lg p-4 dark:bg-red-800/10 dark:border-red-900 dark:text-red-500"
+                    role="alert"
+                  >
+                    <span className="font-bold">Error: </span> {showError}
+                  </div>
+                )}
               </div>
             </div>
           </div>
