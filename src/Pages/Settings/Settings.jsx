@@ -1,6 +1,8 @@
 import { useState } from "react";
 import SettingsList from "./SettingsList";
 import UserManagement from "./UserSettings/UserManagement";
+import ItemsCategories from "./Products/Categories/ItemsCategories";
+import Items from "./Products/Items/Items";
 
 const Settings = () => {
   const [selectedSetting, setSelectedSetting] = useState(null);
@@ -18,7 +20,7 @@ const Settings = () => {
 
         <SettingsList
           title="Products Management"
-          settings={["Changes Reports", "Permissions Reports", "Activities Reports"]}
+          settings={["Items","Items Categories"]}
           selectedSetting={selectedSetting}
           handleSelect={setSelectedSetting}
         />
@@ -36,7 +38,11 @@ const Settings = () => {
         <h2 className="text-xl font-semibold mb-4">Selected Report:</h2>
         {selectedSetting === "All Users" ? (
           <UserManagement />
-        ) : (
+        ) : selectedSetting === "Items" ? (
+          <Items/>
+        ) :selectedSetting === "Items Categories" ? (
+          <ItemsCategories/>
+        )  :(
           <p className="text-lg">{selectedSetting || "No report selected"}</p>
         )}
       </div>
