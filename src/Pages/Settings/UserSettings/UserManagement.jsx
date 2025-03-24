@@ -8,6 +8,7 @@ import { BsToggleOff, BsToggleOn } from "react-icons/bs";
 import { IoIosArrowBack } from "react-icons/io";
 import { IoIosArrowForward } from "react-icons/io";
 
+
 import AddUser from "./AddUser";
 import EditUser from "./EditUser";
 
@@ -15,30 +16,27 @@ const UserManagement = () => {
   const [users, setUsers] = useState([]);
   const [showError, setShowError] = useState("");
 
-
   //User Status Filter & Searching
-  const [filterStatus, setFilterStatus] = useState("All"); 
+  const [filterStatus, setFilterStatus] = useState("All");
   const [searchQuery, setSearchQuery] = useState("");
 
   //Pagination
   const [currentPage, setCurrentPage] = useState(1);
   const usersPerPage = 5;
 
-  const filteredUsers = users.filter(user => 
-    (filterStatus === "All" || user.status === filterStatus) &&
-    (
-      user.firstName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      user.secondName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      user.lastName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      user.email.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      user.contacts.toLowerCase().includes(searchQuery.toLowerCase())
-    )
-  )
+  const filteredUsers = users.filter(
+    (user) =>
+      (filterStatus === "All" || user.status === filterStatus) &&
+      (user.firstName.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        user.secondName.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        user.lastName.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        user.email.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        user.contacts.toLowerCase().includes(searchQuery.toLowerCase()))
+  );
 
   const indexOfLastUser = currentPage * usersPerPage;
   const indexOfFirstUser = indexOfLastUser - usersPerPage;
   const currentUsers = filteredUsers.slice(indexOfFirstUser, indexOfLastUser);
-
 
   //funx
   const totalPages = Math.ceil(filteredUsers.length / usersPerPage);
@@ -125,12 +123,14 @@ const UserManagement = () => {
       </div>
 
       <div className="sm:flex items-center justify-between ml-9">
-      <div className="flex items-center">
+        <div className="flex items-center">
           {["All", "Active", "Inactive"].map((status) => (
             <button
               key={status}
               className={`rounded-full py-2 px-8 mx-2 ${
-                filterStatus === status ? "bg-green-300 text-black" : "bg-gray-200 text-gray-600"
+                filterStatus === status
+                  ? "bg-green-300 text-black"
+                  : "bg-gray-200 text-gray-600"
               } hover:text-black hover:bg-indigo-100 border-gray-400`}
               onClick={() => {
                 setFilterStatus(status);
@@ -146,15 +146,15 @@ const UserManagement = () => {
         <div className="hidden sm:flex items-center bg-gray-100 rounded-[30px] px-3 sm:px-4 py-1 sm:py-2 w-full max-w-[300px] border border-gray-400">
           <FaSearch className="w-4 h-4 sm:w-5 sm:h-5 mr-2 text-black" />
           <input
-  type="text"
-  placeholder="Search"
-  className="bg-transparent outline-none px-2 py-1 w-full text-black"
-  value={searchQuery} // Bind input to state
-  onChange={(e) => {
-    setSearchQuery(e.target.value);
-    setCurrentPage(1); // Reset pagination when searching
-  }}
-/>
+            type="text"
+            placeholder="Search"
+            className="bg-transparent outline-none px-2 py-1 w-full text-black"
+            value={searchQuery} // Bind input to state
+            onChange={(e) => {
+              setSearchQuery(e.target.value);
+              setCurrentPage(1); // Reset pagination when searching
+            }}
+          />
         </div>
 
         <button

@@ -6,7 +6,7 @@ const MostSold = () => {
     <div className=" w-full rounded-lg">
       <div className="flex justify-between items-center px-6 py-4">
         <h1 className="text-black text-lg font-semibold tracking-wide">
-          Popular Dishes
+          Most Sold Products
         </h1>
         <a href="" className="text-[#358648] text-xl font-semibold">
           View all

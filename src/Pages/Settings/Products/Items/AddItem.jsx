@@ -107,7 +107,7 @@ const AddItem = ({ showModal, setShowModal, onUserAdded }) => {
                     className="bg-transparent border-0 text-black float-right"
                     onClick={() => setShowModal(false)}
                   >
-                    <span className="text-red-700 opacity-7 h-6 w-6 text-xl blockpy-0 rounded-lg ">
+                    <span className="text-red-700 opacity-7 h-6 w-6 text-xl blockpy-0 rounded-lg bg-grey py-3 px-7">
                       x
                     </span>
                   </button>

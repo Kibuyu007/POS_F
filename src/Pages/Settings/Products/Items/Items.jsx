@@ -1,52 +1,74 @@
 import { useState, useEffect } from "react";
 import { useDispatch, useSelector } from "react-redux";
-import { FaSearch, FaUserEdit } from "react-icons/fa";
-import { IoIosArrowBack, IoIosArrowForward } from "react-icons/io";
-import { itemsFetch, itemsPending, itemsError, searchItemsPending,} from "../../../../Redux/items"; // Assuming the itemsSlice is in the same directory
-import AddItem from './AddItem';
-import EditItem from './EditItem';
+import {
+  itemsFetch,
+  itemsPending,
+  itemsError,
+  searchItemsPending,
+} from "../../../../Redux/items"; // Assuming the itemsSlice is in the same directory
 
+//Pages
+import AddItem from "./AddItem";
+import EditItem from "./EditItem";
+
+//Icons
+import { AiTwotoneEdit } from "react-icons/ai";
+import { FaSearch } from "react-icons/fa";
+import { IoIosArrowBack, IoIosArrowForward } from "react-icons/io";
 
 const Items = () => {
   const dispatch = useDispatch();
-  
+
   // Redux State
-  const { items = [], currentPage =1, totalPages, itemsPerPage =10, totalItems = 0 } = useSelector((state) => state.items);
+  const {
+    items = [],
+    currentPage = 1,
+    totalPages,
+    itemsPerPage = 10,
+    totalItems = 0,
+  } = useSelector((state) => state.items);
   const { categories } = useSelector((state) => state.category);
-  
-  
+
   const [showError, setShowError] = useState("");
-  
+
   // Filter and Search State
   const [filterStatus, setFilterStatus] = useState("All");
   const [searchQuery, setSearchQuery] = useState("");
-  
+  const [categoryFilter, setCategoryFilter] = useState("All"); // New category filter state
+
   // Fetch data with pagination and search
   const fetchData = async () => {
     try {
       dispatch(itemsPending());
-      const response = await fetch(`http://localhost:4004/api/items/getAllItems?page=${currentPage}&limit=${itemsPerPage}&search=${searchQuery}`);
-      
-      if (!response.ok) {
-        throw new Error("Failed to fetch items");
+      let url = `http://localhost:4004/api/items/getAllItems?page=${currentPage}&limit=${itemsPerPage}&search=${searchQuery}`;
+
+      if (filterStatus !== "All") {
+        url += `&status=${filterStatus.toLowerCase()}`;
       }
-      
+
+      if (categoryFilter !== "All") {
+        url += `&category=${categoryFilter}`;
+      }
+
+      const response = await fetch(url);
+      if (!response.ok) throw new Error("Failed to fetch items");
+
       const data = await response.json();
-      
-      // Dispatch success action
       dispatch(itemsFetch(data));
       setShowError("");
     } catch (error) {
       console.error("Error fetching items:", error);
-      setShowError("An error occurred. Please contact the system administrator.");
+      setShowError(
+        "An error occurred. Please contact the system administrator."
+      );
       dispatch(itemsError(error.message));
     }
   };
-  
+
   useEffect(() => {
     fetchData();
-  }, [currentPage, searchQuery]);
-  
+  }, [currentPage, searchQuery, categoryFilter, filterStatus]);
+
   // Handlers for Pagination
   const nextPage = () => {
     if (currentPage < totalPages) {
@@ -60,11 +82,11 @@ const Items = () => {
     }
   };
 
-   //formating Price
-   const formatPriceWithCommas = (price) => {
+  //formating Price
+  const formatPriceWithCommas = (price) => {
     return new Intl.NumberFormat("en-US").format(price);
   };
-  
+
   // Modal States
   const [showModalAdd, setShowModalAdd] = useState(false);
   const [showModalEdit, setShowModalEdit] = useState(false);
@@ -84,10 +106,14 @@ const Items = () => {
       {/* Filter & Search */}
       <div className="sm:flex items-center justify-between ml-9">
         <div className="flex items-center">
-          {["All", "Active", "Inactive"].map((status) => (
+          {["All", "Active", "Expired"].map((status) => (
             <button
               key={status}
-              className={`rounded-full py-2 px-8 mx-2 ${filterStatus === status ? "bg-green-300 text-black" : "bg-gray-200 text-gray-600"} hover:text-black hover:bg-indigo-100 border-gray-400`}
+              className={`rounded-full py-2 px-8 mx-2 ${
+                filterStatus === status
+                  ? "bg-green-300 text-black"
+                  : "bg-gray-200 text-gray-600"
+              } hover:text-black hover:bg-indigo-100 border-gray-400`}
               onClick={() => {
                 setFilterStatus(status);
                 dispatch(itemsFetch({ ...items, currentPage: 1 })); // Reset pagination when changing status filter
@@ -96,6 +122,25 @@ const Items = () => {
               {status}
             </button>
           ))}
+        </div>
+
+        <div className="sm:flex items-center justify-between ml-9">
+          <select
+            value={categoryFilter}
+            onChange={(e) => {
+              setCategoryFilter(e.target.value);
+              // Reset to first page when category filter changes
+              dispatch(itemsFetch({ ...items, currentPage: 1 }));
+            }}
+            className="ml-4 px-3 py-2 border border-gray-400 rounded bg-white text-black"
+          >
+            <option value="All">All Categories</option>
+            {categories.map((category) => (
+              <option key={category._id} value={category._id}>
+                {category.name}
+              </option>
+            ))}
+          </select>
         </div>
 
         {/* Search Bar */}
@@ -109,7 +154,7 @@ const Items = () => {
             onChange={(e) => {
               setSearchQuery(e.target.value);
               dispatch(searchItemsPending());
-              dispatch(itemsFetch({ ...items, currentPage: 1 })); 
+              dispatch(itemsFetch({ ...items, currentPage: 1 }));
             }}
           />
         </div>
@@ -138,177 +183,196 @@ const Items = () => {
         <div className="mt-7 overflow-x-auto">
           <table className="w-full whitespace-nowrap">
             <thead className="bg-gray-200 text-black">
-            <tr>
-                    <th className="px-5 py-3 border-b-2 border-gray-200 bg-gray-200 text-center text-xs font-bold text-black uppercase tracking-wider">
-                      SN
-                    </th>
+              <tr>
+                <th className="px-5 py-3 border-b-2 border-gray-200 bg-gray-200 text-center text-xs font-bold text-black uppercase tracking-wider">
+                  SN
+                </th>
 
-                    <th className="px-5 py-3 border-b-2 border-gray-200 bg-gray-200 text-center text-xs font-bold text-black uppercase tracking-wider">
-                      Product
-                    </th>
+                <th className="px-5 py-3 border-b-2 border-gray-200 bg-gray-200 text-center text-xs font-bold text-black uppercase tracking-wider">
+                  Product
+                </th>
 
-                    <th className="px-5 py-3 border-b-2 border-gray-200 bg-gray-200 text-center text-xs font-bold text-black uppercase tracking-wider">
-                      Price
-                    </th>
+                <th className="px-5 py-3 border-b-2 border-gray-200 bg-gray-200 text-center text-xs font-bold text-black uppercase tracking-wider">
+                  Price
+                </th>
 
-                    <th className="px-5 py-3 border-b-2 border-gray-200 bg-gray-200 text-center text-xs font-bold text-black uppercase tracking-wider">
-                      Quantity
-                    </th>
+                <th className="px-5 py-3 border-b-2 border-gray-200 bg-gray-200 text-center text-xs font-bold text-black uppercase tracking-wider">
+                  Quantity
+                </th>
 
-                    <th className="px-5 py-3 border-b-2 border-gray-200 bg-gray-200 text-center text-xs font-bold text-black uppercase tracking-wider">
-                      Barcode
-                    </th>
+                <th className="px-5 py-3 border-b-2 border-gray-200 bg-gray-200 text-center text-xs font-bold text-black uppercase tracking-wider">
+                  Barcode
+                </th>
 
-                    <th className="px-5 py-3 border-b-2 border-gray-200 bg-gray-200 text-center text-xs font-bold text-black uppercase tracking-wider">
-                      Manf Date
-                    </th>
+                <th className="px-5 py-3 border-b-2 border-gray-200 bg-gray-200 text-center text-xs font-bold text-black uppercase tracking-wider">
+                  Manf Date
+                </th>
 
-                    <th className="px-5 py-3 border-b-2 border-gray-200 bg-gray-200 text-center text-xs font-bold text-black uppercase tracking-wider">
-                      Exp Date
-                    </th>
+                <th className="px-5 py-3 border-b-2 border-gray-200 bg-gray-200 text-center text-xs font-bold text-black uppercase tracking-wider">
+                  Exp Date
+                </th>
 
-                    <th className="px-5 py-3 border-b-2 border-gray-200 bg-gray-200 text-center text-xs font-bold text-black uppercase tracking-wider">
-                      Category
-                    </th>
+                <th className="px-5 py-3 border-b-2 border-gray-200 bg-gray-200 text-center text-xs font-bold text-black uppercase tracking-wider">
+                  Category
+                </th>
 
-                    <th className="px-5 py-3 border-b-2 border-gray-200 bg-gray-200 text-center text-xs font-bold text-black uppercase tracking-wider">
-                      Action
-                    </th>
-
-                  </tr>
+                <th className="px-5 py-3 border-b-2 border-gray-200 bg-gray-200 text-center text-xs font-bold text-black uppercase tracking-wider">
+                  Action
+                </th>
+              </tr>
             </thead>
             <tr className="h-3" />
 
             <tbody>
-              {items.map((item, index) => (
-                <>
-                <tr key={item._id} className="h-16 border-gray-500 shadow-md bg-gray-100">
-                  <td className="pl-5 font-bold">
-                    <p className="text-sm leading-none text-gray-600">
-                      {index + 1 + (currentPage - 1) * itemsPerPage}
-                    </p>
-                  </td>
-                  <td
-                          className={`py-2 px-3 font-normal text-base border-x bg-gray-200 ${
-                            index == 0
-                              ? "border-t border-gray"
-                              : index == items?.length
-                              ? "border-y border-gray"
-                              : "border-t border-gray"
-                          } hover:bg-gray-100`}
-                        >
-                          <div className="flex items-center">
-                            <div className="ml-3">
-                              <p className="text-gray-900 whitespace-no-wrap  capitalize text-left">
-                                {item.name}
-                              </p>
-                            </div>
-                          </div>
-                        </td>
-
-                        <td
-                          className={`py-2 px-3  text-base border-x text-center font-semibold ${
-                            index == 0
-                              ? "border-t border-gray"
-                              : index == items?.length
-                              ? "border-y border-gray"
-                              : "border-t border-gray"
-                          } hover:bg-gray-100`}
-                        >
-                          <span className="ml-2 mr-3 rounded-full text-black">
-                            {" "}
-                            {formatPriceWithCommas(item.price)}
-                          </span>
-                        </td>
-
-                        <td
-                          className={`py-2 px-3 font-normal text-base border-x text-center bg-gray-200 ${
-                            index == 0
-                              ? "border-t border-gray"
-                              : index == items?.length
-                              ? "border-y border-gray"
-                              : "border-t border-gray"
-                          } hover:bg-gray-100`}
-                        >
-                          <span className="ml-2 mr-3 rounded-full bg-blue-200 px-2 py-0.5 text-blue-800">
-                            {formatPriceWithCommas(item.itemQuantity)}
-                          </span>
-                        </td>
-                  <td
-                          className={`py-2 px-3 font-normal text-base border-x ${
-                            index == 0
-                              ? "border-t border-gray"
-                              : index == items?.length
-                              ? "border-y border-gray"
-                              : "border-t border-gray"
-                          } hover:bg-gray-100`}
-                        >
-                          <div className="flex justify-center">
-                            <button className="whitespace-nowrap bg-slate-200 text-black rounded-md shadow-md py-1 px-14 ">
-                            QRcode
-                            </button>
-                          </div>
-                        </td>
-
-                        <td
-                          className={`py-2 px-3 font-normal text-base border-x text-center bg-green-200 shadow-md ${
-                            index == 0
-                              ? "border-t border-gray"
-                              : index == items?.length
-                              ? "border-y border-gray"
-                              : "border-t border-gray"
-                          } hover:bg-gray-100`}
-                        >
-                          <p className="text-gray-900 whitespace-no-wrap">
-                            {new Date(item.manufactureDate).toLocaleDateString()}
-                          </p>
-                        </td>
-
-                        <td
-                          className={`py-2 px-3 font-normal text-base border-x text-center bg-red-100 shadow-md ${
-                            index == 0
-                              ? "border-t border-gray"
-                              : index == items?.length
-                              ? "border-y border-gray"
-                              : "border-t border-gray"
-                          } hover:bg-gray-100`}
-                        >
-                          <p className="text-gray-900 whitespace-no-wrap">
-                            {new Date(item.expireDate).toLocaleDateString()}
-                          </p>
-                        </td>
-
-                        <td
-                          className={`py-2 px-3 font-normal text-base border-x text-center bg-gray-200 ${
-                            index == 0
-                              ? "border-t border-gray"
-                              : index == items?.length
-                              ? "border-y border-gray"
-                              : "border-t border-gray"
-                          } hover:bg-gray-100`}
-                        >
-                          <p className="text-gray-900 whitespace-no-wrap capitalize">
-                            {
-                              categories.find((u) => u._id === item.category)
-                                ?.name
-                            }
-                          </p>
-                        </td>
-                  <td className="pl-4 gap-2 font-bold">
-                    <button
-                      onClick={() => {
-                        setShowModalEdit(true);
-                        setModifiedItem(item);
-                      }}
-                      className="focus:ring-1 focus:ring-offset-2 focus:ring-blue-300 text-sm leading-none text-gray-600 py-3 px-5 bg-gray-100 rounded hover:bg-gray-200"
+              {items
+                .filter((item) => {
+                  const isExpired = new Date(item.expireDate) < new Date();
+                  return (
+                    (categoryFilter === "All" ||
+                      item.category === categoryFilter) &&
+                    (filterStatus === "All" ||
+                      (filterStatus === "Expired" && isExpired) ||
+                      (filterStatus === "Active" && !isExpired))
+                  );
+                })
+                .map((item, index) => (
+                  <>
+                    <tr
+                      key={item._id}
+                      className="h-16 border-gray-500 shadow-md bg-gray-100"
                     >
-                      <FaUserEdit size={20} />
-                    </button>
-                  </td>
-                </tr>
-                <tr className="h-4" />
-                </>
-              ))}
+                      <td
+                        className={`pl-5 font-bold  ${
+                          item.status.toLowerCase() === "expired"
+                            ? "bg-red-500"
+                            : ""
+                        }`}
+                      >
+                        <p className="text-sm leading-none text-gray-800">
+                          {index + 1 + (currentPage - 1) * itemsPerPage}
+                        </p>
+                      </td>
+                      <td
+                        className={`py-2 px-3 font-normal text-base border-x bg-gray-200 ${
+                          index == 0
+                            ? "border-t border-gray"
+                            : index == items?.length
+                            ? "border-y border-gray"
+                            : "border-t border-gray"
+                        } hover:bg-gray-100`}
+                      >
+                        <div className="flex items-center">
+                          <div className="ml-3">
+                            <p className="text-gray-900 whitespace-no-wrap  capitalize text-left">
+                              {item.name}
+                            </p>
+                          </div>
+                        </div>
+                      </td>
+
+                      <td
+                        className={`py-2 px-3  text-base border-x text-center font-semibold ${
+                          index == 0
+                            ? "border-t border-gray"
+                            : index == items?.length
+                            ? "border-y border-gray"
+                            : "border-t border-gray"
+                        } hover:bg-gray-100`}
+                      >
+                        <span className="ml-2 mr-3 rounded-full text-black">
+                          {" "}
+                          {formatPriceWithCommas(item.price)}
+                        </span>
+                      </td>
+
+                      <td
+                        className={`py-2 px-3 font-normal text-base border-x text-center bg-gray-200 ${
+                          index == 0
+                            ? "border-t border-gray"
+                            : index == items?.length
+                            ? "border-y border-gray"
+                            : "border-t border-gray"
+                        } hover:bg-gray-100`}
+                      >
+                        <span className="ml-2 mr-3 rounded-full bg-blue-200 px-2 py-0.5 text-blue-800">
+                          {formatPriceWithCommas(item.itemQuantity)}
+                        </span>
+                      </td>
+                      <td
+                        className={`py-2 px-3 font-normal text-base border-x ${
+                          index == 0
+                            ? "border-t border-gray"
+                            : index == items?.length
+                            ? "border-y border-gray"
+                            : "border-t border-gray"
+                        } hover:bg-gray-100`}
+                      >
+                        <div className="flex justify-center">
+                          <button className="whitespace-nowrap bg-slate-200 text-black rounded-md shadow-md py-1 px-14 ">
+                            QRcode
+                          </button>
+                        </div>
+                      </td>
+
+                      <td
+                        className={`py-2 px-3 font-normal text-base border-x text-center bg-green-200 shadow-md ${
+                          index == 0
+                            ? "border-t border-gray"
+                            : index == items?.length
+                            ? "border-y border-gray"
+                            : "border-t border-gray"
+                        } hover:bg-gray-100`}
+                      >
+                        <p className="text-gray-900 whitespace-no-wrap">
+                          {new Date(item.manufactureDate).toLocaleDateString()}
+                        </p>
+                      </td>
+
+                      <td
+                        className={`py-2 px-3 font-normal text-base border-x text-center bg-red-100 shadow-md ${
+                          index == 0
+                            ? "border-t border-gray"
+                            : index == items?.length
+                            ? "border-y border-gray"
+                            : "border-t border-gray"
+                        } hover:bg-gray-100`}
+                      >
+                        <p className="text-gray-900 whitespace-no-wrap">
+                          {new Date(item.expireDate).toLocaleDateString()}
+                        </p>
+                      </td>
+
+                      <td
+                        className={`py-2 px-3 font-normal text-base border-x text-center bg-gray-200 ${
+                          index == 0
+                            ? "border-t border-gray"
+                            : index == items?.length
+                            ? "border-y border-gray"
+                            : "border-t border-gray"
+                        } hover:bg-gray-100`}
+                      >
+                        <p className="text-gray-900 whitespace-no-wrap capitalize">
+                          {
+                            categories.find((u) => u._id === item.category)
+                              ?.name
+                          }
+                        </p>
+                      </td>
+                      <td className="pl-4 gap-2 font-bold">
+                        <button
+                          onClick={() => {
+                            setShowModalEdit(true);
+                            setModifiedItem(item);
+                          }}
+                          className="focus:ring-1 focus:ring-offset-2 focus:ring-blue-300 text-sm leading-none text-gray-600 py-3 px-5 bg-gray-100 rounded hover:bg-gray-200"
+                        >
+                          <AiTwotoneEdit size={20} />
+                        </button>
+                      </td>
+                    </tr>
+                    <tr className="h-4" />
+                  </>
+                ))}
             </tbody>
           </table>
 
@@ -316,16 +380,26 @@ const Items = () => {
           <div className="flex items-center justify-between border-t border-gray-200 bg-white py-3 sm:px-6">
             <p className="text-sm text-gray-700">
               Showing{" "}
-              <span className="font-medium">{(currentPage - 1) * itemsPerPage + 1}</span> to{" "}
-              <span className="font-medium">{Math.min(currentPage * itemsPerPage, totalItems)}</span> of{" "}
-              <span className="font-medium">{totalItems}</span> results
+              <span className="font-medium">
+                {(currentPage - 1) * itemsPerPage + 1}
+              </span>{" "}
+              to{" "}
+              <span className="font-medium">
+                {Math.min(currentPage * itemsPerPage, totalItems)}
+              </span>{" "}
+              of <span className="font-medium">{totalItems}</span> results
             </p>
 
-            <nav aria-label="Pagination" className="isolate inline-flex -space-x-px rounded-md shadow-xs">
+            <nav
+              aria-label="Pagination"
+              className="isolate inline-flex -space-x-px rounded-md shadow-xs"
+            >
               <button
                 onClick={prevPage}
                 disabled={currentPage === 1}
-                className={`relative inline-flex items-center rounded-l-md px-2 py-2 text-gray-400 ring-1 ring-gray-300 ring-inset hover:bg-gray-50 focus:z-20 focus:outline-offset-0 ${currentPage === 1 ? "opacity-50 cursor-not-allowed" : ""}`}
+                className={`relative inline-flex items-center rounded-l-md px-2 py-2 text-gray-400 ring-1 ring-gray-300 ring-inset hover:bg-gray-50 focus:z-20 focus:outline-offset-0 ${
+                  currentPage === 1 ? "opacity-50 cursor-not-allowed" : ""
+                }`}
               >
                 <IoIosArrowBack aria-hidden="true" className="size-5" />
               </button>
@@ -333,8 +407,12 @@ const Items = () => {
               {[...Array(totalPages)].map((_, i) => (
                 <button
                   key={i + 1}
-                  onClick={() => dispatch(itemsFetch({ ...items, currentPage: i + 1 }))}
-                  className={`relative inline-flex items-center px-4 py-2 text-sm font-semibold text-gray-900 ring-1 ring-gray-300 ring-inset hover:bg-gray-50 focus:z-20 focus:outline-offset-0 ${currentPage === i + 1 ? "bg-green-500/80 text-white" : ""}`}
+                  onClick={() =>
+                    dispatch(itemsFetch({ ...items, currentPage: i + 1 }))
+                  }
+                  className={`relative inline-flex items-center px-4 py-2 text-sm font-semibold text-gray-900 ring-1 ring-gray-300 ring-inset hover:bg-gray-50 focus:z-20 focus:outline-offset-0 ${
+                    currentPage === i + 1 ? "bg-green-500/80 text-white" : ""
+                  }`}
                 >
                   {i + 1}
                 </button>
@@ -343,7 +421,11 @@ const Items = () => {
               <button
                 onClick={nextPage}
                 disabled={currentPage === totalPages}
-                className={`relative inline-flex items-center rounded-r-md px-2 py-2 text-gray-400 ring-1 ring-gray-300 ring-inset hover:bg-gray-50 focus:z-20 focus:outline-offset-0 ${currentPage === totalPages ? "opacity-50 cursor-not-allowed" : ""}`}
+                className={`relative inline-flex items-center rounded-r-md px-2 py-2 text-gray-400 ring-1 ring-gray-300 ring-inset hover:bg-gray-50 focus:z-20 focus:outline-offset-0 ${
+                  currentPage === totalPages
+                    ? "opacity-50 cursor-not-allowed"
+                    : ""
+                }`}
               >
                 <IoIosArrowForward aria-hidden="true" className="size-5" />
               </button>
@@ -353,8 +435,18 @@ const Items = () => {
       </div>
 
       {/* Modals */}
-      <AddItem showModal={showModalAdd} setShowModal={setShowModalAdd} onItemAdded={fetchData} modifiedItem={modifiedItem} />
-      <EditItem showModal={showModalEdit} setShowModal={setShowModalEdit} onItemUpdated={fetchData} modifiedItem={modifiedItem} />
+      <AddItem
+        showModal={showModalAdd}
+        setShowModal={setShowModalAdd}
+        onItemAdded={fetchData}
+        modifiedItem={modifiedItem}
+      />
+      <EditItem
+        showModal={showModalEdit}
+        setShowModal={setShowModalEdit}
+        onItemUpdated={fetchData}
+        modifiedItem={modifiedItem}
+      />
     </div>
   );
 };

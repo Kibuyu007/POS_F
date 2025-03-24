@@ -77,7 +77,7 @@ const MenuCard = () => {
       <hr className="border-[#2a2a2a] border-t-2 mt-4" />
 
       <div className="grid grid-cols-4 gap-4 py-4 w-[100%]">
-        {selected?.item.map((item) => (
+        {selected?.item.map((item) => ( 
           <div
             key={item.id}
             className="flex flex-col items-center justify-between cursor-pointer"
