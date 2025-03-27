@@ -8,7 +8,7 @@ import "react-datepicker/dist/react-datepicker.css";
 
 const AddItem = ({ showModal, setShowModal, onUserAdded }) => {
   //Use selector from Redux
-  const { categories } = useSelector((state) => state.category);
+  const { category } = useSelector((state) => state.category);
 
   const [file, setFile] = useState();
   const [photoPreview, setPhotoPreview] = useState(null);
@@ -18,8 +18,7 @@ const AddItem = ({ showModal, setShowModal, onUserAdded }) => {
     name: "",
     price: 0,
     category: "",
-    unit: "",
-    barcode: "",
+    qrCode: "",
     itemQuantity: 0,
     manufactureDate: new Date(),
     expireDate: new Date(),
@@ -29,18 +28,12 @@ const AddItem = ({ showModal, setShowModal, onUserAdded }) => {
 
   //Fetch ItemCategories
   useEffect(() => {
-    if (!categories.length) {
+    if (!category.length) {
       dispatch(fetchCategories());
     }
-  }, [dispatch, categories.length]);
+  }, [dispatch, category.length]);
 
-  const handleFileChange = (e) => {
-    const file = e.target.files[0];
-    if (file) {
-      setFile(file);
-      setPhotoPreview(URL.createObjectURL(file));
-    }
-  };
+ 
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -53,6 +46,15 @@ const AddItem = ({ showModal, setShowModal, onUserAdded }) => {
 
   const handleExpireDate = (date) => {
     setRegi({ ...regi, expireDate: date });
+  };
+
+
+  const handlePhotoChange = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      setFile(file);
+      setPhotoPreview(URL.createObjectURL(file));
+    }
   };
 
   const handleAddItems = async (e) => {
@@ -69,8 +71,7 @@ const AddItem = ({ showModal, setShowModal, onUserAdded }) => {
         name: "",
         price: "",
         category: "",
-        unit: "",
-        barcode: "",
+        qrCode: "",
         itemQuantity: "",
         manufactureDate: "",
         expireDate: "",
@@ -168,7 +169,7 @@ const AddItem = ({ showModal, setShowModal, onUserAdded }) => {
                         <option value="" disabled>
                           Select a category
                         </option>
-                        {categories.map((category) => (
+                        {category.map((category) => (
                           <option key={category._id} value={category._id}>
                             {category.name}
                           </option>
@@ -198,12 +199,12 @@ const AddItem = ({ showModal, setShowModal, onUserAdded }) => {
                         htmlFor="barcode"
                         className="block mb-2 text-sm font-medium text-gray-900 dark:text-white"
                       >
-                        QRcode
+                        QRCode
                       </label>
                       <input
                         type="text"
                         name="barcode"
-                        value={regi.barcode}
+                        value={regi.qrCode}
                         onChange={handleChange}
                         className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-green-500 focus:border-green-500 block w-full p-2.5 dark:bg-gray-600 dark:border-gray-500 dark:placeholder-gray-400 dark:text-white"
                         placeholder="..."
@@ -248,11 +249,11 @@ const AddItem = ({ showModal, setShowModal, onUserAdded }) => {
                       </span>
                     </div>
 
-                    <div className="flex col-span-2 mt-3 border-solid">
+                    <div className="flex col-span-2">
                       <label className="block text-sm font-bold text-gray-900">
                         Photo
                       </label>
-                      <input type="file" onChange={handleFileChange} />
+                      <input type="file" onChange={handlePhotoChange} />
                       {photoPreview && (
                         <img
                           src={photoPreview}
@@ -279,6 +280,7 @@ const AddItem = ({ showModal, setShowModal, onUserAdded }) => {
                     Close
                   </button>
                 </div>
+
                 <div className="flex items-center justify-center p-4 border-t">
                   {showError && (
                     <div
@@ -289,6 +291,7 @@ const AddItem = ({ showModal, setShowModal, onUserAdded }) => {
                     </div>
                   )}
                 </div>
+                
               </div>
             </div>
           </div>

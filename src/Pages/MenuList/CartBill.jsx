@@ -10,7 +10,7 @@ const Cart = () => {
   const taxRate = 2.5;
   const tax = (total * taxRate)/100;
   const finalTotal = total + tax;
-
+ 
 
   return (
     <>

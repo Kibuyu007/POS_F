@@ -1,6 +1,6 @@
 import { useState } from "react";
 import axios from "axios";
-import { MdCancel } from "react-icons/md";
+
 
 const AddUser = ({ showModal, setShowModal, onUserAdded }) => {
   const [newUser, setNewUser] = useState({
@@ -123,12 +123,17 @@ const AddUser = ({ showModal, setShowModal, onUserAdded }) => {
         <div className="flex justify-center items-center fixed inset-0 z-50 bg-indigo-600 bg-opacity-10">
           <div className="w-full md:w-3/4 lg:w-2/3 xl:w-1/2 max-h-[90vh] overflow-y-auto scrollbar-hide">
             <div className="bg-white rounded-lg shadow-lg">
-              <div className="flex items-center justify-between p-5 border-b border-gray-300">
-                <h3 className="text-2xl font-semibold text-black">Add User</h3>
-                <button onClick={() => setShowModal(false)}>
-                  <MdCancel />
-                </button>
-              </div>
+            <div className="flex items-start justify-between p-5 border-b border-solid border-gray-300 rounded-t ">
+                  <h3 className="text-3xl font=semibold">Add Item</h3>
+                  <button
+                    className="bg-transparent border-0 text-black float-right"
+                    onClick={() => setShowModal(false)}
+                  >
+                    <span className="text-red-700 opacity-7 h-6 w-6 text-xl blockpy-0 rounded-lg bg-grey py-3 px-7">
+                      x
+                    </span>
+                  </button>
+                </div>
 
               <div className="p-6">
                 <form

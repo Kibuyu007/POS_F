@@ -24,10 +24,10 @@ const Items = () => {
     items = [],
     currentPage = 1,
     totalPages,
-    itemsPerPage = 10,
+    itemsPerPage = 6,
     totalItems = 0,
   } = useSelector((state) => state.items);
-  const { categories } = useSelector((state) => state.category);
+  const { category } = useSelector((state) => state.category);
 
   const [showError, setShowError] = useState("");
 
@@ -56,7 +56,9 @@ const Items = () => {
       const data = await response.json();
       dispatch(itemsFetch(data));
       setShowError("");
-    } catch (error) {
+    } 
+    
+    catch (error) {
       console.error("Error fetching items:", error);
       setShowError(
         "An error occurred. Please contact the system administrator."
@@ -81,6 +83,7 @@ const Items = () => {
       dispatch(itemsFetch({ ...items, currentPage: currentPage - 1 }));
     }
   };
+  
 
   //formating Price
   const formatPriceWithCommas = (price) => {
@@ -116,7 +119,7 @@ const Items = () => {
               } hover:text-black hover:bg-indigo-100 border-gray-400`}
               onClick={() => {
                 setFilterStatus(status);
-                dispatch(itemsFetch({ ...items, currentPage: 1 })); // Reset pagination when changing status filter
+                dispatch(itemsFetch({ ...items, currentPage: 1 }));
               }}
             >
               {status}
@@ -130,18 +133,19 @@ const Items = () => {
             onChange={(e) => {
               setCategoryFilter(e.target.value);
               // Reset to first page when category filter changes
-              dispatch(itemsFetch({ ...items, currentPage: 1 }));
+              dispatch(itemsFetch({ ...items, }));
             }}
-            className="ml-4 px-3 py-2 border border-gray-400 rounded bg-white text-black"
+            className="ml-4 px-6 py-3 border border-gray-400 rounded-full bg-gray-200/70  text-black"
           >
-            <option value="All">All Categories</option>
-            {categories.map((category) => (
+            <option  value="All">All Categories</option>
+            {category.map((category) => (
               <option key={category._id} value={category._id}>
                 {category.name}
               </option>
             ))}
           </select>
         </div>
+
 
         {/* Search Bar */}
         <div className="hidden sm:flex items-center bg-gray-100 rounded-[30px] px-3 sm:px-4 py-1 sm:py-2 w-full max-w-[300px] border border-gray-400">
@@ -243,9 +247,7 @@ const Items = () => {
                     >
                       <td
                         className={`pl-5 font-bold  ${
-                          item.status.toLowerCase() === "expired"
-                            ? "bg-red-500"
-                            : ""
+                          item.status === "Expired" ? "bg-red-500" : ""
                         }`}
                       >
                         <p className="text-sm leading-none text-gray-800">
@@ -353,7 +355,7 @@ const Items = () => {
                       >
                         <p className="text-gray-900 whitespace-no-wrap capitalize">
                           {
-                            categories.find((u) => u._id === item.category)
+                            category.find((u) => u._id === item.category)
                               ?.name
                           }
                         </p>
@@ -445,7 +447,7 @@ const Items = () => {
         showModal={showModalEdit}
         setShowModal={setShowModalEdit}
         onItemUpdated={fetchData}
-        modifiedItem={modifiedItem}
+        item={modifiedItem}
       />
     </div>
   );

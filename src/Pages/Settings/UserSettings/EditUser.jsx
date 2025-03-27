@@ -1,10 +1,11 @@
 import axios from "axios";
 import { useEffect, useState } from "react";
-import { MdCancel } from "react-icons/md";
-import { useSelector } from "react-redux";
 
-const EditUser = ({ showModal, setShowModal, onUserAdded }) => {
-  const user = useSelector((state) => state.user.user);
+
+const EditUser = ({ showModal, setShowModal, onUserAdded,user }) => {
+
+  
+
 
   const [showError, setShowError] = useState("");
   const [file, setFile] = useState(null);
@@ -113,12 +114,17 @@ const EditUser = ({ showModal, setShowModal, onUserAdded }) => {
     showModal && (
       <div className="flex justify-center items-center fixed inset-0 z-50 bg-indigo-600 bg-opacity-10">
         <div className="w-full md:w-3/4 lg:w-2/3 xl:w-1/2 max-h-[90vh] overflow-y-auto scrollbar-hide bg-white rounded-lg shadow-lg">
-          <div className="flex items-center justify-between p-5 border-b border-gray-300">
-            <h3 className="text-2xl font-semibold text-black">Edit User</h3>
-            <button onClick={() => setShowModal(false)}>
-              <MdCancel />
-            </button>
-          </div>
+        <div className="flex items-start justify-between p-5 border-b border-solid border-gray-300 rounded-t ">
+                  <h3 className="text-3xl font=semibold">Add Item</h3>
+                  <button
+                    className="bg-transparent border-0 text-black float-right"
+                    onClick={() => setShowModal(false)}
+                  >
+                    <span className="text-red-700 opacity-7 h-6 w-6 text-xl blockpy-0 rounded-lg bg-grey py-3 px-7">
+                      x
+                    </span>
+                  </button>
+                </div>
 
           <div className="p-6">
             <form onSubmit={handleEditUser} className="grid grid-cols-2 gap-4">
@@ -155,6 +161,8 @@ const EditUser = ({ showModal, setShowModal, onUserAdded }) => {
                   />
                 </div>
               ))}
+
+
               <div>
                 <label className="block text-sm font-medium text-gray-900">
                   Gender
@@ -183,6 +191,8 @@ const EditUser = ({ showModal, setShowModal, onUserAdded }) => {
                   />
                 )}
               </div>
+
+
               <div className="col-span-2 mt-4 max-h-60 overflow-y-auto">
                 <p className="font-semibold mb-2">Roles and Permissions</p>
                 {[

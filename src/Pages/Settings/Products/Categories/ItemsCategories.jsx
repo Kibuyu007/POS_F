@@ -2,65 +2,67 @@
 import { useEffect, useState } from "react";
 
 // Pages Imports
-import AddCategory from './AddCategory'
-import EditCategory from './EditCategory'
+import AddCategory from "./AddCategory";
+import EditCategory from "./EditCategory";
 
 // Icons Imports
-import { FaSearch, FaUserEdit } from "react-icons/fa";
+import { FaSearch } from "react-icons/fa";
 import { IoIosArrowBack, IoIosArrowForward } from "react-icons/io";
-
+import { useDispatch, useSelector } from "react-redux";
+import { categoriesFetch } from "../../../../Redux/itemsCategories";
+import { AiTwotoneEdit } from "react-icons/ai";
 
 const ItemsCategories = () => {
-  const [categories, setCategories] = useState([]); // Changed users to categories
+  // Redux State
+  const {
+    category = [],
+    currentPage = 1,
+    totalPages,
+    itemsPerPage = 6,
+    totalItems = 0,
+  } = useSelector((state) => state.category);
+  const dispatch = useDispatch();
+
+  // const [filterStatus, setFilterStatus] = useState("All");
   const [showError, setShowError] = useState("");
-  
-  // Filter and Search State
-  const [filterStatus, setFilterStatus] = useState("All");
   const [searchQuery, setSearchQuery] = useState("");
-  
-  // Pagination State
-  const [currentPage, setCurrentPage] = useState(1);
-  const [totalPages, setTotalPages] = useState(0);
-  const [itemsPerPage, setItemsPerPage] = useState(20);
-  const [totalItems, setTotalItems] = useState(0);
 
   // Fetch data with pagination and search
   const fetchData = async () => {
     try {
-      const response = await fetch(`http://localhost:4004/api/itemsCategories/getItemCategories?page=${currentPage}&limit=${itemsPerPage}&search=${searchQuery}`);
-      
+      const response = await fetch(
+        `http://localhost:4004/api/itemsCategories/getItemCategories?page=${currentPage}&limit=${itemsPerPage}&search=${searchQuery}`
+      );
+
       if (!response.ok) {
         throw new Error("Failed to fetch categories");
       }
-      
+
       const data = await response.json();
-      
-      // Update the state with fetched data
-      setCategories(data.data);
-      setTotalPages(data.totalPages);
-      setTotalItems(data.totalItems);
-      setItemsPerPage(data.itemsPerPage);
+      dispatch(categoriesFetch(data));
       setShowError("");
     } catch (error) {
       console.error("Error fetching categories:", error);
-      setShowError("An error occurred. Please contact the system administrator.");
+      setShowError(
+        "An error occurred. Please contact the system administrator."
+      );
     }
   };
 
   useEffect(() => {
-    fetchData(); // Fetch data when component mounts or dependencies change
-  }, [currentPage, searchQuery]); // Fetch data when currentPage or searchQuery changes
+    fetchData();
+  }, [currentPage, searchQuery]); // Removed `category` to prevent unnecessary re-fetching
 
-  // Handlers for Pagination
+  // Pagination Handlers
   const nextPage = () => {
     if (currentPage < totalPages) {
-      setCurrentPage(currentPage + 1);
+      dispatch(categoriesFetch({ currentPage: currentPage + 1 }));
     }
   };
 
   const prevPage = () => {
     if (currentPage > 1) {
-      setCurrentPage(currentPage - 1);
+      dispatch(categoriesFetch({ currentPage: currentPage - 1 }));
     }
   };
 
@@ -82,22 +84,24 @@ const ItemsCategories = () => {
 
       {/* Filter & Search */}
       <div className="sm:flex items-center justify-between ml-9">
-        <div className="flex items-center">
+        {/* <div className="flex items-center">
           {["All", "Active", "Inactive"].map((status) => (
             <button
               key={status}
               className={`rounded-full py-2 px-8 mx-2 ${
-                filterStatus === status ? "bg-green-300 text-black" : "bg-gray-200 text-gray-600"
+                filterStatus === status
+                  ? "bg-green-300 text-black"
+                  : "bg-gray-200 text-gray-600"
               } hover:text-black hover:bg-indigo-100 border-gray-400`}
               onClick={() => {
                 setFilterStatus(status);
-                setCurrentPage(1); // Reset pagination when changing status filter
+                dispatch(categoriesFetch({ currentPage: 1 })); // Reset pagination when changing status filter
               }}
             >
               {status}
             </button>
           ))}
-        </div>
+        </div> */}
 
         {/* Search Bar */}
         <div className="hidden sm:flex items-center bg-gray-100 rounded-[30px] px-3 sm:px-4 py-1 sm:py-2 w-full max-w-[300px] border border-gray-400">
@@ -109,14 +113,14 @@ const ItemsCategories = () => {
             value={searchQuery}
             onChange={(e) => {
               setSearchQuery(e.target.value);
-              setCurrentPage(1); // Reset pagination when searching
+              dispatch(categoriesFetch({ currentPage: 1 })); // Reset pagination when searching
             }}
           />
         </div>
 
         <button
           onClick={() => setShowModalAdd(true)}
-          className="mr-10 focus:ring-2 focus:ring-offset-2  mt-4 sm:mt-0 inline-flex items-start justify-start px-6 py-3 bg-green-300 hover:bg-gray-200 focus:outline-none rounded"
+          className="mr-10 focus:ring-2 focus:ring-offset-2 mt-4 sm:mt-0 inline-flex items-start justify-start px-6 py-3 bg-green-300 hover:bg-gray-200 focus:outline-none rounded"
         >
           <p className="text-sm font-medium leading-none text-black">
             + Add Category
@@ -126,52 +130,98 @@ const ItemsCategories = () => {
 
       {/* Table Container */}
       <div className="bg-white py-4 md:py-7 px-4 md:px-8 xl:px-10">
-        {/* Error Message */}
         {showError && (
-          <div
-            className="mt-2 bg-red-100/70 border border-red-200 text-sm text-red-800 rounded-lg p-4"
-            role="alert"
-          >
+          <div className="mt-2 bg-red-100/70 border border-red-200 text-sm text-red-800 rounded-lg p-4">
             <span className="font-bold">Error: </span> {showError}
           </div>
         )}
+
         <div className="mt-7 overflow-x-auto">
           <table className="w-full whitespace-nowrap">
             <thead className="bg-gray-200 text-black">
               <tr>
-                <th className="border border-gray-300 px-4 py-2 text-left">SN</th>
-                <th className="border border-gray-300 px-4 py-2 text-left">Name</th>
-                <th className="border border-gray-300 px-4 py-2 text-left">Description</th>
-                <th className="border border-gray-300 px-4 py-2 text-left">Actions</th>
+                <th className="px-5 py-3 border-b-2 border-gray-200 bg-gray-200 text-center text-xs font-bold text-black uppercase tracking-wider">
+                  Index
+                </th>
+
+                <th className="px-5 py-3 border-b-2 border-gray-200 bg-gray-200 text-center text-xs font-bold text-black uppercase tracking-wider">
+                  Category Name
+                </th>
+
+                <th className="px-5 py-3 border-b-2 border-gray-200 bg-gray-200 text-center text-xs font-bold text-black uppercase tracking-wider">
+                  Description
+                </th>
+
+                <th className="px-5 py-3 border-b-2 border-gray-200 bg-gray-200 text-center text-xs font-bold text-black uppercase tracking-wider">
+                  Action
+                </th>
               </tr>
             </thead>
 
+            <tr className="h-3" />
+
             <tbody>
-              {categories.map((category, index) => (
-                <tr key={category._id} className="h-16 border-gray-500 shadow-md bg-gray-100">
-                  <td className="pl-5 font-bold">
-                    <p className="text-sm leading-none text-gray-600">
-                      {index + 1 + (currentPage - 1) * itemsPerPage}
-                    </p>
-                  </td>
-                  <td className="pl-5 font-bold">
-                    <p className="text-sm leading-none text-gray-600">{category.name}</p>
-                  </td>
-                  <td className="pl-5 font-bold">
-                    <p className="text-sm leading-none text-gray-600">{category.description}</p>
-                  </td>
-                  <td className="pl-4 gap-2 font-bold">
-                    <button
-                      onClick={() => {
-                        setShowModalEdit(true);
-                        setModifiedCategory(category);
-                      }}
-                      className="focus:ring-1 focus:ring-offset-2 focus:ring-blue-300 text-sm leading-none text-gray-600 py-3 px-5 bg-gray-100 rounded hover:bg-gray-200"
+              {category.map((catego, index) => (
+                <>
+                  <tr
+                    key={catego._id}
+                    className="h-16 border-gray-500 shadow-md bg-gray-100 "
+                  >
+                    <td className="pl-5 font-bold hover:bg-green-300/30">
+                      <p className="text-sm leading-none text-gray-800">
+                        {index + 1 + (currentPage - 1) * itemsPerPage}
+                      </p>
+                    </td>
+                    <td
+                      className={`py-2 px-3 bg-gray-200 shadow-md text-base border-x text-center font-semibold ${
+                        index == 0
+                          ? "border-t border-gray"
+                          : index == category?.length
+                          ? "border-y border-gray"
+                          : "border-t border-gray"
+                      } hover:bg-gray-100`}
                     >
-                      <FaUserEdit size={20} />
-                    </button>
-                  </td>
-                </tr>
+                      <div className="flex items-center">
+                        <div className="ml-3">
+                          <p className="text-gray-900 whitespace-no-wrap  capitalize text-left">
+                            {catego.name}
+                          </p>
+                        </div>
+                      </div>
+                    </td>
+                    <td
+                      className={`py-2 px-3  text-base border-x text-center font-semibold ${
+                        index == 0
+                          ? "border-t border-gray"
+                          : index == category?.length
+                          ? "border-y border-gray"
+                          : "border-t border-gray"
+                      } hover:bg-gray-100`}
+                    >
+                      <div className="flex items-center">
+                        <div className="ml-3">
+                          <p className="text-gray-900 whitespace-no-wrap  capitalize text-left">
+                            {catego.description}
+                          </p>
+                        </div>
+                      </div>
+                    </td>
+
+                    <td className="pl-4 gap-2 font-bold">
+                      <button
+                        onClick={() => {
+                          setShowModalEdit(true);
+                          setModifiedCategory(catego);
+                        }}
+                        className="focus:ring-1 focus:ring-offset-2 focus:ring-blue-300 text-sm leading-none text-gray-600 py-3 px-5 bg-gray-100 rounded hover:bg-gray-200"
+                      >
+                        <AiTwotoneEdit size={20} />
+                      </button>
+                    </td>
+                  </tr>
+
+                  <tr className="h-4" />
+                </>
               ))}
             </tbody>
           </table>
@@ -180,12 +230,20 @@ const ItemsCategories = () => {
           <div className="flex items-center justify-between border-t border-gray-200 bg-white py-3 sm:px-6">
             <p className="text-sm text-gray-700">
               Showing{" "}
-              <span className="font-medium">{(currentPage - 1) * itemsPerPage + 1}</span> to{" "}
-              <span className="font-medium">{Math.min(currentPage * itemsPerPage, totalItems)}</span> of{" "}
-              <span className="font-medium">{totalItems}</span> results
+              <span className="font-medium">
+                {(currentPage - 1) * itemsPerPage + 1}
+              </span>{" "}
+              to{" "}
+              <span className="font-medium">
+                {Math.min(currentPage * itemsPerPage, totalItems)}
+              </span>{" "}
+              of <span className="font-medium">{totalItems}</span> results
             </p>
 
-            <nav aria-label="Pagination" className="isolate inline-flex -space-x-px rounded-md shadow-xs">
+            <nav
+              aria-label="Pagination"
+              className="isolate inline-flex -space-x-px rounded-md shadow-xs"
+            >
               <button
                 onClick={prevPage}
                 disabled={currentPage === 1}
@@ -199,7 +257,11 @@ const ItemsCategories = () => {
               {[...Array(totalPages)].map((_, i) => (
                 <button
                   key={i + 1}
-                  onClick={() => setCurrentPage(i + 1)}
+                  onClick={() =>
+                    dispatch(
+                      categoriesFetch({ ...category, currentPage: i + 1 })
+                    )
+                  }
                   className={`relative inline-flex items-center px-4 py-2 text-sm font-semibold text-gray-900 ring-1 ring-gray-300 ring-inset hover:bg-gray-50 focus:z-20 focus:outline-offset-0 ${
                     currentPage === i + 1 ? "bg-green-500/80 text-white" : ""
                   }`}
@@ -212,7 +274,9 @@ const ItemsCategories = () => {
                 onClick={nextPage}
                 disabled={currentPage === totalPages}
                 className={`relative inline-flex items-center rounded-r-md px-2 py-2 text-gray-400 ring-1 ring-gray-300 ring-inset hover:bg-gray-50 focus:z-20 focus:outline-offset-0 ${
-                  currentPage === totalPages ? "opacity-50 cursor-not-allowed" : ""
+                  currentPage === totalPages
+                    ? "opacity-50 cursor-not-allowed"
+                    : ""
                 }`}
               >
                 <IoIosArrowForward aria-hidden="true" className="size-5" />
@@ -222,9 +286,17 @@ const ItemsCategories = () => {
         </div>
       </div>
 
-      {/* Modals */}
-      <AddCategory showModal={showModalAdd} setShowModal={setShowModalAdd} onCategoryAdded={fetchData} modifiedUser={modifiedCategory}/>
-      <EditCategory showModal={showModalEdit} setShowModal={setShowModalEdit} onCategoryUpdated={fetchData} modifiedUser={modifiedCategory}/>
+      <AddCategory
+        showModal={showModalAdd}
+        setShowModal={setShowModalAdd}
+        onCategoryAdded={fetchData}
+      />
+      <EditCategory
+        showModal={showModalEdit}
+        setShowModal={setShowModalEdit}
+        onCategoryUpdated={fetchData}
+        catego={modifiedCategory}
+      />
     </div>
   );
 };

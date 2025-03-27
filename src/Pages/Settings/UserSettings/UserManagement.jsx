@@ -8,7 +8,6 @@ import { BsToggleOff, BsToggleOn } from "react-icons/bs";
 import { IoIosArrowBack } from "react-icons/io";
 import { IoIosArrowForward } from "react-icons/io";
 
-
 import AddUser from "./AddUser";
 import EditUser from "./EditUser";
 
@@ -361,7 +360,7 @@ const UserManagement = () => {
             showModal={showModalEdit}
             setShowModal={setShowModalEdit}
             onUserAdded={fetchData}
-            modifiedUser={modifiedUser}
+            user={modifiedUser}
           />
         </div>
       </div>
