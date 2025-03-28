@@ -6,16 +6,13 @@ const cartSlice = createSlice({
   name: "cart",
   initialState,
   reducers: {
-    
     addItems: (state, action) => {
       const existingItem = state.find((item) => item.id === action.payload.id);
-    
+
       if (existingItem) {
-        // Increment the item quantity and total price
-        existingItem.itemQuantity += action.payload.itemQuantity;
-        existingItem.totalPrice += action.payload.totalPrice;
+        existingItem.quantity += action.payload.quantity;
+        existingItem.totalPrice = existingItem.pricePerQuantity * existingItem.quantity; // Corrected calculation
       } else {
-        // If the item doesn't exist, add it to the cart
         state.push(action.payload);
       }
     },
@@ -24,13 +21,27 @@ const cartSlice = createSlice({
       return state.filter((item) => item.id !== action.payload);
     },
 
-    // New action to increase the quantity of a specific item
     increaseQuantity: (state, action) => {
       const item = state.find((item) => item.id === action.payload);
       if (item) {
-        item.itemQuantity += 1;
-        item.totalPrice = item.pricePerQuantity * item.itemQuantity; // Recalculate totalPrice
+        item.quantity += 1;
+        item.totalPrice = item.pricePerQuantity * item.quantity; // Corrected totalPrice calculation
       }
+    },
+
+    decreaseQuantity: (state, action) => {
+      const item = state.find((item) => item.id === action.payload);
+      if (item && item.quantity > 1) {
+        item.quantity -= 1;
+        item.totalPrice = item.pricePerQuantity * item.quantity; // Recalculate total price
+      }
+    },
+
+    clearCart: (state) => {
+      state.cart = [];
+      state.subtotal = 0;
+      state.taxes = 0;
+      state.totalPrice = 0;
     },
   },
 });
@@ -38,5 +49,5 @@ const cartSlice = createSlice({
 export const getTotalPrice = (state) =>
   state.cart.reduce((total, item) => total + item.totalPrice, 0);
 
-export const { addItems, removeItems, increaseQuantity } = cartSlice.actions;
+export const { addItems, removeItems, increaseQuantity,decreaseQuantity } = cartSlice.actions;
 export default cartSlice.reducer;

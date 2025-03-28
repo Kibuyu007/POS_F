@@ -51,9 +51,7 @@ const CustomerInfo = () => {
       <h1 className="text-md text-black font-semibold tracking-wide">
         {customerData.customerName || "Customer Name"}
       </h1>
-      <p className="text-xs text-black font-medium mt-1">
-        Table Number {tableNumber || "#"}
-      </p>
+     
       <p className="text-xs text-black font-medium mt-2">
         {formatDate(currentTime)}, {formatTime(currentTime)}
       </p>

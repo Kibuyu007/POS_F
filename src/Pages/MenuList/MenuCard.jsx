@@ -8,12 +8,10 @@ const MenuCard = () => {
   const [categories, setCategories] = useState([]);
   const [selected, setSelected] = useState(null);
   const [items, setItems] = useState([]);
-  const [productCount, setProductCount] = useState(0);
-  const [itemId, setItemId] = useState(null);
-  const [isLoading, setIsLoading] = useState(true); // Loading state
+  const [itemCounts, setItemCounts] = useState({}); // Track item quantities individually
+  const [isLoading, setIsLoading] = useState(true);
   const dispatch = useDispatch();
 
-  // Fetch categories and items from backend using useEffect
   useEffect(() => {
     const fetchCategories = async () => {
       try {
@@ -22,7 +20,6 @@ const MenuCard = () => {
         );
 
         if (data.success) {
-          // For each category, fetch the item count and add it to the category
           const categoriesWithItemCount = await Promise.all(
             data.data.map(async (category) => {
               const itemCount = await axios.get(
@@ -38,8 +35,8 @@ const MenuCard = () => {
           );
           setCategories(categoriesWithItemCount);
           if (categoriesWithItemCount.length > 0) {
-            setSelected(categoriesWithItemCount[0]); // Select the first category
-            fetchItems(categoriesWithItemCount[0]._id); // Fetch items for the first category
+            setSelected(categoriesWithItemCount[0]);
+            fetchItems(categoriesWithItemCount[0]._id);
           }
         } else {
           console.error("Invalid categories response:", data);
@@ -47,16 +44,14 @@ const MenuCard = () => {
       } catch (error) {
         console.error("Error fetching categories:", error);
       } finally {
-        setIsLoading(false); // Set loading state to false after fetching
+        setIsLoading(false);
       }
     };
 
     fetchCategories();
   }, []);
 
-  // Fetch items for the selected category using useCallback to avoid re-fetching
   const fetchItems = useCallback(async (categoryId) => {
-    // hapa tuta set loading baadae tukiona chenga
     try {
       const { data } = await axios.get(
         `http://localhost:4004/api/items/getAllItems?category=${categoryId}`
@@ -64,50 +59,53 @@ const MenuCard = () => {
 
       if (data.success) {
         setItems(data.data);
+        const initialItemCounts = {};
+        data.data.forEach((item) => {
+          initialItemCounts[item._id] = 1; // Default quantity to 1
+        });
+        setItemCounts(initialItemCounts);
       } else {
         console.error("Invalid items response:", data);
       }
     } catch (error) {
       console.error("Error fetching items:", error);
     } finally {
-      setIsLoading(false); // Set loading state to false after fetching
+      setIsLoading(false);
     }
   }, []);
 
-  // Increment item count
-  const increment = (id) => {
-    setItemId(id);
-    if (productCount >= 10) return;
-    setProductCount((prev) => prev + 1);
+  // Formatting Price
+  const formatPriceWithCommas = (price) => {
+    return new Intl.NumberFormat("en-US").format(price);
   };
 
-  // Decrement item count
-  const decrement = (id) => {
-    setItemId(id);
-    if (productCount <= 0) return;
-    setProductCount((prev) => prev - 1);
+  // Handle quantity change
+  const handleQuantityChange = (itemId, value) => {
+    setItemCounts((prevCounts) => ({
+      ...prevCounts,
+      [itemId]: Math.max(0, value), // Ensure at least 1 item is selected
+    }));
   };
 
   // Add item to cart
   const handleAddCart = (item) => {
-    if (productCount === 0) return;
+    const quantity = itemCounts[item._id] || 1;
 
-    const { _id, name, price } = item;
+    if (quantity <= 0 || item.itemQuantity <= 0) return;
+
     const newObj = {
-      id: _id,
-      name,
-      pricePerQuantity: price,
-      quantity: productCount,
-      totalPrice: price * productCount,
+      id: item._id,
+      name: item.name,
+      pricePerQuantity: item.price,
+      quantity: quantity,
+      totalPrice: item.price * quantity,
     };
 
     dispatch(addItems(newObj));
-    setProductCount(0);
   };
 
   return (
     <>
-      {/* Loading Spinner */}
       {isLoading && (
         <div className="flex justify-center items-center w-full h-screen bg-white">
           <div className="animate-spin rounded-full h-32 w-32 border-t-4 border-green-500 border-solid"></div>
@@ -126,9 +124,7 @@ const MenuCard = () => {
             }`}
             onClick={() => {
               setSelected(category);
-              setItemId(null);
-              setProductCount(0);
-              fetchItems(category._id); // Fetch items when category is selected
+              fetchItems(category._id);
             }}
           >
             <div className="flex items-center justify-between w-full">
@@ -156,48 +152,34 @@ const MenuCard = () => {
             <div className="mx-auto mt-2 w-80 lg:w-70 transform overflow-hidden rounded-lg bg-white dark:bg-slate-800 shadow-md duration-300 hover:scale-105 hover:shadow-lg">
               <img
                 className="h-44 w-full object-cover object-center"
-                src={item.image || "https://via.placeholder.com/150"} // Default image if none exists
+                src={item.image || "https://via.placeholder.com/150"}
                 alt={item.name}
               />
               <div className="p-4">
                 <h2 className="mb-2 text-lg font-medium dark:text-white text-gray-900">
-                  {item.itemQuantity}
+                  {item.name} ({item.itemQuantity} available)
                 </h2>
 
                 <div className="flex items-center">
                   <p className="mr-2 text-lg font-semibold text-gray-900 dark:text-white">
-                    Tsh: {item.price} /=
-                  </p>
-                  <p className="text-base font-medium text-gray-500 line-through dark:text-gray-300">
-                    $25.00
-                  </p>
-                  <p className="ml-auto text-base font-medium text-green-500">
-                    20% off
+                    Tsh: {formatPriceWithCommas(item.price)} /=
                   </p>
                 </div>
 
-                <div className="flex justify-between items-center mt-3">
-                  <div className="flex items-center bg-gray-200 px-3 py-2 rounded-lg">
-                    <button
-                      onClick={() => decrement(item._id)}
-                      className="text-black font-bold text-2xl px-2"
-                    >
-                      &minus;
-                    </button>
-                    <span className="text-black font-bold text-lg mx-3">
-                      {item._id === itemId ? productCount : "0"}
-                    </span>
-                    <button
-                      onClick={() => increment(item._id)}
-                      className="text-black font-bold text-2xl px-2"
-                    >
-                      &#43;
-                    </button>
-                  </div>
+                <div className="flex items-center justify-between mt-3">
+                  <input
+                    type="number"
+                    value={itemCounts[item._id] || 0}
+                    onChange={(e) =>
+                      handleQuantityChange(item._id, parseInt(e.target.value))
+                    }
+                    className="w-16 border px-2 py-1 rounded-md text-center"
+                    min="1"
+                  />
 
                   <button
                     onClick={() => handleAddCart(item)}
-                    className="bg-green-500 hover:bg-green-600 text-white font-semibold px-4 py-2 rounded-md ml-4"
+                    className="ml-2 bg-green-500 hover:bg-green-600 text-white font-semibold px-4 py-2 rounded-md"
                   >
                     Add to Cart
                   </button>
