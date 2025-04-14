@@ -1,8 +1,11 @@
-import { useSelector } from "react-redux";
-import { getTotalPrice } from "../../Redux/cartSlice";
+import { useDispatch, useSelector } from "react-redux";
+import { clearCart, getTotalPrice } from "../../Redux/cartSlice";
 import { useState } from "react";
+import axios from "axios";
 
 const Cart = () => {
+  const dispatch = useDispatch();
+
   const [customerDetails, setCustomerDetails] = useState({
     name: "Mteja",
     phone: "0777777777",
@@ -23,11 +26,45 @@ const Cart = () => {
     }
   };
 
-  const cartData = useSelector((state) => state.cart);
+  const cartData = useSelector((state) => state.cart.cart);
   const total = useSelector(getTotalPrice);
   const taxRate = 2.5;
   const tax = (total * taxRate) / 100;
   const finalTotal = total + tax;
+
+  const handleTransaction = async (status) => {
+    try {
+      const payload = {
+        items: cartData.map((item) => ({
+          item: item.id,
+          quantity: item.quantity,
+          price: item.pricePerQuantity,
+        })),
+        totalAmount: finalTotal,
+        customerDetails,
+        status,
+      };
+
+      const response = await axios.post(
+        "http://localhost:4004/api/transactions/sales",
+        payload
+      );
+
+      if (response.status === 201) {
+        alert(
+          `Transaction ${
+            status === "paid" ? "completed" : "saved as bill"
+          } successfully!`
+        );
+        dispatch(clearCart());
+      } else {
+        alert("Transaction failed");
+      }
+    } catch (error) {
+      console.error("Transaction error:", error);
+      alert("An error occurred while processing the transaction.");
+    }
+  };
 
   return (
     <>
@@ -84,10 +121,16 @@ const Cart = () => {
       </div>
 
       <div className="flex items-center gap-3  px-5 mt-4">
-        <button className="bg-[#00c853] px-4 py-3 w-full rounded-lg text-black">
+        <button
+          onClick={() => handleTransaction("paid")}
+          className="bg-[#00c853] px-4 py-3 w-full rounded-lg text-black"
+        >
           Cash
         </button>
-        <button className="bg-grey px-4 py-3 w-full rounded-lg text-black">
+        <button
+          onClick={() => handleTransaction("pending")}
+          className="bg-grey px-4 py-3 w-full rounded-lg text-black"
+        >
           Bill
         </button>
       </div>

@@ -11,7 +11,7 @@ import {
 import { useEffect, useRef } from "react";
 
 const CartInfo = () => {
-  const cartData = useSelector((state) => state.cart);
+  const cartData = useSelector((state) => state.cart.cart);
 
   // Dispatch
   const dispatch = useDispatch();
