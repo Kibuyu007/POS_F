@@ -7,6 +7,7 @@ import { FaSearch } from "react-icons/fa";
 
 const MenuList = () => {
   const [currentTime, setCurrentTime] = useState(new Date());
+  const [refreshMenu, setRefreshMenu] = useState(false);
 
   // Function to format the date
   const formatDate = (date) => {
@@ -58,7 +59,7 @@ const MenuList = () => {
             <FaSearch className="w-4 h-4 sm:w-5 sm:h-5 mr-2 text-black" />
             <input
               type="text"
-              placeholder="Search"
+              placeholder="Barcode.."
               className="bg-transparent outline-none px-2 py-1 w-full text-black"
             />
           </div>
@@ -73,7 +74,7 @@ const MenuList = () => {
         </div>
 
         {/* Cards - Responsive Grid */}
-        <MenuCard />
+        <MenuCard refreshTrigger={refreshMenu}/>
       </div>
 
       {/* Left Section  ####################################################### */}
@@ -91,7 +92,9 @@ const MenuList = () => {
           <hr className="border-[#2a2a2a] border-t-2" />
 
           {/* Bills */}
-          <CartBill />
+          <CartBill
+            triggerRefreshMenu={() => setRefreshMenu((prev) => !prev)}
+          />
         </div>
       </div>
     </section>

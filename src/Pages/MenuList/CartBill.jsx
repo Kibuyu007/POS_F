@@ -3,8 +3,12 @@ import { clearCart, getTotalPrice } from "../../Redux/cartSlice";
 import { useState } from "react";
 import axios from "axios";
 
-const Cart = () => {
+const Cart = ({ triggerRefreshMenu }) => {
   const dispatch = useDispatch();
+
+  const [errorMsg, setErrorMsg] = useState("");
+  const [lastTransactionDetails, setLastTransactionDetails] = useState(null);
+  
 
   const [customerDetails, setCustomerDetails] = useState({
     name: "Mteja",
@@ -57,12 +61,56 @@ const Cart = () => {
           } successfully!`
         );
         dispatch(clearCart());
+        triggerRefreshMenu();
+
+        // Save for receipt generation
+        setLastTransactionDetails({
+          items: payload.items,
+          totalAmount: payload.totalAmount,
+          customerDetails: payload.customerDetails,
+        });
+
+        setShowPrintButton(true); // Show button
       } else {
         alert("Transaction failed");
       }
     } catch (error) {
-      console.error("Transaction error:", error);
-      alert("An error occurred while processing the transaction.");
+      if (
+        error.response &&
+        error.response.data &&
+        error.response.data.message
+      ) {
+        setErrorMsg(error.response.data.message);
+      } else {
+        setErrorMsg("Something went wrong.");
+      }
+    }
+  };
+
+
+  const [pdfUrl, setPdfUrl] = useState("");
+  const [showPrintButton, setShowPrintButton] = useState(false);
+
+  const handlePrintReceipt = async () => {
+    try {
+      const response = await axios.get(
+        "http://localhost:4004/api/transactions/receipt",
+        lastTransactionDetails,
+        {
+          responseType: "blob", // PDF blob
+        }
+      );
+
+      const blob = new Blob([response.data], { type: "application/pdf" });
+      const pdfUrl = URL.createObjectURL(blob);
+      setPdfUrl(pdfUrl);
+      window.open(pdfUrl, "_blank");
+      
+    } catch (err) {
+      alert("Failed to generate receipt");
+      console.error("Receipt error:", err);
+    }finally {
+      window.location.reload();
     }
   };
 
@@ -105,6 +153,13 @@ const Cart = () => {
         </div>
       </div>
 
+      {/* Error message if any */}
+      {errorMsg && (
+        <div className="text-red-600 font-semibold text-center mt-2">
+          {errorMsg}
+        </div>
+      )}
+
       <div className="flex items-center justify-between px-5 mt-2">
         <p className="text-black font-bold mt-2"> {cartData.length} : Items</p>
         <h1 className="text-black text-xl  font-bold">{total}/=</h1>
@@ -133,6 +188,27 @@ const Cart = () => {
         >
           Bill
         </button>
+      </div>
+
+      <div>
+        {showPrintButton && (
+          <div className="px-5 mt-3">
+            <button
+              onClick={handlePrintReceipt}
+              className="bg-yellow-500 px-4 py-3 w-full rounded-lg text-black font-semibold"
+            >
+              Print Receipt
+            </button>
+            {pdfUrl && (
+            <embed
+              src={pdfUrl}
+              type="application/pdf"
+              width="100%"
+              height="600px"
+            />
+          )}
+          </div>
+        )}
       </div>
     </>
   );

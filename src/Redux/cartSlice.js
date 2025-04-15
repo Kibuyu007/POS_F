@@ -22,16 +22,27 @@ const cartSlice = createSlice({
         state.cart.push(action.payload);
       }
     },
+
+
+
     removeItems: (state, action) => {
       state.cart = state.cart.filter((item) => item.id !== action.payload);
     },
+
+
+
     increaseQuantity: (state, action) => {
       const item = state.cart.find((item) => item.id === action.payload);
-      if (item) {
+      if (item && item.quantity < item.itemQuantity) {
         item.quantity += 1;
         item.totalPrice = item.pricePerQuantity * item.quantity;
+      } else {
+        alert("Cannot exceed available stock!");
       }
     },
+
+
+
     decreaseQuantity: (state, action) => {
       const item = state.cart.find((item) => item.id === action.payload);
       if (item && item.quantity > 1) {
@@ -39,6 +50,8 @@ const cartSlice = createSlice({
         item.totalPrice = item.pricePerQuantity * item.quantity;
       }
     },
+
+
     clearCart: (state) => {
       state.cart = [];
       state.subtotal = 0;

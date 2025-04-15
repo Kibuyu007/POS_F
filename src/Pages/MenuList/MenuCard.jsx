@@ -1,10 +1,12 @@
 import { useEffect, useState, useCallback } from "react";
 import axios from "axios";
 import { GrRadialSelected } from "react-icons/gr";
-import { useDispatch } from "react-redux";
+import { useDispatch, useSelector } from "react-redux";
 import { addItems } from "../../Redux/cartSlice";
 
-const MenuCard = () => {
+const MenuCard = ({ refreshTrigger }) => {
+  const cartData = useSelector((state) => state.cart.cart);
+
   const [categories, setCategories] = useState([]);
   const [selected, setSelected] = useState(null);
   const [items, setItems] = useState([]);
@@ -33,13 +35,20 @@ const MenuCard = () => {
               };
             })
           );
+
           setCategories(categoriesWithItemCount);
-          if (categoriesWithItemCount.length > 0) {
+
+          const activeCategory = categoriesWithItemCount.find(
+            (cat) => cat._id === selected?._id
+          );
+
+          if (activeCategory) {
+            setSelected(activeCategory);
+            fetchItems(activeCategory._id);
+          } else if (categoriesWithItemCount.length > 0) {
             setSelected(categoriesWithItemCount[0]);
             fetchItems(categoriesWithItemCount[0]._id);
           }
-        } else {
-          console.error("Invalid categories response:", data);
         }
       } catch (error) {
         console.error("Error fetching categories:", error);
@@ -48,31 +57,34 @@ const MenuCard = () => {
       }
     };
 
-    fetchCategories();
-  }, []);
+    fetchCategories(); // ← always runs on refreshTrigger change
+  }, [refreshTrigger]); // ← works whether toggle is true or false
 
-  const fetchItems = useCallback(async (categoryId) => {
-    try {
-      const { data } = await axios.get(
-        `http://localhost:4004/api/items/getAllItems?category=${categoryId}`
-      );
+  const fetchItems = useCallback(
+    async (categoryId) => {
+      try {
+        const { data } = await axios.get(
+          `http://localhost:4004/api/items/getAllItems?category=${categoryId}`
+        );
 
-      if (data.success) {
-        setItems(data.data);
-        const initialItemCounts = {};
-        data.data.forEach((item) => {
-          initialItemCounts[item._id] = 1; // Default quantity to 1
-        });
-        setItemCounts(initialItemCounts);
-      } else {
-        console.error("Invalid items response:", data);
+        if (data.success) {
+          setItems(data.data);
+          const initialItemCounts = {};
+          data.data.forEach((item) => {
+            initialItemCounts[item._id] = 1; // Default quantity to 1
+          });
+          setItemCounts(initialItemCounts);
+        } else {
+          console.error("Invalid items response:", data);
+        }
+      } catch (error) {
+        console.error("Error fetching items:", error);
+      } finally {
+        setIsLoading(false);
       }
-    } catch (error) {
-      console.error("Error fetching items:", error);
-    } finally {
-      setIsLoading(false);
-    }
-  }, []);
+    },
+    [refreshTrigger]
+  );
 
   // Formatting Price
   const formatPriceWithCommas = (price) => {
@@ -89,20 +101,33 @@ const MenuCard = () => {
 
   // Add item to cart
   const handleAddCart = (item) => {
-    const quantity = itemCounts[item._id] || 1;
-
-    if (quantity <= 0 || item.itemQuantity <= 0) return;
-
+    const quantityToAdd = itemCounts[item._id] || 1;
+  
+    // Find current quantity in cart
+    const cartItem = cartData.find((ci) => ci.id === item._id);
+    const alreadyInCart = cartItem ? cartItem.quantity : 0;
+  
+    const totalIfAdded = alreadyInCart + quantityToAdd;
+  
+    if (totalIfAdded > item.itemQuantity) {
+      alert(
+        `Cannot add ${quantityToAdd}. You already have ${alreadyInCart} of "${item.name}" in cart, and only ${item.itemQuantity} are available in stock.`
+      );
+      return;
+    }
+  
     const newObj = {
       id: item._id,
       name: item.name,
       pricePerQuantity: item.price,
-      quantity: quantity,
-      totalPrice: item.price * quantity,
+      quantity: quantityToAdd,
+      totalPrice: item.price * quantityToAdd,
+      itemQuantity: item.itemQuantity,
     };
-
+  
     dispatch(addItems(newObj));
   };
+  
 
   return (
     <>
