@@ -6,7 +6,7 @@ import { addItems } from "../../Redux/cartSlice";
 
 const MenuCard = ({ refreshTrigger }) => {
   const cartData = useSelector((state) => state.cart.cart);
-  const zuiaAdd = useSelector((state)=> state.cart.receiptPrinted)
+  const zuiaAdd = useSelector((state) => state.cart.receiptPrinted);
 
   const [categories, setCategories] = useState([]);
   const [selected, setSelected] = useState(null);
@@ -103,20 +103,20 @@ const MenuCard = ({ refreshTrigger }) => {
   // Add item to cart
   const handleAddCart = (item) => {
     const quantityToAdd = itemCounts[item._id] || 1;
-  
+
     // Find current quantity in cart
     const cartItem = cartData.find((ci) => ci.id === item._id);
     const alreadyInCart = cartItem ? cartItem.quantity : 0;
-  
+
     const totalIfAdded = alreadyInCart + quantityToAdd;
-  
+
     if (totalIfAdded > item.itemQuantity) {
       alert(
         `Cannot add ${quantityToAdd}. You already have ${alreadyInCart} of "${item.name}" in cart, and only ${item.itemQuantity} are available in stock.`
       );
       return;
     }
-  
+
     const newObj = {
       id: item._id,
       name: item.name,
@@ -130,10 +130,9 @@ const MenuCard = ({ refreshTrigger }) => {
       alert("Please print the receipt before adding new items.");
       return;
     }
-  
+
     dispatch(addItems(newObj));
   };
-  
 
   return (
     <>
@@ -180,43 +179,60 @@ const MenuCard = ({ refreshTrigger }) => {
             key={item._id}
             className="flex flex-col items-center justify-between cursor-pointer"
           >
-            <div className="mx-auto mt-2 w-80 lg:w-70 transform overflow-hidden rounded-lg bg-white dark:bg-slate-800 shadow-md duration-300 hover:scale-105 hover:shadow-lg">
-              <img
-                className="h-44 w-full object-cover object-center"
-                src={item.image || "https://via.placeholder.com/150"}
-                alt={item.name}
-              />
-              <div className="p-4">
-                <h2 className="mb-2 text-lg font-medium dark:text-white text-gray-900">
-                  {item.name} ({item.itemQuantity} available)
-                </h2>
 
-                <div className="flex items-center">
-                  <p className="mr-2 text-lg font-semibold text-gray-900 dark:text-white">
-                    Tsh: {formatPriceWithCommas(item.price)} /=
-                  </p>
-                </div>
+          
+              <div className="w-80 mt-24 m-auto lg:mt-12 max-w-sm shadow-[0_3px_10px_rgb(0,0,0,0.2)] rounded-lg">
+                <div className="bg-white mt-8 rounded-2xl">
+                  <div className=" lg:w-5/6 m-auto bg-indigo-50 mt-2 p-4 lg:p-4 rounded-xl ">
+                    <h2 className="text-center text-gray-800 text-2xl font-bold">
+                      {item.name}
+                    </h2>
+                  </div>
+                  <div className="grid grid-cols-4 w-72 lg:w-5/6 m-auto bg-indigo-50 mt-5 p-4 lg:p-4 rounded-xl">
+                    <div className="col-span-2 pt-1">
+                      <p className="text-gray-800 font-bold lg:text-sm">
+                        Price
+                      </p>
+                      <p className="text-gray-500 text-sm">
+                        Tsh: {formatPriceWithCommas(item.price)} /=
+                      </p>
+                    </div>
 
-                <div className="flex items-center justify-between mt-3">
-                  <input
-                    type="number"
-                    value={itemCounts[item._id] || 0}
-                    onChange={(e) =>
-                      handleQuantityChange(item._id, parseInt(e.target.value))
-                    }
-                    className="w-16 border px-2 py-1 rounded-md text-center"
-                    min="1"
-                  />
+                    <div className="col-span-2 pt-1">
+                      <p className="text-gray-800 font-bold lg:text-sm">
+                        Quantity
+                      </p>
+                      <p className="text-gray-500 text-sm">
+                        ({item.itemQuantity} available)
+                      </p>
+                    </div>
+                  </div>
 
-                  <button
-                    onClick={() => handleAddCart(item)}
-                    className="ml-2 bg-green-500 hover:bg-green-600 text-white font-semibold px-4 py-2 rounded-md"
-                  >
-                    Add to Cart
-                  </button>
+                  <div className="text-center m-auto mt-6 w-full">
+                    <input
+                      type="number"
+                      value={itemCounts[item._id] || 0}
+                      onChange={(e) =>
+                        handleQuantityChange(item._id, parseInt(e.target.value))
+                      }
+                      className="w-16 border px-2 py-1 rounded-md text-center"
+                      min="1"
+                    />
+                  </div>
+                  <div className="bg-green-500 w-72 lg:w-5/6 m-auto mt-6 p-2 hover:bg-indigo-50 rounded-lg  text-black text-center shadow-xl shadow-bg-blue-700">
+                    <button
+                      onClick={() => handleAddCart(item)}
+                      className="lg:text-sm text-lg font-bold"
+                    >
+                      Weka kwenye List
+                    </button>
+                  </div>
+                  <div className="text-center m-auto mt-6 w-full">
+                    <button className="text-gray-500 font-bold lg:text-sm hover:text-gray-900"></button>
+                  </div>
                 </div>
               </div>
-            </div>
+         
           </div>
         ))}
       </div>
