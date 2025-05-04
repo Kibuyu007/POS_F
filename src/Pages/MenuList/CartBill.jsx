@@ -1,5 +1,5 @@
 import { useDispatch, useSelector } from "react-redux";
-import { clearCart, getTotalPrice } from "../../Redux/cartSlice";
+import { clearCart, getTotalPrice, setReceiptPrinted } from "../../Redux/cartSlice";
 import { useState } from "react";
 import axios from "axios";
 
@@ -70,11 +70,14 @@ const Cart = ({ triggerRefreshMenu }) => {
           customerDetails: payload.customerDetails,
         });
 
+        dispatch(setReceiptPrinted(false));
         setShowPrintButton(true); // Show button
       } else {
         alert("Transaction failed");
       }
-    } catch (error) {
+    } 
+    
+    catch (error) {
       if (
         error.response &&
         error.response.data &&
@@ -94,17 +97,18 @@ const Cart = ({ triggerRefreshMenu }) => {
   const handlePrintReceipt = async () => {
     try {
       const response = await axios.get(
-        "http://localhost:4004/api/transactions/receipt",
+        "http://localhost:4004/api/receipt/receipt",
         lastTransactionDetails,
         {
           responseType: "blob", // PDF blob
         }
       );
 
-      const blob = new Blob([response.data], { type: "application/pdf" });
+      const blob = new Blob([response.data], { type: "application/pdf" }); 
       const pdfUrl = URL.createObjectURL(blob);
       setPdfUrl(pdfUrl);
       window.open(pdfUrl, "_blank");
+      dispatch(setReceiptPrinted(true));
       
     } catch (err) {
       alert("Failed to generate receipt");

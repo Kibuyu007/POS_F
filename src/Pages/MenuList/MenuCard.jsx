@@ -6,6 +6,7 @@ import { addItems } from "../../Redux/cartSlice";
 
 const MenuCard = ({ refreshTrigger }) => {
   const cartData = useSelector((state) => state.cart.cart);
+  const zuiaAdd = useSelector((state)=> state.cart.receiptPrinted)
 
   const [categories, setCategories] = useState([]);
   const [selected, setSelected] = useState(null);
@@ -124,6 +125,11 @@ const MenuCard = ({ refreshTrigger }) => {
       totalPrice: item.price * quantityToAdd,
       itemQuantity: item.itemQuantity,
     };
+
+    if (!zuiaAdd) {
+      alert("Please print the receipt before adding new items.");
+      return;
+    }
   
     dispatch(addItems(newObj));
   };
