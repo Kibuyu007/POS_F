@@ -4,6 +4,7 @@ import cartSlice from './cartSlice'
 import userSlice from './userSlice'
 import itemSlice from './items'
 import categorySlice from './itemsCategories'
+import suppliers from './suppliers'
 
 export const store = configureStore({
     reducer: {
@@ -12,6 +13,7 @@ export const store = configureStore({
         user: userSlice,
         items: itemSlice,
         category: categorySlice,
+        suppliers: suppliers,
     },
 
     middleware: (getDefaultMiddleware) => 

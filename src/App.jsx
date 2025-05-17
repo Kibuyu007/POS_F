@@ -1,5 +1,5 @@
 import { BrowserRouter as Router, Routes, Route, Navigate, useLocation } from "react-router-dom";
-import { Home, Auth, Orders, Tables, MenuList, Navigation, Settings } from "./Pages/PageIndex";
+import { Home, Auth, Orders, MenuList, Navigation, Settings } from "./Pages/PageIndex";
 import Header from "./Components/Shared/Header";
 import ReportsDashboard from "./Pages/Reports/ReportsDashboard";
 import ProtectedRoute from "./Components/Shared/ProtectedRoute";
@@ -23,7 +23,6 @@ function Layout() {
         <Route element={<ProtectedRoute />}>
           <Route path="/home" element={<Home />} />
           <Route path="/orders" element={<Orders />} />
-          <Route path="/tables" element={<Tables />} />
           <Route path="/menu" element={<MenuList />} />
           <Route path="/reports" element={<ReportsDashboard />} />
           <Route path="/settings" element={<Settings />} />

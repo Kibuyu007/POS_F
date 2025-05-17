@@ -21,7 +21,6 @@ const Header = () => {
     try {
       await axios.get(
         "http://localhost:4004/api/auth/logout",
-        {},
         { withCredentials: true }
       );
 
@@ -29,7 +28,7 @@ const Header = () => {
       setDropdownOpen(false);
       dispatch(logoutSuccess());
       localStorage.removeItem("token");
-      localStorage.removeItem("user");
+      localStorage.removeItem("user"); 
 
       // Redirect to login page
       navigate("/auth");

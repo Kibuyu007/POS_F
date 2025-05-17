@@ -84,7 +84,7 @@ const EditUser = ({ showModal, setShowModal, onUserAdded,user }) => {
 
     try {
       const response = await axios.put(
-        `http://localhost:4004/api/users/update/${user._id}`,
+        `http://localhost:4004/api/suppliers/updateSupplier/${user._id}`,
         formData,
         { headers: { "Content-Type": "multipart/form-data" } }
       );

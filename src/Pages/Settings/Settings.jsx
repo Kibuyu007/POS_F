@@ -3,6 +3,9 @@ import SettingsList from "./SettingsList";
 import UserManagement from "./UserSettings/UserManagement";
 import ItemsCategories from "./Products/Categories/ItemsCategories";
 import Items from "./Products/Items/Items";
+import Manunuzi from "./Procurement/Manunuzi";
+import ManunuziBills from "./Procurement/ManunuziBills";
+import Suppliers from "./Procurement/Suppliers";
 
 const Settings = () => {
   const [selectedSetting, setSelectedSetting] = useState(null);
@@ -20,7 +23,7 @@ const Settings = () => {
 
         <SettingsList
           title="Products Management"
-          settings={["Items","Items Categories"]}
+          settings={["Items", "Items Categories"]}
           selectedSetting={selectedSetting}
           handleSelect={setSelectedSetting}
         />
@@ -39,10 +42,16 @@ const Settings = () => {
         {selectedSetting === "All Users" ? (
           <UserManagement />
         ) : selectedSetting === "Items" ? (
-          <Items/>
-        ) :selectedSetting === "Items Categories" ? (
-          <ItemsCategories/>
-        )  :(
+          <Items />
+        ) : selectedSetting === "Items Categories" ? (
+          <ItemsCategories />
+        ) : selectedSetting === "Purchasing" ? (
+          <Manunuzi />
+        ) : selectedSetting === "Purchasing Bills" ? (
+          <ManunuziBills />
+        ) : selectedSetting === "Suppliers" ? (
+          <Suppliers />
+        ) : (
           <p className="text-lg">{selectedSetting || "No report selected"}</p>
         )}
       </div>

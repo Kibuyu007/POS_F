@@ -1,44 +1,34 @@
 import { useState, useEffect } from "react";
-import axios from "axios";
 
-//icons
-import { FaSearch } from "react-icons/fa";
-import { FaUserEdit } from "react-icons/fa";
+//redux
+import { useDispatch, useSelector } from "react-redux";
+import { fetchSuppliers, supplierStatusUpdate } from "../../../Redux/suppliers";
+
+//Modals
+import AddSupplier from "./AddSupplier";
+import EditSupplier from "./EditSupplier";
+
+//Icons
+import { FaSearch, FaUserEdit } from "react-icons/fa";
 import { BsToggleOff, BsToggleOn } from "react-icons/bs";
-import { IoIosArrowBack } from "react-icons/io";
-import { IoIosArrowForward } from "react-icons/io";
+import axios from "axios";
+import { IoIosArrowBack, IoIosArrowForward } from "react-icons/io";
 
-import AddUser from "./AddUser";
-import EditUser from "./EditUser";
+const Suppliers = () => {
+  const dispatch = useDispatch();
+  const {
+    supplier = [],
+    error,
+    loading,
+  } = useSelector((state) => state.suppliers);
 
-const UserManagement = () => {
-  const [users, setUsers] = useState([]);
-  const [showError, setShowError] = useState("");
-
-  //User Status Filter & Searching
+  const [showModalAdd, setShowModalAdd] = useState(false);
+  const [showModalEdit, setShowModalEdit] = useState(false);
+  const [modifiedUser, setModifiedUser] = useState(null);
   const [filterStatus, setFilterStatus] = useState("All");
   const [searchQuery, setSearchQuery] = useState("");
-
-  //Pagination
   const [currentPage, setCurrentPage] = useState(1);
   const usersPerPage = 5;
-
-  const filteredUsers = users.filter(
-    (user) =>
-      (filterStatus === "All" || user.status === filterStatus) &&
-      (user.firstName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        user.secondName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        user.lastName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        user.email.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        user.contacts.toLowerCase().includes(searchQuery.toLowerCase()))
-  );
-
-  const indexOfLastUser = currentPage * usersPerPage;
-  const indexOfFirstUser = indexOfLastUser - usersPerPage;
-  const currentUsers = filteredUsers.slice(indexOfFirstUser, indexOfLastUser);
-
-  //funx
-  const totalPages = Math.ceil(filteredUsers.length / usersPerPage);
 
   const nextPage = () => {
     if (currentPage < totalPages) {
@@ -52,85 +42,59 @@ const UserManagement = () => {
     }
   };
 
-  // Fetch data from API or use dummy data
-  const fetchData = async () => {
+  useEffect(() => {
+    dispatch(fetchSuppliers());
+  }, [dispatch]);
+
+  const filteredSuppliers = supplier.filter(
+    (s) =>
+      (filterStatus === "All" || s.status === filterStatus) &&
+      (s.supplierName.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        s.email.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        s.company.toLowerCase().includes(searchQuery.toLowerCase()))
+  );
+
+  const indexOfLast = currentPage * usersPerPage;
+  const indexOfFirst = indexOfLast - usersPerPage;
+  const currentSuppliers = filteredSuppliers.slice(indexOfFirst, indexOfLast);
+  const totalPages = Math.ceil(filteredSuppliers.length / usersPerPage);
+
+  const toggleStatus = async (supplierId, currentStatus) => {
+    const newStatus = currentStatus === "Active" ? "Inactive" : "Active";
     try {
-      const response = await fetch("http://localhost:4004/api/users/allUsers");
-      if (!response.ok) {
-        throw new Error("Failed to fetch users");
-      }
-      const data = await response.json();
-      setUsers(data); // Set the fetched users to state
-      setShowError("");
-    } catch (error) {
-      // Extract the correct error message from backend
-      if (error.response && error.response.data) {
-        setShowError(
-          error.response.data.error ||
-            "Login failed. Please check your credentials."
-        );
-      } else {
-        setShowError("An error occurred. Please Contact System Adminstrator.");
-      }
-
-      console.error("Login failed", error);
-    }
-  };
-
-  //////////////////////
-  const toggleUserStatus = async (userId, currentStatus) => {
-    try {
-      const newStatus = currentStatus === "Active" ? "Inactive" : "Active";
-
-      const response = await axios.put(
-        `http://localhost:4004/api/users/status/${userId}`,
+      const res = await axios.put(
+        `http://localhost:4004/api/suppliers/status/${supplierId}`,
         {
           status: newStatus,
         }
       );
 
-      if (response.status === 200) {
-        setUsers((prevUsers) =>
-          prevUsers.map((user) =>
-            user._id === userId ? { ...user, status: newStatus } : user
-          )
-        );
+      if (res.status === 200) {
+        dispatch(supplierStatusUpdate({ supplierId, newStatus }));
       }
-    } catch (error) {
-      console.error("Error updating user status:", error);
+    } catch (err) {
+      console.error("Failed to update status:", err);
     }
   };
 
-  useEffect(() => {
-    fetchData();
-  }, []);
-
-  // Modala
-  const [showModalAdd, setShowModalAdd] = useState(false);
-  const [showModalEdit, setShowModalEdit] = useState(false);
-  const [modifiedUser, setModifiedUser] = useState(null);
-
   return (
     <div className="sm:px-6 w-full">
-      {/* Title */}
       <div className="px-4 md:px-10 py-4 md:py-7">
         <div className="flex items-center justify-between">
           <p className="text-lg md:text-xl lg:text-2xl font-bold text-gray-800">
-            USERS
+            SUPPLIERS
           </p>
         </div>
       </div>
 
       <div className="sm:flex items-center justify-between ml-9">
-        <div className="flex items-center">
+        <div className="flex items-center text-black">
           {["All", "Active", "Inactive"].map((status) => (
             <button
               key={status}
               className={`rounded-full py-2 px-8 mx-2 ${
-                filterStatus === status
-                  ? "bg-green-300 text-black"
-                  : "bg-gray-200 text-gray-600"
-              } hover:text-black hover:bg-indigo-100 border-gray-400`}
+                filterStatus === status ? "bg-green-300" : "bg-gray-200"
+              } hover:bg-indigo-100`}
               onClick={() => {
                 setFilterStatus(status);
                 setCurrentPage(1);
@@ -141,42 +105,41 @@ const UserManagement = () => {
           ))}
         </div>
 
-        {/* Search Bar */}
-        <div className="hidden sm:flex items-center bg-gray-100 rounded-[30px] px-3 sm:px-4 py-1 sm:py-2 w-full max-w-[300px] border border-gray-400">
-          <FaSearch className="w-4 h-4 sm:w-5 sm:h-5 mr-2 text-black" />
+        <div className="hidden sm:flex items-center bg-gray-100 rounded-[30px] px-4 py-2 w-full max-w-[300px] border border-gray-400">
+          <FaSearch className="w-5 h-5 mr-2 text-black" />
           <input
             type="text"
             placeholder="Search"
             className="bg-transparent outline-none px-2 py-1 w-full text-black"
-            value={searchQuery} // Bind input to state
+            value={searchQuery}
             onChange={(e) => {
               setSearchQuery(e.target.value);
-              setCurrentPage(1); // Reset pagination when searching
+              setCurrentPage(1);
             }}
           />
         </div>
 
         <button
           onClick={() => setShowModalAdd(true)}
-          className="mr-10 focus:ring-2 focus:ring-offset-2  mt-4 sm:mt-0 inline-flex items-start justify-start px-6 py-3 bg-green-300 hover:bg-gray-200 focus:outline-none rounded"
+          className="mr-10 mt-4 sm:mt-0 px-6 py-3 bg-green-300 hover:bg-gray-200 rounded"
         >
-          <p className="text-sm font-medium leading-none text-black">
-            + Add User
-          </p>
+          <p className="text-sm font-medium text-black">+ Add Supplier</p>
         </button>
       </div>
 
-      {/* Table Container */}
       <div className="bg-white py-4 md:py-7 px-4 md:px-8 xl:px-10">
-        {/* Error Message (Only Shows When There is an Error) */}
-        {showError && (
-          <div
-            className="mt-2 bg-red-100/70 border border-red-200 text-sm text-red-800 rounded-lg p-4 dark:bg-red-800/10 dark:border-red-900 dark:text-red-500"
-            role="alert"
-          >
-            <span className="font-bold">Error: </span> {showError}
+        {error && (
+          <div className="mt-2 bg-red-100 border border-red-200 text-sm text-red-800 rounded-lg p-4">
+            <span className="font-bold">Error:</span> {error}
           </div>
         )}
+
+        {loading ? (
+          <div className="text-center text-gray-500">Loading suppliers...</div>
+        ) : (
+          <div className="mt-7 overflow-x-auto">{/* Your table here */}</div>
+        )}
+
         <div className="mt-7 overflow-x-auto">
           <table className="w-full whitespace-nowrap">
             <thead className="bg-gray-200 text-black">
@@ -184,27 +147,29 @@ const UserManagement = () => {
                 <th className="border border-gray-300 px-4 py-2 text-left">
                   SN
                 </th>
-
                 <th className="border border-gray-300 px-4 py-2 text-left">
-                  Name
+                  SupplierName
                 </th>
                 <th className="border border-gray-300 px-4 py-2 text-left">
-                  Title
+                  Contacts
+                </th>
+                <th className="border border-gray-300 px-4 py-2 text-left">
+                  Address
                 </th>
                 <th className="border border-gray-300 px-4 py-2 text-left">
                   Email
                 </th>
                 <th className="border border-gray-300 px-4 py-2 text-left">
-                  Phone Number
+                  Company
                 </th>
-                <th className="border border-gray-300 px-4 py-2 text-center">
-                  Active Status
+                <th className="border border-gray-300 px-4 py-2 text-left">
+                  Status
                 </th>
                 <th className="border border-gray-300 px-4 py-2 text-left">
                   Change Status
                 </th>
                 <th className="border border-gray-300 px-4 py-2 text-left">
-                  Action
+                  Actions
                 </th>
               </tr>
             </thead>
@@ -212,68 +177,65 @@ const UserManagement = () => {
             <tr className="h-3" />
 
             <tbody>
-              {currentUsers.map((user, index) => (
+              {currentSuppliers.map((supplieR, index) => (
                 <>
                   <tr
-                    key={user.id}
+                    key={supplieR._id}
                     className="focus:outline-none h-16 border-gray-500 shadow-md bg-gray-100"
                   >
-                    <td className="pl-5 font-bold">
+                    <td className="pl-5 font-bold bg-gray-100">
                       <p className="text-sm leading-none text-gray-600">
-                        {indexOfFirstUser + index + 1}
+                        {indexOfFirst + index + 1}
                       </p>
                     </td>
-
-                    <td className="pl-4 bg-gray-200 font-bold">
-                      <div className="flex items-center">
-                        <p className="text-sm leading-none text-gray-600 ml-2">
-                          {user.firstName}
-                        </p>
-                        <p className="text-sm leading-none text-gray-600 ml-2">
-                          {user.secondName}
-                        </p>
-                        <p className="text-sm leading-none text-gray-600 ml-2">
-                          {user.lastName}
-                        </p>
-                      </div>
-                    </td>
-
-                    <td className="pl-5 font-bold">
+                    <td className="pl-5 font-bold bg-gray-200">
                       <p className="text-sm leading-none text-gray-600">
-                        {user.title}
+                        {supplieR.supplierName}
                       </p>
                     </td>
-
-                    <td className="pl-5 bg-gray-200 font-bold">
+                    <td className="pl-5 font-bold bg-gray-100">
                       <p className="text-sm leading-none text-gray-600">
-                        {user.email}
-                      </p>
-                    </td>
-
-                    <td className="pl-5 font-bold">
-                      <p className="text-sm leading-none text-gray-600">
-                        {user.contacts}
+                        {supplieR.phone}
                       </p>
                     </td>
 
                     <td className="pl-5 font-bold bg-gray-200">
+                      <p className="text-sm leading-none text-gray-600">
+                        {supplieR.address}
+                      </p>
+                    </td>
+                    <td className="pl-5 font-bold bg-gray-100">
+                      <p className="text-sm leading-none text-gray-600">
+                        {supplieR.email}
+                      </p>
+                    </td>
+
+                    <td className="pl-5 font-bold bg-gray-200">
+                      <p className="text-sm leading-none text-gray-600">
+                        {supplieR.company}
+                      </p>
+                    </td>
+
+                    <td className="pl-5 font-bold bg-gray-100">
                       <span
                         className={`py-3 px-3 text-sm leading-none border-l-2 border-gray-700 rounded-full ${
-                          user.status === "Active"
+                          supplieR.status === "Active"
                             ? "text-green-800 bg-green-100"
                             : "text-red-800 bg-red-100"
                         } rounded`}
                       >
-                        {user.status}
+                        {supplieR.status}
                       </span>
                     </td>
 
-                    <td>
+                    <td className="pl-5 font-bold bg-gray-200">
                       <button
-                        className="focus:ring-1 focus:ring-offset-2 focus:ring-red-300 text-sm leading-none text-gray-600 py-3 px-5 bg-gray-100 rounded hover:bg-gray-200 focus:outline-none"
-                        onClick={() => toggleUserStatus(user._id, user.status)}
+                        onClick={() =>
+                          toggleStatus(supplieR._id, supplieR.status)
+                        }
+                        className="focus:ring-1 focus:ring-offset-2 focus:ring-red-300 text-sm leading-none text-gray-600 py-3 px-5 bg-gray-200 rounded hover:bg-gray-100 focus:outline-none"
                       >
-                        {user.status === "Active" ? (
+                        {supplieR.status === "Active" ? (
                           <BsToggleOff size={20} />
                         ) : (
                           <BsToggleOn size={20} />
@@ -281,13 +243,13 @@ const UserManagement = () => {
                       </button>
                     </td>
 
-                    <td className="pl-4 gap-2 font-bold bg-gray-200">
+                    <td className="pl-5 gap-2 font-bold bg-gray-100">
                       <button
                         onClick={() => {
                           setShowModalEdit(true);
-                          setModifiedUser(user);
+                          setModifiedUser(supplieR);
                         }}
-                        className="focus:ring-1 focus:ring-offset-2 focus:ring-blue-300 text-sm leading-none text-gray-600 py-3 px-5 bg-gray-200 rounded hover:bg-gray-100 focus:outline-none"
+                        className="focus:ring-1 focus:ring-offset-2 focus:ring-blue-300 text-sm leading-none text-gray-600 py-3 px-5 bg-gray-100 rounded hover:bg-gray-200 focus:outline-none"
                       >
                         <FaUserEdit size={20} />
                       </button>
@@ -299,23 +261,24 @@ const UserManagement = () => {
             </tbody>
           </table>
 
+          {/* Pagination Controls */}
           <div className="flex items-center justify-between border-t border-gray-200 bg-white py-3 sm:px-6">
             <p className="text-sm text-gray-700">
               Showing{" "}
               <span className="font-medium">
                 {" "}
-                <strong>{indexOfFirstUser + 1}</strong>{" "}
+                <strong>{indexOfFirst + 1}</strong>{" "}
               </span>{" "}
               to{" "}
               <span className="font-medium">
-                <strong>{Math.min(indexOfLastUser, users.length)}</strong>
+                <strong>{Math.min(indexOfLast, supplier.length)}</strong>
               </span>{" "}
               of{" "}
               <span className="font-medium">
                 {" "}
-                <strong>{users.length}</strong>{" "}
+                <strong>{supplier.length}</strong>{" "}
               </span>{" "}
-              <strong>Users</strong>
+              <strong>Suppliers</strong>
             </p>
 
             <nav
@@ -357,24 +320,21 @@ const UserManagement = () => {
               </button>
             </nav>
           </div>
-
-          <AddUser
-            showModal={showModalAdd}
-            setShowModal={setShowModalAdd}
-            onUserAdded={fetchData}
-            modifiedUser={modifiedUser}
-          />
-
-          <EditUser
-            showModal={showModalEdit}
-            setShowModal={setShowModalEdit}
-            onUserAdded={fetchData}
-            user={modifiedUser}
-          />
         </div>
       </div>
+
+      <AddSupplier
+        showModal={showModalAdd}
+        setShowModal={setShowModalAdd}
+      />
+
+      <EditSupplier
+        showModal={showModalEdit}
+        setShowModal={setShowModalEdit}
+        supplier={modifiedUser}
+      />
     </div>
   );
 };
 
-export default UserManagement;
+export default Suppliers;

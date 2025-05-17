@@ -1,60 +1,98 @@
 import { useEffect, useState } from "react";
 import axios from "axios";
+import { jwtDecode } from "jwt-decode";
 import { useNavigate } from "react-router-dom";
 import { useDispatch } from "react-redux";
-import { loginSuccess } from "../../Redux/userSlice";
+import { loginSuccess, logoutSuccess } from "../../Redux/userSlice";
 
 const Login = () => {
   const [userLogin, setUserLogin] = useState({
     userName: "",
     password: "",
   });
-  const [loading, setLoading] = useState(false); // Loading state
-  const [loginSuccessfuly, setLoginSuccessfuly] = useState(""); // Success message state
-  const [loginError, setLoginError] = useState(""); // Error message state
-  // const [alertVisible, setAlertVisible] = useState(false); // Alert visibility state
+  const [loading, setLoading] = useState(false);
+  const [loginSuccessfuly, setLoginSuccessfuly] = useState("");
+  const [loginError, setLoginError] = useState("");
 
   const navigate = useNavigate();
   const dispatch = useDispatch();
 
   useEffect(() => {
-    const token = localStorage.getItem("token");
-    if (token) {
-      dispatch(loginSuccess({ token, user: JSON.parse(localStorage.getItem("user")) }));
-      navigate("/home");
-    }
+    const interval = setInterval(() => {
+      const token = localStorage.getItem("token");
+      if (token) {
+        const payload = JSON.parse(atob(token.split(".")[1]));
+        const expiry = payload.exp * 1000;
+        if (Date.now() > expiry) {
+          localStorage.removeItem("token");
+          localStorage.removeItem("user");
+          dispatch(loginSuccess(null));
+          navigate("/login");
+        }
+      }
+    }, 5000);
+
+    return () => clearInterval(interval);
   }, [dispatch, navigate]);
 
   const handleChange = (e) => {
-    const { name, value } = e.target;
-    setUserLogin((prevUser) => ({
-      ...prevUser,
-      [name]: value,
-    }));
+    setUserLogin({ ...userLogin, [e.target.name]: e.target.value });
+  };
+
+  const handleLogout = async () => {
+    try {
+      await axios.get("http://localhost:4004/api/auth/logout", {
+        withCredentials: true,
+      });
+
+      dispatch(logoutSuccess());
+      localStorage.removeItem("token");
+      localStorage.removeItem("user");
+      localStorage.removeItem("exp");
+
+      navigate("/auth");
+    } catch (error) {
+      console.error("Logout failed:", error);
+    }
   };
 
   const handleLogin = async (e) => {
     e.preventDefault();
     setLoading(true);
-    setLoginSuccessfuly("");
     setLoginError("");
+
     try {
-      const response = await axios.post("http://localhost:4004/api/auth/login", userLogin, { withCredentials: true });
-      dispatch(loginSuccess(response.data));
+      const res = await axios.post(
+        "http://localhost:4004/api/auth/login",
+        userLogin,
+        {
+          withCredentials: true,
+        }
+      );
+
+      const token = res.data.token;
+      const user = res.data.user;
+
+      const decoded = jwtDecode(token);
+      const expirationTime = decoded.exp * 1000; // convert to ms
+
+      // Store in localStorage
+      localStorage.setItem("token", token);
+      localStorage.setItem("user", JSON.stringify(user));
+      localStorage.setItem("exp", expirationTime);
+
+      dispatch(loginSuccess({ token, user }));
+
+      // Set auto logout timer
+      setTimeout(() => {
+        handleLogout();
+      }, expirationTime - Date.now());
+
       navigate("/home");
-    }
-    
-    catch (error) {
+    } catch (err) {
+      setLoginError(err.response?.data?.error || "Login failed");
+    } finally {
       setLoading(false);
-  
-      // Extract the correct error message from backend
-      if (error.response && error.response.data) {
-        setLoginError(error.response.data.error || "Login failed. Please check your credentials.");
-      } else {
-        setLoginError("An error occurred. Please try again later.");
-      }
-  
-      console.error("Login failed", error);
     }
   };
 
@@ -88,9 +126,25 @@ const Login = () => {
                 >
                   {loading ? (
                     <>
-                      <svg className="animate-spin h-5 w-5 mr-3 text-white" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4l3.5-3.5L12 0V4a8 8 0 01-8 8z"></path>
+                      <svg
+                        className="animate-spin h-5 w-5 mr-3 text-white"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        xmlns="http://www.w3.org/2000/svg"
+                      >
+                        <circle
+                          className="opacity-25"
+                          cx="12"
+                          cy="12"
+                          r="10"
+                          stroke="currentColor"
+                          strokeWidth="4"
+                        ></circle>
+                        <path
+                          className="opacity-75"
+                          fill="currentColor"
+                          d="M4 12a8 8 0 018-8v4l3.5-3.5L12 0V4a8 8 0 01-8 8z"
+                        ></path>
                       </svg>
                       Loading...
                     </>
@@ -99,10 +153,14 @@ const Login = () => {
                   )}
                 </button>
                 {loginSuccessfuly && (
-                  <div className="mt-3 text-green-500 text-center">{loginSuccessfuly}</div>
+                  <div className="mt-3 text-green-500 text-center">
+                    {loginSuccessfuly}
+                  </div>
                 )}
                 {loginError && (
-                  <div className="mt-3 text-red-500 text-center bg-green-300/40 rounded-3xl py-2 px-4">{loginError}</div>
+                  <div className="mt-3 text-red-500 text-center bg-green-300/40 rounded-3xl py-2 px-4">
+                    {loginError}
+                  </div>
                 )}
               </div>
             </div>

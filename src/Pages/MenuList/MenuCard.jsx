@@ -181,8 +181,8 @@ const MenuCard = ({ refreshTrigger }) => {
           >
 
           
-              <div className="w-80 mt-24 m-auto lg:mt-12 max-w-sm shadow-[0_3px_10px_rgb(0,0,0,0.2)] rounded-lg">
-                <div className="bg-white mt-8 rounded-2xl">
+              <div className="w-80 mt-24 m-auto lg:mt-12 max-w-sm shadow-[0_3px_10px_rgb(0,0,0,0.2)] rounded-2xl">
+                <div className="bg-white mt-8 rounded-3xl">
                   <div className=" lg:w-5/6 m-auto bg-indigo-50 mt-2 p-4 lg:p-4 rounded-xl ">
                     <h2 className="text-center text-gray-800 text-2xl font-bold">
                       {item.name}
