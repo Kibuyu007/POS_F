@@ -1,8 +1,10 @@
 import axios from "axios";
 import { useState, useEffect } from "react";
-import { fetchSuppliers } from "../../../Redux/suppliers";
+import { useDispatch } from "react-redux";
+import { updateSupplier } from "../../../Redux/suppliers";
 
 const EditSupplier = ({ showModal, setShowModal, supplier }) => {
+  const dispatch = useDispatch();
 
   const [showError, setShowError] = useState("");
   const [editSupplier, setEditSupplier] = useState({
@@ -12,9 +14,9 @@ const EditSupplier = ({ showModal, setShowModal, supplier }) => {
     address: "",
     company: "",
     email: "",
+    status,
   });
 
-  // ✅ Populate form with current supplier info
   useEffect(() => {
     if (supplier && showModal) {
       setEditSupplier({
@@ -24,6 +26,7 @@ const EditSupplier = ({ showModal, setShowModal, supplier }) => {
         address: supplier.address || "",
         company: supplier.company || "",
         email: supplier.email || "",
+        status: supplier.status || "Active",
       });
     }
   }, [supplier, showModal]);
@@ -41,10 +44,11 @@ const EditSupplier = ({ showModal, setShowModal, supplier }) => {
         `http://localhost:4004/api/suppliers/updateSupplier/${editSupplier._id}`,
         editSupplier
       );
+
+      dispatch(updateSupplier(response.data.updatedSupplier || editSupplier));
+
       console.log(response);
       setShowModal(false);
-      fetchSuppliers();
-
     } catch (error) {
       if (error.response && error.response.data) {
         setShowError(
@@ -68,7 +72,9 @@ const EditSupplier = ({ showModal, setShowModal, supplier }) => {
               className="text-red-600 text-xl font-bold"
               onClick={() => setShowModal(false)}
             >
-              ×
+              <span className="text-red-700 opacity-7 h-6 w-6 text-xl blockpy-0 rounded-lg bg-grey py-3 px-7">
+                X
+              </span>
             </button>
           </div>
 
@@ -152,11 +158,25 @@ const EditSupplier = ({ showModal, setShowModal, supplier }) => {
                 />
               </div>
 
+              {/* Status */}
+              <div>
+                <label className="block text-sm font-medium text-gray-900">
+                  Status
+                </label>
+                <input
+                  type="text"
+                  name="status"
+                  value={editSupplier.status}
+                  className="w-full p-2 border border-gray-300 rounded-md text-black"
+                  required
+                />
+              </div>
+
               {/* Submit Button */}
               <div className="col-span-1 md:col-span-2">
                 <button
                   type="submit"
-                  className="w-full bg-green-500 text-white py-2 rounded-md hover:bg-green-600 transition"
+                  className="w-full bg-green-300 text-black py-2 rounded-md hover:bg-gray-300 transition"
                 >
                   Save Changes
                 </button>

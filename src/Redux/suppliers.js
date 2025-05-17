@@ -31,7 +31,7 @@ const supplierSlice = createSlice({
     addSupplier: (state, action) => {
       state.supplier.push(action.payload);
     },
-    editSupplier: (state, action) => {
+    updateSupplier: (state, action) => {
       const index = state.supplier.findIndex(
         (item) => item._id === action.payload._id
       );
@@ -74,7 +74,7 @@ export const {
   supplierFetch,
   supplierError,
   addSupplier,
-  editSupplier,
+  updateSupplier,
   searchSupplierPending,
   searchSupplierSuccess,
   searchSupplierError,
