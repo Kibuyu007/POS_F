@@ -83,7 +83,7 @@ const AddSupplier = ({ showModal, setShowModal }) => {
                     onClick={() => setShowModal(false)}
                   >
                     <span className="text-red-700 opacity-7 h-6 w-6 text-xl blockpy-0 rounded-lg bg-grey py-3 px-7">
-                      x
+                      X
                     </span>
                   </button>
                 </div>

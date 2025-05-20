@@ -323,10 +323,7 @@ const Suppliers = () => {
         </div>
       </div>
 
-      <AddSupplier
-        showModal={showModalAdd}
-        setShowModal={setShowModalAdd}
-      />
+      <AddSupplier showModal={showModalAdd} setShowModal={setShowModalAdd} />
 
       <EditSupplier
         showModal={showModalEdit}

@@ -4,8 +4,8 @@ import UserManagement from "./UserSettings/UserManagement";
 import ItemsCategories from "./Products/Categories/ItemsCategories";
 import Items from "./Products/Items/Items";
 import Manunuzi from "./Procurement/Manunuzi";
-import ManunuziBills from "./Procurement/ManunuziBills";
 import Suppliers from "./Procurement/Suppliers";
+import Madeni from "./Procurement/Madeni";
 
 const Settings = () => {
   const [selectedSetting, setSelectedSetting] = useState(null);
@@ -48,7 +48,7 @@ const Settings = () => {
         ) : selectedSetting === "Purchasing" ? (
           <Manunuzi />
         ) : selectedSetting === "Purchasing Bills" ? (
-          <ManunuziBills />
+          <Madeni />
         ) : selectedSetting === "Suppliers" ? (
           <Suppliers />
         ) : (

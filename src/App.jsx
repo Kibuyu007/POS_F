@@ -4,6 +4,8 @@ import Header from "./Components/Shared/Header";
 import ReportsDashboard from "./Pages/Reports/ReportsDashboard";
 import ProtectedRoute from "./Components/Shared/ProtectedRoute";
 
+import { Toaster } from "react-hot-toast";
+
 function Layout() {
   const location = useLocation();  // Get current route
 
@@ -42,6 +44,7 @@ function App() {
   return (
     <Router>
       <Layout />
+      <Toaster position="top-right" toastOptions={{ duration: 3000 }} />
     </Router>
   );
 }
