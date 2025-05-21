@@ -6,6 +6,9 @@ import Items from "./Products/Items/Items";
 import Manunuzi from "./Procurement/Manunuzi";
 import Suppliers from "./Procurement/Suppliers";
 import Madeni from "./Procurement/Madeni";
+import PoGrn from "./GRN/PoGrn";
+import Donations from "./GRN/Donations";
+import NonPoGrn from "./GRN/NonPoGrn";
 
 const Settings = () => {
   const [selectedSetting, setSelectedSetting] = useState(null);
@@ -14,6 +17,13 @@ const Settings = () => {
     <section className="h-[90vh] flex flex-col md:flex-row gap-3 pt-24 px-4 overflow-hidden">
       {/* Left Section - User Setup */}
       <div className="w-1/4 bg-secondary rounded-xl p-6 shadow-md overflow-auto">
+        <SettingsList
+          title="GRN"
+          settings={["PO GRN", "Donation", "Non-PO GRN"]}
+          selectedSetting={selectedSetting}
+          handleSelect={setSelectedSetting}
+        />
+
         <SettingsList
           title="Procurement"
           settings={["Purchasing", "Purchasing Bills", "Suppliers"]}
@@ -51,6 +61,12 @@ const Settings = () => {
           <Madeni />
         ) : selectedSetting === "Suppliers" ? (
           <Suppliers />
+        ) : selectedSetting === "PO GRN" ? (
+          <PoGrn />
+        ) : selectedSetting === "Donation" ? (
+          <Donations />
+        ) : selectedSetting === "Non-PO GRN" ? (
+          <NonPoGrn />
         ) : (
           <p className="text-lg">{selectedSetting || "No report selected"}</p>
         )}

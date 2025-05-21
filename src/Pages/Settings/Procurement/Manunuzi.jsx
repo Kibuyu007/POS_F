@@ -264,15 +264,20 @@ const Manunuzi = () => {
                   </th>
 
                   <th className="px-5 py-3 border-b-2 border-gray-200 bg-gray-200 text-center text-xs font-bold text-gray-600 uppercase tracking-wider">
-                    Manufacture Date
+                    Receiving Date
                   </th>
 
                   <th className="px-5 py-3 border-b-2 border-gray-200 bg-gray-200 text-center text-xs font-bold text-gray-600 uppercase tracking-wider">
                     Expiring Date
                   </th>
 
+                  
                   <th className="px-5 py-3 border-b-2 border-gray-200 bg-gray-200 text-center text-xs font-bold text-gray-600 uppercase tracking-wider">
-                    Action
+                    Edit
+                  </th>
+
+                  <th className="px-5 py-3 border-b-2 border-gray-200 bg-gray-200 text-center text-xs font-bold text-gray-600 uppercase tracking-wider">
+                    Remove
                   </th>
                 </tr>
               </thead>
@@ -308,7 +313,7 @@ const Manunuzi = () => {
                                 className="absolute inset-0 opacity-50 rounded-full"
                               />
                               <span className="relative">
-                                {item.buyingPrice}
+                                {item.itemId.name}
                               </span>
                             </span>
                           </div>
@@ -318,56 +323,49 @@ const Manunuzi = () => {
                           <div className="items-center">
                             <div className="ml-3">
                               <p className="text-gray-900 whitespace-no-wrap font-semibold capitalize">
-                                {item.itemId.name}
+                                {item.itemId.itemQuantity}
                               </p>
                             </div>
                           </div>
                         </td>
 
                         <td className="py-2 px-3 font-normal text-base border-x hover:bg-gray-100">
-                          <div>
-                            <input
-                              type="number"
-                              className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-28 p-2 dark:bg-gray-600 dark:border-gray-500 dark:placeholder-gray-400 dark:text-white px-1 py-3"
-                              placeholder="..."
-                              required
-                            />
+                         <div className="items-center">
+                            <div className="ml-3">
+                              <p className="text-gray-900 whitespace-no-wrap font-semibold capitalize">
+                                {item.quantity}
+                              </p>
+                            </div>
                           </div>
                         </td>
 
                         <td className="py-2 px-3 font-normal text-base border-x  hover:bg-gray-100">
-                          <div>
-                            <input
-                              type="number"
-                              name="buyingPrice"
-                              className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-md focus:ring-blue-500 focus:border-blue-500 block w-28 p-2 dark:bg-gray-100 dark:border-gray-500 dark:placeholder-gray-400 dark:text-white px-1 py-3"
-                              placeholder="..."
-                              required
-                            />
+                          <div className="items-center">
+                            <div className="ml-3">
+                              <p className="text-gray-900 whitespace-no-wrap font-semibold capitalize">
+                                {item.buyingPrice}
+                              </p>
+                            </div>
                           </div>
                         </td>
 
                         <td>
-                          <div className="py-2 px-3 font-normal text-base border-x  hover:bg-gray-100">
-                            <DatePicker
-                              showTimeSelect
-                              timeIntervals={1}
-                              selected={regi.newManufactureDate}
-                              onChange={handleManufacturedDate}
-                              dateFormat="Pp"
-                            />
+                         <div className="items-center">
+                            <div className="ml-3">
+                              <p className="text-gray-900 whitespace-no-wrap font-semibold capitalize">
+                                {item.receivedDate}
+                              </p>
+                            </div>
                           </div>
                         </td>
 
-                        <td>
-                          <div className="py-2 px-3 font-normal text-base border-x  hover:bg-gray-100">
-                            <DatePicker
-                              showTimeSelect
-                              timeIntervals={1}
-                              selected={regi.newExpireDate}
-                              onChange={handleExpireDate}
-                              dateFormat="Pp"
-                            />
+                         <td>
+                         <div className="items-center">
+                            <div className="ml-3">
+                              <p className="text-gray-900 whitespace-no-wrap font-semibold capitalize">
+                                {item.expiryDate}
+                              </p>
+                            </div>
                           </div>
                         </td>
 
