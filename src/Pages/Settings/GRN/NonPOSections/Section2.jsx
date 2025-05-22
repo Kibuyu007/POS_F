@@ -13,8 +13,7 @@ const Section2 = ({ onAddItem }) => {
   const [showError, setShowError] = useState("");
   const [finishAdd, setFinishAdd] = useState(false);
 
-
-  useEffect(() => { 
+  useEffect(() => {
     dispatch(fetchProducts());
   }, [dispatch]);
 
@@ -30,6 +29,7 @@ const Section2 = ({ onAddItem }) => {
     expiryDate: "",
     receivedDate: new Date().toISOString().split("T")[0],
     comments: "",
+    totalCost: "",
   });
 
   // Handle selection of an item from the table
@@ -52,10 +52,43 @@ const Section2 = ({ onAddItem }) => {
 
   const handleChange = (e) => {
     const { name, value } = e.target;
-    setFormData((prev) => ({ ...prev, [name]: value }));
+
+    setFormData((prev) => {
+      const updatedValue = value;
+
+      const updatedForm = {
+        ...prev,
+        [name]: updatedValue,
+      };
+
+      // Parse numbers safely
+      const units = parseInt(updatedForm.units) || 0;
+      const itemsPerUnit = parseInt(updatedForm.itemsPerUnit) || 0;
+      const foc = parseInt(updatedForm.foc) || 0;
+      const rejected = parseInt(updatedForm.rejected) || 0;
+      const buyingPrice = parseFloat(updatedForm.buyingPrice) || 0;
+
+      // Compute and clamp quantity
+      const rawQuantity = units * itemsPerUnit + foc - rejected;
+      const quantity = Math.max(0, rawQuantity); // kusiwe kuna neg mzee
+      const quantityComma = quantity.toLocaleString();
+
+      //hii itakuwa thamani ya mzigo bila nyiongeza
+      const totalCostRaw = buyingPrice * (units * itemsPerUnit);
+      const totalCost = totalCostRaw.toLocaleString(undefined, {
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2,
+      });
+
+      return {
+        ...updatedForm,
+        quantity: quantityComma.toString(), // input expects string
+        totalCost, // input expects string
+      };
+    });
+
     setShowError("");
   };
-
 
   // Add the selected item with details to parent component
   const handleAdd = () => {
@@ -73,6 +106,7 @@ const Section2 = ({ onAddItem }) => {
       foc: formData.foc,
       rejected: formData.rejected,
       comments: formData.comments,
+      totalCost: formData.totalCost,
     };
 
     onAddItem(fullItemData);
@@ -103,9 +137,9 @@ const Section2 = ({ onAddItem }) => {
   };
 
   return (
-    <section className="flex flex-col md:flex-row gap-3 overflow-hidden mt-8">
+    <section className="flex flex-col md:flex-row gap-3 overflow-hidden mt-8 shadow-[0px_0px_0px_1px_rgba(0,0,0,0.06),0px_1px_1px_-0.5px_rgba(0,0,0,0.06),0px_3px_3px_-1.5px_rgba(0,0,0,0.06),_0px_6px_6px_-3px_rgba(0,0,0,0.06),0px_12px_12px_-6px_rgba(0,0,0,0.06),0px_24px_24px_-12px_rgba(0,0,0,0.06)]">
       {/* Right Section: Products Table */}
-      <div className="flex-[1] bg-secondary p-4 sm:p-6 border rounded-md shadow-md overflow-auto min-h-[50vh] md:min-h-[auto]">
+      <div className="flex-[1] bg-secondary p-4 sm:p-6 border rounded-lg shadow-[0px_0px_0px_1px_rgba(0,0,0,0.06),0px_1px_1px_-0.5px_rgba(0,0,0,0.06),0px_3px_3px_-1.5px_rgba(0,0,0,0.06),_0px_6px_6px_-3px_rgba(0,0,0,0.06),0px_12px_12px_-6px_rgba(0,0,0,0.06),0px_24px_24px_-12px_rgba(0,0,0,0.06)] overflow-auto min-h-[50vh] md:min-h-[auto]">
         <div>
           <div className="font-bold text-xl text-black">Products</div>
 
@@ -173,9 +207,11 @@ const Section2 = ({ onAddItem }) => {
       </div>
 
       {/* Left Section: Selected Item Details */}
-      <div className="flex-[2] bg-secondary p-4 sm:p-6 border rounded-md shadow-md text-black w-full md:w-auto overflow-y-auto max-h-[60vh] md:max-h-[100vh] scrollbar-hide">
+      <div className="flex-[2] bg-secondary p-4 sm:p-6 border rounded-md shadow-[0px_0px_0px_1px_rgba(0,0,0,0.06),0px_1px_1px_-0.5px_rgba(0,0,0,0.06),0px_3px_3px_-1.5px_rgba(0,0,0,0.06),_0px_6px_6px_-3px_rgba(0,0,0,0.06),0px_12px_12px_-6px_rgba(0,0,0,0.06),0px_24px_24px_-12px_rgba(0,0,0,0.06)] text-black w-full md:w-auto overflow-y-auto max-h-[60vh] md:max-h-[100vh] scrollbar-hide ">
         <div className="flex justify-between items-center px-5 mt-5">
-          <div className="font-bold text-xl text-gray-800">Purchase Details</div>
+          <div className="font-bold text-xl text-gray-800">
+            Purchase Details
+          </div>
           <span className="px-4 py-2 bg-gray-200 text-gray-800 font-semibold rounded">
             {selectedItem ? 1 : 0}
           </span>
@@ -184,13 +220,15 @@ const Section2 = ({ onAddItem }) => {
         <div className="p-6">
           {selectedItem && (
             <div className="border p-4 rounded mb-4 shadow">
-              <h3 className="font-semibold mb-2 text-lg">{selectedItem.name}</h3>
+              <h3 className="font-semibold mb-2 text-lg">
+                {selectedItem.name}
+              </h3>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                 {/* All your input fields with controlled values */}
                 <div>
                   <label
-                    htmlFor="buyingPrice"
+                    htmlFor="Buying Price"
                     className="block mb-2 text-sm font-medium text-gray-900 dark:text-white"
                   >
                     Buying Price
@@ -200,24 +238,181 @@ const Section2 = ({ onAddItem }) => {
                     name="buyingPrice"
                     value={formData.buyingPrice}
                     onChange={handleChange}
-                    className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5"
+                    className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-600 dark:border-gray-500 dark:placeholder-gray-400 dark:text-white"
                   />
                 </div>
-                {/* Repeat for all other inputs with correct name and value */}
-                {/* ... */}
+
                 <div>
                   <label
-                    htmlFor="quantity"
-                    className="block mb-2 text-sm font-medium text-gray-900"
+                    htmlFor="units"
+                    className="block mb-2 text-sm font-medium text-gray-900 dark:text-white"
                   >
-                    Quantity
+                    Units
                   </label>
                   <input
                     type="number"
+                    name="units"
+                    value={formData.units}
+                    onChange={handleChange}
+                    className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-600 dark:border-gray-500 dark:placeholder-gray-400 dark:text-white"
+                  />
+                </div>
+
+                <div>
+                  <label
+                    htmlFor="itemsPerUnit"
+                    className="block mb-2 text-sm font-medium text-gray-900 dark:text-white"
+                  >
+                    Items Per Unit
+                  </label>
+                  <input
+                    type="number"
+                    name="itemsPerUnit"
+                    value={formData.itemsPerUnit}
+                    onChange={handleChange}
+                    className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-600 dark:border-gray-500 dark:placeholder-gray-400 dark:text-white"
+                  />
+                </div>
+
+                <div>
+                  <label
+                    htmlFor="rejected"
+                    className="block mb-2 text-sm font-medium text-gray-900 dark:text-white"
+                  >
+                    Declined
+                  </label>
+                  <input
+                    type="number"
+                    name="rejected"
+                    value={formData.rejected}
+                    onChange={handleChange}
+                    className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-600 dark:border-gray-500 dark:placeholder-gray-400 dark:text-white"
+                  />
+                </div>
+
+                <div>
+                  <label
+                    htmlFor="foc"
+                    className="block mb-2 text-sm font-medium text-gray-900 dark:text-white"
+                  >
+                    Offer
+                  </label>
+                  <input
+                    type="number"
+                    name="foc"
+                    value={formData.foc}
+                    onChange={handleChange}
+                    className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-600 dark:border-gray-500 dark:placeholder-gray-400 dark:text-white"
+                  />
+                </div>
+
+                <div>
+                  <label
+                    htmlFor="quantity"
+                    className="block mb-2 text-sm font-medium text-gray-900 dark:text-white"
+                  >
+                    Idadi Kamili
+                  </label>
+                  <input
+                    type="text"
                     name="quantity"
                     value={formData.quantity}
+                    readOnly
                     onChange={handleChange}
-                    className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5"
+                    className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-600 dark:border-gray-500 dark:placeholder-gray-400 dark:text-white"
+                  />
+                </div>
+
+                <div>
+                  <label
+                    htmlFor="batchNumber"
+                    className="block mb-2 text-sm font-medium text-gray-900 dark:text-white"
+                  >
+                    Batch Number
+                  </label>
+                  <input
+                    type="text"
+                    name="batchNumber"
+                    value={formData.batchNumber}
+                    onChange={handleChange}
+                    className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-600 dark:border-gray-500 dark:placeholder-gray-400 dark:text-white"
+                  />
+                </div>
+
+                <div>
+                  <label
+                    htmlFor="manufactureDate"
+                    className="block mb-2 text-sm font-medium text-gray-900 dark:text-white"
+                  >
+                    Manufacture Date
+                  </label>
+                  <input
+                    type="date"
+                    name="manufactureDate"
+                    value={formData.manufactureDate}
+                    onChange={handleChange}
+                    className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-600 dark:border-gray-500 dark:placeholder-gray-400 dark:text-white"
+                  />
+                </div>
+
+                <div>
+                  <label
+                    htmlFor="expiryDate"
+                    className="block mb-2 text-sm font-medium text-gray-900 dark:text-white"
+                  >
+                    Expiry Date
+                  </label>
+                  <input
+                    type="date"
+                    name="expiryDate"
+                    value={formData.expiryDate}
+                    onChange={handleChange}
+                    className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-600 dark:border-gray-500 dark:placeholder-gray-400 dark:text-white"
+                  />
+                </div>
+
+                <div>
+                  <label
+                    htmlFor="receivedDate"
+                    className="block mb-2 text-sm font-medium text-gray-900 dark:text-white"
+                  >
+                    Received Date
+                  </label>
+                  <input
+                    type="date"
+                    name="receivedDate"
+                    value={formData.receivedDate}
+                    onChange={handleChange}
+                    className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-600 dark:border-gray-500 dark:placeholder-gray-400 dark:text-white"
+                  />
+                </div>
+
+                <div>
+                  <label
+                    htmlFor="comments"
+                    className="block mb-2 text-sm font-medium text-gray-900 dark:text-white"
+                  >
+                    Comments
+                  </label>
+                  <input
+                    type="text"
+                    name="comments"
+                    value={formData.comments}
+                    onChange={handleChange}
+                    className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-600 dark:border-gray-500 dark:placeholder-gray-400 dark:text-white"
+                  />
+                </div>
+
+                <div>
+                  <label className="block mb-2 text-sm font-medium text-gray-900 dark:text-white">
+                    Total Cost
+                  </label>
+                  <input
+                    type="text"
+                    name="totalCost"
+                    value={formData.totalCost}
+                    readOnly
+                    className="bg-gray-100 border border-gray-300 text-gray-900 text-sm rounded-lg block w-full p-2.5 dark:bg-gray-700 dark:border-gray-500 dark:text-white"
                   />
                 </div>
                 {/* Continue with other inputs similarly */}
@@ -226,20 +421,20 @@ const Section2 = ({ onAddItem }) => {
           )}
         </div>
 
-        <div className="mt-8 flex gap-10 justify-end">
-          <button
-            onClick={handleCancel}
-            disabled={!selectedItem}
-            className="bg-red-500 text-white px-4 py-2 rounded disabled:opacity-50"
-          >
-            Cancel
-          </button>
+        <div className="mt-8 flex gap-10 justify-between">
           <button
             onClick={handleAdd}
             disabled={!selectedItem}
-            className="bg-green-600 text-white px-4 py-2 rounded disabled:opacity-50"
+            className="bg-green-300 text-black px-4 py-2 rounded disabled:opacity-50 w-full"
           >
             Add
+          </button>
+          <button
+            onClick={handleCancel}
+            disabled={!selectedItem}
+            className="bg-gray-300 text-black px-4 py-2 rounded disabled:opacity-50 w-full"
+          >
+            Cancel
           </button>
         </div>
       </div>
