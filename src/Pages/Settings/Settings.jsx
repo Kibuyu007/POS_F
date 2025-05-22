@@ -7,7 +7,6 @@ import Manunuzi from "./Procurement/Manunuzi";
 import Suppliers from "./Procurement/Suppliers";
 import Madeni from "./Procurement/Madeni";
 import PoGrn from "./GRN/PoGrn";
-import Donations from "./GRN/Donations";
 import NonPoGrn from "./GRN/NonPoGrn";
 
 const Settings = () => {
@@ -19,14 +18,14 @@ const Settings = () => {
       <div className="w-1/4 bg-secondary rounded-xl p-6 shadow-md overflow-auto">
         <SettingsList
           title="GRN"
-          settings={["PO GRN", "Donation", "Non-PO GRN"]}
+          settings={["PO GRN","Non-PO GRN"]}
           selectedSetting={selectedSetting}
           handleSelect={setSelectedSetting}
         />
 
         <SettingsList
           title="Procurement"
-          settings={["Purchasing", "Purchasing Bills", "Suppliers"]}
+          settings={["Purchase Order", "Purchasing Bills", "Suppliers"]}
           selectedSetting={selectedSetting}
           handleSelect={setSelectedSetting}
         />
@@ -63,8 +62,6 @@ const Settings = () => {
           <Suppliers />
         ) : selectedSetting === "PO GRN" ? (
           <PoGrn />
-        ) : selectedSetting === "Donation" ? (
-          <Donations />
         ) : selectedSetting === "Non-PO GRN" ? (
           <NonPoGrn />
         ) : (

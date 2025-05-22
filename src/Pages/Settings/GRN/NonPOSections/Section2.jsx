@@ -2,16 +2,21 @@ import { useEffect, useState } from "react";
 import { FaSearch } from "react-icons/fa";
 import { useDispatch, useSelector } from "react-redux";
 import { TiArrowRightThick } from "react-icons/ti";
-import { fetchProducts } from "../../../../Redux/items";
+import { fetchProducts, searchItemsEveryWhere } from "../../../../Redux/items";
+
+import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs";
+import { LocalizationProvider } from "@mui/x-date-pickers/LocalizationProvider";
+import { DatePicker } from "@mui/x-date-pickers/DatePicker";
+import dayjs from "dayjs";
 
 const Section2 = ({ onAddItem }) => {
   const { items } = useSelector((state) => state.items);
   const dispatch = useDispatch();
 
   const [selectedItem, setSelectedItem] = useState(null); // Single selected item
-  const [itemInput, setItemInput] = useState(""); // Search input string
   const [showError, setShowError] = useState("");
   const [finishAdd, setFinishAdd] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
 
   useEffect(() => {
     dispatch(fetchProducts());
@@ -30,6 +35,7 @@ const Section2 = ({ onAddItem }) => {
     receivedDate: new Date().toISOString().split("T")[0],
     comments: "",
     totalCost: "",
+    sellingPrice: "",
   });
 
   // Handle selection of an item from the table
@@ -44,8 +50,7 @@ const Section2 = ({ onAddItem }) => {
       return;
     }
 
-    setSelectedItem(itemToAdd);
-    setItemInput(""); // optionally clear search input
+    setSelectedItem(itemToAdd); // optionally clear search input
     setShowError("");
     setFinishAdd(true);
   };
@@ -107,6 +112,7 @@ const Section2 = ({ onAddItem }) => {
       rejected: formData.rejected,
       comments: formData.comments,
       totalCost: formData.totalCost,
+      sellingPrice: formData.sellingPrice,
     };
 
     onAddItem(fullItemData);
@@ -126,6 +132,8 @@ const Section2 = ({ onAddItem }) => {
       expiryDate: "",
       receivedDate: new Date().toISOString().split("T")[0],
       comments: "",
+      totalCost: "",
+      sellingPrice: "",
     });
   };
 
@@ -151,13 +159,16 @@ const Section2 = ({ onAddItem }) => {
                 type="text"
                 placeholder="Search Item..."
                 className="bg-transparent outline-none px-2 py-1 w-full text-black"
-                value={itemInput}
-                onChange={(e) => setItemInput(e.target.value)}
+                value={searchQuery}
+                onChange={(e) => {
+                  setSearchQuery(e.target.value);
+                  dispatch(searchItemsEveryWhere(e.target.value));
+                }}
               />
             </div>
           </div>
 
-          <div>
+          <div className="max-h-[400px] overflow-y-auto mt-4 border rounded-lg">
             <table className="min-w-full leading-normal mt-6 border rounded-lg p-4">
               <thead>
                 <tr>
@@ -339,53 +350,127 @@ const Section2 = ({ onAddItem }) => {
                   />
                 </div>
 
-                <div>
-                  <label
-                    htmlFor="manufactureDate"
-                    className="block mb-2 text-sm font-medium text-gray-900 dark:text-white"
-                  >
-                    Manufacture Date
-                  </label>
-                  <input
-                    type="date"
-                    name="manufactureDate"
-                    value={formData.manufactureDate}
-                    onChange={handleChange}
-                    className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-600 dark:border-gray-500 dark:placeholder-gray-400 dark:text-white"
-                  />
-                </div>
+                <LocalizationProvider dateAdapter={AdapterDayjs}>
+                  <div>
+                    <label
+                      htmlFor="manufactureDate"
+                      className="block mb-2 text-sm font-medium text-gray-900 dark:text-white"
+                    >
+                      Manufacture Date
+                    </label>
+                    <DatePicker
+                      views={["year", "month", "day"]}
+                      format="YYYY-MM-DD"
+                      value={
+                        formData.manufactureDate
+                          ? dayjs(formData.manufactureDate)
+                          : null
+                      }
+                      onChange={(newValue) => {
+                        handleChange({
+                          target: {
+                            name: "manufactureDate",
+                            value: newValue
+                              ? newValue.format("YYYY-MM-DD")
+                              : "",
+                          },
+                        });
+                      }}
+                      slotProps={{
+                        textField: {
+                          size: "small",
+                          fullWidth: true,
+                          className:
+                            "bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block dark:bg-gray-600 dark:border-gray-500 dark:placeholder-gray-400 dark:text-white",
+                        },
+                      }}
+                    />
+                  </div>
+                </LocalizationProvider>
 
-                <div>
-                  <label
-                    htmlFor="expiryDate"
-                    className="block mb-2 text-sm font-medium text-gray-900 dark:text-white"
-                  >
-                    Expiry Date
-                  </label>
-                  <input
-                    type="date"
-                    name="expiryDate"
-                    value={formData.expiryDate}
-                    onChange={handleChange}
-                    className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-600 dark:border-gray-500 dark:placeholder-gray-400 dark:text-white"
-                  />
-                </div>
+                <LocalizationProvider dateAdapter={AdapterDayjs}>
+                  <div>
+                    <label
+                      htmlFor="expiryDate"
+                      className="block mb-2 text-sm font-medium text-gray-900 dark:text-white"
+                    >
+                      Expire Date
+                    </label>
+                    <DatePicker
+                      views={["year", "month", "day"]}
+                      format="YYYY-MM-DD"
+                      value={
+                        formData.expiryDate ? dayjs(formData.expiryDate) : null
+                      }
+                      onChange={(newValue) => {
+                        handleChange({
+                          target: {
+                            name: "expiryDate",
+                            value: newValue
+                              ? newValue.format("YYYY-MM-DD")
+                              : "",
+                          },
+                        });
+                      }}
+                      slotProps={{
+                        textField: {
+                          size: "small",
+                          fullWidth: true,
+                          className:
+                            "bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block dark:bg-gray-600 dark:border-gray-500 dark:placeholder-gray-400 dark:text-white",
+                        },
+                      }}
+                    />
+                  </div>
+                </LocalizationProvider>
 
-                <div>
-                  <label
-                    htmlFor="receivedDate"
-                    className="block mb-2 text-sm font-medium text-gray-900 dark:text-white"
-                  >
-                    Received Date
-                  </label>
-                  <input
-                    type="date"
-                    name="receivedDate"
-                    value={formData.receivedDate}
-                    onChange={handleChange}
-                    className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-600 dark:border-gray-500 dark:placeholder-gray-400 dark:text-white"
-                  />
-                </div>
+                <LocalizationProvider dateAdapter={AdapterDayjs}>
+                  <div>
+                    <label
+                      htmlFor="receivedDate"
+                      className="block mb-2 text-sm font-medium text-gray-900 dark:text-white"
+                    >
+                      Received Date
+                    </label>
+                    <DatePicker
+                      views={["year", "month", "day"]}
+                      format="YYYY-MM-DD"
+                      minDate={
+                        formData.manufactureDate
+                          ? dayjs(formData.manufactureDate)
+                          : undefined
+                      }
+                      maxDate={
+                        formData.expiryDate
+                          ? dayjs(formData.expiryDate)
+                          : undefined
+                      }
+                      value={
+                        formData.receivedDate
+                          ? dayjs(formData.receivedDate)
+                          : null
+                      }
+                      onChange={(newValue) => {
+                        handleChange({
+                          target: {
+                            name: "receivedDate",
+                            value: newValue
+                              ? newValue.format("YYYY-MM-DD")
+                              : "",
+                          },
+                        });
+                      }}
+                      slotProps={{
+                        textField: {
+                          size: "small",
+                          fullWidth: true,
+                          className:
+                            "bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block dark:bg-gray-600 dark:border-gray-500 dark:placeholder-gray-400 dark:text-white",
+                        },
+                      }}
+                    />
+                  </div>
+                </LocalizationProvider>
 
                 <div>
                   <label
@@ -415,6 +500,22 @@ const Section2 = ({ onAddItem }) => {
                     className="bg-gray-100 border border-gray-300 text-gray-900 text-sm rounded-lg block w-full p-2.5 dark:bg-gray-700 dark:border-gray-500 dark:text-white"
                   />
                 </div>
+
+                <div>
+                  <label
+                    htmlFor="foc"
+                    className="block mb-2 text-sm font-medium text-gray-900 dark:text-white"
+                  >
+                    Selling Price
+                  </label>
+                  <input
+                    type="number"
+                    name="sellingPrice"
+                    value={formData.sellingPrice}
+                    onChange={handleChange}
+                    className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-600 dark:border-gray-500 dark:placeholder-gray-400 dark:text-white"
+                  />
+                </div>
                 {/* Continue with other inputs similarly */}
               </div>
             </div>
@@ -424,8 +525,12 @@ const Section2 = ({ onAddItem }) => {
         <div className="mt-8 flex gap-10 justify-between">
           <button
             onClick={handleAdd}
-            disabled={!selectedItem}
-            className="bg-green-300 text-black px-4 py-2 rounded disabled:opacity-50 w-full"
+            disabled={!selectedItem || !formData.quantity}
+            className={`px-6 py-2 rounded-md w-full transition ${
+              !selectedItem || !formData.quantity || !formData.buyingPrice
+                ? "bg-gray-300 text-gray-600 cursor-not-allowed"
+                : "bg-green-300 text-black hover:bg-green-400"
+            }`}
           >
             Add
           </button>

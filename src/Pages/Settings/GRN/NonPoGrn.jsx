@@ -28,8 +28,8 @@ const NonPoGrn = () => {
   }, [dispatch]);
 
   const handleAddItem = (itemData) => {
-  setItemHold((prev) => [...prev, itemData]);
-};
+    setItemHold((prev) => [...prev, itemData]);
+  };
 
   //HANDLE CHANGE FOR INPUT
   const handleChange = (e) => {
@@ -85,7 +85,7 @@ const NonPoGrn = () => {
 
       {/* Section One Suppliers Details *********************************************************** */}
       {/* Manunuzi Details */}
-      <div className="mx-auto  px-4 py-6 sm:px-6 lg:px-8 border-2 rounded-lg  shadow-[0px_0px_0px_1px_rgba(0,0,0,0.06),0px_1px_1px_-0.5px_rgba(0,0,0,0.06),0px_3px_3px_-1.5px_rgba(0,0,0,0.06),_0px_6px_6px_-3px_rgba(0,0,0,0.06),0px_12px_12px_-6px_rgba(0,0,0,0.06),0px_24px_24px_-12px_rgba(0,0,0,0.06)]">
+      <div className="mx-auto  px-4 py-6 sm:px-6 lg:px-8 border-2 rounded-lg  shadow-[0px_2px_3px_-1px_rgba(0,0,0,0.1),0px_1px_0px_0px_rgba(25,28,33,0.02),0px_0px_0px_1px_rgba(25,28,33,0.08)]">
         <div className="flex flex-wrap -mx-2">
           <div className="w-full sm:w-1/3 p-2">
             <label
@@ -202,14 +202,8 @@ const NonPoGrn = () => {
       {/* end Manunuzi Details */}
 
       {/* Section Two Items Details *********************************************************** */}
-      <Section2 onAddItem={handleAddItem}/>
+      <Section2 onAddItem={handleAddItem} />
       {/* ************************************************************************************* */}
-
-
-
-
-
-
 
       {/* ************************************************************************************* */}
       {/* Section 3 */}

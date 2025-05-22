@@ -128,3 +128,24 @@ export const fetchProducts = () => async (dispatch) => {
     }
   };
   
+
+  export const searchItemsEveryWhere = (query) => async (dispatch) => {
+  dispatch(searchItemsPending());
+
+  try {
+   const endpoint = query ? `http://localhost:4004/api/items/search?` : "http://localhost:4004/api/items/getAllItems";
+    const response = await axios.get(endpoint, {
+      params: {
+        query: query,
+      },  
+    });
+
+    dispatch(
+      searchItemsSuccess({
+        data: response.data.data,
+      })
+    );
+  } catch (error) {
+    dispatch(searchItemsError(error));
+  }
+};
