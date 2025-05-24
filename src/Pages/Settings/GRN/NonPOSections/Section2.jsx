@@ -18,6 +18,12 @@ const Section2 = ({ onAddItem }) => {
   const [finishAdd, setFinishAdd] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
 
+  const [errorDate, setErrorDate] = useState({
+    manufactureDate: false,
+    expiryDate: false,
+    receivedDate: false,
+  });
+
   useEffect(() => {
     dispatch(fetchProducts());
   }, [dispatch]);
@@ -50,7 +56,7 @@ const Section2 = ({ onAddItem }) => {
       return;
     }
 
-    setSelectedItem(itemToAdd); // optionally clear search input
+    setSelectedItem(itemToAdd);
     setShowError("");
     setFinishAdd(true);
   };
@@ -75,20 +81,17 @@ const Section2 = ({ onAddItem }) => {
 
       // Compute and clamp quantity
       const rawQuantity = units * itemsPerUnit + foc - rejected;
-      const quantity = Math.max(0, rawQuantity); // kusiwe kuna neg mzee
-      const quantityComma = quantity.toLocaleString();
+      const quantityMath = Math.max(0, rawQuantity); // kusiwe kuna neg mzee
 
       //hii itakuwa thamani ya mzigo bila nyiongeza
       const totalCostRaw = buyingPrice * (units * itemsPerUnit);
-      const totalCost = totalCostRaw.toLocaleString(undefined, {
-        minimumFractionDigits: 2,
-        maximumFractionDigits: 2,
-      });
+
 
       return {
         ...updatedForm,
-        quantity: quantityComma.toString(), // input expects string
-        totalCost, // input expects string
+        quantity: rawQuantity,
+        totalCost: totalCostRaw,
+        rawQuantity: quantityMath, 
       };
     });
 
@@ -99,12 +102,45 @@ const Section2 = ({ onAddItem }) => {
   const handleAdd = () => {
     if (!selectedItem) return;
 
+    const newErrors = {
+      manufactureDate: !formData.manufactureDate,
+      expiryDate: !formData.expiryDate,
+      receivedDate: !formData.receivedDate,
+    };
+
+    const today = new Date().toISOString().split("T")[0];
+
+    if (formData.manufactureDate && formData.manufactureDate > today) {
+      newErrors.manufactureDate = true;
+    }
+
+    if (
+      formData.expiryDate &&
+      formData.manufactureDate &&
+      formData.expiryDate < formData.manufactureDate
+    ) {
+      newErrors.expiryDate = true;
+    }
+
+    if (
+      formData.receivedDate &&
+      (formData.receivedDate < formData.manufactureDate ||
+        formData.receivedDate > formData.expiryDate)
+    ) {
+      newErrors.receivedDate = true;
+    }
+
+    setErrorDate(newErrors);
+
+    // Stop if any error is true
+    if (Object.values(newErrors).some((val) => val)) return;
+
     const fullItemData = {
       itemId: selectedItem._id,
-      itemName: selectedItem.name,
-      itemQuantity: selectedItem.itemQuantity,
+      name: selectedItem.name,
       quantity: formData.quantity,
       buyingPrice: formData.buyingPrice,
+      manufactureDate: formData.manufactureDate,
       expiryDate: formData.expiryDate,
       receivedDate: formData.receivedDate,
       batchNumber: formData.batchNumber,
@@ -114,7 +150,6 @@ const Section2 = ({ onAddItem }) => {
       totalCost: formData.totalCost,
       sellingPrice: formData.sellingPrice,
     };
-
     onAddItem(fullItemData);
 
     // Reset states for next selection
@@ -124,7 +159,7 @@ const Section2 = ({ onAddItem }) => {
       buyingPrice: "",
       units: "",
       itemsPerUnit: "",
-      quantity: "",
+      balance: "",
       rejected: "",
       foc: "",
       batchNumber: "",
@@ -147,7 +182,7 @@ const Section2 = ({ onAddItem }) => {
   return (
     <section className="flex flex-col md:flex-row gap-3 overflow-hidden mt-8 shadow-[0px_0px_0px_1px_rgba(0,0,0,0.06),0px_1px_1px_-0.5px_rgba(0,0,0,0.06),0px_3px_3px_-1.5px_rgba(0,0,0,0.06),_0px_6px_6px_-3px_rgba(0,0,0,0.06),0px_12px_12px_-6px_rgba(0,0,0,0.06),0px_24px_24px_-12px_rgba(0,0,0,0.06)]">
       {/* Right Section: Products Table */}
-      <div className="flex-[1] bg-secondary p-4 sm:p-6 border rounded-lg shadow-[0px_0px_0px_1px_rgba(0,0,0,0.06),0px_1px_1px_-0.5px_rgba(0,0,0,0.06),0px_3px_3px_-1.5px_rgba(0,0,0,0.06),_0px_6px_6px_-3px_rgba(0,0,0,0.06),0px_12px_12px_-6px_rgba(0,0,0,0.06),0px_24px_24px_-12px_rgba(0,0,0,0.06)] overflow-auto min-h-[50vh] md:min-h-[auto]">
+      <div className="flex-[1] bg-secondary p-4 sm:p-6 border rounded-lg shadow-[0px_0px_0px_1px_rgba(0,0,0,0.06),0px_1px_1px_-0.5px_rgba(0,0,0,0.06),0px_3px_3px_-1.5px_rgba(0,0,0,0.06),_0px_6px_6px_-3px_rgba(0,0,0,0.06),0px_12px_12px_-6px_rgba(0,0,0,0.06),0px_24px_24px_-12px_rgba(0,0,0,0.06)] overflow-auto min-h-[50vh] md:min-h-[auto] bg-slate-400/20">
         <div>
           <div className="font-bold text-xl text-black">Products</div>
 
@@ -325,7 +360,7 @@ const Section2 = ({ onAddItem }) => {
                     Idadi Kamili
                   </label>
                   <input
-                    type="text"
+                    type="number"
                     name="quantity"
                     value={formData.quantity}
                     readOnly
@@ -375,11 +410,19 @@ const Section2 = ({ onAddItem }) => {
                               : "",
                           },
                         });
+                        setErrorDate((prev) => ({
+                          ...prev,
+                          manufactureDate: false,
+                        }));
                       }}
                       slotProps={{
                         textField: {
                           size: "small",
                           fullWidth: true,
+                          error: errorDate.manufactureDate,
+                          helperText:
+                            errorDate.manufactureDate &&
+                            "Manufacture Date cannot be in the future",
                           className:
                             "bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block dark:bg-gray-600 dark:border-gray-500 dark:placeholder-gray-400 dark:text-white",
                         },
@@ -411,11 +454,19 @@ const Section2 = ({ onAddItem }) => {
                               : "",
                           },
                         });
+                        setErrorDate((prev) => ({
+                          ...prev,
+                          expiryDate: false,
+                        }));
                       }}
                       slotProps={{
                         textField: {
                           size: "small",
                           fullWidth: true,
+                          error: errorDate.expiryDate,
+                          helperText:
+                            errorDate.expiryDate &&
+                            "Expiry Date must be after Manufacture Date",
                           className:
                             "bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block dark:bg-gray-600 dark:border-gray-500 dark:placeholder-gray-400 dark:text-white",
                         },
@@ -435,16 +486,6 @@ const Section2 = ({ onAddItem }) => {
                     <DatePicker
                       views={["year", "month", "day"]}
                       format="YYYY-MM-DD"
-                      minDate={
-                        formData.manufactureDate
-                          ? dayjs(formData.manufactureDate)
-                          : undefined
-                      }
-                      maxDate={
-                        formData.expiryDate
-                          ? dayjs(formData.expiryDate)
-                          : undefined
-                      }
                       value={
                         formData.receivedDate
                           ? dayjs(formData.receivedDate)
@@ -459,11 +500,19 @@ const Section2 = ({ onAddItem }) => {
                               : "",
                           },
                         });
+                        setErrorDate((prev) => ({
+                          ...prev,
+                          receivedDate: false,
+                        }));
                       }}
                       slotProps={{
                         textField: {
                           size: "small",
                           fullWidth: true,
+                          error: errorDate.receivedDate,
+                          helperText:
+                            errorDate.receivedDate &&
+                            "Received Date must be between Manufacture and Expiry Date",
                           className:
                             "bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block dark:bg-gray-600 dark:border-gray-500 dark:placeholder-gray-400 dark:text-white",
                         },

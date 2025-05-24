@@ -4,18 +4,22 @@ import { fetchSuppliers } from "../../../Redux/suppliers";
 import { useDispatch, useSelector } from "react-redux";
 import Section2 from "./NonPOSections/Section2";
 
+import { MdDeleteForever } from "react-icons/md";
+import axios from "axios";
+import { fetchProducts } from "../../../Redux/items";
+
 const NonPoGrn = () => {
   const { supplier } = useSelector((state) => state.suppliers);
+  const {items} = useSelector((state) => state.items);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+  const [success, setSuccess] = useState("");
 
   const dispatch = useDispatch();
 
   const [regi, setRegi] = useState({
     supplierName: "",
-    balance: 0,
-    buyingPrice: 0,
     receivingDate: new Date(),
-    newManufactureDate: new Date(),
-    newExpireDate: new Date(),
     invoiceNumber: "",
     lpoNumber: "",
     deliveryPerson: "",
@@ -25,6 +29,10 @@ const NonPoGrn = () => {
 
   useEffect(() => {
     dispatch(fetchSuppliers());
+  }, [dispatch]);
+
+  useEffect(() => {
+    dispatch(fetchProducts());
   }, [dispatch]);
 
   const handleAddItem = (itemData) => {
@@ -47,6 +55,76 @@ const NonPoGrn = () => {
   //REMOVE SELECTED ITEM
   const removeItem = (itemToRemove) => {
     setItemHold((items) => items.filter((item) => item !== itemToRemove));
+  };
+
+  const handleSubmit = async () => {
+
+     const selectedSupplier = supplier.find(
+        (sup) => sup._id === regi.supplierName
+      );
+    if (!regi.supplierName || !regi.invoiceNumber || !regi.receivingDate) {
+      setError("Please fill all required fields.");
+      return;
+    }
+
+    if (itemHold.length === 0) {
+      setError("Add at least one item.");
+      return;
+    }
+
+    setLoading(true);
+    setError("");
+    setSuccess("");
+
+    const grnData = {
+      supplierName: selectedSupplier ? selectedSupplier.supplierName : "",
+      invoiceNumber: regi.invoiceNumber,
+      lpoNumber: regi.lpoNumber,
+      deliveryPerson: regi.deliveryPerson,
+      deliveryNumber: regi.deliveryNumber,
+      description: regi.description,
+      receivingDate: regi.receivingDate,
+      items: itemHold.map((item) => ({
+        name: item.name,
+        quantity: item.quantity,
+        buyingPrice: item.buyingPrice,
+        sellingPrice: item.sellingPrice,
+        batchNumber: item.batchNumber,
+        manufactureDate: item.manufactureDate,
+        expiryDate: item.expiryDate,
+        foc: item.foc || false,
+        rejected: item.rejected || false,
+        comments: item.comments || "",
+        totalCost: item.totalCost || 0,
+      })),
+    };
+
+    try {
+      const response = await axios.post(
+        "http://localhost:4004/api/grn/newGrn",
+        grnData
+      );
+
+      if (response.status === 200 && response.data.success) {
+        setSuccess("Manunuzi yamehifadhiwa kikamilifu.");
+        setRegi({
+          supplierName: "",
+          invoiceNumber: "",
+          lpoNumber: "",
+          deliveryPerson: "",
+          deliveryNumber: "",
+          description: "",
+          receivingDate: "",
+        });
+        setItemHold([]);
+      } else {
+        setError(response.data.message || "Tatizo katika kuhifadhi manunuzi.");
+      }
+    } catch (err) {
+      setError(err.response?.data?.message || "Hitilafu ya mtandao au seva.");
+    } finally {
+      setLoading(false);
+    }
   };
 
   //HANDLE CANCEL FORM
@@ -85,7 +163,7 @@ const NonPoGrn = () => {
 
       {/* Section One Suppliers Details *********************************************************** */}
       {/* Manunuzi Details */}
-      <div className="mx-auto  px-4 py-6 sm:px-6 lg:px-8 border-2 rounded-lg  shadow-[0px_2px_3px_-1px_rgba(0,0,0,0.1),0px_1px_0px_0px_rgba(25,28,33,0.02),0px_0px_0px_1px_rgba(25,28,33,0.08)]">
+      <div className="mx-auto  px-4 py-6 sm:px-6 lg:px-8 border bg-slate-400/20 rounded-lg shadow-md">
         <div className="flex flex-wrap -mx-2">
           <div className="w-full sm:w-1/3 p-2">
             <label
@@ -96,7 +174,9 @@ const NonPoGrn = () => {
             </label>
             <select
               name="supplierName"
-              className="bg-gray-100 rounded-[30px] px-1 sm:px-4 py-1 sm:py-2 max-w-[300px] border border-gray-400  p-2 w-full capitalize text-black"
+              onChange={handleChange}
+              value={regi.supplierName}
+              className="bg-white rounded-[30px] px-1 sm:px-4 py-1 sm:py-2 max-w-[300px] border border-gray-500  p-2 w-full capitalize text-black"
             >
               <option value="" disabled>
                 Select Supplier
@@ -179,6 +259,7 @@ const NonPoGrn = () => {
               showTimeSelect
               timeIntervals={1}
               dateFormat="Pp"
+              selected={regi.receivingDate}
               onChange={handleReceivingDate}
               className="bg-gray-100 rounded-[30px] px-1 sm:px-4 py-1 sm:py-2 max-w-[300px] border border-gray-400  p-2 w-full capitalize "
             />
@@ -194,6 +275,8 @@ const NonPoGrn = () => {
             <textarea
               type="text"
               name="description"
+              value={regi.description}
+              onChange={handleChange}
               className="bg-gray-100 rounded-[30px] px-1 sm:px-4 py-1 sm:py-2 max-w-[300px] border border-gray-400  p-2 w-full capitalize text-black"
             />
           </div>
@@ -210,45 +293,45 @@ const NonPoGrn = () => {
       {/* Table ya items zilizojazwa details  */}
       <div
         style={{ maxHeight: "500px" }}
-        className="mx-auto rounded-md border-2 mt-10 max-h-96 px-4 py-6 sm:px-6 lg:px-8 shadow-md "
+        className="mx-auto rounded-md border-2 mt-10 max-h-96 px-4 py-6 sm:px-6 lg:px-8 bg-slate-400/20 shadow-lg"
       >
         <div className="overflow-auto">
           <table className="min-w-full leading-normal border table-fixed">
             <thead>
               <tr>
-                <th className="px-5 py-3 border-b-2 border-gray-200 bg-gray-200 text-center text-xs font-bold text-gray-600 uppercase tracking-wider">
+                <th className="px-5 py-3 border-b-2 border-gray-200 bg-gray-200  text-xs font-bold text-gray-600 uppercase tracking-wider">
                   (S/N)
                 </th>
 
-                <th className="px-5 py-3 border-b-2 border-gray-200 bg-gray-200 text-center text-xs font-bold text-gray-600 uppercase tracking-wider">
+                <th className="px-5 py-3 border-b-2 border-gray-200 bg-gray-200  text-xs font-bold text-gray-600 uppercase tracking-wider">
                   Product Name
                 </th>
 
-                <th className="px-5 py-3 border-b-2 border-gray-200 bg-gray-200 text-center text-xs font-bold text-gray-600 uppercase tracking-wider">
+                <th className="px-5 py-3 border-b-2 border-gray-200 bg-gray-200  text-xs font-bold text-gray-600 uppercase tracking-wider">
                   Previous Balnce
                 </th>
 
-                <th className="px-5 py-3 border-b-2 border-gray-200 bg-gray-200 text-center text-xs font-bold text-gray-600 uppercase tracking-wider">
+                <th className="px-5 py-3 border-b-2 border-gray-200 bg-gray-200  text-xs font-bold text-gray-600 uppercase tracking-wider">
                   New Balance
                 </th>
 
-                <th className="px-5 py-3 border-b-2 border-gray-200 bg-gray-200 text-center text-xs font-bold text-gray-600 uppercase tracking-wider">
+                <th className="px-5 py-3 border-b-2 border-gray-200 bg-gray-200  text-xs font-bold text-gray-600 uppercase tracking-wider">
                   Buying Price
                 </th>
 
-                <th className="px-5 py-3 border-b-2 border-gray-200 bg-gray-200 text-center text-xs font-bold text-gray-600 uppercase tracking-wider">
+                <th className="px-5 py-3 border-b-2 border-gray-200 bg-gray-200  text-xs font-bold text-gray-600 uppercase tracking-wider">
+                  Selling Price
+                </th>
+
+                <th className="px-5 py-3 border-b-2 border-gray-200 bg-gray-200  text-xs font-bold text-gray-600 uppercase tracking-wider">
                   Receiving Date
                 </th>
 
-                <th className="px-5 py-3 border-b-2 border-gray-200 bg-gray-200 text-center text-xs font-bold text-gray-600 uppercase tracking-wider">
+                <th className="px-5 py-3 border-b-2 border-gray-200 bg-gray-200  text-xs font-bold text-gray-600 uppercase tracking-wider">
                   Expiring Date
                 </th>
 
-                <th className="px-5 py-3 border-b-2 border-gray-200 bg-gray-200 text-center text-xs font-bold text-gray-600 uppercase tracking-wider">
-                  Edit
-                </th>
-
-                <th className="px-5 py-3 border-b-2 border-gray-200 bg-gray-200 text-center text-xs font-bold text-gray-600 uppercase tracking-wider">
+                <th className="px-5 py-3 border-b-2 border-gray-200 bg-gray-200  text-xs font-bold text-gray-600 uppercase tracking-wider">
                   Remove
                 </th>
               </tr>
@@ -284,7 +367,9 @@ const NonPoGrn = () => {
                               aria-hidden
                               className="absolute inset-0 opacity-50 rounded-full"
                             />
-                            <span className="relative">{item.name}</span>
+                            <span className="relative text-black">
+                              {item.name}
+                            </span>
                           </span>
                         </div>
                       </td>
@@ -293,7 +378,7 @@ const NonPoGrn = () => {
                         <div className="items-center">
                           <div className="ml-3">
                             <p className="text-gray-900 whitespace-no-wrap font-semibold capitalize">
-                              {item.itemQuantity}
+                              {items.itemQuantity}
                             </p>
                           </div>
                         </div>
@@ -319,11 +404,21 @@ const NonPoGrn = () => {
                         </div>
                       </td>
 
+                      <td className="py-2 px-3 font-normal text-base border-x  hover:bg-gray-100">
+                        <div className="items-center">
+                          <div className="ml-3">
+                            <p className="text-gray-900 whitespace-no-wrap font-semibold capitalize">
+                              {item.sellingPrice}
+                            </p>
+                          </div>
+                        </div>
+                      </td>
+
                       <td>
                         <div className="items-center">
                           <div className="ml-3">
                             <p className="text-gray-900 whitespace-no-wrap font-semibold capitalize">
-                              {item.receivedDate}
+                              {item.manufactureDate}
                             </p>
                           </div>
                         </div>
@@ -345,12 +440,14 @@ const NonPoGrn = () => {
                             type="button"
                             onClick={() => removeItem(item)}
                           >
-                            <span className="relative inline-block px-3 py-1 font-semibold text-green-900 leading-tight ">
+                            <span className="relative inline-block px-3 py-1 font-semibold text-gray-900 leading-tight ">
                               <span
                                 aria-hidden
                                 className="absolute inset-0 opacity-50 rounded-full"
                               />
-                              <span className="relative">icon</span>
+                              <span className="relative text-3xl">
+                                <MdDeleteForever />
+                              </span>
                             </span>
                           </button>
                         </div>
@@ -374,8 +471,22 @@ const NonPoGrn = () => {
           <button
             type="submit"
             className="mt-6 border rounded-md px-6 py-2 bg-green-300 font-bold text-black"
+            onClick={handleSubmit}
+            disabled={loading}
           >
-            Submit
+            {loading ? (
+              <div className="flex items-center">
+                <svg
+                  className="animate-spin h-5 w-5 mr-3 text-white"
+                  viewBox="0 0 24 24"
+                ></svg>
+                Submitting...
+              </div>
+            ) : (
+              "Submit"
+            )}
+            {error && <p className="text-red-500">{error}</p>}
+            {success && <p className="text-green-600">{success}</p>}
           </button>
         </div>
       </div>
