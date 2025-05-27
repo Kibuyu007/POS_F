@@ -86,12 +86,11 @@ const Section2 = ({ onAddItem }) => {
       //hii itakuwa thamani ya mzigo bila nyiongeza
       const totalCostRaw = buyingPrice * (units * itemsPerUnit);
 
-
       return {
         ...updatedForm,
         quantity: rawQuantity,
         totalCost: totalCostRaw,
-        rawQuantity: quantityMath, 
+        rawQuantity: quantityMath,
       };
     });
 
@@ -138,6 +137,8 @@ const Section2 = ({ onAddItem }) => {
     const fullItemData = {
       itemId: selectedItem._id,
       name: selectedItem.name,
+      previousQuantity: selectedItem.itemQuantity,
+      previousPrice: selectedItem.price,
       quantity: formData.quantity,
       buyingPrice: formData.buyingPrice,
       manufactureDate: formData.manufactureDate,
@@ -148,7 +149,7 @@ const Section2 = ({ onAddItem }) => {
       rejected: formData.rejected,
       comments: formData.comments,
       totalCost: formData.totalCost,
-      sellingPrice: formData.sellingPrice,
+      sellingPrice: formData.sellingPrice || selectedItem.price,
     };
     onAddItem(fullItemData);
 
@@ -182,7 +183,7 @@ const Section2 = ({ onAddItem }) => {
   return (
     <section className="flex flex-col md:flex-row gap-3 overflow-hidden mt-8 shadow-[0px_0px_0px_1px_rgba(0,0,0,0.06),0px_1px_1px_-0.5px_rgba(0,0,0,0.06),0px_3px_3px_-1.5px_rgba(0,0,0,0.06),_0px_6px_6px_-3px_rgba(0,0,0,0.06),0px_12px_12px_-6px_rgba(0,0,0,0.06),0px_24px_24px_-12px_rgba(0,0,0,0.06)]">
       {/* Right Section: Products Table */}
-      <div className="flex-[1] bg-secondary p-4 sm:p-6 border rounded-lg shadow-[0px_0px_0px_1px_rgba(0,0,0,0.06),0px_1px_1px_-0.5px_rgba(0,0,0,0.06),0px_3px_3px_-1.5px_rgba(0,0,0,0.06),_0px_6px_6px_-3px_rgba(0,0,0,0.06),0px_12px_12px_-6px_rgba(0,0,0,0.06),0px_24px_24px_-12px_rgba(0,0,0,0.06)] overflow-auto min-h-[50vh] md:min-h-[auto] bg-slate-400/20">
+      <div className="flex-[1] bg-secondary p-4 sm:p-6 border rounded-lg shadow-[0px_0px_0px_1px_rgba(0,0,0,0.06),0px_1px_1px_-0.5px_rgba(0,0,0,0.06),0px_3px_3px_-1.5px_rgba(0,0,0,0.06),_0px_6px_6px_-3px_rgba(0,0,0,0.06),0px_12px_12px_-6px_rgba(0,0,0,0.06),0px_24px_24px_-12px_rgba(0,0,0,0.06)] overflow-auto min-h-[50vh] md:min-h-[auto]">
         <div>
           <div className="font-bold text-xl text-black">Products</div>
 
@@ -203,43 +204,52 @@ const Section2 = ({ onAddItem }) => {
             </div>
           </div>
 
-          <div className="max-h-[400px] overflow-y-auto mt-4 border rounded-lg">
-            <table className="min-w-full leading-normal mt-6 border rounded-lg p-4">
+          <div className="max-h-[400px] overflow-y-auto mt-4  rounded-lg">
+            <table className="min-w-full leading-normal mt-6  rounded-lg p-4">
               <thead>
                 <tr>
-                  <th className="px-5 py-3 border-b-2 border-gray-200 bg-gray-200 text-center text-xs font-bold text-gray-600 uppercase tracking-wider">
+                  <th className="px-5 py-3 border-b-2 border-gray-200 bg-gray-200 text-center text-xs font-bold text-gray-900 uppercase tracking-wider">
                     (S/N)
                   </th>
-                  <th className="px-5 py-3 border-b-2 border-gray-200 bg-gray-200 text-center text-xs font-bold text-gray-600 uppercase tracking-wider">
+                  <th className="px-5 py-3 border-b-2 border-gray-200 bg-gray-200 text-center text-xs font-bold text-gray-900 uppercase tracking-wider">
                     Product Name
                   </th>
-                  <th className="px-5 py-3 border-b-2 border-gray-200 bg-gray-200 text-center text-xs font-bold text-gray-600 uppercase tracking-wider">
+                  <th className="px-5 py-3 border-b-2 border-gray-200 bg-gray-200 text-center text-xs font-bold text-gray-900 uppercase tracking-wider">
                     Balance
                   </th>
-                  <th className="px-5 py-3 border-b-2 border-gray-200 bg-gray-200 text-center text-xs font-bold text-gray-600 uppercase tracking-wider"></th>
+                  <th className="px-5 py-3 border-b-2 border-gray-200 bg-gray-200 text-center text-xs font-bold text-gray-900 uppercase tracking-wider">
+                    Select
+                  </th>
                 </tr>
+                <tr className="h-4" />
               </thead>
               <tbody className="overflow-auto text-black">
                 {items?.map((item, index) => (
-                  <tr key={item._id} className="hover:bg-gray-100">
-                    <td className="py-2 px-3 font-normal text-base border-x border-t border-gray text-center">
-                      {index + 1}
-                    </td>
-                    <td className="py-2 px-3 font-normal text-base border-x border-t border-gray capitalize">
-                      {item.name}
-                    </td>
-                    <td className="py-2 px-3 font-normal text-base border-x border-t border-gray text-center">
-                      {item.itemQuantity}
-                    </td>
-                    <td className="py-2 px-3 font-normal text-base border-x border-t border-gray text-center">
-                      <button
-                        onClick={() => handleItemSelection(item)}
-                        className="cursor-pointer"
-                      >
-                        <TiArrowRightThick />
-                      </button>
-                    </td>
-                  </tr>
+                  <>
+                    <tr
+                      key={item._id}
+                      className="h-16 border-gray-500 shadow-md bg-gray-100"
+                    >
+                      <td className="py-2 px-3 font-normal text-base border-x border-t border-gray text-center">
+                        {index + 1}
+                      </td>
+                      <td className="py-2 px-3 font-normal text-base border-x border-t border-gray capitalize">
+                        {item.name}
+                      </td>
+                      <td className="py-2 px-3 font-normal text-base border-x border-t border-gray text-center">
+                        {item.itemQuantity}
+                      </td>
+                      <td className="py-2 px-3 font-normal text-base border-x border-t border-gray text-center">
+                        <button
+                          onClick={() => handleItemSelection(item)}
+                          className="cursor-pointer"
+                        >
+                          <TiArrowRightThick />
+                        </button>
+                      </td>
+                    </tr>
+                    <tr className="h-4" />
+                  </>
                 ))}
               </tbody>
             </table>
@@ -263,15 +273,16 @@ const Section2 = ({ onAddItem }) => {
           </span>
         </div>
 
-        <div className="p-6">
+        <div className="p-6 ">
           {selectedItem && (
-            <div className="border p-4 rounded mb-4 shadow">
+            <div className="border p-4 rounded mb-4 shadow-md bg-gray-100">
               <h3 className="font-semibold mb-2 text-lg">
                 {selectedItem.name}
               </h3>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                 {/* All your input fields with controlled values */}
+
                 <div>
                   <label
                     htmlFor="Buying Price"
@@ -284,7 +295,7 @@ const Section2 = ({ onAddItem }) => {
                     name="buyingPrice"
                     value={formData.buyingPrice}
                     onChange={handleChange}
-                    className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-600 dark:border-gray-500 dark:placeholder-gray-400 dark:text-white"
+                    className="bg-gray-50 border border-gray-400 text-gray-900 text-sm rounded-[30px]  focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-600 dark:border-gray-500 dark:placeholder-gray-400 dark:text-white"
                   />
                 </div>
 
@@ -300,7 +311,7 @@ const Section2 = ({ onAddItem }) => {
                     name="units"
                     value={formData.units}
                     onChange={handleChange}
-                    className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-600 dark:border-gray-500 dark:placeholder-gray-400 dark:text-white"
+                    className="bg-gray-50 border border-gray-400 text-gray-900 text-sm rounded-[30px]  focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-600 dark:border-gray-500 dark:placeholder-gray-400 dark:text-white"
                   />
                 </div>
 
@@ -316,7 +327,7 @@ const Section2 = ({ onAddItem }) => {
                     name="itemsPerUnit"
                     value={formData.itemsPerUnit}
                     onChange={handleChange}
-                    className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-600 dark:border-gray-500 dark:placeholder-gray-400 dark:text-white"
+                    className="bg-gray-50 border border-gray-400 text-gray-900 text-sm rounded-[30px]  focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-600 dark:border-gray-500 dark:placeholder-gray-400 dark:text-white"
                   />
                 </div>
 
@@ -332,7 +343,7 @@ const Section2 = ({ onAddItem }) => {
                     name="rejected"
                     value={formData.rejected}
                     onChange={handleChange}
-                    className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-600 dark:border-gray-500 dark:placeholder-gray-400 dark:text-white"
+                    className="bg-gray-50 border border-gray-400 text-gray-900 text-sm rounded-[30px]  focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-600 dark:border-gray-500 dark:placeholder-gray-400 dark:text-white"
                   />
                 </div>
 
@@ -348,7 +359,7 @@ const Section2 = ({ onAddItem }) => {
                     name="foc"
                     value={formData.foc}
                     onChange={handleChange}
-                    className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-600 dark:border-gray-500 dark:placeholder-gray-400 dark:text-white"
+                    className="bg-gray-50 border border-gray-400 text-gray-900 text-sm rounded-[30px]  focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-600 dark:border-gray-500 dark:placeholder-gray-400 dark:text-white"
                   />
                 </div>
 
@@ -365,23 +376,7 @@ const Section2 = ({ onAddItem }) => {
                     value={formData.quantity}
                     readOnly
                     onChange={handleChange}
-                    className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-600 dark:border-gray-500 dark:placeholder-gray-400 dark:text-white"
-                  />
-                </div>
-
-                <div>
-                  <label
-                    htmlFor="batchNumber"
-                    className="block mb-2 text-sm font-medium text-gray-900 dark:text-white"
-                  >
-                    Batch Number
-                  </label>
-                  <input
-                    type="text"
-                    name="batchNumber"
-                    value={formData.batchNumber}
-                    onChange={handleChange}
-                    className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-600 dark:border-gray-500 dark:placeholder-gray-400 dark:text-white"
+                    className="bg-gray-50 border border-gray-400 text-gray-900 text-sm rounded-[30px]  focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-600 dark:border-gray-500 dark:placeholder-gray-400 dark:text-white"
                   />
                 </div>
 
@@ -424,7 +419,7 @@ const Section2 = ({ onAddItem }) => {
                             errorDate.manufactureDate &&
                             "Manufacture Date cannot be in the future",
                           className:
-                            "bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block dark:bg-gray-600 dark:border-gray-500 dark:placeholder-gray-400 dark:text-white",
+                            "bg-gray-50 border border-gray-400 text-gray-900 text-sm rounded-[30px]  focus:ring-blue-500 focus:border-blue-500 block dark:bg-gray-600 dark:border-gray-500 dark:placeholder-gray-400 dark:text-white",
                         },
                       }}
                     />
@@ -468,7 +463,7 @@ const Section2 = ({ onAddItem }) => {
                             errorDate.expiryDate &&
                             "Expiry Date must be after Manufacture Date",
                           className:
-                            "bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block dark:bg-gray-600 dark:border-gray-500 dark:placeholder-gray-400 dark:text-white",
+                            "bg-gray-50 border border-gray-400 text-gray-900 text-sm rounded-[30px]  focus:ring-blue-500 focus:border-blue-500 block dark:bg-gray-600 dark:border-gray-500 dark:placeholder-gray-400 dark:text-white",
                         },
                       }}
                     />
@@ -514,12 +509,28 @@ const Section2 = ({ onAddItem }) => {
                             errorDate.receivedDate &&
                             "Received Date must be between Manufacture and Expiry Date",
                           className:
-                            "bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block dark:bg-gray-600 dark:border-gray-500 dark:placeholder-gray-400 dark:text-white",
+                            "bg-gray-50 border border-gray-400 text-gray-900 text-sm rounded-[30px] focus:ring-blue-500 focus:border-blue-500 block dark:bg-gray-600 dark:border-gray-500 dark:placeholder-gray-400 dark:text-white",
                         },
                       }}
                     />
                   </div>
                 </LocalizationProvider>
+
+                <div>
+                  <label
+                    htmlFor="batchNumber"
+                    className="block mb-2 text-sm font-medium text-gray-900 dark:text-white"
+                  >
+                    Batch Number
+                  </label>
+                  <input
+                    type="text"
+                    name="batchNumber"
+                    value={formData.batchNumber}
+                    onChange={handleChange}
+                    className="bg-gray-50 border border-gray-400 text-gray-900 text-sm rounded-[30px]  focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-600 dark:border-gray-500 dark:placeholder-gray-400 dark:text-white"
+                  />
+                </div>
 
                 <div>
                   <label
@@ -533,7 +544,7 @@ const Section2 = ({ onAddItem }) => {
                     name="comments"
                     value={formData.comments}
                     onChange={handleChange}
-                    className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-600 dark:border-gray-500 dark:placeholder-gray-400 dark:text-white"
+                    className="bg-gray-50 border border-gray-400 text-gray-900 text-sm rounded-[30px]  focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-600 dark:border-gray-500 dark:placeholder-gray-400 dark:text-white"
                   />
                 </div>
 
@@ -546,7 +557,7 @@ const Section2 = ({ onAddItem }) => {
                     name="totalCost"
                     value={formData.totalCost}
                     readOnly
-                    className="bg-gray-100 border border-gray-300 text-gray-900 text-sm rounded-lg block w-full p-2.5 dark:bg-gray-700 dark:border-gray-500 dark:text-white"
+                    className="bg-gray-100 border border-gray-400 text-gray-900 text-sm rounded-[30px]  block w-full p-2.5 dark:bg-gray-700 dark:border-gray-500 dark:text-white"
                   />
                 </div>
 
@@ -560,11 +571,12 @@ const Section2 = ({ onAddItem }) => {
                   <input
                     type="number"
                     name="sellingPrice"
-                    value={formData.sellingPrice}
+                    value={formData.sellingPrice || selectedItem.price}
                     onChange={handleChange}
-                    className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-600 dark:border-gray-500 dark:placeholder-gray-400 dark:text-white"
+                    className="bg-gray-50 border border-gray-400 text-gray-900 text-sm rounded-[30px]  focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-600 dark:border-gray-500 dark:placeholder-gray-400 dark:text-white"
                   />
                 </div>
+
                 {/* Continue with other inputs similarly */}
               </div>
             </div>

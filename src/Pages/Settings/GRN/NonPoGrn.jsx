@@ -1,30 +1,42 @@
 import { useEffect, useState } from "react";
-import DatePicker from "react-datepicker";
+
 import { fetchSuppliers } from "../../../Redux/suppliers";
 import { useDispatch, useSelector } from "react-redux";
 import Section2 from "./NonPOSections/Section2";
+import toast from "react-hot-toast";
 
 import { MdDeleteForever } from "react-icons/md";
 import axios from "axios";
 import { fetchProducts } from "../../../Redux/items";
 
+import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs";
+import { LocalizationProvider } from "@mui/x-date-pickers/LocalizationProvider";
+import dayjs from "dayjs";
+import { DatePicker } from "@mui/x-date-pickers/DatePicker";
+
 const NonPoGrn = () => {
   const { supplier } = useSelector((state) => state.suppliers);
-  const {items} = useSelector((state) => state.items);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
-  const [success, setSuccess] = useState("");
 
   const dispatch = useDispatch();
 
-  const [regi, setRegi] = useState({
-    supplierName: "",
-    receivingDate: new Date(),
-    invoiceNumber: "",
-    lpoNumber: "",
-    deliveryPerson: "",
-    deliveryNumber: "",
-    description: "",
+  const [regi, setRegi] = useState(() => {
+    const stored = localStorage.getItem("nonPoGrnForm");
+    return stored
+      ? {
+          ...JSON.parse(stored),
+          receivingDate: new Date(JSON.parse(stored).receivingDate),
+        }
+      : {
+          supplierName: "",
+          receivingDate: new Date().toISOString().split("T")[0],
+          invoiceNumber: "",
+          lpoNumber: "",
+          deliveryPerson: "",
+          deliveryNumber: "",
+          description: "",
+        };
   });
 
   useEffect(() => {
@@ -42,15 +54,32 @@ const NonPoGrn = () => {
   //HANDLE CHANGE FOR INPUT
   const handleChange = (e) => {
     const { name, value } = e.target;
-    setRegi({ ...regi, [name]: value });
+    setRegi((prev) => ({
+      ...prev,
+      [name]: value,
+    }));
   };
+
+  useEffect(() => {
+    localStorage.setItem("nonPoGrnForm", JSON.stringify(regi));
+  }, [regi]);
 
   //HANDLE RECEIVING DATE
   const handleReceivingDate = (date) => {
-    setRegi({ ...regi, receivingDate: date });
+    setRegi((prev) => ({
+      ...prev,
+      receivingDate: date,
+    }));
   };
 
-  const [itemHold, setItemHold] = useState([]);
+  const [itemHold, setItemHold] = useState(() => {
+    const storedItems = localStorage.getItem("itemHold");
+    return storedItems ? JSON.parse(storedItems) : [];
+  });
+
+  useEffect(() => {
+    localStorage.setItem("itemHold", JSON.stringify(itemHold));
+  }, [itemHold]);
 
   //REMOVE SELECTED ITEM
   const removeItem = (itemToRemove) => {
@@ -58,10 +87,9 @@ const NonPoGrn = () => {
   };
 
   const handleSubmit = async () => {
-
-     const selectedSupplier = supplier.find(
-        (sup) => sup._id === regi.supplierName
-      );
+    const selectedSupplier = supplier.find(
+      (sup) => sup._id === regi.supplierName
+    );
     if (!regi.supplierName || !regi.invoiceNumber || !regi.receivingDate) {
       setError("Please fill all required fields.");
       return;
@@ -74,7 +102,6 @@ const NonPoGrn = () => {
 
     setLoading(true);
     setError("");
-    setSuccess("");
 
     const grnData = {
       supplierName: selectedSupplier ? selectedSupplier.supplierName : "",
@@ -106,7 +133,6 @@ const NonPoGrn = () => {
       );
 
       if (response.status === 200 && response.data.success) {
-        setSuccess("Manunuzi yamehifadhiwa kikamilifu.");
         setRegi({
           supplierName: "",
           invoiceNumber: "",
@@ -116,12 +142,42 @@ const NonPoGrn = () => {
           description: "",
           receivingDate: "",
         });
+        toast.success("Added Succeccfully", {
+          position: "button-right",
+          style: {
+            borderRadius: "12px",
+            background: "#00e676",
+            color: "#212121",
+            fontSize: "26px",
+          },
+        });
         setItemHold([]);
+        localStorage.removeItem("nonPoGrnItems");
       } else {
         setError(response.data.message || "Tatizo katika kuhifadhi manunuzi.");
+        toast.error(
+          response.data.message || "Tatizo katika kuhifadhi manunuzi.",
+          {
+            position: "button-right",
+            style: {
+              borderRadius: "12px",
+              background: "#dd2c00",
+              color: "#212121",
+              fontSize: "26px",
+            },
+          }
+        );
       }
     } catch (err) {
-      setError(err.response?.data?.message || "Hitilafu ya mtandao au seva.");
+      toast.error(error.data.message || "Tatizo katika kuhifadhi manunuzi.", {
+        position: "button-right",
+        style: {
+          borderRadius: "12px",
+          background: "#dd2c00",
+          color: "#212121",
+          fontSize: "26px",
+        },
+      });
     } finally {
       setLoading(false);
     }
@@ -141,6 +197,11 @@ const NonPoGrn = () => {
       deliveryNumber: "",
       description: "",
     });
+  };
+
+  //formating Price
+  const formatPriceWithCommas = (price) => {
+    return new Intl.NumberFormat("en-US").format(price);
   };
 
   return (
@@ -163,7 +224,7 @@ const NonPoGrn = () => {
 
       {/* Section One Suppliers Details *********************************************************** */}
       {/* Manunuzi Details */}
-      <div className="mx-auto  px-4 py-6 sm:px-6 lg:px-8 border bg-slate-400/20 rounded-lg shadow-md">
+      <div className="mx-auto  px-4 py-6 sm:px-6 lg:px-8 border bg-gray-100 rounded-lg shadow-md">
         <div className="flex flex-wrap -mx-2">
           <div className="w-full sm:w-1/3 p-2">
             <label
@@ -248,22 +309,36 @@ const NonPoGrn = () => {
             />
           </div>
 
-          <div className="w-full sm:w-1/3 p-2">
-            <label
-              htmlFor="input3"
-              className="block text-sm font-medium text-gray-700"
-            >
-              Delivery Date
-            </label>
-            <DatePicker
-              showTimeSelect
-              timeIntervals={1}
-              dateFormat="Pp"
-              selected={regi.receivingDate}
-              onChange={handleReceivingDate}
-              className="bg-gray-100 rounded-[30px] px-1 sm:px-4 py-1 sm:py-2 max-w-[300px] border border-gray-400  p-2 w-full capitalize "
-            />
-          </div>
+          <LocalizationProvider dateAdapter={AdapterDayjs}>
+            <div>
+              <label
+                htmlFor="receivedDate"
+                className="block mb-2 text-sm font-medium text-gray-900 dark:text-white"
+              >
+                Received Date
+              </label>
+              <DatePicker
+                views={["year", "month", "day"]}
+                format="YYYY-MM-DD"
+                value={regi.receivingDate ? dayjs(regi.receivingDate) : null}
+                onChange={(newValue) =>
+                  handleReceivingDate(newValue ? newValue.toDate() : null)
+                }
+                slotProps={{
+                  textField: {
+                    size: "small",
+                    fullWidth: true,
+                    error: !regi.receivingDate,
+                    helperText: regi.receivingDate
+                      ? ""
+                      : "Please select a date",
+                    className:
+                      "bg-gray-50 border border-gray-400 text-gray-900 text-sm rounded-[30px] focus:ring-blue-500 focus:border-blue-500 block dark:bg-gray-600 dark:border-gray-500 dark:placeholder-gray-400 dark:text-white",
+                  },
+                }}
+              />
+            </div>
+          </LocalizationProvider>
 
           <div className="w-full sm:w-1/3 p-2">
             <label
@@ -293,10 +368,10 @@ const NonPoGrn = () => {
       {/* Table ya items zilizojazwa details  */}
       <div
         style={{ maxHeight: "500px" }}
-        className="mx-auto rounded-md border-2 mt-10 max-h-96 px-4 py-6 sm:px-6 lg:px-8 bg-slate-400/20 shadow-lg"
+        className="mx-auto rounded-md border-2 mt-10 max-h-96 px-4 py-6 sm:px-6 lg:px-8 shadow-lg"
       >
         <div className="overflow-auto">
-          <table className="min-w-full leading-normal border table-fixed">
+          <table className="min-w-full leading-normal  table-fixed">
             <thead>
               <tr>
                 <th className="px-5 py-3 border-b-2 border-gray-200 bg-gray-200  text-xs font-bold text-gray-600 uppercase tracking-wider">
@@ -320,7 +395,15 @@ const NonPoGrn = () => {
                 </th>
 
                 <th className="px-5 py-3 border-b-2 border-gray-200 bg-gray-200  text-xs font-bold text-gray-600 uppercase tracking-wider">
-                  Selling Price
+                  Total Buying Price
+                </th>
+
+                <th className="px-5 py-3 border-b-2 border-gray-200 bg-gray-200  text-xs font-bold text-gray-600 uppercase tracking-wider">
+                  Previous Price
+                </th>
+
+                <th className="px-5 py-3 border-b-2 border-gray-200 bg-gray-200  text-xs font-bold text-gray-600 uppercase tracking-wider">
+                  New Price
                 </th>
 
                 <th className="px-5 py-3 border-b-2 border-gray-200 bg-gray-200  text-xs font-bold text-gray-600 uppercase tracking-wider">
@@ -335,124 +418,152 @@ const NonPoGrn = () => {
                   Remove
                 </th>
               </tr>
+
+              <tr className="h-4" />
             </thead>
 
             <tbody>
               <>
                 {Array.isArray(itemHold) &&
                   itemHold.map((item, index) => (
-                    <tr key={index + 1} className="border-b">
-                      <td className="py-2 px-3 font-normal text-base border-x  hover:bg-gray-100">
-                        <div className="flex justify-center">
-                          <div className="ml-3">
-                            <p className="text-gray-900 whitespace-no-wrap font-bold capitalize bg-green-200 rounded-full flex items-center justify-center h-8 w-8">
-                              {index + 1}
-                            </p>
-                          </div>
-                        </div>
-                      </td>
-
-                      <td
-                        className={`py-2 px-3 font-normal text-base border-x ${
-                          index == 0
-                            ? "border-t border-gray"
-                            : index == item?.length
-                            ? "border-y border-gray"
-                            : "border-t border-gray"
-                        } hover:bg-gray-100`}
+                    <>
+                      <tr
+                        key={index + 1}
+                        className="h-16 border-gray-500 shadow-md bg-gray-100"
                       >
-                        <div className="flex">
-                          <span className="relative inline-block px-3 py-1 font-semibold capitalize leading-tight">
-                            <span
-                              aria-hidden
-                              className="absolute inset-0 opacity-50 rounded-full"
-                            />
-                            <span className="relative text-black">
-                              {item.name}
-                            </span>
-                          </span>
-                        </div>
-                      </td>
-
-                      <td className="py-2 px-3 font-normal text-base border-x  hover:bg-gray-100  whitespace-nowrap overflow-hidden overflow-ellipsis max-w-[200px]">
-                        <div className="items-center">
-                          <div className="ml-3">
-                            <p className="text-gray-900 whitespace-no-wrap font-semibold capitalize">
-                              {items.itemQuantity}
-                            </p>
+                        <td className="py-2 px-3 font-normal text-base border-x  hover:bg-gray-100">
+                          <div className="flex justify-center">
+                            <div className="ml-3">
+                              <p className="text-gray-900 whitespace-no-wrap font-bold capitalize bg-green-200 rounded-full flex items-center justify-center h-8 w-8">
+                                {index + 1}
+                              </p>
+                            </div>
                           </div>
-                        </div>
-                      </td>
+                        </td>
 
-                      <td className="py-2 px-3 font-normal text-base border-x hover:bg-gray-100">
-                        <div className="items-center">
-                          <div className="ml-3">
-                            <p className="text-gray-900 whitespace-no-wrap font-semibold capitalize">
-                              {item.quantity}
-                            </p>
-                          </div>
-                        </div>
-                      </td>
-
-                      <td className="py-2 px-3 font-normal text-base border-x  hover:bg-gray-100">
-                        <div className="items-center">
-                          <div className="ml-3">
-                            <p className="text-gray-900 whitespace-no-wrap font-semibold capitalize">
-                              {item.buyingPrice}
-                            </p>
-                          </div>
-                        </div>
-                      </td>
-
-                      <td className="py-2 px-3 font-normal text-base border-x  hover:bg-gray-100">
-                        <div className="items-center">
-                          <div className="ml-3">
-                            <p className="text-gray-900 whitespace-no-wrap font-semibold capitalize">
-                              {item.sellingPrice}
-                            </p>
-                          </div>
-                        </div>
-                      </td>
-
-                      <td>
-                        <div className="items-center">
-                          <div className="ml-3">
-                            <p className="text-gray-900 whitespace-no-wrap font-semibold capitalize">
-                              {item.manufactureDate}
-                            </p>
-                          </div>
-                        </div>
-                      </td>
-
-                      <td>
-                        <div className="items-center">
-                          <div className="ml-3">
-                            <p className="text-gray-900 whitespace-no-wrap font-semibold capitalize">
-                              {item.expiryDate}
-                            </p>
-                          </div>
-                        </div>
-                      </td>
-
-                      <td>
-                        <div className="flex justify-center">
-                          <button
-                            type="button"
-                            onClick={() => removeItem(item)}
-                          >
-                            <span className="relative inline-block px-3 py-1 font-semibold text-gray-900 leading-tight ">
+                        <td
+                          className={`py-2 px-3 font-normal text-base border-x ${
+                            index == 0
+                              ? "border-t border-gray"
+                              : index == item?.length
+                              ? "border-y border-gray"
+                              : "border-t border-gray"
+                          } hover:bg-gray-100`}
+                        >
+                          <div className="flex">
+                            <span className="relative inline-block px-3 py-1 font-semibold capitalize leading-tight">
                               <span
                                 aria-hidden
                                 className="absolute inset-0 opacity-50 rounded-full"
                               />
-                              <span className="relative text-3xl">
-                                <MdDeleteForever />
+                              <span className="relative text-black">
+                                {item.name}
                               </span>
                             </span>
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
+                          </div>
+                        </td>
+
+                        <td className="py-2 px-3 font-normal text-base border-x  hover:bg-gray-100  whitespace-nowrap overflow-hidden overflow-ellipsis max-w-[200px]">
+                          <div className="items-center text-center">
+                            <div className="ml-3">
+                              <p className="text-gray-900 whitespace-no-wrap font-semibold capitalize">
+                                {formatPriceWithCommas(item.previousQuantity)}
+                              </p>
+                            </div>
+                          </div>
+                        </td>
+
+                        <td className="py-2 px-3 font-normal text-base border-x hover:bg-gray-100">
+                          <div className="items-center text-center">
+                            <div className="ml-3">
+                              <p className="text-gray-900 whitespace-no-wrap font-semibold capitalize">
+                                {formatPriceWithCommas(item.quantity)}
+                              </p>
+                            </div>
+                          </div>
+                        </td>
+
+                        <td className="py-2 px-3 font-normal text-base border-x  hover:bg-gray-100">
+                          <div className="items-center text-center">
+                            <div className="ml-3">
+                              <p className="text-gray-900 whitespace-no-wrap font-semibold capitalize">
+                                {formatPriceWithCommas(item.buyingPrice)}
+                              </p>
+                            </div>
+                          </div>
+                        </td>
+
+                        <td className="py-2 px-3 font-normal text-base border-x  hover:bg-gray-100">
+                          <div className="items-center text-center">
+                            <div className="ml-3">
+                              <p className="text-gray-900 whitespace-no-wrap font-semibold capitalize">
+                                {formatPriceWithCommas(item.totalCost)}
+                              </p>
+                            </div>
+                          </div>
+                        </td>
+
+                        <td className="py-2 px-3 font-normal text-base border-x  hover:bg-gray-100  whitespace-nowrap overflow-hidden overflow-ellipsis max-w-[200px]">
+                          <div className="items-center text-center">
+                            <div className="ml-3">
+                              <p className="text-gray-900 whitespace-no-wrap font-semibold capitalize">
+                                {formatPriceWithCommas(item.previousPrice)}
+                              </p>
+                            </div>
+                          </div>
+                        </td>
+
+                        <td className="py-2 px-3 font-normal text-base border-x  hover:bg-gray-100">
+                          <div className="items-center text-center">
+                            <div className="ml-3">
+                              <p className="text-gray-900 whitespace-no-wrap font-semibold capitalize">
+                                {formatPriceWithCommas(item.sellingPrice)}
+                              </p>
+                            </div>
+                          </div>
+                        </td>
+
+                        <td>
+                          <div className="items-center text-center">
+                            <div className="ml-3">
+                              <p className="text-gray-900 whitespace-no-wrap font-semibold capitalize">
+                                {item.manufactureDate}
+                              </p>
+                            </div>
+                          </div>
+                        </td>
+
+                        <td>
+                          <div className="items-center text-center">
+                            <div className="ml-3">
+                              <p className="text-gray-900 whitespace-no-wrap font-semibold capitalize">
+                                {item.expiryDate}
+                              </p>
+                            </div>
+                          </div>
+                        </td>
+
+                        <td>
+                          <div className="flex justify-center">
+                            <button
+                              type="button"
+                              onClick={() => removeItem(item)}
+                            >
+                              <span className="relative inline-block px-3 py-1 font-semibold text-gray-900 leading-tight ">
+                                <span
+                                  aria-hidden
+                                  className="absolute inset-0 opacity-50 rounded-full"
+                                />
+                                <span className="relative text-3xl">
+                                  <MdDeleteForever />
+                                </span>
+                              </span>
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                      <tr className="h-4" />
+                    </>
                   ))}
               </>
             </tbody>
@@ -486,7 +597,6 @@ const NonPoGrn = () => {
               "Submit"
             )}
             {error && <p className="text-red-500">{error}</p>}
-            {success && <p className="text-green-600">{success}</p>}
           </button>
         </div>
       </div>
