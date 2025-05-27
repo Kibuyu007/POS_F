@@ -54,7 +54,7 @@ const Settings = () => {
           <Items />
         ) : selectedSetting === "Items Categories" ? (
           <ItemsCategories />
-        ) : selectedSetting === "Purchasing" ? (
+        ) : selectedSetting === "Purchase Order" ? (
           <Manunuzi />
         ) : selectedSetting === "Purchasing Bills" ? (
           <Madeni />

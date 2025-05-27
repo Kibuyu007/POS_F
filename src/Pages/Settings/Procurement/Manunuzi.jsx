@@ -1,104 +1,186 @@
-import { useEffect, useState } from "react";
-import DatePicker from "react-datepicker";
-import { useDispatch, useSelector } from "react-redux";
-import { fetchSuppliers } from "../../../Redux/suppliers";
 import axios from "axios";
-import ManunuziHold from "./ManunuziHold";
+import { useEffect, useState } from "react";
+import toast from "react-hot-toast";
+import { FaSearch } from "react-icons/fa";
+
+//Icons
+import { useDispatch, useSelector } from "react-redux";
+import { fetchProducts, searchItemsEveryWhere } from "../../../Redux/items";
+import { TiArrowRightThick } from "react-icons/ti";
+import { IoMdRemoveCircle } from "react-icons/io";
 
 const Manunuzi = () => {
-  // Redux State
-  const { supplier } = useSelector((state) => state.suppliers);
-
+  const [selectedItem, setSelectedItem] = useState([]);
+  const { items } = useSelector((state) => state.items);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [showError, setShowError] = useState("");
   const dispatch = useDispatch();
 
-  const [showModalAdd, setShowModalAdd] = useState(false);
-
-  const [regi, setRegi] = useState({
-    supplierName: "",
-    balance: 0,
-    buyingPrice: 0,
-    receivingDate: new Date(),
-    newManufactureDate: new Date(),
-    newExpireDate: new Date(),
-    invoiceNumber: "",
-    lpoNumber: "",
-    deliveryPerson: "",
-    deliveryNumber: "",
-    description: "",
-  });
-
+  //Fetch Items
   useEffect(() => {
-    dispatch(fetchSuppliers());
+    dispatch(fetchProducts());
   }, [dispatch]);
 
-  //HANDLE CHANGE FOR INPUT
-  const handleChange = (e) => {
-    const { name, value } = e.target;
-    setRegi({ ...regi, [name]: value });
-  };
+  //Restrict select item twice
+  const handleItemSelection = (selectedItemToAdd) => {
+    const isSelected = selectedItem.some(
+      (item) => item._id === selectedItemToAdd._id
+    );
 
-  //HANDLE MANUFACTURE DATE
-  const handleManufacturedDate = (date) => {
-    setRegi({ ...regi, newManufactureDate: date });
-  };
-
-  //HANDLE EXPIRE DATE
-  const handleExpireDate = (date) => {
-    setRegi({ ...regi, newExpireDate: date });
-  };
-
-  //HANDLE RECEIVING DATE
-  const handleReceivingDate = (date) => {
-    setRegi({ ...regi, receivingDate: date });
-  };
-
-  const [itemHold, setItemHold] = useState([]);
-
-  const getHoldItem = async () => {
-    try {
-      const response = await axios.get(
-        "http://localhost:4004/api/manunuzi/getHold"
-      );
-      setItemHold(response.data.allHold);
-    } catch (error) {
-      console.error("Error fetching items:", error);
+    if (isSelected) {
+      // Item already selected, so do not add it again
+      return;
+    } else {
+      setSelectedItem((prevItems) => [...prevItems, selectedItemToAdd]);
     }
   };
 
-  useEffect(() => {
-    getHoldItem();
-  }, [dispatch]);
+  //SUBMIT ALL DATA
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    try {
+      const response = await axios.post(
+        "http://localhost:6100/api/manunuzi/newStock",
+        {
+          items: selectedItem.map((item) => ({
+            name: item.name,
+            requiredQuantity: parseFloat(item.requiredQuantity),
+            description: item.description,
+          })),
+        }
+      );
+      console.log("New stocks added successfully", response.data);
+      const successMessage = response.data;
+
+      toast.success(successMessage.message, {
+        style: {
+          borderRadius: "12px",
+          background: "#27ae60",
+          color: "#fff",
+          fontSize: "26px",
+        },
+      });
+
+      dispatch(fetchProducts());
+
+      setSelectedItem([]);
+    } catch (error) {
+      setShowError("This item is already selected.");
+      console.error("Error adding new stocks:", error);
+      toast.error("There is Error in Addning  New Stock", {
+        style: {
+          borderRadius: "12px",
+          background: "#27ae60",
+          color: "#fff",
+          fontSize: "26px",
+        },
+      });
+    }
+  };
 
   //REMOVE SELECTED ITEM
   const removeItem = (itemToRemove) => {
-    setItemHold((items) => items.filter((item) => item !== itemToRemove));
+    setSelectedItem((items) => items.filter((item) => item !== itemToRemove));
   };
 
   //HANDLE CANCEL FORM
   const handleCancel = () => {
-    setItemHold([]);
-    setRegi({
-      balance: "",
-      buyingPrice: "",
-      newManufactureDate: new Date(),
-      newExpireDate: new Date(),
-      invoiceNumber: "",
-      lpoNumber: "",
-      deliveryPerson: "",
-      deliveryNumber: "",
-      description: "",
-    });
+    setSelectedItem([]);
   };
 
   return (
-    <div className="h-[80vh]  md:flex-row gap-3 px-4 overflow-hidden">
-      <div className="bg-gray-50 rounded-xl p-6 shadow-lg border text-white overflow-y-auto">
-        <h2 className="text-xl text-black font-semibold mb-4">
-          Purchase Details
-        </h2>
+    <section className="flex flex-col md:flex-row gap-3 overflow-hidden mt-8 shadow-[0px_0px_0px_1px_rgba(0,0,0,0.06),0px_1px_1px_-0.5px_rgba(0,0,0,0.06),0px_3px_3px_-1.5px_rgba(0,0,0,0.06),_0px_6px_6px_-3px_rgba(0,0,0,0.06),0px_12px_12px_-6px_rgba(0,0,0,0.06),0px_24px_24px_-12px_rgba(0,0,0,0.06)]">
+      {/* Section One Item List */}
+      {/* Right Section: Products Table */}
+      <div className="flex-[2] bg-secondary p-4 sm:p-6 border rounded-md shadow-[0px_0px_0px_1px_rgba(0,0,0,0.06),0px_1px_1px_-0.5px_rgba(0,0,0,0.06),0px_3px_3px_-1.5px_rgba(0,0,0,0.06),_0px_6px_6px_-3px_rgba(0,0,0,0.06),0px_12px_12px_-6px_rgba(0,0,0,0.06),0px_24px_24px_-12px_rgba(0,0,0,0.06)] text-black w-full md:w-auto overflow-y-auto max-h-[60vh] md:max-h-[100vh] scrollbar-hide ">
+        <div>
+          <div className="font-bold text-xl text-black">Products</div>
 
+          {/* Search Input */}
+          <div className="flex items-center p-2 rounded-md">
+            <div className="hidden sm:flex items-center bg-gray-100 rounded-[30px] px-3 sm:px-4 py-1 sm:py-2 w-full max-w-[300px] border border-gray-400">
+              <FaSearch className="w-4 h-4 sm:w-5 sm:h-5 mr-2 text-black" />
+              <input
+                type="text"
+                placeholder="Search Item..."
+                className="bg-transparent outline-none px-2 py-1 w-full text-black"
+                value={searchQuery}
+                onChange={(e) => {
+                  setSearchQuery(e.target.value);
+                  dispatch(searchItemsEveryWhere(e.target.value));
+                }}
+              />
+            </div>
+          </div>
+
+          <div className="max-h-[400px] overflow-y-auto mt-4  rounded-lg">
+            <table className="min-w-full leading-normal mt-6  rounded-lg p-4">
+              <thead>
+                <tr>
+                  <th className="px-5 py-3 border-b-2 border-gray-200 bg-gray-200 text-center text-xs font-bold text-gray-900 uppercase tracking-wider">
+                    (S/N)
+                  </th>
+                  <th className="px-5 py-3 border-b-2 border-gray-200 bg-gray-200 text-center text-xs font-bold text-gray-900 uppercase tracking-wider">
+                    Product Name
+                  </th>
+                  <th className="px-5 py-3 border-b-2 border-gray-200 bg-gray-200 text-center text-xs font-bold text-gray-900 uppercase tracking-wider">
+                    Balance
+                  </th>
+                  <th className="px-5 py-3 border-b-2 border-gray-200 bg-gray-200 text-center text-xs font-bold text-gray-900 uppercase tracking-wider">
+                    Select
+                  </th>
+                </tr>
+                <tr className="h-4" />
+              </thead>
+              <tbody className="overflow-auto text-black">
+                {items?.map((item, index) => (
+                  <>
+                    <tr
+                      key={item._id}
+                      className="h-16 border-gray-500 shadow-md bg-gray-100"
+                    >
+                      <td className="py-2 px-3 font-normal text-base border-x border-t border-gray text-center">
+                        {index + 1}
+                      </td>
+                      <td className="py-2 px-3 font-normal text-base border-x border-t border-gray capitalize">
+                        {item.name}
+                      </td>
+                      <td className="py-2 px-3 font-normal text-base border-x border-t border-gray text-center">
+                        {item.itemQuantity}
+                      </td>
+                      <td className="py-2 px-3 font-normal text-base border-x border-t border-gray text-center">
+                        <button
+                          onClick={() => handleItemSelection(item)}
+                          className="cursor-pointer"
+                        >
+                          <TiArrowRightThick />
+                        </button>
+                      </td>
+                    </tr>
+                    <tr className="h-4" />
+                  </>
+                ))}
+              </tbody>
+            </table>
+          </div>
+
+          {/* Error Message */}
+          {showError && (
+            <p className="text-red-500 text-sm mb-2 ml-6">{showError}</p>
+          )}
+        </div>
+      </div>
+
+      {/* ****************************************************************************************************************************************** */}
+
+      {/* Section 2 */}
+      <div className="flex-[4] bg-secondary p-4 sm:p-6 border rounded-md shadow-[0px_0px_0px_1px_rgba(0,0,0,0.06),0px_1px_1px_-0.5px_rgba(0,0,0,0.06),0px_3px_3px_-1.5px_rgba(0,0,0,0.06),_0px_6px_6px_-3px_rgba(0,0,0,0.06),0px_12px_12px_-6px_rgba(0,0,0,0.06),0px_24px_24px_-12px_rgba(0,0,0,0.06)] text-black w-full md:w-auto overflow-y-auto max-h-[60vh] md:max-h-[100vh] scrollbar-hide ">
         {/* header */}
         <div className="flex flex-row justify-between items-center px-5 mt-5">
+          <div className="text-gray-800 ">
+            <div className="font-bold text-xl">Purchace Details</div>
+          </div>
+
           <div className="flex items-center ">
             <div>
               <span className="px-4 py-2 bg-gray-200 text-gray-800 font-semibold rounded">
@@ -109,138 +191,9 @@ const Manunuzi = () => {
         </div>
         {/* end header */}
 
-        {/* Manunuzi Details */}
-        <div className="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8 border-2 rounded-lg">
-          <div className="flex flex-wrap -mx-2">
-            <div className="w-full sm:w-1/3 p-2">
-              <label
-                htmlFor="supplierName"
-                className="block text-sm font-medium text-gray-700"
-              >
-                Supplier
-              </label>
-              <select
-                name="supplierName"
-                className="bg-gray-100 rounded-[30px] px-1 sm:px-4 py-1 sm:py-2 max-w-[300px] border border-gray-400  p-2 w-full capitalize text-black"
-              >
-                <option value="" disabled>
-                  Select Supplier
-                </option>
-                {supplier.map((s) => (
-                  <option key={s._id} value={s._id}>
-                    {s.supplierName}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            <div className="w-full sm:w-1/3 p-2 ">
-              <label
-                htmlFor="input2"
-                className="block text-sm font-medium text-gray-700"
-              >
-                Invoice Number
-              </label>
-              <input
-                type="text"
-                name="invoiceNumber"
-                onChange={handleChange}
-                className="bg-gray-100 rounded-[30px] px-1 sm:px-4 py-1 sm:py-2 max-w-[300px] border border-gray-400  p-2 w-full capitalize text-black"
-              />
-            </div>
-            <div className="w-full sm:w-1/3 p-2">
-              <label
-                htmlFor="input3"
-                className="block text-sm font-medium text-gray-700"
-              >
-                LPO Number
-              </label>
-              <input
-                type="text"
-                name="lpoNumber"
-                onChange={handleChange}
-                className="bg-gray-100 rounded-[30px] px-1 sm:px-4 py-1 sm:py-2 max-w-[300px] border border-gray-400  p-2 w-full capitalize text-black"
-              />
-            </div>
-
-            <div className="w-full sm:w-1/3 p-2">
-              <label
-                htmlFor="input3"
-                className="block text-sm font-medium text-gray-700"
-              >
-                Delivery Person
-              </label>
-              <input
-                type="text"
-                name="deliveryPerson"
-                onChange={handleChange}
-                className="bg-gray-100 rounded-[30px] px-1 sm:px-4 py-1 sm:py-2 max-w-[300px] border border-gray-400  p-2 w-full capitalize text-black"
-              />
-            </div>
-
-            <div className="w-full sm:w-1/3 p-2">
-              <label
-                htmlFor="input3"
-                className="block text-sm font-medium text-gray-700"
-              >
-                Delivery Note Number
-              </label>
-              <input
-                type="text"
-                name="deliveryNumber"
-                onChange={handleChange}
-                className="bg-gray-100 rounded-[30px] px-1 sm:px-4 py-1 sm:py-2 max-w-[300px] border border-gray-400  p-2 w-full capitalize text-black"
-              />
-            </div>
-
-            <div className="w-full sm:w-1/3 p-2">
-              <label
-                htmlFor="input3"
-                className="block text-sm font-medium text-gray-700"
-              >
-                Delivery Date
-              </label>
-              <DatePicker
-                showTimeSelect
-                timeIntervals={1}
-                dateFormat="Pp"
-                onChange={handleReceivingDate}
-                className="bg-gray-100 rounded-[30px] px-1 sm:px-4 py-1 sm:py-2 max-w-[300px] border border-gray-400  p-2 w-full capitalize "
-              />
-            </div>
-
-            <div className="w-full sm:w-1/3 p-2">
-              <label
-                htmlFor="input3"
-                className="block text-sm font-medium text-gray-700"
-              >
-                Descriptions
-              </label>
-              <textarea
-                type="text"
-                name="description"
-                className="bg-gray-100 rounded-[30px] px-1 sm:px-4 py-1 sm:py-2 max-w-[300px] border border-gray-400  p-2 w-full capitalize text-black"
-              />
-            </div>
-          </div>
-        </div>
-
-        <div>
-          <button
-            onClick={() => setShowModalAdd(true)}
-            className="mt-6 border rounded-md px-6 py-2 bg-green-300 font-bold text-black"
-          >
-            Add Bidhaa
-          </button>
-        </div>
-
         {/* Table ya items zilizojazwa details  */}
-        <div
-          style={{ maxHeight: "500px" }}
-          className="mx-auto max-w-7xl rounded-md border-2 mt-10 max-h-96 px-4 py-6 sm:px-6 lg:px-8"
-        >
-          <div className="overflow-auto">
-            <table className="min-w-full leading-normal border table-fixed">
+        <div className="mx-auto max-w-7xl px-4 py-10 sm:px-6 lg:px-8">
+            <table className="min-w-full leading-normal  table-fixed">
               <thead>
                 <tr>
                   <th className="px-5 py-3 border-b-2 border-gray-200 bg-gray-200 text-center text-xs font-bold text-gray-600 uppercase tracking-wider">
@@ -256,163 +209,167 @@ const Manunuzi = () => {
                   </th>
 
                   <th className="px-5 py-3 border-b-2 border-gray-200 bg-gray-200 text-center text-xs font-bold text-gray-600 uppercase tracking-wider">
-                    New Balance
-                  </th>
-
-                  <th className="px-5 py-3 border-b-2 border-gray-200 bg-gray-200 text-center text-xs font-bold text-orange-500 uppercase tracking-wider">
-                    Buying Price
+                    Required Quantity
                   </th>
 
                   <th className="px-5 py-3 border-b-2 border-gray-200 bg-gray-200 text-center text-xs font-bold text-gray-600 uppercase tracking-wider">
-                    Receiving Date
+                    Decreption
                   </th>
 
                   <th className="px-5 py-3 border-b-2 border-gray-200 bg-gray-200 text-center text-xs font-bold text-gray-600 uppercase tracking-wider">
-                    Expiring Date
-                  </th>
-
-                  
-                  <th className="px-5 py-3 border-b-2 border-gray-200 bg-gray-200 text-center text-xs font-bold text-gray-600 uppercase tracking-wider">
-                    Edit
-                  </th>
-
-                  <th className="px-5 py-3 border-b-2 border-gray-200 bg-gray-200 text-center text-xs font-bold text-gray-600 uppercase tracking-wider">
-                    Remove
+                    Action
                   </th>
                 </tr>
+                <tr className="h-4" />
               </thead>
 
               <tbody>
                 <>
-                  {Array.isArray(itemHold) &&
-                    itemHold.map((item, index) => (
-                      <tr key={index + 1} className="border-b">
-                        <td className="py-2 px-3 font-normal text-base border-x  hover:bg-gray-100">
-                          <div className="flex justify-center">
-                            <div className="ml-3">
-                              <p className="text-gray-900 whitespace-no-wrap font-bold capitalize bg-green-200 rounded-full flex items-center justify-center h-8 w-8">
-                                {index + 1}
-                              </p>
+                  {Array.isArray(selectedItem) &&
+                    selectedItem.map((item, index) => (
+                      <>
+                        <tr key={index + 1}  className="h-16 border-gray-500 shadow-md bg-gray-100">
+                          <td className="py-2 px-3 font-normal text-base border-x  hover:bg-gray-100">
+                            <div className="flex justify-center">
+                              <div className="ml-3">
+                                <p className="text-gray-900 whitespace-no-wrap font-bold capitalize bg-green-300 rounded-full flex items-center justify-center h-8 w-8">
+                                  {index + 1}
+                                </p>
+                              </div>
                             </div>
-                          </div>
-                        </td>
+                          </td>
 
-                        <td
-                          className={`py-2 px-3 font-normal text-base border-x ${
-                            index == 0
-                              ? "border-t border-gray"
-                              : index == item?.length
-                              ? "border-y border-gray"
-                              : "border-t border-gray"
-                          } hover:bg-gray-100`}
-                        >
-                          <div className="flex">
-                            <span className="relative inline-block px-3 py-1 font-semibold capitalize leading-tight">
-                              <span
-                                aria-hidden
-                                className="absolute inset-0 opacity-50 rounded-full"
-                              />
-                              <span className="relative">
-                                {item.itemId.name}
-                              </span>
-                            </span>
-                          </div>
-                        </td>
-
-                        <td className="py-2 px-3 font-normal text-base border-x  hover:bg-gray-100  whitespace-nowrap overflow-hidden overflow-ellipsis max-w-[200px]">
-                          <div className="items-center">
-                            <div className="ml-3">
-                              <p className="text-gray-900 whitespace-no-wrap font-semibold capitalize">
-                                {item.itemId.itemQuantity}
-                              </p>
-                            </div>
-                          </div>
-                        </td>
-
-                        <td className="py-2 px-3 font-normal text-base border-x hover:bg-gray-100">
-                         <div className="items-center">
-                            <div className="ml-3">
-                              <p className="text-gray-900 whitespace-no-wrap font-semibold capitalize">
-                                {item.quantity}
-                              </p>
-                            </div>
-                          </div>
-                        </td>
-
-                        <td className="py-2 px-3 font-normal text-base border-x  hover:bg-gray-100">
-                          <div className="items-center">
-                            <div className="ml-3">
-                              <p className="text-gray-900 whitespace-no-wrap font-semibold capitalize">
-                                {item.buyingPrice}
-                              </p>
-                            </div>
-                          </div>
-                        </td>
-
-                        <td>
-                         <div className="items-center">
-                            <div className="ml-3">
-                              <p className="text-gray-900 whitespace-no-wrap font-semibold capitalize">
-                                {item.receivedDate}
-                              </p>
-                            </div>
-                          </div>
-                        </td>
-
-                         <td>
-                         <div className="items-center">
-                            <div className="ml-3">
-                              <p className="text-gray-900 whitespace-no-wrap font-semibold capitalize">
-                                {item.expiryDate}
-                              </p>
-                            </div>
-                          </div>
-                        </td>
-
-                        <td>
-                          <div className="flex justify-center">
-                            <button
-                              type="button"
-                              onClick={() => removeItem(item)}
-                            >
-                              <span className="relative inline-block px-3 py-1 font-semibold text-green-900 leading-tight ">
+                          <td
+                            className={`py-2 px-3 font-normal text-base border-x ${
+                              index == 0
+                                ? "border-t border-gray"
+                                : index == item?.length
+                                ? "border-y border-gray"
+                                : "border-t border-gray"
+                            } hover:bg-gray-100`}
+                          >
+                            <div className="flex">
+                              <span className="relative inline-block px-3 py-1 font-semibold capitalize leading-tight">
                                 <span
                                   aria-hidden
                                   className="absolute inset-0 opacity-50 rounded-full"
                                 />
-                                <span className="relative">icon</span>
+                                <span className="relative">{item.name}</span>
                               </span>
-                            </button>
-                          </div>
-                        </td>
-                      </tr>
+                            </div>
+                          </td>
+
+                          <td className="py-2 px-3 font-normal text-base border-x  hover:bg-gray-100  whitespace-nowrap overflow-hidden overflow-ellipsis max-w-[200px]">
+                            <div className="items-center">
+                              <div className="ml-3">
+                                <p className="text-gray-900 whitespace-no-wrap font-semibold capitalize">
+                                  {item.itemQuantity}
+                                </p>
+                              </div>
+                            </div>
+                          </td>
+
+                          <td className="py-2 px-3 font-normal text-base border-x hover:bg-gray-100">
+                            <div>
+                              <input
+                                type="number"
+                                value={item.requiredQuantity}
+                                onChange={(e) => {
+                                  const updatedItems = selectedItem.map(
+                                    (selected, idx) => {
+                                      if (idx === index) {
+                                        return {
+                                          ...selected,
+                                          requiredQuantity: parseFloat(
+                                            e.target.value
+                                          ),
+                                        };
+                                      }
+                                      return selected;
+                                    }
+                                  );
+                                  setSelectedItem(updatedItems);
+                                }}
+                                className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-28 p-2 dark:bg-gray-600 dark:border-gray-500 dark:placeholder-gray-400 dark:text-white px-1 py-3"
+                                placeholder="..."
+                                required
+                              />
+                            </div>
+                          </td>
+
+                          <td className="py-2 px-3 font-normal text-base border-x  hover:bg-gray-100">
+                            <div>
+                              <input
+                                type="number"
+                                name="buyingPrice"
+                                onChange={(e) => {
+                                  const updatedItems = selectedItem.map(
+                                    (selected, idx) => {
+                                      if (idx === index) {
+                                        return {
+                                          ...selected,
+                                          description: parseFloat(
+                                            e.target.value
+                                          ),
+                                        };
+                                      }
+                                      return selected;
+                                    }
+                                  );
+                                  setSelectedItem(updatedItems);
+                                }}
+                                className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-md focus:ring-blue-500 focus:border-blue-500 block w-28 p-2 dark:bg-gray-100 dark:border-gray-500 dark:placeholder-gray-400 dark:text-white px-1 py-3"
+                                placeholder="..."
+                                required
+                              />
+                            </div>
+                          </td>
+
+                          <td>
+                            <div className="flex justify-center">
+                              <button
+                                type="button"
+                                onClick={() => removeItem(item)}
+                              >
+                                <span className="relative inline-block px-3 py-1 font-semibold text-green-900 leading-tight ">
+                                  <span
+                                    aria-hidden
+                                    className="absolute inset-0 opacity-50 rounded-full"
+                                  />
+                                  <span className="relative text-2xl text-red-800"><IoMdRemoveCircle /></span>
+                                </span>
+                              </button>
+                            </div>
+                          </td>
+                        </tr>
+                        <tr className="h-4" />
+                      </>
                     ))}
                 </>
               </tbody>
             </table>
-          </div>
+       
 
-          <div className="flex justify-between">
+          <div className="flex justify-between gap-10">
             <button
-              type="button"
-              onClick={handleCancel}
-              className="mt-6 border px-6 py-2 rounded-md bg-secondary text-black"
+              onClick={handleSubmit}
+              type="submit"
+              className="mt-6 border w-full rounded-md p-3 px-2 py-2 bg-green-300 font-bold"
             >
-              Cancel
+              Submit
             </button>
 
             <button
-              type="submit"
-              className="mt-6 border rounded-md px-6 py-2 bg-green-300 font-bold text-black"
+              type="button"
+              onClick={handleCancel}
+              className="mt-6 border w-full rounded-md p-3 px-2 py-2 bg-gray-200 font-bold"
             >
-              Submit
+              Cancel
             </button>
           </div>
         </div>
       </div>
-
-      <ManunuziHold showModal={showModalAdd} setShowModal={setShowModalAdd} />
-    </div>
+    </section>
   );
 };
 
