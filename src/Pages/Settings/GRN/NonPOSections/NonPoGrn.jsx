@@ -1,13 +1,13 @@
 import { useEffect, useState } from "react";
 
-import { fetchSuppliers } from "../../../Redux/suppliers";
+import { fetchSuppliers } from "../../../../Redux/suppliers";
 import { useDispatch, useSelector } from "react-redux";
-import Section2 from "./NonPOSections/Section2";
+import Section2 from "./Section2";
 import toast from "react-hot-toast";
 
 import { MdDeleteForever } from "react-icons/md";
 import axios from "axios";
-import { fetchProducts } from "../../../Redux/items";
+import { fetchProducts } from "../../../../Redux/items";
 
 import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs";
 import { LocalizationProvider } from "@mui/x-date-pickers/LocalizationProvider";

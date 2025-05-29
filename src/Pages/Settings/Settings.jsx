@@ -5,9 +5,12 @@ import ItemsCategories from "./Products/Categories/ItemsCategories";
 import Items from "./Products/Items/Items";
 import Manunuzi from "./Procurement/Manunuzi";
 import Suppliers from "./Procurement/Suppliers";
-import Madeni from "./Procurement/Madeni";
-import PoGrn from "./GRN/PoGrn";
-import NonPoGrn from "./GRN/NonPoGrn";
+import Madeni from "./GRN/Madeni/Madeni";
+import PoGrn from "./GRN/PO GRN/PoGrn";
+import NonPoGrn from "./GRN/NonPOSections/NonPoGrn";
+import CompletedPo from "./Procurement/CompletedPo";
+import CompletedPoGrn from "./GRN/PO GRN/CompletedPoGrn";
+import CompletedNonPO from "./GRN/NonPOSections/CompletedNonPO";
 
 const Settings = () => {
   const [selectedSetting, setSelectedSetting] = useState(null);
@@ -19,7 +22,7 @@ const Settings = () => {
         <SettingsList
           title="Pre-Purchase"
           settings={[
-            { group: "Orders", items: ["Purchase Order", "Purchasing Bills"] },
+            { group: "Orders", items: ["Purchase Order", "Completed PO"] },
             { group: "Vendors", items: ["Suppliers"] },
           ]}
           selectedSetting={selectedSetting}
@@ -29,11 +32,12 @@ const Settings = () => {
         <SettingsList
           title="GRN"
           settings={[
-            { group: "PO GRN", items: ["Pending PO GRN", "Completed PO GRN"] },
+            { group: "PO GRN", items: ["Process PO GRN", "Completed PO GRN"] },
             {
               group: "Non-PO GRN",
               items: ["Process Non-PO GRN", "Completed Non-PO GRN"],
             },
+            { group: "Credit GRN", items: ["Unpaid GRN"] },
           ]}
           selectedSetting={selectedSetting}
           handleSelect={setSelectedSetting}
@@ -65,16 +69,31 @@ const Settings = () => {
           <ItemsCategories />
         ) : selectedSetting === "Purchase Order" ? (
           <Manunuzi />
-        ) : selectedSetting === "Purchasing Bills" ? (
-          <Madeni />
+        ) : selectedSetting === "Completed PO" ? (
+          <CompletedPo />
         ) : selectedSetting === "Suppliers" ? (
           <Suppliers />
-        ) : selectedSetting === "Pending PO GRN" ? (
+        ) : selectedSetting === "Process PO GRN" ? (
           <PoGrn />
+        ) : selectedSetting === "Completed PO GRN" ? (
+          <CompletedPoGrn />
         ) : selectedSetting === "Process Non-PO GRN" ? (
           <NonPoGrn />
+        ) : selectedSetting === "Completed Non-PO GRN" ? (
+          <CompletedNonPO />
+        ) : selectedSetting === "Unpaid GRN" ? (
+          <Madeni />
+        ) : selectedSetting ? (
+          <p className="text-lg">{selectedSetting}</p>
         ) : (
-          <p className="text-lg">{selectedSetting || "No report selected"}</p>
+          <div className="flex flex-col items-center justify-center h-full">
+            <img
+              src="/Setting.png"
+              alt="No report selected"
+              className="w-48 h-48 object-contain mb-4"
+            />
+            <p className="text-lg text-gray-300">No report selected</p>
+          </div>
         )}
       </div>
     </section>

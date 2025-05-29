@@ -10,7 +10,7 @@ const SettingsList = ({ title, settings, selectedSetting, handleSelect }) => {
           if (typeof setting === "object" && setting.group && setting.items) {
             return (
               <li key={idx}>
-                <h4 className="font-semibold text-sm mb-1 bg-gray-100/60  py-2 px-4 rounded-2xl shadow-md">{setting.group}</h4>
+                <h4 className="font-semibold text-sm mb-1 bg-gray-100/60  py-2 px-4 rounded-2xl shadow-[0px_0px_0px_1px_rgba(0,0,0,0.06),0px_1px_1px_-0.5px_rgba(0,0,0,0.06),0px_3px_3px_-1.5px_rgba(0,0,0,0.06),_0px_6px_6px_-3px_rgba(0,0,0,0.06),0px_12px_12px_-6px_rgba(0,0,0,0.06),0px_24px_24px_-12px_rgba(0,0,0,0.06)]">{setting.group}</h4>
                 <ul className="ml-4 space-y-1">
                   {setting.items.map((subItem, subIdx) => (
                     <li

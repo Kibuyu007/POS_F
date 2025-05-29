@@ -2,7 +2,7 @@ import axios from "axios";
 import { useEffect } from "react";
 import { useState } from "react";
 import { IoIosArrowBack, IoIosArrowForward } from "react-icons/io";
-import PreviewPo from "./PreviewPo";
+import PreviewPo from "../../Procurement/PreviewPo";
 
 const PoGrn = () => {
   const [sessions, setSessions] = useState([]);

@@ -147,7 +147,7 @@ const MenuCard = ({ refreshTrigger }) => {
         {categories.map((category) => (
           <div
             key={category._id}
-            className={`flex flex-col items-start justify-between shadow-md p-4 rounded-lg min-w-[150px] cursor-pointer ${
+            className={`flex flex-col items-start justify-between shadow-md p-4 rounded-full mr-2 min-w-[150px] cursor-pointer ${
               selected?._id === category._id
                 ? "bg-green-400/40 text-white"
                 : "bg-gray-200"
@@ -158,12 +158,12 @@ const MenuCard = ({ refreshTrigger }) => {
             }}
           >
             <div className="flex items-center justify-between w-full">
-              <h1 className="text-black text-2xl font-bold">{category.name}</h1>
+              <h1 className="text-black text-2xl font-bold ml-8">{category.name}</h1>
               {selected?._id === category._id && (
-                <GrRadialSelected className="text-black" size={20} />
+                <GrRadialSelected className="text-black mr-4" size={20} />
               )}
             </div>
-            <p className="text-black text-md font-semibold">
+            <p className="text-black text-md font-semibold ml-8">
               {category.itemCount || 0} Items
             </p>
           </div>
@@ -181,9 +181,9 @@ const MenuCard = ({ refreshTrigger }) => {
           >
 
           
-              <div className="w-80 mt-24 m-auto lg:mt-12 max-w-sm shadow-[0_3px_10px_rgb(0,0,0,0.2)] rounded-2xl">
-                <div className="bg-white mt-8 rounded-3xl">
-                  <div className=" lg:w-5/6 m-auto bg-indigo-50 mt-2 p-4 lg:p-4 rounded-xl ">
+              <div className="w-80 mt-24 m-auto lg:mt-12 max-w-sm shadow-[0_3px_10px_rgb(0,0,0,0.2)] rounded-md">
+                <div className="bg-white mt-8 rounded-3xl ">
+                  <div className=" lg:w-5/6 m-auto bg-indigo-50 mt-2 p-4 lg:p-4 rounded-full">
                     <h2 className="text-center text-gray-800 text-2xl font-bold">
                       {item.name}
                     </h2>
@@ -219,7 +219,7 @@ const MenuCard = ({ refreshTrigger }) => {
                       min="1"
                     />
                   </div>
-                  <div className="bg-green-500 w-72 lg:w-5/6 m-auto mt-6 p-2 hover:bg-indigo-50 rounded-lg  text-black text-center shadow-xl shadow-bg-blue-700">
+                  <div className="bg-green-500 w-72 lg:w-5/6 m-auto mt-6 p-2 hover:bg-indigo-50 rounded-sm  text-black text-center shadow-xl shadow-bg-blue-700">
                     <button
                       onClick={() => handleAddCart(item)}
                       className="lg:text-sm text-lg font-bold"

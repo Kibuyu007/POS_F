@@ -8,16 +8,27 @@ import { useDispatch, useSelector } from "react-redux";
 import { fetchProducts, searchItemsEveryWhere } from "../../../Redux/items";
 import { TiArrowRightThick } from "react-icons/ti";
 import { IoMdRemoveCircle } from "react-icons/io";
+import { fetchSuppliers } from "../../../Redux/suppliers";
 
 const Manunuzi = () => {
   const [selectedItem, setSelectedItem] = useState([]);
   const { items } = useSelector((state) => state.items);
+  const { supplier } = useSelector((state) => state.suppliers);
   const [searchQuery, setSearchQuery] = useState("");
   const dispatch = useDispatch();
+
+  const [regi, setRegi] = useState({
+    supplierName: "",
+    comments: "",
+  });
 
   //Fetch Items
   useEffect(() => {
     dispatch(fetchProducts());
+  }, [dispatch]);
+
+  useEffect(() => {
+    dispatch(fetchSuppliers());
   }, [dispatch]);
 
   //Restrict select item twice
@@ -34,6 +45,12 @@ const Manunuzi = () => {
     }
   };
 
+  //HANDLE CHANGE FOR INPUT
+  const handleChangeRegi = (e) => {
+    const { name, value } = e.target;
+    setRegi({ ...regi, [name]: value });
+  };
+
   const handleChange = (index, field, value) => {
     const updated = [...selectedItem];
     updated[index] = {
@@ -47,9 +64,13 @@ const Manunuzi = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
+      const selectedSupplier = supplier.find(
+        (sup) => sup._id === regi.supplierName
+      );
       const response = await axios.post(
         "http://localhost:4004/api/manunuzi/addPo",
         {
+          ...regi,
           allItems: selectedItem.map((item) => ({
             name: item.name,
             requiredQuantity: item.requiredQuantity
@@ -57,6 +78,7 @@ const Manunuzi = () => {
               : 0,
             description: item.description || "",
           })),
+          supplierName: selectedSupplier ? selectedSupplier.supplierName : "",
         }
       );
       console.log("New stocks added successfully", response.data);
@@ -73,6 +95,11 @@ const Manunuzi = () => {
 
       dispatch(fetchProducts());
       setSelectedItem([]);
+      setRegi({
+        supplierName: "",
+        comments: "",
+      });
+
     } catch (error) {
       console.error("Error adding new stocks:", error);
       toast.error("There is Error in Addning  New Stock", {
@@ -337,6 +364,49 @@ const Manunuzi = () => {
               </>
             </tbody>
           </table>
+
+          <div className="flex flex-wrap -mx-2 border-2 mt-4 p-2 gap-6">
+            <div className="w-full sm:w-1/3 p-2">
+              <label
+                htmlFor="supplierName"
+                className="block text-md font-bold text-gray-700"
+              >
+                Supplier
+              </label>
+              <select
+                name="supplierName"
+                value={regi.supplierName}
+                onChange={handleChangeRegi}
+                className="bg-gray-100 rounded-md p-2 w-full py-3 border capitalize"
+              >
+                <option value="" disabled>
+                  Select Supplier
+                </option>
+
+                {supplier.map((s) => (
+                  <option key={s._id} value={s._id}>
+                    {s.supplierName}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div className="w-full sm:w-1/3 p-2">
+              <label
+                htmlFor="input3"
+                className="block text-md font-bold text-gray-700"
+              >
+                Comments
+              </label>
+              <textarea
+                type="text"
+                name="comments"
+                value={regi.comments}
+                onChange={handleChangeRegi}
+                className="bg-gray-100 rounded-md  w-full"
+              />
+            </div>
+          </div>
 
           <div className="flex justify-between gap-10">
             <button
