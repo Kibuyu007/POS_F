@@ -13,7 +13,6 @@ const Manunuzi = () => {
   const [selectedItem, setSelectedItem] = useState([]);
   const { items } = useSelector((state) => state.items);
   const [searchQuery, setSearchQuery] = useState("");
-  const [showError, setShowError] = useState("");
   const dispatch = useDispatch();
 
   //Fetch Items
@@ -35,17 +34,28 @@ const Manunuzi = () => {
     }
   };
 
+  const handleChange = (index, field, value) => {
+    const updated = [...selectedItem];
+    updated[index] = {
+      ...updated[index],
+      [field]: field === "requiredQuantity" ? parseFloat(value) || 0 : value,
+    };
+    setSelectedItem(updated);
+  };
+
   //SUBMIT ALL DATA
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
       const response = await axios.post(
-        "http://localhost:6100/api/manunuzi/newStock",
+        "http://localhost:4004/api/manunuzi/addPo",
         {
-          items: selectedItem.map((item) => ({
+          allItems: selectedItem.map((item) => ({
             name: item.name,
-            requiredQuantity: parseFloat(item.requiredQuantity),
-            description: item.description,
+            requiredQuantity: item.requiredQuantity
+              ? parseFloat(item.requiredQuantity)
+              : 0,
+            description: item.description || "",
           })),
         }
       );
@@ -62,10 +72,8 @@ const Manunuzi = () => {
       });
 
       dispatch(fetchProducts());
-
       setSelectedItem([]);
     } catch (error) {
-      setShowError("This item is already selected.");
       console.error("Error adding new stocks:", error);
       toast.error("There is Error in Addning  New Stock", {
         style: {
@@ -80,7 +88,9 @@ const Manunuzi = () => {
 
   //REMOVE SELECTED ITEM
   const removeItem = (itemToRemove) => {
-    setSelectedItem((items) => items.filter((item) => item !== itemToRemove));
+    setSelectedItem((items) =>
+      items.filter((item) => item._id !== itemToRemove._id)
+    );
   };
 
   //HANDLE CANCEL FORM
@@ -163,11 +173,6 @@ const Manunuzi = () => {
               </tbody>
             </table>
           </div>
-
-          {/* Error Message */}
-          {showError && (
-            <p className="text-red-500 text-sm mb-2 ml-6">{showError}</p>
-          )}
         </div>
       </div>
 
@@ -193,162 +198,145 @@ const Manunuzi = () => {
 
         {/* Table ya items zilizojazwa details  */}
         <div className="mx-auto max-w-7xl px-4 py-10 sm:px-6 lg:px-8">
-            <table className="min-w-full leading-normal  table-fixed">
-              <thead>
-                <tr>
-                  <th className="px-5 py-3 border-b-2 border-gray-200 bg-gray-200 text-center text-xs font-bold text-gray-600 uppercase tracking-wider">
-                    (S/N)
-                  </th>
+          <table className="min-w-full leading-normal  table-fixed">
+            <thead>
+              <tr>
+                <th className="px-5 py-3 border-b-2 border-gray-200 bg-gray-200 text-center text-xs font-bold text-gray-600 uppercase tracking-wider">
+                  (S/N)
+                </th>
 
-                  <th className="px-5 py-3 border-b-2 border-gray-200 bg-gray-200 text-center text-xs font-bold text-gray-600 uppercase tracking-wider">
-                    Product Name
-                  </th>
+                <th className="px-5 py-3 border-b-2 border-gray-200 bg-gray-200 text-center text-xs font-bold text-gray-600 uppercase tracking-wider">
+                  Product Name
+                </th>
 
-                  <th className="px-5 py-3 border-b-2 border-gray-200 bg-gray-200 text-center text-xs font-bold text-gray-600 uppercase tracking-wider">
-                    Previous Balnce
-                  </th>
+                <th className="px-5 py-3 border-b-2 border-gray-200 bg-gray-200 text-center text-xs font-bold text-gray-600 uppercase tracking-wider">
+                  Previous Balnce
+                </th>
 
-                  <th className="px-5 py-3 border-b-2 border-gray-200 bg-gray-200 text-center text-xs font-bold text-gray-600 uppercase tracking-wider">
-                    Required Quantity
-                  </th>
+                <th className="px-5 py-3 border-b-2 border-gray-200 bg-gray-200 text-center text-xs font-bold text-gray-600 uppercase tracking-wider">
+                  Required Quantity
+                </th>
 
-                  <th className="px-5 py-3 border-b-2 border-gray-200 bg-gray-200 text-center text-xs font-bold text-gray-600 uppercase tracking-wider">
-                    Decreption
-                  </th>
+                <th className="px-5 py-3 border-b-2 border-gray-200 bg-gray-200 text-center text-xs font-bold text-gray-600 uppercase tracking-wider">
+                  Decreption
+                </th>
 
-                  <th className="px-5 py-3 border-b-2 border-gray-200 bg-gray-200 text-center text-xs font-bold text-gray-600 uppercase tracking-wider">
-                    Action
-                  </th>
-                </tr>
-                <tr className="h-4" />
-              </thead>
+                <th className="px-5 py-3 border-b-2 border-gray-200 bg-gray-200 text-center text-xs font-bold text-gray-600 uppercase tracking-wider">
+                  Action
+                </th>
+              </tr>
+              <tr className="h-4" />
+            </thead>
 
-              <tbody>
-                <>
-                  {Array.isArray(selectedItem) &&
-                    selectedItem.map((item, index) => (
-                      <>
-                        <tr key={index + 1}  className="h-16 border-gray-500 shadow-md bg-gray-100">
-                          <td className="py-2 px-3 font-normal text-base border-x  hover:bg-gray-100">
-                            <div className="flex justify-center">
-                              <div className="ml-3">
-                                <p className="text-gray-900 whitespace-no-wrap font-bold capitalize bg-green-300 rounded-full flex items-center justify-center h-8 w-8">
-                                  {index + 1}
-                                </p>
-                              </div>
+            <tbody>
+              <>
+                {Array.isArray(selectedItem) &&
+                  selectedItem.map((item, index) => (
+                    <>
+                      <tr
+                        key={index + 1}
+                        className="h-16 border-gray-500 shadow-md bg-gray-100"
+                      >
+                        <td className="py-2 px-3 font-normal text-base border-x  hover:bg-gray-100">
+                          <div className="flex justify-center">
+                            <div className="ml-3">
+                              <p className="text-gray-900 whitespace-no-wrap font-bold capitalize bg-green-300 rounded-full flex items-center justify-center h-8 w-8">
+                                {index + 1}
+                              </p>
                             </div>
-                          </td>
+                          </div>
+                        </td>
 
-                          <td
-                            className={`py-2 px-3 font-normal text-base border-x ${
-                              index == 0
-                                ? "border-t border-gray"
-                                : index == item?.length
-                                ? "border-y border-gray"
-                                : "border-t border-gray"
-                            } hover:bg-gray-100`}
-                          >
-                            <div className="flex">
-                              <span className="relative inline-block px-3 py-1 font-semibold capitalize leading-tight">
-                                <span
-                                  aria-hidden
-                                  className="absolute inset-0 opacity-50 rounded-full"
-                                />
-                                <span className="relative">{item.name}</span>
+                        <td
+                          className={`py-2 px-3 font-normal text-base border-x ${
+                            index == 0
+                              ? "border-t border-gray"
+                              : index == item?.length
+                              ? "border-y border-gray"
+                              : "border-t border-gray"
+                          } hover:bg-gray-100`}
+                        >
+                          <div className="flex">
+                            <span className="relative inline-block px-3 py-1 font-semibold capitalize leading-tight">
+                              <span
+                                aria-hidden
+                                className="absolute inset-0 opacity-50 rounded-full"
+                              />
+                              <span className="relative">{item.name}</span>
+                            </span>
+                          </div>
+                        </td>
+
+                        <td className="py-2 px-3 font-normal text-base border-x  hover:bg-gray-100  whitespace-nowrap overflow-hidden overflow-ellipsis max-w-[200px]">
+                          <div className="items-center">
+                            <div className="ml-3">
+                              <p className="text-gray-900 whitespace-no-wrap font-semibold capitalize">
+                                {item.itemQuantity}
+                              </p>
+                            </div>
+                          </div>
+                        </td>
+
+                        <td className="py-2 px-3 font-normal text-base border-x hover:bg-gray-100">
+                          <div>
+                            <input
+                              type="number"
+                              name="requiredQuantity"
+                              value={item.requiredQuantity}
+                              onChange={(e) =>
+                                handleChange(
+                                  index,
+                                  "requiredQuantity",
+                                  e.target.value
+                                )
+                              }
+                              required
+                              min="1"
+                              className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-28 p-2 dark:bg-gray-600 dark:border-gray-500 dark:placeholder-gray-400 dark:text-white px-1 py-3"
+                              placeholder="..."
+                            />
+                          </div>
+                        </td>
+
+                        <td className="py-2 px-3 font-normal text-base border-x  hover:bg-gray-100">
+                          <div>
+                            <input
+                              type="text"
+                              name="description"
+                              value={item.description}
+                              onChange={(e) =>
+                                handleChange(
+                                  index,
+                                  "description",
+                                  e.target.value
+                                )
+                              }
+                              className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-md focus:ring-blue-500 focus:border-blue-500 block w-28 p-2 dark:bg-gray-100 dark:border-gray-500 dark:placeholder-gray-400 dark:text-white px-1 py-3"
+                              placeholder="..."
+                              required
+                            />
+                          </div>
+                        </td>
+
+                        <td>
+                          <div className="flex justify-center">
+                            <button
+                              type="button"
+                              onClick={() => removeItem(item)}
+                            >
+                              <span className="relative text-2xl text-red-800">
+                                <IoMdRemoveCircle />
                               </span>
-                            </div>
-                          </td>
-
-                          <td className="py-2 px-3 font-normal text-base border-x  hover:bg-gray-100  whitespace-nowrap overflow-hidden overflow-ellipsis max-w-[200px]">
-                            <div className="items-center">
-                              <div className="ml-3">
-                                <p className="text-gray-900 whitespace-no-wrap font-semibold capitalize">
-                                  {item.itemQuantity}
-                                </p>
-                              </div>
-                            </div>
-                          </td>
-
-                          <td className="py-2 px-3 font-normal text-base border-x hover:bg-gray-100">
-                            <div>
-                              <input
-                                type="number"
-                                value={item.requiredQuantity}
-                                onChange={(e) => {
-                                  const updatedItems = selectedItem.map(
-                                    (selected, idx) => {
-                                      if (idx === index) {
-                                        return {
-                                          ...selected,
-                                          requiredQuantity: parseFloat(
-                                            e.target.value
-                                          ),
-                                        };
-                                      }
-                                      return selected;
-                                    }
-                                  );
-                                  setSelectedItem(updatedItems);
-                                }}
-                                className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-28 p-2 dark:bg-gray-600 dark:border-gray-500 dark:placeholder-gray-400 dark:text-white px-1 py-3"
-                                placeholder="..."
-                                required
-                              />
-                            </div>
-                          </td>
-
-                          <td className="py-2 px-3 font-normal text-base border-x  hover:bg-gray-100">
-                            <div>
-                              <input
-                                type="number"
-                                name="buyingPrice"
-                                onChange={(e) => {
-                                  const updatedItems = selectedItem.map(
-                                    (selected, idx) => {
-                                      if (idx === index) {
-                                        return {
-                                          ...selected,
-                                          description: parseFloat(
-                                            e.target.value
-                                          ),
-                                        };
-                                      }
-                                      return selected;
-                                    }
-                                  );
-                                  setSelectedItem(updatedItems);
-                                }}
-                                className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-md focus:ring-blue-500 focus:border-blue-500 block w-28 p-2 dark:bg-gray-100 dark:border-gray-500 dark:placeholder-gray-400 dark:text-white px-1 py-3"
-                                placeholder="..."
-                                required
-                              />
-                            </div>
-                          </td>
-
-                          <td>
-                            <div className="flex justify-center">
-                              <button
-                                type="button"
-                                onClick={() => removeItem(item)}
-                              >
-                                <span className="relative inline-block px-3 py-1 font-semibold text-green-900 leading-tight ">
-                                  <span
-                                    aria-hidden
-                                    className="absolute inset-0 opacity-50 rounded-full"
-                                  />
-                                  <span className="relative text-2xl text-red-800"><IoMdRemoveCircle /></span>
-                                </span>
-                              </button>
-                            </div>
-                          </td>
-                        </tr>
-                        <tr className="h-4" />
-                      </>
-                    ))}
-                </>
-              </tbody>
-            </table>
-       
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                      <tr className="h-4" />
+                    </>
+                  ))}
+              </>
+            </tbody>
+          </table>
 
           <div className="flex justify-between gap-10">
             <button

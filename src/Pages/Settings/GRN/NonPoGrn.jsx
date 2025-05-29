@@ -229,7 +229,7 @@ const NonPoGrn = () => {
           <div className="w-full sm:w-1/3 p-2">
             <label
               htmlFor="supplierName"
-              className="block text-sm font-medium text-gray-700"
+              className="block text-md font-bold text-black"
             >
               Supplier
             </label>
@@ -253,7 +253,7 @@ const NonPoGrn = () => {
           <div className="w-full sm:w-1/3 p-2 ">
             <label
               htmlFor="input2"
-              className="block text-sm font-medium text-gray-700"
+              className="block text-md font-bold text-black"
             >
               Invoice Number
             </label>
@@ -267,7 +267,7 @@ const NonPoGrn = () => {
           <div className="w-full sm:w-1/3 p-2">
             <label
               htmlFor="input3"
-              className="block text-sm font-medium text-gray-700"
+              className="block text-md font-bold text-black"
             >
               LPO Number
             </label>
@@ -282,7 +282,7 @@ const NonPoGrn = () => {
           <div className="w-full sm:w-1/3 p-2">
             <label
               htmlFor="input3"
-              className="block text-sm font-medium text-gray-700"
+              className="block text-md font-bold text-black"
             >
               Delivery Person
             </label>
@@ -297,7 +297,7 @@ const NonPoGrn = () => {
           <div className="w-full sm:w-1/3 p-2">
             <label
               htmlFor="input3"
-              className="block text-sm font-medium text-gray-700"
+              className="block text-md font-bold text-black"
             >
               Delivery Note Number
             </label>
@@ -313,7 +313,7 @@ const NonPoGrn = () => {
             <div>
               <label
                 htmlFor="receivedDate"
-                className="block mb-2 text-sm font-medium text-gray-900 dark:text-white"
+                className="block mb-2 text-md font-bold text-black dark:text-white"
               >
                 Received Date
               </label>
@@ -343,7 +343,7 @@ const NonPoGrn = () => {
           <div className="w-full sm:w-1/3 p-2">
             <label
               htmlFor="input3"
-              className="block text-sm font-medium text-gray-700"
+              className="block text-md font-bold text-black"
             >
               Descriptions
             </label>
