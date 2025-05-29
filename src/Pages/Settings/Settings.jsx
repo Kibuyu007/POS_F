@@ -17,15 +17,24 @@ const Settings = () => {
       {/* Left Section - User Setup */}
       <div className="w-1/4 bg-secondary rounded-xl p-6 shadow-md overflow-auto">
         <SettingsList
-          title="GRN"
-          settings={["PO GRN","Non-PO GRN"]}
+          title="Pre-Purchase"
+          settings={[
+            { group: "Orders", items: ["Purchase Order", "Purchasing Bills"] },
+            { group: "Vendors", items: ["Suppliers"] },
+          ]}
           selectedSetting={selectedSetting}
           handleSelect={setSelectedSetting}
         />
 
         <SettingsList
-          title="Procurement"
-          settings={["Purchase Order", "Purchasing Bills", "Suppliers"]}
+          title="GRN"
+          settings={[
+            { group: "PO GRN", items: ["Pending PO GRN", "Completed PO GRN"] },
+            {
+              group: "Non-PO GRN",
+              items: ["Process Non-PO GRN", "Completed Non-PO GRN"],
+            },
+          ]}
           selectedSetting={selectedSetting}
           handleSelect={setSelectedSetting}
         />
@@ -60,9 +69,9 @@ const Settings = () => {
           <Madeni />
         ) : selectedSetting === "Suppliers" ? (
           <Suppliers />
-        ) : selectedSetting === "PO GRN" ? (
+        ) : selectedSetting === "Pending PO GRN" ? (
           <PoGrn />
-        ) : selectedSetting === "Non-PO GRN" ? (
+        ) : selectedSetting === "Process Non-PO GRN" ? (
           <NonPoGrn />
         ) : (
           <p className="text-lg">{selectedSetting || "No report selected"}</p>
