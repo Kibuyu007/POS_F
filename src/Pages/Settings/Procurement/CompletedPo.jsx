@@ -11,6 +11,7 @@ import { DateRangePicker } from "@mui/x-date-pickers-pro/DateRangePicker";
 import { useDispatch, useSelector } from "react-redux";
 import { fetchSuppliers } from "../../../Redux/suppliers";
 
+
 const CompletedPo = () => {
   const { supplier } = useSelector((state) => state.suppliers);
   const [sessions, setSessions] = useState([]);
@@ -66,9 +67,12 @@ const CompletedPo = () => {
           // Summarize sessions
           const summarized = res.data.data.map((session) => ({
             grnSessionId: session.grnSessionId,
+            grnNumber: session.grnNumber,
             createdAt: session.createdAt,
             comments: session.comments,
             supplierName: session.supplierName,
+            createdBy: session.createdBy,
+            allItems: session.allItems,
             totalProducts: session.allItems.reduce(
               (total, item) => total + item.requiredQuantity,
               0
@@ -86,10 +90,19 @@ const CompletedPo = () => {
     fetchData();
   }, []);
 
-  const handlePreview = (session) => {
-    setSelectedSession(session);
-    setShowPreviewModal(true);
+
+const handlePreview = (session) => {
+  const supplierDetails = supplier.find((s) => s._id === session.supplierName);
+  const sessionWithSupplierName = {
+    ...session,
+    supplierName: supplierDetails ? supplierDetails.supplierName : "Unknown Supplier",
+    supplierContacts: supplierDetails ? supplierDetails.phone: "No Contacts",
+    supplierAddress: supplierDetails ? supplierDetails.address: "No Address",
   };
+
+  setSelectedSession(sessionWithSupplierName);
+  setShowPreviewModal(true);
+};
 
   const totalItems = filteredSessions.length;
   const totalPages = Math.ceil(totalItems / itemsPerPage);
@@ -224,7 +237,7 @@ const CompletedPo = () => {
                     <div className="ml-3">
                       <button
                         className="bg-green-400 px-6 py-2 rounded-3xl shadow-md"
-                        onClick={() => handlePreview(session.grnSessionId)}
+                        onClick={() => handlePreview(session)}
                       >
                         Preview
                       </button>

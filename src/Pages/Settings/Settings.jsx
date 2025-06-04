@@ -11,6 +11,7 @@ import NonPoGrn from "./GRN/NonPOSections/NonPoGrn";
 import CompletedPo from "./Procurement/CompletedPo";
 import CompletedPoGrn from "./GRN/PO GRN/CompletedPoGrn";
 import CompletedNonPO from "./GRN/NonPOSections/CompletedNonPO";
+import cover from "../../assets/cover1.jpg"
 
 const Settings = () => {
   const [selectedSetting, setSelectedSetting] = useState(null);
@@ -88,9 +89,9 @@ const Settings = () => {
         ) : (
           <div className="flex flex-col items-center justify-center h-full">
             <img
-              src="/Setting.png"
+              src={cover}
               alt="No report selected"
-              className="w-48 h-48 object-contain mb-4"
+              className="object-contain opacity-20"
             />
             <p className="text-lg text-gray-300">No report selected</p>
           </div>

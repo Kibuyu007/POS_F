@@ -67,6 +67,23 @@ const Manunuzi = () => {
       const selectedSupplier = supplier.find(
         (sup) => sup._id === regi.supplierName
       );
+
+      const missingQuantity = selectedItem.some(
+        (item) => !item.requiredQuantity || item.requiredQuantity <= 0
+      );
+
+      if (missingQuantity) {
+        toast.error("Please provide a valid quantity for all selected items.", {
+          style: {
+            borderRadius: "12px",
+            background: "#e74c3c",
+            color: "#fff",
+            fontSize: "20px",
+          },
+        });
+        return;
+      }
+
       const response = await axios.post(
         "http://localhost:4004/api/manunuzi/addPo",
         {
@@ -79,7 +96,8 @@ const Manunuzi = () => {
             description: item.description || "",
           })),
           supplierName: selectedSupplier ? selectedSupplier.supplierName : "",
-        }
+        },
+        { withCredentials: true }
       );
       console.log("New stocks added successfully", response.data);
       const successMessage = response.data;
@@ -99,7 +117,6 @@ const Manunuzi = () => {
         supplierName: "",
         comments: "",
       });
-
     } catch (error) {
       console.error("Error adding new stocks:", error);
       toast.error("There is Error in Addning  New Stock", {
