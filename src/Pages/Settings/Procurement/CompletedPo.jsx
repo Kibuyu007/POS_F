@@ -8,6 +8,8 @@ import PreviewPo from "./PreviewPo";
 import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs";
 import { LocalizationProvider } from "@mui/x-date-pickers/LocalizationProvider";
 import { DateRangePicker } from "@mui/x-date-pickers-pro/DateRangePicker";
+
+//Redux
 import { useDispatch, useSelector } from "react-redux";
 import { fetchSuppliers } from "../../../Redux/suppliers";
 
@@ -161,7 +163,10 @@ const handlePreview = (session) => {
         <thead className="bg-gray-100 text-xs uppercase">
           <tr>
             <th className="px-5 py-3 border-b-2 border-gray-200 bg-gray-200 text-center text-xs font-bold text-gray-900 uppercase tracking-wider">
-              Session ID
+              SN
+            </th>
+             <th className="px-5 py-3 border-b-2 border-gray-200 bg-gray-200 text-center text-xs font-bold text-gray-900 uppercase tracking-wider">
+              GRN Number
             </th>
             <th className="px-5 py-3 border-b-2 border-gray-200 bg-gray-200 text-center text-xs font-bold text-gray-900 uppercase tracking-wider">
               Total Products
@@ -187,6 +192,16 @@ const handlePreview = (session) => {
               <tr key={idx} className="border-b">
                 <td className="h-16 border-gray-200 shadow-md bg-gray-200 text-center">
                   {(currentPage - 1) * itemsPerPage + idx + 1}
+                </td>
+
+                <td className="py-2 px-3 font-normal text-base border-x shadow-md bg-gray-100  hover:bg-gray-100  whitespace-nowrap overflow-hidden overflow-ellipsis max-w-[200px]">
+                  <div className="items-center text-center">
+                    <div className="ml-3">
+                      <p className="text-gray-900 whitespace-no-wrap font-semibold capitalize">
+                        {session.grnNumber}
+                      </p>
+                    </div>
+                  </div>
                 </td>
 
                 <td className="py-2 px-3 font-normal text-base border-x shadow-md bg-gray-100  hover:bg-gray-100  whitespace-nowrap overflow-hidden overflow-ellipsis max-w-[200px]">

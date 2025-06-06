@@ -2,15 +2,63 @@ import axios from "axios";
 import { useEffect } from "react";
 import { useState } from "react";
 import { IoIosArrowBack, IoIosArrowForward } from "react-icons/io";
-import PreviewPo from "../../Procurement/PreviewPo";
+
+//MUI
+import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs";
+import { LocalizationProvider } from "@mui/x-date-pickers/LocalizationProvider";
+import { DateRangePicker } from "@mui/x-date-pickers-pro/DateRangePicker";
+
+//Redux
+import { useDispatch, useSelector } from "react-redux";
+import ProcessPo from "./ProcessPo";
+import { fetchSuppliers } from "../../../../Redux/suppliers";
 
 const PoGrn = () => {
+  const { supplier } = useSelector((state) => state.suppliers);
   const [sessions, setSessions] = useState([]);
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 5;
 
   const [selectedSession, setSelectedSession] = useState(null);
   const [showPreviewModal, setShowPreviewModal] = useState(false);
+  const [filteredSessions, setFilteredSessions] = useState([]);
+  const [selectedSupplier, setSelectedSupplier] = useState("");
+
+  const [value, setValue] = useState([null, null]);
+  const dispatch = useDispatch();
+
+  useEffect(() => {
+    dispatch(fetchSuppliers());
+  }, [dispatch]);
+
+  useEffect(() => {
+    const applyFilters = () => {
+      let filtered = [...sessions];
+
+      // Filter by date range
+      if (value[0] && value[1]) {
+        const startDate = new Date(value[0]);
+        const endDate = new Date(value[1]);
+
+        filtered = filtered.filter((session) => {
+          const createdAt = new Date(session.createdAt);
+          return createdAt >= startDate && createdAt <= endDate;
+        });
+      }
+
+      // Filter by supplier
+      if (selectedSupplier) {
+        filtered = filtered.filter(
+          (session) => session.supplierName === selectedSupplier
+        );
+      }
+
+      setFilteredSessions(filtered);
+      setCurrentPage(1);
+    };
+
+    applyFilters();
+  }, [sessions, value, selectedSupplier]);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -20,7 +68,12 @@ const PoGrn = () => {
           // Summarize sessions
           const summarized = res.data.data.map((session) => ({
             grnSessionId: session.grnSessionId,
+            grnNumber: session.grnNumber,
             createdAt: session.createdAt,
+            comments: session.comments,
+            supplierName: session.supplierName,
+            createdBy: session.createdBy,
+            allItems: session.allItems,
             totalProducts: session.allItems.reduce(
               (total, item) => total + item.requiredQuantity,
               0
@@ -39,14 +92,26 @@ const PoGrn = () => {
   }, []);
 
   const handlePreview = (session) => {
-    setSelectedSession(session);
+    const supplierDetails = supplier.find(
+      (s) => s._id === session.supplierName
+    );
+    const sessionWithSupplierName = {
+      ...session,
+      supplierName: supplierDetails
+        ? supplierDetails.supplierName
+        : "Unknown Supplier",
+      supplierContacts: supplierDetails ? supplierDetails.phone : "No Contacts",
+      supplierAddress: supplierDetails ? supplierDetails.address : "No Address",
+    };
+
+    setSelectedSession(sessionWithSupplierName);
     setShowPreviewModal(true);
   };
 
-  const totalItems = sessions.length;
+  const totalItems = filteredSessions.length;
   const totalPages = Math.ceil(totalItems / itemsPerPage);
 
-  const paginatedSessions = sessions.slice(
+  const paginatedSessions = filteredSessions.slice(
     (currentPage - 1) * itemsPerPage,
     currentPage * itemsPerPage
   );
@@ -60,50 +125,163 @@ const PoGrn = () => {
   };
 
   return (
-    <div className="p-4 bg-white rounded shadow-md">
-      <table className="min-w-full text-sm text-left text-gray-700">
+    <div className=" overflow-y-auto mt-4  rounded-lg">
+      <div className="flex-[1] bg-secondary p-4  rounded-lg">
+        <div>
+          <div className="font-bold text-xl text-black">Products</div>
+
+          <div className=" flex justify-start gap-4">
+            {/* Date Filter */}
+
+            <LocalizationProvider dateAdapter={AdapterDayjs}>
+              <DateRangePicker
+                value={value}
+                onChange={(newValue) => setValue(newValue)}
+                localeText={{ start: "Start date", end: "End date" }}
+                className="w-1/4"
+              />
+            </LocalizationProvider>
+
+            {/* Supplier Filter */}
+
+            <select
+              className="border border-gray-700 px-2 py-2 w-1/5 rounded-full text-black"
+              value={selectedSupplier}
+              onChange={(e) => setSelectedSupplier(e.target.value)}
+            >
+              <option value="">All Suppliers</option>
+              {supplier.map((sup) => (
+                <option key={sup._id} value={sup._id}>
+                  <p className="text-black border">{sup.supplierName}</p>
+                </option>
+              ))}
+            </select>
+          </div>
+        </div>
+      </div>
+
+      <table className="min-w-full text-sm text-left text-gray-700 mt-6">
         <thead className="bg-gray-100 text-xs uppercase">
           <tr>
-            <th className="px-4 py-2">Session ID</th>
-            <th className="px-4 py-2">Total Products</th>
-            <th className="px-4 py-2">Created At</th>
-            <th className="px-4 py-2">Created At</th>
-            <th className="px-4 py-2">Created At</th>
+            <th className="px-5 py-3 border-b-2 border-gray-200 bg-gray-200 text-center text-xs font-bold text-gray-900 uppercase tracking-wider">
+              SN
+            </th>
+            <th className="px-5 py-3 border-b-2 border-gray-200 bg-gray-200 text-center text-xs font-bold text-gray-900 uppercase tracking-wider">
+              GRN Number
+            </th>
+            <th className="px-5 py-3 border-b-2 border-gray-200 bg-gray-200 text-center text-xs font-bold text-gray-900 uppercase tracking-wider">
+              Total Products
+            </th>
+            <th className="px-5 py-3 border-b-2 border-gray-200 bg-gray-200 text-center text-xs font-bold text-gray-900 uppercase tracking-wider">
+              Purchase Comments
+            </th>
+            <th className="px-5 py-3 border-b-2 border-gray-200 bg-gray-200 text-center text-xs font-bold text-gray-900 uppercase tracking-wider">
+              Supplier
+            </th>
+            <th className="px-5 py-3 border-b-2 border-gray-200 bg-gray-200 text-center text-xs font-bold text-gray-900 uppercase tracking-wider">
+              Created At
+            </th>
+            <th className="px-5 py-3 border-b-2 border-gray-200 bg-gray-200 text-center text-xs font-bold text-gray-900 uppercase tracking-wider">
+              Status
+            </th>
+            <th className="px-5 py-3 border-b-2 border-gray-200 bg-gray-200 text-center text-xs font-bold text-gray-900 uppercase tracking-wider">
+              Action
+            </th>
           </tr>
+          <tr className="h-4" />
         </thead>
         <tbody>
           {paginatedSessions.map((session, idx) => (
-            <tr key={idx} className="border-b">
-              <td className="px-4 py-2">
-                {(currentPage - 1) * itemsPerPage + idx + 1}
-              </td>
-              <td className="px-4 py-2">{session.totalProducts}</td>
-              <td className="px-4 py-2">
-                {new Date(session.createdAt).toLocaleDateString()}
-              </td>
-              <td className="px-4 py-2">
-                {" "}
-                <button
-                  className="bg-gray-300 px-6 py-2 rounded-3xl shadow-md"
-                  onClick={() => handlePreview(session.grnSessionId)}
-                >
-                  Preview
-                </button>
-              </td>
-              <td className="px-4 py-2">
-                {" "}
-                <button className="bg-green-300 px-6 py-2 rounded-3xl shadow-md">
-                  {" "}
-                  Process{" "}
-                </button>{" "}
-              </td>
-            </tr>
+            <>
+              <tr key={idx} className="border-b">
+                <td className="h-16 border-gray-200 shadow-md bg-gray-200 text-center">
+                  {(currentPage - 1) * itemsPerPage + idx + 1}
+                </td>
+
+                <td className="py-2 px-3 font-normal text-base border-x shadow-md bg-gray-100  hover:bg-gray-100  whitespace-nowrap overflow-hidden overflow-ellipsis max-w-[200px]">
+                  <div className="items-center text-center">
+                    <div className="ml-3">
+                      <p className="text-gray-900 whitespace-no-wrap font-semibold capitalize">
+                        {session.grnNumber}
+                      </p>
+                    </div>
+                  </div>
+                </td>
+
+                <td className="py-2 px-3 font-normal text-base border-x shadow-md bg-gray-100  hover:bg-gray-100  whitespace-nowrap overflow-hidden overflow-ellipsis max-w-[200px]">
+                  <div className="items-center text-center">
+                    <div className="ml-3">
+                      <p className="text-gray-900 whitespace-no-wrap font-semibold capitalize">
+                        {session.totalProducts}
+                      </p>
+                    </div>
+                  </div>
+                </td>
+
+                <td className="py-2 px-3 font-normal text-base border-x shadow-md bg-gray-100  hover:bg-gray-100  whitespace-nowrap overflow-hidden overflow-ellipsis max-w-[200px]">
+                  <div className="items-center text-center">
+                    <div className="ml-3">
+                      <p className="text-gray-900 whitespace-no-wrap font-semibold capitalize">
+                        {session.comments}
+                      </p>
+                    </div>
+                  </div>
+                </td>
+
+                <td className="py-2 px-3 font-normal text-base border-x shadow-md bg-gray-100  hover:bg-gray-100  whitespace-nowrap overflow-hidden overflow-ellipsis max-w-[200px]">
+                  <div className="items-center text-center">
+                    <div className="ml-3">
+                      <p className="text-gray-900 whitespace-no-wrap font-semibold capitalize">
+                        {
+                          supplier.find((u) => u._id === session.supplierName)
+                            ?.supplierName
+                        }
+                      </p>
+                    </div>
+                  </div>
+                </td>
+
+                <td className="py-2 px-3 font-normal text-base border-x shadow-md bg-gray-200  hover:bg-gray-100  whitespace-nowrap overflow-hidden overflow-ellipsis max-w-[200px]">
+                  <div className="items-center text-center">
+                    <div className="ml-3">
+                      <p className="text-gray-900 whitespace-no-wrap font-semibold capitalize">
+                        {new Date(session.createdAt).toLocaleDateString()}
+                      </p>
+                    </div>
+                  </div>
+                </td>
+
+                <td className="py-2 px-3 font-normal text-base border-x shadow-md bg-gray-100  hover:bg-gray-100  whitespace-nowrap overflow-hidden overflow-ellipsis max-w-[200px]">
+                  <div className="items-center text-center">
+                    <div className="ml-3">
+                      <span className="bg-yellow-400 px-6 py-2 rounded-3xl shadow-md">
+                        Pending
+                      </span>
+                    </div>
+                  </div>
+                </td>
+
+                <td className="py-2 px-3 font-normal text-base border-x shadow-md bg-gray-100  hover:bg-gray-100  whitespace-nowrap overflow-hidden overflow-ellipsis max-w-[200px]">
+                  <div className="items-center text-center">
+                    <div className="ml-3">
+                      <button
+                        className="bg-green-400 px-6 py-2 rounded-3xl shadow-md"
+                        onClick={() => handlePreview(session)}
+                      >
+                        Process
+                      </button>
+                    </div>
+                  </div>
+                </td>
+              </tr>
+              <tr className="h-4" />
+            </>
           ))}
         </tbody>
       </table>
 
       {showPreviewModal && selectedSession && (
-        <PreviewPo
+        <ProcessPo
           session={selectedSession}
           onClose={() => setShowPreviewModal(false)}
         />

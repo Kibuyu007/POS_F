@@ -11,7 +11,7 @@ import NonPoGrn from "./GRN/NonPOSections/NonPoGrn";
 import CompletedPo from "./Procurement/CompletedPo";
 import CompletedPoGrn from "./GRN/PO GRN/CompletedPoGrn";
 import CompletedNonPO from "./GRN/NonPOSections/CompletedNonPO";
-import cover from "../../assets/cover1.jpg"
+import cover from "../../assets/cover1.jpg";
 
 const Settings = () => {
   const [selectedSetting, setSelectedSetting] = useState(null);
@@ -33,7 +33,10 @@ const Settings = () => {
         <SettingsList
           title="GRN"
           settings={[
-            { group: "PO GRN", items: ["Process PO GRN", "Completed PO GRN"] },
+            {
+              group: "PO GRN",
+              items: ["Process PO GRN", "Completed PO GRN"],
+            },
             {
               group: "Non-PO GRN",
               items: ["Process Non-PO GRN", "Completed Non-PO GRN"],
