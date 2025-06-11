@@ -16,12 +16,7 @@ const ProcessPo = ({ onClose, session }) => {
 
   const [openModal, setOpenModal] = useState(false);
   const [selectedItem, setSelectedItem] = useState(null);
-
-  const handleProcess = (item) => {
-    setSelectedItem(item);
-    setOpenModal(true);
-  };
-
+  const [processedItems, setProcessedItems] = useState([]);
 
   const dispatch = useDispatch();
 
@@ -57,8 +52,48 @@ const ProcessPo = ({ onClose, session }) => {
   };
 
   useEffect(() => {
-    localStorage.setItem("nonPoGrnForm", JSON.stringify(regi));
+    localStorage.setItem("PoGrnForm", JSON.stringify(regi));
   }, [regi]);
+
+  // Initialize processedItems when the component mounts or session.allItems changes
+  useEffect(() => {
+    if (session?.allItems) {
+   
+      const initialItems = session.allItems.map((item) => ({
+        ...item,
+        receivedQuantity: 0, 
+        newBuyingPrice: item?.item?.buyingPrice || 0, 
+        newSellingPrice: item?.item?.sellingPrice || 0, 
+        price: item?.item?.price || 0, 
+        batchNumber: "",
+        manufactureDate: null,
+        expiryDate: null,
+        foc: false,
+        rejected: false,
+        comments: "",
+        totalCost: 0,
+        detailsAdded: false, 
+      }));
+      setProcessedItems(initialItems);
+    }
+  }, [session?.allItems]);
+
+  const handleProcess = (item) => {
+    setSelectedItem(item);
+    setOpenModal(true);
+  };
+
+  // Callback function to receive updated item data from ItemModal
+  const handleItemDetailsUpdated = (updatedItem) => {
+    setProcessedItems((prevItems) =>
+      prevItems.map((item) =>
+        item._id === updatedItem._id
+          ? { ...updatedItem, detailsAdded: true }
+          : item
+      )
+    );
+    setOpenModal(false); // Close the modal after updating
+  };
 
   //HANDLE RECEIVING DATE
   const handleReceivingDate = (date) => {
@@ -217,8 +252,6 @@ const ProcessPo = ({ onClose, session }) => {
           </div>
           {/* end header */}
 
-
-
           {/* Section One Suppliers Details *********************************************************** */}
           {/* Manunuzi Details */}
           <div className="mx-auto  px-4 py-6 sm:px-6 lg:px-8 border bg-gray-100 rounded-lg shadow-md">
@@ -358,8 +391,6 @@ const ProcessPo = ({ onClose, session }) => {
           </div>
           {/* end Manunuzi Details */}
 
-
-
           {/* Section 3 */}
           {/* Table ya items zilizojazwa details  */}
           <div
@@ -416,7 +447,7 @@ const ProcessPo = ({ onClose, session }) => {
 
                 <tbody>
                   <>
-                    {session?.allItems?.map((item, index) => (
+                    {processedItems?.map((item, index) => (
                       <>
                         <tr
                           key={index + 1}
@@ -470,7 +501,9 @@ const ProcessPo = ({ onClose, session }) => {
                             <div className="items-center text-center">
                               <div className="ml-3">
                                 <p className="text-gray-900 whitespace-no-wrap font-semibold capitalize">
-                                  400
+                                  {formatPriceWithCommas(
+                                    item?.receivedQuantity || 0
+                                  )}
                                 </p>
                               </div>
                             </div>
@@ -480,7 +513,10 @@ const ProcessPo = ({ onClose, session }) => {
                             <div className="items-center text-center">
                               <div className="ml-3">
                                 <p className="text-gray-900 whitespace-no-wrap font-semibold capitalize">
-                                  20
+                                  {formatPriceWithCommas(
+                                  (item.requiredQuantity || 0) -
+                                    (item.receivedQuantity || 0)
+                                )}
                                 </p>
                               </div>
                             </div>
@@ -490,7 +526,11 @@ const ProcessPo = ({ onClose, session }) => {
                             <div className="items-center text-center">
                               <div className="ml-3">
                                 <p className="text-gray-900 whitespace-no-wrap font-semibold capitalize">
-                                  2000
+                                  {item?.totalCost
+                                    ? formatPriceWithCommas(
+                                        item?.totalCost
+                                      )
+                                    : "0"}
                                 </p>
                               </div>
                             </div>
@@ -500,7 +540,9 @@ const ProcessPo = ({ onClose, session }) => {
                             <div className="items-center text-center">
                               <div className="ml-3">
                                 <p className="text-gray-900 whitespace-no-wrap font-semibold capitalize">
-                                  2500
+                                  {item?.price
+                                    ? formatPriceWithCommas(item?.price)
+                                    : "0"}
                                 </p>
                               </div>
                             </div>
@@ -510,7 +552,11 @@ const ProcessPo = ({ onClose, session }) => {
                             <div className="items-center text-center">
                               <div className="ml-3">
                                 <p className="text-gray-900 whitespace-no-wrap font-semibold capitalize">
-                                  3000
+                                  {item?.newSellingPrice
+                                    ? formatPriceWithCommas(
+                                        item?.newSellingPrice
+                                      )
+                                    : "0"}
                                 </p>
                               </div>
                             </div>
@@ -521,9 +567,15 @@ const ProcessPo = ({ onClose, session }) => {
                               <div className="ml-3">
                                 <button
                                   onClick={() => handleProcess(item)}
-                                  className="bg-green-400 px-6 py-2 rounded-3xl shadow-md text-black"
+                                  className={`px-6 py-2 rounded-3xl shadow-md ${
+                                    item.detailsAdded
+                                      ? "bg-yellow-500 text-black hover:bg-gray-300"
+                                      : "bg-green-400 text-black hover:bg-green-200"
+                                  }`}
                                 >
-                                  Add Details
+                                  {item.detailsAdded
+                                    ? "Edit Details"
+                                    : "Add Details"}
                                 </button>
                               </div>
                             </div>
@@ -546,14 +598,13 @@ const ProcessPo = ({ onClose, session }) => {
               </table>
             </div>
 
-
-
             {/* Modal Component */}
             {openModal && (
               <ItemModal
                 open={openModal}
                 onClose={() => setOpenModal(false)}
                 selectedItem={selectedItem}
+                onSave={handleItemDetailsUpdated}
               />
             )}
 

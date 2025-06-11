@@ -5,16 +5,10 @@ import dayjs from "dayjs";
 import { useEffect } from "react";
 import { useState } from "react";
 import { fetchProducts } from "../../../../Redux/items";
-import { useDispatch, useSelector } from "react-redux";
+import { useDispatch } from "react-redux";
 
-
-const ItemModal = ({ open, onAddItem, onClose, selectedItem }) => {
+const ItemModal = ({ open, onSave, onClose, selectedItem }) => {
   // Single selected item
-
-  const { items } = useSelector((state) => state.items);
-  const [showError, setShowError] = useState("");
-  const [finishAdd, setFinishAdd] = useState(false);
-  const [searchQuery, setSearchQuery] = useState("");
 
   const dispatch = useDispatch();
 
@@ -22,8 +16,7 @@ const ItemModal = ({ open, onAddItem, onClose, selectedItem }) => {
   useEffect(() => {
     dispatch(fetchProducts());
   }, [dispatch]);
-  
-  const currentPrice = items.find((item) => item._id === selectedItem?._id)?.price || 0;
+
 
   const [errorDate, setErrorDate] = useState({
     manufactureDate: false,
@@ -50,6 +43,30 @@ const ItemModal = ({ open, onAddItem, onClose, selectedItem }) => {
     totalCost: "",
     sellingPrice: "",
   });
+
+  useEffect(() => {
+    if (selectedItem) {
+      setFormData({
+        buyingPrice:
+          selectedItem.newBuyingPrice || selectedItem.item?.buyingPrice || "",
+        // ... ensure all fields are initialized similarly
+        quantity: selectedItem.receivedQuantity || "",
+        previousPrice:selectedItem.item?.price || "",
+        rejected: selectedItem.rejected || "",
+        foc: selectedItem.foc || "",
+        batchNumber: selectedItem.batchNumber || "",
+        manufactureDate: selectedItem.manufactureDate || "",
+        expiryDate: selectedItem.expiryDate || "",
+        receivedDate:
+          selectedItem.receivedDate || new Date().toISOString().split("T")[0],
+        comments: selectedItem.comments || "",
+        totalCost: selectedItem.totalCost || "",
+        requiredQuantity: selectedItem.requiredQuantity || "",
+        sellingPrice:
+          selectedItem.newSellingPrice || selectedItem.item?.sellingPrice || 0,
+      });
+    }
+  }, [selectedItem]);
 
   //Handle Change for input fields
   const handleChange = (e) => {
@@ -84,89 +101,78 @@ const ItemModal = ({ open, onAddItem, onClose, selectedItem }) => {
         rawQuantity: quantityMath,
       };
     });
-
-    setShowError("");
   };
 
   // Add the selected item with details to parent component
-  const handleAdd = () => {
-    if (!selectedItem) return;
-
+  const handleSave = () => {
     const newErrors = {
       manufactureDate: !formData.manufactureDate,
       expiryDate: !formData.expiryDate,
       receivedDate: !formData.receivedDate,
     };
 
-    const today = new Date().toISOString().split("T")[0];
+    const today = dayjs().format("YYYY-MM-DD"); // Use dayjs for consistency
 
-    if (formData.manufactureDate && formData.manufactureDate > today) {
+    // Date validation
+    if (
+      formData.manufactureDate &&
+      dayjs(formData.manufactureDate).isAfter(today, "day")
+    ) {
       newErrors.manufactureDate = true;
     }
 
     if (
       formData.expiryDate &&
       formData.manufactureDate &&
-      formData.expiryDate < formData.manufactureDate
+      dayjs(formData.expiryDate).isBefore(
+        dayjs(formData.manufactureDate),
+        "day"
+      )
     ) {
       newErrors.expiryDate = true;
     }
 
     if (
       formData.receivedDate &&
-      (formData.receivedDate < formData.manufactureDate ||
-        formData.receivedDate > formData.expiryDate)
+      (dayjs(formData.receivedDate).isBefore(
+        dayjs(formData.manufactureDate),
+        "day"
+      ) ||
+        dayjs(formData.receivedDate).isAfter(dayjs(formData.expiryDate), "day"))
     ) {
-      newErrors.receivedDate = true;
+      // Only set error if all three dates are present for comparison
+      if (formData.manufactureDate && formData.expiryDate) {
+        newErrors.receivedDate = true;
+      }
     }
 
     setErrorDate(newErrors);
 
     // Stop if any error is true
-    if (Object.values(newErrors).some((val) => val)) return;
+    if (Object.values(newErrors).some((val) => val)) {
+      console.error("Date validation failed. Please check the dates.");
+      return;
+    }
 
-    const fullItemData = {
-      itemId: selectedItem._id,
-      name: selectedItem.name,
-      previousQuantity: selectedItem.itemQuantity,
-      previousPrice: selectedItem.price,
-      quantity: formData.quantity,
-      buyingPrice: formData.buyingPrice,
+    // Prepare the updated item object to send back to ProcessPo
+    const updatedItemData = {
+      ...selectedItem, 
+      receivedQuantity: formData.quantity, 
+      newBuyingPrice: parseFloat(formData.buyingPrice), 
+      newSellingPrice: parseFloat(formData.sellingPrice), 
+      batchNumber: formData.batchNumber,
       manufactureDate: formData.manufactureDate,
       expiryDate: formData.expiryDate,
       receivedDate: formData.receivedDate,
-      batchNumber: formData.batchNumber,
-      foc: formData.foc,
-      rejected: formData.rejected,
+      foc: parseInt(formData.foc) || 0, 
+      rejected: parseInt(formData.rejected) || 0, 
       comments: formData.comments,
-      totalCost: formData.totalCost,
-      sellingPrice: formData.sellingPrice || selectedItem.price,
+      totalCost: parseFloat(formData.totalCost), 
+      detailsAdded: true, 
     };
-    onAddItem(fullItemData);
 
-    // Reset states for next selection
-    setFinishAdd(false);
-    setFormData({
-      buyingPrice: "",
-      units: "",
-      itemsPerUnit: "",
-      balance: "",
-      rejected: "",
-      foc: "",
-      batchNumber: "",
-      manufactureDate: "",
-      expiryDate: "",
-      receivedDate: new Date().toISOString().split("T")[0],
-      comments: "",
-      totalCost: "",
-      sellingPrice: "",
-    });
-  };
-
-  // Cancel current selection
-  const handleCancel = () => {
-    setFinishAdd(false);
-    setShowError("");
+    onSave(updatedItemData);
+    onClose();
   };
 
   return (
@@ -492,7 +498,7 @@ const ItemModal = ({ open, onAddItem, onClose, selectedItem }) => {
                     <input
                       type="number"
                       name="sellingPrice"
-                      value={formData.sellingPrice || currentPrice}
+                      value={formData.sellingPrice || formData.previousPrice}
                       onChange={handleChange}
                       className="bg-gray-50 border border-gray-400 text-gray-900 text-sm rounded-[30px]  focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-600 dark:border-gray-500 dark:placeholder-gray-400 dark:text-white"
                     />
@@ -506,7 +512,7 @@ const ItemModal = ({ open, onAddItem, onClose, selectedItem }) => {
 
           <div className="mt-8 flex gap-10 justify-between">
             <button
-              onClick={handleAdd}
+              onClick={handleSave}
               disabled={!selectedItem || !formData.quantity}
               className={`px-6 py-2 rounded-md w-full transition ${
                 !selectedItem || !formData.quantity || !formData.buyingPrice
@@ -517,7 +523,7 @@ const ItemModal = ({ open, onAddItem, onClose, selectedItem }) => {
               Add
             </button>
             <button
-              onClick={handleCancel}
+              onClick={onClose}
               disabled={!selectedItem}
               className="bg-gray-300 text-black px-4 py-2 rounded disabled:opacity-50 w-full"
             >
