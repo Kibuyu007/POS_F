@@ -226,6 +226,10 @@ const PoDocument = ({ session, supplier }) => (
             <Text style={styles.metaLabel}>Comments:</Text>
             <Text style={styles.metaValue}>{session.comments || "None"}</Text>
           </View>
+          <View style={styles.metaItem}>
+            <Text style={styles.metaLabel}>Status Of GRN:</Text>
+            <Text style={styles.metaValue}>{session.status || "None"}</Text>
+          </View>
         </View>
       </View>
     </Page>

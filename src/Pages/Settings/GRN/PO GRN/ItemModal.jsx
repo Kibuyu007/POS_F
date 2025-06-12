@@ -17,7 +17,6 @@ const ItemModal = ({ open, onSave, onClose, selectedItem }) => {
     dispatch(fetchProducts());
   }, [dispatch]);
 
-
   const [errorDate, setErrorDate] = useState({
     manufactureDate: false,
     expiryDate: false,
@@ -51,7 +50,7 @@ const ItemModal = ({ open, onSave, onClose, selectedItem }) => {
           selectedItem.newBuyingPrice || selectedItem.item?.buyingPrice || "",
         // ... ensure all fields are initialized similarly
         quantity: selectedItem.receivedQuantity || "",
-        previousPrice:selectedItem.item?.price || "",
+        previousPrice: selectedItem.item?.price || "",
         rejected: selectedItem.rejected || "",
         foc: selectedItem.foc || "",
         batchNumber: selectedItem.batchNumber || "",
@@ -156,19 +155,19 @@ const ItemModal = ({ open, onSave, onClose, selectedItem }) => {
 
     // Prepare the updated item object to send back to ProcessPo
     const updatedItemData = {
-      ...selectedItem, 
-      receivedQuantity: formData.quantity, 
-      newBuyingPrice: parseFloat(formData.buyingPrice), 
-      newSellingPrice: parseFloat(formData.sellingPrice), 
+      ...selectedItem,
+      receivedQuantity: formData.quantity,
+      newBuyingPrice: parseFloat(formData.buyingPrice),
+      newSellingPrice: parseFloat(formData.sellingPrice),
       batchNumber: formData.batchNumber,
       manufactureDate: formData.manufactureDate,
       expiryDate: formData.expiryDate,
       receivedDate: formData.receivedDate,
-      foc: parseInt(formData.foc) || 0, 
-      rejected: parseInt(formData.rejected) || 0, 
+      foc: parseInt(formData.foc) || 0,
+      rejected: parseInt(formData.rejected) || 0,
       comments: formData.comments,
-      totalCost: parseFloat(formData.totalCost), 
-      detailsAdded: true, 
+      totalCost: parseFloat(formData.totalCost),
+      detailsAdded: true,
     };
 
     onSave(updatedItemData);
@@ -503,8 +502,6 @@ const ItemModal = ({ open, onSave, onClose, selectedItem }) => {
                       className="bg-gray-50 border border-gray-400 text-gray-900 text-sm rounded-[30px]  focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-600 dark:border-gray-500 dark:placeholder-gray-400 dark:text-white"
                     />
                   </div>
-
-                  {/* Continue with other inputs similarly */}
                 </div>
               </div>
             )}

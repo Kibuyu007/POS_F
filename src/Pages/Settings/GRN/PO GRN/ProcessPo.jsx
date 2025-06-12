@@ -8,6 +8,8 @@ import { fetchSuppliers } from "../../../../Redux/suppliers";
 import { useDispatch, useSelector } from "react-redux";
 import { BsToggleOff, BsToggleOn } from "react-icons/bs";
 import ItemModal from "./ItemModal";
+import toast from "react-hot-toast";
+import axios from "axios";
 
 const ProcessPo = ({ onClose, session }) => {
   const { supplier } = useSelector((state) => state.suppliers);
@@ -58,13 +60,12 @@ const ProcessPo = ({ onClose, session }) => {
   // Initialize processedItems when the component mounts or session.allItems changes
   useEffect(() => {
     if (session?.allItems) {
-   
       const initialItems = session.allItems.map((item) => ({
         ...item,
-        receivedQuantity: 0, 
-        newBuyingPrice: item?.item?.buyingPrice || 0, 
-        newSellingPrice: item?.item?.sellingPrice || 0, 
-        price: item?.item?.price || 0, 
+        receivedQuantity: 0,
+        newBuyingPrice: item?.item?.buyingPrice || 0,
+        newSellingPrice: item?.item?.sellingPrice || 0,
+        price: item?.item?.price || 0,
         batchNumber: "",
         manufactureDate: null,
         expiryDate: null,
@@ -72,7 +73,7 @@ const ProcessPo = ({ onClose, session }) => {
         rejected: false,
         comments: "",
         totalCost: 0,
-        detailsAdded: false, 
+        detailsAdded: false,
       }));
       setProcessedItems(initialItems);
     }
@@ -105,118 +106,100 @@ const ProcessPo = ({ onClose, session }) => {
 
   const toggleStatus = async () => {};
 
-  // const handleSubmit = async () => {
-  //   const selectedSupplier = supplier.find(
-  //     (sup) => sup._id === regi.supplierName
-  //   );
-  //   if (!regi.supplierName || !regi.invoiceNumber || !regi.receivingDate) {
-  //     setError("Please fill all required fields.");
-  //     return;
-  //   }
+  //HANDLE SUBMIT
+  const handleSubmit = async () => {
+    const selectedSupplier = supplier.find(
+      (sup) => sup._id === regi.supplierName
+    );
+    if (!regi.supplierName || !regi.invoiceNumber || !regi.receivingDate) {
+      setError("Please fill all required fields.");
+      return;
+    }
 
-  //   if (itemHold.length === 0) {
-  //     setError("Add at least one item.");
-  //     return;
-  //   }
+    setLoading(true);
+    setError("");
 
-  //   setLoading(true);
-  //   setError("");
+    const poGrnData = {
+      supplierName: selectedSupplier ? selectedSupplier.supplierName : "",
+      invoiceNumber: regi.invoiceNumber,
+      lpoNumber: regi.lpoNumber,
+      deliveryPerson: regi.deliveryPerson,
+      deliveryNumber: regi.deliveryNumber,
+      description: regi.description,
+      receivingDate: regi.receivingDate,
+      items: processedItems.map((item) => ({
+        name: item.item.name,
+        requiredQuantity: item.requiredQuantity,
+        receivedQuantity: item.receivedQuantity,
+        newBuyingPrice: item.newBuyingPrice,
+        newSellingPrice: item.newSellingPrice,
+        batchNumber: item.batchNumber,
+        manufactureDate: item.manufactureDate,
+        expiryDate: item.expiryDate,
+        receivedDate: item.receivedDate || new Date().toISOString(),
+        foc: item.foc || false,
+        rejected: item.rejected || false,
+        comments: item.comments || "",
+        totalCost: item.totalCost,
+        status: "Approved",
+      })),
+    };
 
-  //   const grnData = {
-  //     supplierName: selectedSupplier ? selectedSupplier.supplierName : "",
-  //     invoiceNumber: regi.invoiceNumber,
-  //     lpoNumber: regi.lpoNumber,
-  //     deliveryPerson: regi.deliveryPerson,
-  //     deliveryNumber: regi.deliveryNumber,
-  //     description: regi.description,
-  //     receivingDate: regi.receivingDate,
-  //     items: itemHold.map((item) => ({
-  //       name: item.name,
-  //       quantity: item.quantity,
-  //       buyingPrice: item.buyingPrice,
-  //       sellingPrice: item.sellingPrice,
-  //       batchNumber: item.batchNumber,
-  //       manufactureDate: item.manufactureDate,
-  //       expiryDate: item.expiryDate,
-  //       foc: item.foc || false,
-  //       rejected: item.rejected || false,
-  //       comments: item.comments || "",
-  //       totalCost: item.totalCost || 0,
-  //     })),
-  //   };
+    try {
+      const response = await axios.post(
+        "http://localhost:4004/api/grn/poGrn",
+        poGrnData
+      );
 
-  //   try {
-  //     const response = await axios.post(
-  //       "http://localhost:4004/api/grn/newGrn",
-  //       grnData
-  //     );
-
-  //     if (response.status === 200 && response.data.success) {
-  //       setRegi({
-  //         supplierName: "",
-  //         invoiceNumber: "",
-  //         lpoNumber: "",
-  //         deliveryPerson: "",
-  //         deliveryNumber: "",
-  //         description: "",
-  //         receivingDate: "",
-  //       });
-  //       toast.success("Added Succeccfully", {
-  //         position: "button-right",
-  //         style: {
-  //           borderRadius: "12px",
-  //           background: "#00e676",
-  //           color: "#212121",
-  //           fontSize: "26px",
-  //         },
-  //       });
-  //       setItemHold([]);
-  //       localStorage.removeItem("nonPoGrnItems");
-  //     } else {
-  //       setError(response.data.message || "Tatizo katika kuhifadhi manunuzi.");
-  //       toast.error(
-  //         response.data.message || "Tatizo katika kuhifadhi manunuzi.",
-  //         {
-  //           position: "button-right",
-  //           style: {
-  //             borderRadius: "12px",
-  //             background: "#dd2c00",
-  //             color: "#212121",
-  //             fontSize: "26px",
-  //           },
-  //         }
-  //       );
-  //     }
-  //   } catch (err) {
-  //     toast.error(error.data.message || "Tatizo katika kuhifadhi manunuzi.", {
-  //       position: "button-right",
-  //       style: {
-  //         borderRadius: "12px",
-  //         background: "#dd2c00",
-  //         color: "#212121",
-  //         fontSize: "26px",
-  //       },
-  //     });
-  //   } finally {
-  //     setLoading(false);
-  //   }
-  // };
-
-  //HANDLE CANCEL FORM
-  // const handleCancel = () => {
-  //   setItemHold([]);
-  //   setRegi({
-  //     balance: "",
-  //     buyingPrice: "",
-  //     newManufactureDate: new Date(),
-  //     newExpireDate: new Date(),
-  //     invoiceNumber: "",
-  //     lpoNumber: "",
-  //     deliveryPerson: "",
-  //     deliveryNumber: "",
-  //     description: "",
-  //   });
-  // };
+      if (response.status === 200 && response.data.success) {
+        setRegi({
+          supplierName: "",
+          invoiceNumber: "",
+          lpoNumber: "",
+          deliveryPerson: "",
+          deliveryNumber: "",
+          description: "",
+          receivingDate: "",
+        });
+        toast.success("Added Succeccfully", {
+          position: "button-right",
+          style: {
+            borderRadius: "12px",
+            background: "#00e676",
+            color: "#212121",
+            fontSize: "26px",
+          },
+        });
+        setProcessedItems([]);
+      } else {
+        setError(response.data.message || "Tatizo katika kuhifadhi manunuzi.");
+        toast.error(
+          response.data.message || "Tatizo katika kuhifadhi manunuzi.",
+          {
+            position: "button-right",
+            style: {
+              borderRadius: "12px",
+              background: "#dd2c00",
+              color: "#212121",
+              fontSize: "26px",
+            },
+          }
+        );
+      }
+    } catch (err) {
+      toast.error(error.data.message || "Tatizo katika kuhifadhi manunuzi.", {
+        position: "button-right",
+        style: {
+          borderRadius: "12px",
+          background: "#dd2c00",
+          color: "#212121",
+          fontSize: "26px",
+        },
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
 
   //formating Price
   const formatPriceWithCommas = (price) => {
@@ -514,9 +497,9 @@ const ProcessPo = ({ onClose, session }) => {
                               <div className="ml-3">
                                 <p className="text-gray-900 whitespace-no-wrap font-semibold capitalize">
                                   {formatPriceWithCommas(
-                                  (item.requiredQuantity || 0) -
-                                    (item.receivedQuantity || 0)
-                                )}
+                                    (item.requiredQuantity || 0) -
+                                      (item.receivedQuantity || 0)
+                                  )}
                                 </p>
                               </div>
                             </div>
@@ -527,9 +510,7 @@ const ProcessPo = ({ onClose, session }) => {
                               <div className="ml-3">
                                 <p className="text-gray-900 whitespace-no-wrap font-semibold capitalize">
                                   {item?.totalCost
-                                    ? formatPriceWithCommas(
-                                        item?.totalCost
-                                      )
+                                    ? formatPriceWithCommas(item?.totalCost)
                                     : "0"}
                                 </p>
                               </div>
@@ -620,6 +601,7 @@ const ProcessPo = ({ onClose, session }) => {
                 type="submit"
                 className="mt-6 border rounded-md px-6 py-2 bg-green-300 font-bold text-black"
                 disabled={loading}
+                onClick={handleSubmit}
               >
                 {loading ? (
                   <div className="flex items-center">

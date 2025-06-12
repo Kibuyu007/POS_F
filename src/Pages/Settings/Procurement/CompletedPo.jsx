@@ -13,7 +13,6 @@ import { DateRangePicker } from "@mui/x-date-pickers-pro/DateRangePicker";
 import { useDispatch, useSelector } from "react-redux";
 import { fetchSuppliers } from "../../../Redux/suppliers";
 
-
 const CompletedPo = () => {
   const { supplier } = useSelector((state) => state.suppliers);
   const [sessions, setSessions] = useState([]);
@@ -74,6 +73,7 @@ const CompletedPo = () => {
             comments: session.comments,
             supplierName: session.supplierName,
             createdBy: session.createdBy,
+            status: session.status,
             allItems: session.allItems,
             totalProducts: session.allItems.reduce(
               (total, item) => total + item.requiredQuantity,
@@ -92,19 +92,22 @@ const CompletedPo = () => {
     fetchData();
   }, []);
 
+  const handlePreview = (session) => {
+    const supplierDetails = supplier.find(
+      (s) => s._id === session.supplierName
+    );
+    const sessionWithSupplierName = {
+      ...session,
+      supplierName: supplierDetails
+        ? supplierDetails.supplierName
+        : "Unknown Supplier",
+      supplierContacts: supplierDetails ? supplierDetails.phone : "No Contacts",
+      supplierAddress: supplierDetails ? supplierDetails.address : "No Address",
+    };
 
-const handlePreview = (session) => {
-  const supplierDetails = supplier.find((s) => s._id === session.supplierName);
-  const sessionWithSupplierName = {
-    ...session,
-    supplierName: supplierDetails ? supplierDetails.supplierName : "Unknown Supplier",
-    supplierContacts: supplierDetails ? supplierDetails.phone: "No Contacts",
-    supplierAddress: supplierDetails ? supplierDetails.address: "No Address",
+    setSelectedSession(sessionWithSupplierName);
+    setShowPreviewModal(true);
   };
-
-  setSelectedSession(sessionWithSupplierName);
-  setShowPreviewModal(true);
-};
 
   const totalItems = filteredSessions.length;
   const totalPages = Math.ceil(totalItems / itemsPerPage);
@@ -130,7 +133,6 @@ const handlePreview = (session) => {
 
           <div className=" flex justify-start gap-4">
             {/* Date Filter */}
-
 
             <LocalizationProvider dateAdapter={AdapterDayjs}>
               <DateRangePicker
@@ -165,7 +167,7 @@ const handlePreview = (session) => {
             <th className="px-5 py-3 border-b-2 border-gray-200 bg-gray-200 text-center text-xs font-bold text-gray-900 uppercase tracking-wider">
               SN
             </th>
-             <th className="px-5 py-3 border-b-2 border-gray-200 bg-gray-200 text-center text-xs font-bold text-gray-900 uppercase tracking-wider">
+            <th className="px-5 py-3 border-b-2 border-gray-200 bg-gray-200 text-center text-xs font-bold text-gray-900 uppercase tracking-wider">
               GRN Number
             </th>
             <th className="px-5 py-3 border-b-2 border-gray-200 bg-gray-200 text-center text-xs font-bold text-gray-900 uppercase tracking-wider">
@@ -179,6 +181,9 @@ const handlePreview = (session) => {
             </th>
             <th className="px-5 py-3 border-b-2 border-gray-200 bg-gray-200 text-center text-xs font-bold text-gray-900 uppercase tracking-wider">
               Created At
+            </th>
+            <th className="px-5 py-3 border-b-2 border-gray-200 bg-gray-200 text-center text-xs font-bold text-gray-900 uppercase tracking-wider">
+              Status
             </th>
             <th className="px-5 py-3 border-b-2 border-gray-200 bg-gray-200 text-center text-xs font-bold text-gray-900 uppercase tracking-wider">
               View PO
@@ -243,6 +248,22 @@ const handlePreview = (session) => {
                       <p className="text-gray-900 whitespace-no-wrap font-semibold capitalize">
                         {new Date(session.createdAt).toLocaleDateString()}
                       </p>
+                    </div>
+                  </div>
+                </td>
+
+                <td className="py-2 px-3 font-normal text-base border-x shadow-md bg-gray-100 hover:bg-gray-100 whitespace-nowrap overflow-hidden overflow-ellipsis max-w-[200px]">
+                  <div className="items-center text-center">
+                    <div className="ml-3">
+                      {session.status === "Pending" ? (
+                        <span className="bg-yellow-400 px-6 py-2 rounded-3xl shadow-md">
+                          Pending
+                        </span>
+                      ) : (
+                        <span className="bg-gray-300 px-6 py-2 rounded-3xl shadow-md">
+                          Approved
+                        </span>
+                      )}
                     </div>
                   </div>
                 </td>

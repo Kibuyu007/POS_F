@@ -73,6 +73,7 @@ const PoGrn = () => {
             comments: session.comments,
             supplierName: session.supplierName,
             createdBy: session.createdBy,
+            status: session.status,
             allItems: session.allItems,
             totalProducts: session.allItems.reduce(
               (total, item) => total + item.requiredQuantity,
@@ -92,6 +93,12 @@ const PoGrn = () => {
   }, []);
 
   const handlePreview = (session) => {
+    if (session.status === "Approved") {
+      setShowPreviewModal(false);
+      setSelectedSession(null);
+      return;
+    }
+
     const supplierDetails = supplier.find(
       (s) => s._id === session.supplierName
     );
@@ -251,12 +258,18 @@ const PoGrn = () => {
                   </div>
                 </td>
 
-                <td className="py-2 px-3 font-normal text-base border-x shadow-md bg-gray-100  hover:bg-gray-100  whitespace-nowrap overflow-hidden overflow-ellipsis max-w-[200px]">
+                <td className="py-2 px-3 font-normal text-base border-x shadow-md bg-gray-100 hover:bg-gray-100 whitespace-nowrap overflow-hidden overflow-ellipsis max-w-[200px]">
                   <div className="items-center text-center">
                     <div className="ml-3">
-                      <span className="bg-yellow-400 px-6 py-2 rounded-3xl shadow-md">
-                        Pending
-                      </span>
+                      {session.status === "Pending" ? (
+                        <span className="bg-yellow-400 px-6 py-2 rounded-3xl shadow-md">
+                          Pending
+                        </span>
+                      ) : (
+                        <span className="bg-gray-300 px-6 py-2 rounded-3xl shadow-md">
+                          Approved
+                        </span>
+                      )}
                     </div>
                   </div>
                 </td>
@@ -264,12 +277,21 @@ const PoGrn = () => {
                 <td className="py-2 px-3 font-normal text-base border-x shadow-md bg-gray-100  hover:bg-gray-100  whitespace-nowrap overflow-hidden overflow-ellipsis max-w-[200px]">
                   <div className="items-center text-center">
                     <div className="ml-3">
-                      <button
-                        className="bg-green-400 px-6 py-2 rounded-3xl shadow-md"
-                        onClick={() => handlePreview(session)}
-                      >
-                        Process
-                      </button>
+                      {session.status === "Approved" ? (
+                        <button
+                          className="bg-gray-400 px-6 py-2 rounded-3xl shadow-md cursor-not-allowed"
+                          disabled // Disable the button when status is approved
+                        >
+                          Completed
+                        </button>
+                      ) : (
+                        <button
+                          className="bg-green-400 px-6 py-2 rounded-3xl shadow-md"
+                          onClick={() => handlePreview(session)}
+                        >
+                          Process
+                        </button>
+                      )}
                     </div>
                   </div>
                 </td>
