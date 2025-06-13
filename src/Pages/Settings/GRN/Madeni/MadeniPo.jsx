@@ -1,20 +1,36 @@
+import axios from "axios";
+import { useEffect } from "react";
 import { useState } from "react";
 import React from "react";
 
-const mockItems = [
-    { _id: "1", name: "Sugar", currentPrice: 10, currentBalance: 50 },
-    { _id: "2", name: "Flour", currentPrice: 8, currentBalance: 30 },
-  ];
 
-
-const Madeni = () => {
+const MadeniPo = () => {
 
     const [expandedRow, setExpandedRow] = useState(null);
     const [stockUpdates, setStockUpdates] = useState({});
+    const [mockItems, setMockItems] = useState([]);
   
     const handleToggleRow = (id) => {
       setExpandedRow((prev) => (prev === id ? null : id));
     };
+
+
+    useEffect(() => {
+      const fetchUnpaidPo = async () => {
+      try {
+        const res = await axios.get(
+          "http://localhost:4004/api/grn/unpaidPo"
+        );
+        if (res.data.success) {
+          setMockItems(res.data.data);
+        }
+      } catch (err) {
+        console.error("Error fetching billed items:", err);
+      }
+    };
+
+    fetchUnpaidPo();
+    })
   
     const handleChange = (id, field, value) => {
       setStockUpdates((prev) => ({
@@ -48,7 +64,7 @@ const Madeni = () => {
 
       <table className="w-full table-auto border border-gray-300">
         <thead>
-          <tr className="bg-gray-100 text-left">
+          <tr className="bg-gray-100 text-left text-black">
             <th className="p-2 border">Item Name</th>
             <th className="p-2 border">Current Price</th>
             <th className="p-2 border">Balance</th>
@@ -58,10 +74,8 @@ const Madeni = () => {
         <tbody>
           {mockItems.map((item) => (
             <React.Fragment key={item._id}>
-              <tr className="border-t">
-                <td className="p-2 border">{item.name}</td>
-                <td className="p-2 border">${item.currentPrice.toFixed(2)}</td>
-                <td className="p-2 border">{item.currentBalance}</td>
+              <tr className="border-t text-black">
+                <td className="p-2 border text-black">{item.name}</td>
                 <td className="p-2 border">
                   <button
                     className="text-blue-600 font-medium"
@@ -129,4 +143,6 @@ const Madeni = () => {
   )
 }
 
-export default Madeni
+export default MadeniPo
+
+

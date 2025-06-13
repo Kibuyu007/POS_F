@@ -11,7 +11,7 @@ import ItemModal from "./ItemModal";
 import toast from "react-hot-toast";
 import axios from "axios";
 
-const ProcessPo = ({ onClose, session }) => {
+const ProcessPo = ({ onClose, session, onPoStatusUpdate }) => {
   const { supplier } = useSelector((state) => state.suppliers);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -104,7 +104,19 @@ const ProcessPo = ({ onClose, session }) => {
     }));
   };
 
-  const toggleStatus = async () => {};
+  const toggleStatus = async (itemId) => {
+    setProcessedItems((prevItems) =>
+      prevItems.map((item) =>
+        item._id === itemId
+          ? {
+              ...item,
+              status: item.status === "Completed" ? "Billed" : "Completed",
+            }
+          : item
+      )
+    );
+    toast.info("Item status updated!");
+  };
 
   //HANDLE SUBMIT
   const handleSubmit = async () => {
@@ -141,7 +153,7 @@ const ProcessPo = ({ onClose, session }) => {
         rejected: item.rejected || false,
         comments: item.comments || "",
         totalCost: item.totalCost,
-        status: "Approved",
+        status:item.status || "Completed",
       })),
     };
 
@@ -170,6 +182,29 @@ const ProcessPo = ({ onClose, session }) => {
             fontSize: "26px",
           },
         });
+
+        const poUpdateResponse = await axios.put(
+          `http://localhost:4004/api/manunuzi/updatePo/${session.grnSessionId}`,
+          { status: "Approved" }
+        );
+
+        if (poUpdateResponse.data.success) {
+          toast.success("PO Status Updated to Approved!", {
+            position: "bottom-right",
+            style: {
+              borderRadius: "12px",
+              background: "#00c853",
+              color: "#212121",
+              fontSize: "16px",
+            },
+          });
+
+          // 3. Inform the parent component about the status change
+          if (onPoStatusUpdate) {
+            onPoStatusUpdate(session.grnSessionId, "Approved");
+          }
+        }
+
         setProcessedItems([]);
       } else {
         setError(response.data.message || "Tatizo katika kuhifadhi manunuzi.");
@@ -564,10 +599,20 @@ const ProcessPo = ({ onClose, session }) => {
 
                           <td className="pl-5 font-bold bg-gray-200">
                             <button
-                              onClick={() => toggleStatus()}
-                              className="focus:ring-1 focus:ring-offset-2 focus:ring-red-300 text-sm leading-none text-gray-600 py-3 px-5 bg-gray-200 rounded hover:bg-gray-100 focus:outline-none"
+                              onClick={() => toggleStatus(item._id)}
+                              className=" text-sm leading-none text-gray-600 py-3 px-5 bg-gray-200 rounded hover:bg-gray-100 focus:outline-none"
                             >
-                              <BsToggleOn size={20} />
+                              {item.status === "Billed" ? (
+                                <BsToggleOn
+                                  size={35}
+                                  className="text-green-600"
+                                />
+                              ) : (
+                                <BsToggleOff
+                                  size={35}
+                                  className="text-gray-500"
+                                />
+                              )}
                             </button>
                           </td>
                         </tr>

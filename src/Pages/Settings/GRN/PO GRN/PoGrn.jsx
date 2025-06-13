@@ -115,6 +115,20 @@ const PoGrn = () => {
     setShowPreviewModal(true);
   };
 
+   // Function ya ku upadte Status akisave kwenye Process Modal ---
+   const handlePoStatusUpdate = (poGrnSessionId, newStatus) => {
+    // Update the local state of sessions to reflect the new status
+    setSessions((prevSessions) =>
+      prevSessions.map((session) =>
+        session.grnSessionId === poGrnSessionId
+          ? { ...session, status: newStatus }
+          : session
+      )
+    );
+    setShowPreviewModal(false); // Close the modal after status update
+    setSelectedSession(null); // Clear selected session
+  };
+
   const totalItems = filteredSessions.length;
   const totalPages = Math.ceil(totalItems / itemsPerPage);
 
@@ -306,6 +320,7 @@ const PoGrn = () => {
         <ProcessPo
           session={selectedSession}
           onClose={() => setShowPreviewModal(false)}
+          onPoStatusUpdate={handlePoStatusUpdate}
         />
       )}
 

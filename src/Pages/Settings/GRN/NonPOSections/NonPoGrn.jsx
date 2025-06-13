@@ -13,6 +13,7 @@ import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs";
 import { LocalizationProvider } from "@mui/x-date-pickers/LocalizationProvider";
 import dayjs from "dayjs";
 import { DatePicker } from "@mui/x-date-pickers/DatePicker";
+import { BsToggleOff, BsToggleOn } from "react-icons/bs";
 
 const NonPoGrn = () => {
   const { supplier } = useSelector((state) => state.suppliers);
@@ -86,6 +87,20 @@ const NonPoGrn = () => {
     setItemHold((items) => items.filter((item) => item !== itemToRemove));
   };
 
+  const toggleStatus = async (itemId) => {
+    setItemHold((prevItems) =>
+      prevItems.map((item) =>
+        item._id === itemId
+          ? {
+              ...item,
+              status: item.status === "Completed" ? "Billed" : "Completed",
+            }
+          : item
+      )
+    );
+    toast.info("Item status updated!");
+  };
+
   const handleSubmit = async () => {
     const selectedSupplier = supplier.find(
       (sup) => sup._id === regi.supplierName
@@ -123,6 +138,7 @@ const NonPoGrn = () => {
         rejected: item.rejected || false,
         comments: item.comments || "",
         totalCost: item.totalCost || 0,
+        status: item.status || "Completed",
       })),
     };
 
@@ -415,6 +431,10 @@ const NonPoGrn = () => {
                 </th>
 
                 <th className="px-5 py-3 border-b-2 border-gray-200 bg-gray-200  text-xs font-bold text-gray-600 uppercase tracking-wider">
+                  Bill
+                </th>
+
+                <th className="px-5 py-3 border-b-2 border-gray-200 bg-gray-200  text-xs font-bold text-gray-600 uppercase tracking-wider">
                   Remove
                 </th>
               </tr>
@@ -541,6 +561,25 @@ const NonPoGrn = () => {
                               </p>
                             </div>
                           </div>
+                        </td>
+
+                        <td className="pl-5 font-bold bg-gray-200">
+                          <button
+                            onClick={() => toggleStatus(item._id)}
+                            className=" text-sm leading-none text-gray-600 py-3 px-5 bg-gray-200 rounded hover:bg-gray-100 focus:outline-none"
+                          >
+                            {item.status === "Billed" ? (
+                              <BsToggleOn
+                                size={35}
+                                className="text-green-600"
+                              />
+                            ) : (
+                              <BsToggleOff
+                                size={35}
+                                className="text-gray-500"
+                              />
+                            )}
+                          </button>
                         </td>
 
                         <td>

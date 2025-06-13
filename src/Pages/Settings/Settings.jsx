@@ -5,13 +5,15 @@ import ItemsCategories from "./Products/Categories/ItemsCategories";
 import Items from "./Products/Items/Items";
 import Manunuzi from "./Procurement/Manunuzi";
 import Suppliers from "./Procurement/Suppliers";
-import Madeni from "./GRN/Madeni/Madeni";
 import PoGrn from "./GRN/PO GRN/PoGrn";
 import NonPoGrn from "./GRN/NonPOSections/NonPoGrn";
 import CompletedPo from "./Procurement/CompletedPo";
-import CompletedPoGrn from "./GRN/PO GRN/CompletedPoGrn";
+import CompletedPoGrn from "./GRN/PO GRN/IncompletePoGrn";
 import CompletedNonPO from "./GRN/NonPOSections/CompletedNonPO";
 import cover from "../../assets/cover1.jpg";
+import IncompleteNonPo from "./GRN/Madeni/MadeniNonPo";
+import MadeniPo from "./GRN/Madeni/MadeniPo";
+import MadeniNonPo from "./GRN/Madeni/MadeniNonPo";
 
 const Settings = () => {
   const [selectedSetting, setSelectedSetting] = useState(null);
@@ -35,13 +37,16 @@ const Settings = () => {
           settings={[
             {
               group: "PO GRN",
-              items: ["Process PO GRN", "Completed PO GRN"],
+              items: ["Process PO GRN", "Icomplete PO GRN","Unpaid PO"],
             },
             {
               group: "Non-PO GRN",
-              items: ["Process Non-PO GRN", "Completed Non-PO GRN"],
+              items: [
+                "Process Non-PO GRN",
+                "Unpaid Non-PO",
+                "Completed Non-PO GRN",
+              ],
             },
-            { group: "Credit GRN", items: ["Unpaid GRN"] },
           ]}
           selectedSetting={selectedSetting}
           handleSelect={setSelectedSetting}
@@ -79,15 +84,19 @@ const Settings = () => {
           <Suppliers />
         ) : selectedSetting === "Process PO GRN" ? (
           <PoGrn />
-        ) : selectedSetting === "Completed PO GRN" ? (
+        ) : selectedSetting === "Icomplete PO GRN" ? (
           <CompletedPoGrn />
         ) : selectedSetting === "Process Non-PO GRN" ? (
           <NonPoGrn />
+        ) : selectedSetting === "Incomplete Non-PO GRN" ? (
+          <IncompleteNonPo />
         ) : selectedSetting === "Completed Non-PO GRN" ? (
           <CompletedNonPO />
-        ) : selectedSetting === "Unpaid GRN" ? (
-          <Madeni />
-        ) : selectedSetting ? (
+        ) : selectedSetting === "Unpaid PO" ? (
+          <MadeniPo />
+        ) : selectedSetting === "Unpaid Non-PO" ? (
+          <MadeniNonPo />
+        ): selectedSetting ? (
           <p className="text-lg">{selectedSetting}</p>
         ) : (
           <div className="flex flex-col items-center justify-center h-full">
