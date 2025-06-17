@@ -75,7 +75,7 @@ const MadeniPo = () => {
           {mockItems.map((item) => (
             <React.Fragment key={item._id}>
               <tr className="border-t text-black">
-                <td className="p-2 border text-black">{item.name}</td>
+                <td className="p-2 border text-black">{item.itemName}</td>
                 <td className="p-2 border">
                   <button
                     className="text-blue-600 font-medium"

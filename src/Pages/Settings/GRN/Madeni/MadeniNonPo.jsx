@@ -47,7 +47,7 @@ const MadeniNonPo = () => {
           ) : (
             items.map((item) => (
               <tr key={item.id} className="text-center text-black">
-                <td className="border px-4 py-2">{item.name}</td>
+                <td className="border px-4 py-2">{item.itemName}</td>
                 <td className="border px-4 py-2">Tsh {item.buyingPrice}</td>
                 <td className="border px-4 py-2">Tsh {item.sellingPrice}</td>
                 <td className="border px-4 py-2">{item.quantity}</td>

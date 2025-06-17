@@ -132,6 +132,7 @@ const ProcessPo = ({ onClose, session, onPoStatusUpdate }) => {
     setError("");
 
     const poGrnData = {
+      grnNumber: session.grnNumber,
       supplierName: selectedSupplier ? selectedSupplier.supplierName : "",
       invoiceNumber: regi.invoiceNumber,
       lpoNumber: regi.lpoNumber,
