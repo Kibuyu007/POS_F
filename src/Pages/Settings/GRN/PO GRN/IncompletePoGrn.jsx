@@ -8,7 +8,6 @@ const IncompletePoGrn = () => {
   const [modalData, setModalData] = useState(null);
   const [openModal, setOpenModal] = useState(false);
 
-useEffect(() => {
   const fetchOutstandingItems = async () => {
     try {
       const res = await axios.get("http://localhost:4004/api/grn/outstand");
@@ -20,12 +19,15 @@ useEffect(() => {
     }
   };
 
-  fetchOutstandingItems();
-}, []);
+  useEffect(() => {
+    fetchOutstandingItems();
+  }, []);
 
   const handleViewClick = async (grnId) => {
     try {
-      const res = await axios.get(`http://localhost:4004/api/grn/grnPo/${grnId}`);
+      const res = await axios.get(
+        `http://localhost:4004/api/grn/grnPo/${grnId}`
+      );
       setModalData(res.data);
       setOpenModal(true);
     } catch (err) {
@@ -34,15 +36,15 @@ useEffect(() => {
   };
 
   const submitFilledQuantities = async () => {
-  const updates = items.filter(
+      const updates = items.filter(
     (item) => item.filledQuantity > 0 && item.outstandingQuantity > 0
   );
 
   for (const item of updates) {
     try {
-      const res = await axios.put("/api/grn/fill-quantity", {
-        grnId,
-        itemId: item.itemId, // Make sure itemId is passed with each item
+      const res = await axios.put("http://localhost:4004/api/grn/updateOutstanding", {
+        grnId: item.grnId,
+        itemId: item.itemId,
         filledQuantity: item.filledQuantity,
       });
 
@@ -50,12 +52,13 @@ useEffect(() => {
         console.log(`Updated ${item.name}`);
       }
     } catch (err) {
-      console.error("Update failed for", item.name, err);
+      console.error("Error updating item " + item.name, err);
     }
   }
 
-  fetchOutstandingItems(); // Refresh the GRN view
-};
+  fetchOutstandingItems()
+  };
+
 
 
   return (
@@ -83,12 +86,12 @@ useEffect(() => {
               <td className="p-2 border">Tsh {item.newBuyingPrice}</td>
               <td className="p-2 border">{item.supplier}</td>
               <td className="p-2 border">{item.createdBy}</td>
-              <td className="p-2 border"> {new Date(item.createdAt).toLocaleDateString()}</td>
+              <td className="p-2 border">
+                {" "}
+                {new Date(item.createdAt).toLocaleDateString()}
+              </td>
               <td className="p-2 border">{item.requiredQuantity}</td>
               <td className="p-2 border">{item.outstandingQuantity}</td>
-
-
-
 
               <td className="p-2 border">
                 <input
@@ -117,8 +120,7 @@ useEffect(() => {
                   className="border px-2 py-1 w-20"
                 />
               </td>
-              
-              
+
               <td className="p-2 border">
                 <button
                   onClick={submitFilledQuantities}
@@ -132,7 +134,7 @@ useEffect(() => {
               </td>
               <td className="p-2 border">
                 <button
-                onClick={() => handleViewClick(item.grnId)}
+                  onClick={() => handleViewClick(item.grnId)}
                   className="bg-green-600 text-white px-2 py-1 rounded disabled:opacity-50"
                 >
                   Preview GRN
@@ -143,7 +145,7 @@ useEffect(() => {
         </tbody>
       </table>
 
-        {/* Modal */}
+      {/* Modal */}
       {openModal && modalData && (
         <OutstandingPdf
           open={openModal}
@@ -151,7 +153,6 @@ useEffect(() => {
           grn={modalData}
         />
       )}
-
     </div>
   );
 };

@@ -240,7 +240,7 @@ const NonPoGrn = () => {
 
       {/* Section One Suppliers Details *********************************************************** */}
       {/* Manunuzi Details */}
-      <div className="mx-auto  px-4 py-6 sm:px-6 lg:px-8 border bg-gray-100 rounded-lg shadow-md">
+      <div className="mx-auto  px-4 py-6 sm:px-6 lg:px-8 border rounded-lg shadow-md">
         <div className="flex flex-wrap -mx-2">
           <div className="w-full sm:w-1/3 p-2">
             <label
