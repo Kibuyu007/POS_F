@@ -448,7 +448,7 @@ const NonPoGrn = () => {
                   itemHold.map((item, index) => (
                     <>
                       <tr
-                        key={index + 1}
+                        key={item._id}
                         className="h-16 border-gray-500 shadow-md bg-gray-100"
                       >
                         <td className="py-2 px-3 font-normal text-base border-x  hover:bg-gray-100">

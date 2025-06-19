@@ -8,6 +8,7 @@ import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs";
 import { LocalizationProvider } from "@mui/x-date-pickers/LocalizationProvider";
 import { DatePicker } from "@mui/x-date-pickers/DatePicker";
 import dayjs from "dayjs";
+import { v4 as uuidv4 } from "uuid";
 
 const Section2 = ({ onAddItem }) => {
   const { items } = useSelector((state) => state.items);
@@ -135,6 +136,7 @@ const Section2 = ({ onAddItem }) => {
     if (Object.values(newErrors).some((val) => val)) return;
 
     const fullItemData = {
+      _id: uuidv4(),
       itemId: selectedItem._id,
       name: selectedItem.name,
       previousQuantity: selectedItem.itemQuantity,
