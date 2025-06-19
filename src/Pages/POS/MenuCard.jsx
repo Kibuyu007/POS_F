@@ -1,6 +1,5 @@
 import { useEffect, useState, useCallback } from "react";
 import axios from "axios";
-import { GrRadialSelected } from "react-icons/gr";
 import { useDispatch, useSelector } from "react-redux";
 import { addItems } from "../../Redux/cartSlice";
 
@@ -11,9 +10,14 @@ const MenuCard = ({ refreshTrigger }) => {
   const [categories, setCategories] = useState([]);
   const [selected, setSelected] = useState(null);
   const [items, setItems] = useState([]);
-  const [itemCounts, setItemCounts] = useState({}); // Track item quantities individually
+  const [itemCounts, setItemCounts] = useState({});
   const [isLoading, setIsLoading] = useState(true);
   const dispatch = useDispatch();
+  const [searchTerm, setSearchTerm] = useState("");
+
+  const filteredCategories = categories.filter((cat) =>
+    cat.name.toLowerCase().includes(searchTerm.toLowerCase())
+  );
 
   useEffect(() => {
     const fetchCategories = async () => {
@@ -30,9 +34,7 @@ const MenuCard = ({ refreshTrigger }) => {
               );
               return {
                 ...category,
-                itemCount: itemCount.data.success
-                  ? itemCount.data.totalItems
-                  : 0,
+                itemCount: itemCount.data.success ? itemCount.data.totalItems : 0,
               };
             })
           );
@@ -58,56 +60,45 @@ const MenuCard = ({ refreshTrigger }) => {
       }
     };
 
-    fetchCategories(); // ← always runs on refreshTrigger change
-  }, [refreshTrigger]); // ← works whether toggle is true or false
+    fetchCategories();
+  }, [refreshTrigger]);
 
-  const fetchItems = useCallback(
-    async (categoryId) => {
-      try {
-        const { data } = await axios.get(
-          `http://localhost:4004/api/items/getAllItems?category=${categoryId}`
-        );
+  const fetchItems = useCallback(async (categoryId) => {
+    try {
+      const { data } = await axios.get(
+        `http://localhost:4004/api/items/getAllItems?category=${categoryId}`
+      );
 
-        if (data.success) {
-          setItems(data.data);
-          const initialItemCounts = {};
-          data.data.forEach((item) => {
-            initialItemCounts[item._id] = 1; // Default quantity to 1
-          });
-          setItemCounts(initialItemCounts);
-        } else {
-          console.error("Invalid items response:", data);
-        }
-      } catch (error) {
-        console.error("Error fetching items:", error);
-      } finally {
-        setIsLoading(false);
+      if (data.success) {
+        setItems(data.data);
+        const initialItemCounts = {};
+        data.data.forEach((item) => {
+          initialItemCounts[item._id] = 1;
+        });
+        setItemCounts(initialItemCounts);
       }
-    },
-    [refreshTrigger]
-  );
+    } catch (error) {
+      console.error("Error fetching items:", error);
+    } finally {
+      setIsLoading(false);
+    }
+  }, [refreshTrigger]);
 
-  // Formatting Price
   const formatPriceWithCommas = (price) => {
     return new Intl.NumberFormat("en-US").format(price);
   };
 
-  // Handle quantity change
   const handleQuantityChange = (itemId, value) => {
-    setItemCounts((prevCounts) => ({
-      ...prevCounts,
-      [itemId]: Math.max(0, value), // Ensure at least 1 item is selected
+    setItemCounts((prev) => ({
+      ...prev,
+      [itemId]: Math.max(1, value),
     }));
   };
 
-  // Add item to cart
   const handleAddCart = (item) => {
     const quantityToAdd = itemCounts[item._id] || 1;
-
-    // Find current quantity in cart
     const cartItem = cartData.find((ci) => ci.id === item._id);
     const alreadyInCart = cartItem ? cartItem.quantity : 0;
-
     const totalIfAdded = alreadyInCart + quantityToAdd;
 
     if (totalIfAdded > item.itemQuantity) {
@@ -142,97 +133,84 @@ const MenuCard = ({ refreshTrigger }) => {
         </div>
       )}
 
-      {/* Categories */}
-      <div className="grid grid-cols-4 gap-4 py-4 w-full overflow-y-auto md:max-h-[23vh] lg:max-h-[29vh] scrollbar-hide">
-        {categories.map((category) => (
-          <div
+      <div className="w-full mb-3 mt-8">
+        <input
+          type="text"
+          placeholder="Search category..."
+          className="w-full px-3 py-2 border border-gray-300 rounded-full shadow-sm focus:outline-none focus:ring-2  focus:ring-green-400"
+          value={searchTerm}
+          onChange={(e) => setSearchTerm(e.target.value)}
+        />
+      </div>
+
+      <div className="flex flex-wrap gap-2 max-h-[30vh] overflow-y-auto scrollbar-hide">
+        {filteredCategories.map((category) => (
+          <button
             key={category._id}
-            className={`flex flex-col items-start justify-between shadow-md p-4 rounded-full mr-2 min-w-[150px] cursor-pointer ${
-              selected?._id === category._id
-                ? "bg-green-400/40 text-white"
-                : "bg-gray-200"
-            }`}
             onClick={() => {
               setSelected(category);
               fetchItems(category._id);
             }}
+            className={`px-4 py-2 rounded-full text-sm font-medium transition-all duration-200 border shadow-sm 
+              ${
+                selected?._id === category._id
+                  ? "bg-green-500 text-black border-green-400"
+                  : "bg-gray-100 text-gray-800 hover:bg-gray-300"
+              }`}
           >
-            <div className="flex items-center justify-between w-full">
-              <h1 className="text-black text-2xl font-bold ml-8">{category.name}</h1>
-              {selected?._id === category._id && (
-                <GrRadialSelected className="text-black mr-4" size={20} />
-              )}
-            </div>
-            <p className="text-black text-md font-semibold ml-8">
-              {category.itemCount || 0} Items
-            </p>
-          </div>
+            {category.name}
+            <span className="ml-2 text-xs text-gray-600">
+              ({category.itemCount || 0})
+            </span>
+          </button>
         ))}
       </div>
 
       <hr className="border-[#2a2a2a] border-t-2 mt-4" />
 
-      {/* Items */}
-      <div className="grid grid-cols-4 gap-4 py-4 w-full">
+      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6 py-6 w-full">
         {items.map((item) => (
           <div
             key={item._id}
-            className="flex flex-col items-center justify-between cursor-pointer"
+            className="bg-gradient-to-r from-blue-100 to-green-200 rounded-2xl shadow-lg p-6 flex flex-col justify-between transition-all hover:shadow-xl"
           >
+            <h2 className="text-xl font-bold text-center text-gray-800 mb-4">
+              {item.name}
+            </h2>
 
-          
-              <div className="w-80 mt-24 m-auto lg:mt-12 max-w-sm shadow-[0_3px_10px_rgb(0,0,0,0.2)] rounded-md">
-                <div className="bg-white mt-8 rounded-3xl ">
-                  <div className=" lg:w-5/6 m-auto bg-indigo-50 mt-2 p-4 lg:p-4 rounded-full">
-                    <h2 className="text-center text-gray-800 text-2xl font-bold">
-                      {item.name}
-                    </h2>
-                  </div>
-                  <div className="grid grid-cols-4 w-72 lg:w-5/6 m-auto bg-indigo-50 mt-5 p-4 lg:p-4 rounded-xl">
-                    <div className="col-span-2 pt-1">
-                      <p className="text-gray-800 font-bold lg:text-sm">
-                        Price
-                      </p>
-                      <p className="text-gray-500 text-sm">
-                        Tsh: {formatPriceWithCommas(item.price)} /=
-                      </p>
-                    </div>
-
-                    <div className="col-span-2 pt-1">
-                      <p className="text-gray-800 font-bold lg:text-sm">
-                        Quantity
-                      </p>
-                      <p className="text-gray-500 text-sm">
-                        ({item.itemQuantity} available)
-                      </p>
-                    </div>
-                  </div>
-
-                  <div className="text-center m-auto mt-6 w-full">
-                    <input
-                      type="number"
-                      value={itemCounts[item._id] || 0}
-                      onChange={(e) =>
-                        handleQuantityChange(item._id, parseInt(e.target.value))
-                      }
-                      className="w-16 border px-2 py-1 rounded-md text-center"
-                      min="1"
-                    />
-                  </div>
-                  <div className="bg-green-500 w-72 lg:w-5/6 m-auto mt-6 p-2 hover:bg-indigo-50 rounded-sm  text-black text-center shadow-xl shadow-bg-blue-700">
-                    <button
-                      onClick={() => handleAddCart(item)}
-                      className="lg:text-sm text-lg font-bold"
-                    >
-                      Weka kwenye List
-                    </button>
-                  </div>
-                  <div className="text-center m-auto mt-6 w-full">
-                    <button className="text-gray-500 font-bold lg:text-sm hover:text-gray-900"></button>
-                  </div>
-                </div>
+            <div className="flex justify-between items-center text-base text-gray-700 mb-4">
+              <div>
+                <p className="font-semibold">Price</p>
+                <p className="text-gray-600">
+                  Tsh {formatPriceWithCommas(item.price)} /=
+                </p>
               </div>
-         
+              <div className="text-right">
+                <p className="font-semibold">Stock</p>
+                <p className="text-gray-600">
+                  ({item.itemQuantity} available)
+                </p>
+              </div>
+            </div>
+
+            <div className="flex justify-center mb-4">
+              <input
+                type="number"
+                min="1"
+                value={itemCounts[item._id] || 1}
+                onChange={(e) =>
+                  handleQuantityChange(item._id, parseInt(e.target.value))
+                }
+                className="w-20 text-center border border-gray-300 rounded-md py-2"
+              />
+            </div>
+
+            <button
+              onClick={() => handleAddCart(item)}
+              className="w-full bg-gray-300 hover:bg-green-300 text-black py-2 rounded-full font-semibold text-base"
+            >
+              Weka kwenye List
+            </button>
           </div>
         ))}
       </div>

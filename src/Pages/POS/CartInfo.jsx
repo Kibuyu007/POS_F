@@ -46,60 +46,58 @@ const CartInfo = () => {
   };
 
   return (
-    <div className="px-4 py-2 top-2">
-      <div className="flex justify-between">
-        <h1 className="text-lg text-black font-semibold tracking-wide">
-          Cart Details
-        </h1>
-        <p className="font-bold ">{totalItems} Total Items</p>
+    <div className=" py-4 top-2">
+      <div className="flex justify-between items-center mb-4">
+        <h1 className="text-2xl font-bold text-gray-800">Cart Details</h1>
+        <span className="text-md font-semibold text-gray-600">
+          {totalItems} Total Item{totalItems > 1 ? "s" : ""}
+        </span>
       </div>
 
       <div
-        className="mt-4 overflow-y-scroll scrollbar-hide h-[420px]"
+        className="space-y-4 overflow-y-auto scrollbar-hide h-[420px] bg-white rounded-xl p-2 shadow-inner"
         ref={scrolling}
       >
         {cartData.length === 0 ? (
-          <p className="text-black flex justify-center items-center h-[380px]">
-            <span className="bg-GreenText rounded-md py-3 px-4">
-              {" "}
-              {totalItems} Total Items
+          <div className="flex items-center justify-center h-full text-gray-500 font-medium text-lg">
+            <span className="bg-green-200 px-4 py-2 rounded-md">
+              No items in cart
             </span>
-          </p>
+          </div>
         ) : (
           cartData.map((items) => (
             <div
               key={items.id}
-              className="bg-[#d6d6d6] rounded-lg px-4 py-4 mb-2"
+              className="bg-gray-100 rounded-xl shadow-sm p-4 hover:shadow-md transition-all"
             >
-              <div className="flex items-center justify-between">
-                <h1 className="text-black font-bold tracking-wide text-xl">
+              <div className="flex justify-between items-center mb-2">
+                <h2 className="text-lg font-semibold text-gray-800 truncate">
                   {items.name}
-                </h1>
-                <p className="text-black font-semibold text-2xl bg-orange-600 rounded-full px-3">
-                  {items.quantity}
-                </p>
+                </h2>
+                <span className="text-sm bg-orange-500 text-white rounded-full px-3 py-1 font-semibold">
+                  Qty: {items.quantity}
+                </span>
               </div>
 
-              <div className="flex items-center justify-between mt-3">
-                <div className="flex items-center gap-3">
+              <div className="flex justify-between items-center">
+                <div className="flex gap-4 text-gray-700">
                   <IoIosRemoveCircle
                     onClick={() => decreaseDishQuantity(items.id)}
-                    className="cursor-pointer text-[#262626]"
-                    size={20}
+                    className="cursor-pointer hover:text-red-600"
+                    size={22}
                   />
-
                   <RiDeleteBin5Line
                     onClick={() => removeDish(items.id)}
-                    className="cursor-pointer text-[#262626]"
+                    className="cursor-pointer hover:text-red-600"
                     size={20}
                   />
                   <FaPlusCircle
-                    onClick={() => increaseDishQuantity(items.id)} // Increase quantity functionality
-                    className="cursor-pointer text-[#262626]"
-                    size={20}
+                    onClick={() => increaseDishQuantity(items.id)}
+                    className="cursor-pointer hover:text-green-600"
+                    size={22}
                   />
                 </div>
-                <p className="text-black font-bold text-2xl bg-green-400/40 px-3 shadow-md py-1 rounded-md">
+                <p className="text-lg font-bold text-green-700 bg-green-200 rounded-md px-3 py-1 shadow-sm">
                   {new Intl.NumberFormat("en-US").format(items.totalPrice)} Tsh
                 </p>
               </div>

@@ -1,5 +1,9 @@
 import { useDispatch, useSelector } from "react-redux";
-import { clearCart, getTotalPrice, setReceiptPrinted } from "../../Redux/cartSlice";
+import {
+  clearCart,
+  getTotalPrice,
+  setReceiptPrinted,
+} from "../../Redux/cartSlice";
 import { useState } from "react";
 import axios from "axios";
 
@@ -8,7 +12,6 @@ const Cart = ({ triggerRefreshMenu }) => {
 
   const [errorMsg, setErrorMsg] = useState("");
   const [lastTransactionDetails, setLastTransactionDetails] = useState(null);
-  
 
   const [customerDetails, setCustomerDetails] = useState({
     name: "Mteja",
@@ -75,9 +78,7 @@ const Cart = ({ triggerRefreshMenu }) => {
       } else {
         alert("Transaction failed");
       }
-    } 
-    
-    catch (error) {
+    } catch (error) {
       if (
         error.response &&
         error.response.data &&
@@ -89,7 +90,6 @@ const Cart = ({ triggerRefreshMenu }) => {
       }
     }
   };
-
 
   const [pdfUrl, setPdfUrl] = useState("");
   const [showPrintButton, setShowPrintButton] = useState(false);
@@ -104,16 +104,15 @@ const Cart = ({ triggerRefreshMenu }) => {
         }
       );
 
-      const blob = new Blob([response.data], { type: "application/pdf" }); 
+      const blob = new Blob([response.data], { type: "application/pdf" });
       const pdfUrl = URL.createObjectURL(blob);
       setPdfUrl(pdfUrl);
       window.open(pdfUrl, "_blank");
       dispatch(setReceiptPrinted(true));
-      
     } catch (err) {
       alert("Failed to generate receipt");
       console.error("Receipt error:", err);
-    }finally {
+    } finally {
       window.location.reload();
     }
   };
@@ -121,96 +120,105 @@ const Cart = ({ triggerRefreshMenu }) => {
   return (
     <>
       {/* Customer Details, Name and Phone Number */}
-      <div className="mt-5 py-4">
-        <div className="rounded-md shadow-lg px-4 py-4 bg-gradient-to-r from-blue-100 to-green-500">
-          <div className="flex flex-row justify-between items-center">
-            <div className="flex flex-row justify-between gap-10 py-4">
-              <div className="  w-full">
-                <label className="font-bold text-lg ml-2">Customer Name</label>
-                <input
-                  type="text"
-                  name="name"
-                  value={customerDetails.name}
-                  onChange={handleInput}
-                  className="w-full h-12 px-4 py-1 rounded-lg border border-gray-400 text-gray-800 focus:outline-none"
-                  placeholder="Name"
-                />
-              </div>
-
-              <div className="  w-full">
-                <label className="font-bold text-lg ml-2">Phone Number</label>
-                <input
-                  type="number"
-                  name="phone"
-                  value={customerDetails.phone}
-                  onChange={handleInput}
-                  className={`w-full h-12 px-4 py-1 rounded-lg border ${
-                    validation.phone
-                      ? "border-gray-400"
-                      : "border-red-500 border-2"
-                  } text-gray-800 focus:outline-none`}
-                  placeholder="Phone"
-                />
-              </div>
+      <div className="mt-6 space-y-6">
+        {/* Customer Input Section */}
+        <div className="bg-gradient-to-r from-blue-100 to-green-200 rounded-xl shadow-lg px-6 py-6">
+          <h2 className="text-xl font-semibold text-gray-800 mb-4">
+            Customer Info
+          </h2>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div>
+              <label className="block text-gray-700 font-semibold mb-1">
+                Customer Name
+              </label>
+              <input
+                type="text"
+                name="name"
+                value={customerDetails.name}
+                onChange={handleInput}
+                className="w-full px-4 py-2 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-green-400 shadow-sm"
+                placeholder="Enter name"
+              />
+            </div>
+            <div>
+              <label className="block text-gray-700 font-semibold mb-1">
+                Phone Number
+              </label>
+              <input
+                type="number"
+                name="phone"
+                value={customerDetails.phone}
+                onChange={handleInput}
+                className={`w-full px-4 py-2 rounded-lg border shadow-sm ${
+                  validation.phone
+                    ? "border-gray-300"
+                    : "border-red-500 border-2"
+                } focus:outline-none focus:ring-2 focus:ring-green-400`}
+                placeholder="Enter phone number"
+              />
             </div>
           </div>
         </div>
-      </div>
 
-      {/* Error message if any */}
-      {errorMsg && (
-        <div className="text-red-600 font-semibold text-center mt-2">
-          {errorMsg}
+        {/* Error message */}
+        {errorMsg && (
+          <div className="text-red-600 font-semibold text-center">
+            {errorMsg}
+          </div>
+        )}
+
+        {/* Totals Section */}
+        <div className="bg-white rounded-xl shadow-[0px_10px_1px_rgba(221,_221,_221,_1),_0_10px_20px_rgba(204,_204,_204,_1)] px-6 py-4 space-y-2">
+          <div className="flex justify-between text-gray-800 font-medium">
+            <span>Items</span>
+            <span>{cartData.length}</span>
+          </div>
+          <div className="flex justify-between text-gray-800 font-medium">
+            <span>Tax (2.5%)</span>
+            <span>{tax}/=</span>
+          </div>
+          <div className="flex justify-between text-lg font-bold text-black pt-2 border-t">
+            <span>Total (Tsh)</span>
+            <span>{finalTotal}/=</span>
+          </div>
         </div>
-      )}
 
-      <div className="flex items-center justify-between px-5 mt-2">
-        <p className="text-black font-bold mt-2"> {cartData.length} : Items</p>
-        <h1 className="text-black text-xl  font-bold">{total}/=</h1>
-      </div>
+        {/* Buttons */}
+        <div className="flex gap-4">
+          <button
+            onClick={() => handleTransaction("paid")}
+            className="w-full py-3 rounded-lg bg-green-500 text-white font-semibold hover:bg-green-600 transition"
+          >
+            Cash
+          </button>
+          <button
+            onClick={() => handleTransaction("pending")}
+            className="w-full py-3 rounded-lg bg-gray-300 text-black font-semibold hover:bg-gray-400 transition"
+          >
+            Bill
+          </button>
+        </div>
 
-      <div className="flex items-center justify-between px-5 mt-2">
-        <p className="text-black font-bold mt-2">Tax : (2.5%)</p>
-        <h1 className="text-black text-xl  font-bold">{tax}/=</h1>
-      </div>
+        <hr className="border-gray-400 mt-2" />
 
-      <div className="flex items-center justify-between px-5 mt-2">
-        <p className="text-black font-bold mt-2">Total : Tsh</p>
-        <h1 className="text-black text-2xl  font-bold">{finalTotal}/=</h1>
-      </div>
-
-      <div className="flex items-center gap-3  px-5 mt-4">
-        <button
-          onClick={() => handleTransaction("paid")}
-          className="bg-[#00c853] px-4 py-3 w-full rounded-lg text-black"
-        >
-          Cash
-        </button>
-        <button
-          onClick={() => handleTransaction("pending")}
-          className="bg-grey px-4 py-3 w-full rounded-lg text-black"
-        >
-          Bill
-        </button>
-      </div>
-
-      <div>
+        {/* Receipt print */}
         {showPrintButton && (
-          <div className="px-5 mt-3">
+          <div className="mt-4">
             <button
               onClick={handlePrintReceipt}
-              className="bg-yellow-500 px-4 py-3 w-full rounded-lg text-black font-semibold"
+              className="w-full py-3 bg-yellow-400 hover:bg-yellow-500 rounded-lg font-semibold text-black transition"
             >
               Print Receipt
             </button>
             {pdfUrl && (
-            <embed
-              src={pdfUrl}
-              type="application/pdf"
-              width="100%"
-              height="600px"
-            />
-          )}
+              <embed
+                src={pdfUrl}
+                type="application/pdf"
+                width="100%"
+                height="500px"
+                className="mt-4 rounded-lg shadow-md"
+              />
+            )}
           </div>
         )}
       </div>
