@@ -60,7 +60,7 @@ const Cart = ({ triggerRefreshMenu }) => {
       if (response.status === 201) {
         alert(
           `Transaction ${
-            status === "paid" ? "completed" : "saved as bill"
+            status === "Paid" ? "completed" : "saved as bill"
           } successfully!`
         );
         dispatch(clearCart());
@@ -186,13 +186,13 @@ const Cart = ({ triggerRefreshMenu }) => {
         {/* Buttons */}
         <div className="flex gap-4">
           <button
-            onClick={() => handleTransaction("paid")}
+            onClick={() => handleTransaction("Paid")}
             className="w-full py-3 rounded-lg bg-green-500 text-white font-semibold hover:bg-green-600 transition"
           >
             Cash
           </button>
           <button
-            onClick={() => handleTransaction("pending")}
+            onClick={() => handleTransaction("Bill")}
             className="w-full py-3 rounded-lg bg-gray-300 text-black font-semibold hover:bg-gray-400 transition"
           >
             Bill
