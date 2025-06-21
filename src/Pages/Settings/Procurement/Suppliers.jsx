@@ -2,11 +2,15 @@ import { useState, useEffect } from "react";
 
 //redux
 import { useDispatch, useSelector } from "react-redux";
-import { fetchSuppliers, supplierStatusUpdate } from "../../../Redux/suppliers";
+import {
+  fetchAllSuppliers,
+  supplierStatusUpdate,
+} from "../../../Redux/suppliers";
 
 //Modals
 import AddSupplier from "./AddSupplier";
 import EditSupplier from "./EditSupplier";
+import Loading from "../../../Components/Shared/Loading";
 
 //Icons
 import { FaSearch, FaUserEdit } from "react-icons/fa";
@@ -16,11 +20,7 @@ import { IoIosArrowBack, IoIosArrowForward } from "react-icons/io";
 
 const Suppliers = () => {
   const dispatch = useDispatch();
-  const {
-    supplier = [],
-    error,
-    loading,
-  } = useSelector((state) => state.suppliers);
+  const { allSuppliers = [], error } = useSelector((state) => state.suppliers);
 
   const [showModalAdd, setShowModalAdd] = useState(false);
   const [showModalEdit, setShowModalEdit] = useState(false);
@@ -28,6 +28,7 @@ const Suppliers = () => {
   const [filterStatus, setFilterStatus] = useState("All");
   const [searchQuery, setSearchQuery] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
+  const [load, setLoad] = useState(false);
   const usersPerPage = 5;
 
   const nextPage = () => {
@@ -43,10 +44,12 @@ const Suppliers = () => {
   };
 
   useEffect(() => {
-    dispatch(fetchSuppliers());
+    setLoad(true);
+    dispatch(fetchAllSuppliers());
+    setLoad(false);
   }, [dispatch]);
 
-  const filteredSuppliers = supplier.filter(
+  const filteredSuppliers = allSuppliers.filter(
     (s) =>
       (filterStatus === "All" || s.status === filterStatus) &&
       (s.supplierName.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -134,11 +137,7 @@ const Suppliers = () => {
           </div>
         )}
 
-        {loading ? (
-          <div className="text-center text-gray-500">Loading suppliers...</div>
-        ) : (
-          <div className="mt-7 overflow-x-auto">{/* Your table here */}</div>
-        )}
+        <Loading load={load} />
 
         <div className="mt-7 overflow-x-auto">
           <table className="w-full whitespace-nowrap">
@@ -271,12 +270,12 @@ const Suppliers = () => {
               </span>{" "}
               to{" "}
               <span className="font-medium">
-                <strong>{Math.min(indexOfLast, supplier.length)}</strong>
+                <strong>{Math.min(indexOfLast, allSuppliers.length)}</strong>
               </span>{" "}
               of{" "}
               <span className="font-medium">
                 {" "}
-                <strong>{supplier.length}</strong>{" "}
+                <strong>{allSuppliers.length}</strong>{" "}
               </span>{" "}
               <strong>Suppliers</strong>
             </p>

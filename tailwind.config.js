@@ -30,6 +30,15 @@ export default {
         xl: "1280px", // Extra large screens (desktops)
         "2xl": "1536px", // Bigger screens
       },
+          animation: {
+        loadingBar: 'loadingBar 2s linear infinite',
+      },
+      keyframes: {
+        loadingBar: {
+          '40%': { transform: 'translateX(-100%)' },
+          '100%': { transform: 'translateX(100%)' },
+        },
+      },
     },
   },
   plugins: [

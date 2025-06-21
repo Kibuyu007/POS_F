@@ -11,10 +11,11 @@ import { DateRangePicker } from "@mui/x-date-pickers-pro/DateRangePicker";
 
 //Redux
 import { useDispatch, useSelector } from "react-redux";
+import Loading from "../../../Components/Shared/Loading";
 import { fetchSuppliers } from "../../../Redux/suppliers";
 
 const CompletedPo = () => {
-  const { supplier } = useSelector((state) => state.suppliers);
+  const { supplier, error, loading } = useSelector((state) => state.suppliers);
   const [sessions, setSessions] = useState([]);
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 5;
@@ -23,7 +24,8 @@ const CompletedPo = () => {
   const [showPreviewModal, setShowPreviewModal] = useState(false);
   const [filteredSessions, setFilteredSessions] = useState([]);
   const [selectedSupplier, setSelectedSupplier] = useState("");
-
+  const [filterStatus, setFilterStatus] = useState("All");
+  const [load, setLoad] = useState(false);
   const [value, setValue] = useState([null, null]);
   const dispatch = useDispatch();
 
@@ -53,16 +55,25 @@ const CompletedPo = () => {
         );
       }
 
+      // Filter by status
+      if (filterStatus !== "All") {
+        filtered = filtered.filter(
+          (session) =>
+            session.status?.toLowerCase() === filterStatus.toLowerCase()
+        );
+      }
+
       setFilteredSessions(filtered);
       setCurrentPage(1);
     };
 
     applyFilters();
-  }, [sessions, value, selectedSupplier]);
+  }, [sessions, value, selectedSupplier, filterStatus]);
 
   useEffect(() => {
     const fetchData = async () => {
       try {
+        setLoad(true);
         const res = await axios.get("http://localhost:4004/api/manunuzi/getPo");
         if (res.data.success) {
           // Summarize sessions
@@ -81,6 +92,7 @@ const CompletedPo = () => {
             ),
           }));
           setSessions(summarized);
+          setLoad(false);
         } else {
           console.error("Failed to fetch GRN data");
         }
@@ -125,12 +137,28 @@ const CompletedPo = () => {
     if (currentPage < totalPages) setCurrentPage(currentPage + 1);
   };
 
+  // Check if suppliers are loading or if there's an error
+  if (loading) return <p>Loading suppliers...</p>;
+  if (error) return <p>Error loading suppliers: {error}</p>;
+  if (!supplier || supplier.length === 0)
+    return <p>No active suppliers available</p>;
+
+  //*************************************************************************************************************************************** */
+
   return (
     <div className=" overflow-y-auto mt-4  rounded-lg">
+      <div className="px-4 py-4 md:py-7">
+        <div className="flex items-center justify-between">
+          <p className="text-lg md:text-xl lg:text-2xl font-bold text-gray-800">
+            COMPLETED PURCHASE ORDERS
+          </p>
+          <p className="text-sm md:text-base lg:text-lg text-gray-800 bg-gray-200 px-4 py-2 rounded-lg">
+            Total Purchase Orders: {totalItems}
+          </p>
+        </div>
+      </div>
       <div className="flex-[1] bg-secondary p-4  rounded-lg">
         <div>
-          <div className="font-bold text-xl text-black">Products</div>
-
           <div className=" flex justify-start gap-4">
             {/* Date Filter */}
 
@@ -140,10 +168,32 @@ const CompletedPo = () => {
                 onChange={(newValue) => setValue(newValue)}
                 localeText={{ start: "Start date", end: "End date" }}
                 className="w-1/4"
+                slotProps={{
+                  textField: {
+                    variant: "outlined",
+                    size: "small",
+                  },
+                }}
               />
             </LocalizationProvider>
 
             {/* Supplier Filter */}
+            <div className="flex items-center text-black">
+              {["All", "Approved", "Pending"].map((status) => (
+                <button
+                  key={status}
+                  className={`rounded-full py-2 px-8 mx-2 ${
+                    filterStatus === status ? "bg-green-300" : "bg-gray-200"
+                  } hover:bg-indigo-100`}
+                  onClick={() => {
+                    setFilterStatus(status);
+                    setCurrentPage(1);
+                  }}
+                >
+                  {status}
+                </button>
+              ))}
+            </div>
 
             <select
               className="border border-gray-700 px-2 py-2 w-1/5 rounded-full text-black"
@@ -160,7 +210,7 @@ const CompletedPo = () => {
           </div>
         </div>
       </div>
-
+      <Loading load={load} />
       <table className="min-w-full text-sm text-left text-gray-700 mt-6">
         <thead className="bg-gray-100 text-xs uppercase">
           <tr>

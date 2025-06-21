@@ -3,10 +3,11 @@ import axios from "axios";
 
 // Initial state
 const initialState = {
-  supplier: [],
+  supplier: [], // ← previously activeSuppliers
+  allSuppliers: [],
   error: null,
   loading: false,
-  status: "All",
+  status: null,
 };
 
 // Supplier slice
@@ -20,8 +21,15 @@ const supplierSlice = createSlice({
     },
     supplierFetch: (state, action) => {
       state.loading = false;
-      state.supplier = action.payload.data;
+      state.supplier = action.payload;
       state.error = null;
+      state.status = "success";
+    },
+    supplierAllFetch: (state, action) => {
+      state.loading = false;
+      state.allSuppliers = action.payload;
+      state.error = null;
+      state.status = "success";
     },
     supplierError: (state, action) => {
       state.status = "failed";
@@ -29,23 +37,47 @@ const supplierSlice = createSlice({
       state.loading = false;
     },
     addSupplier: (state, action) => {
-      state.supplier.push(action.payload);
-    },
-    updateSupplier: (state, action) => {
-      const index = state.supplier.findIndex(
-        (item) => item._id === action.payload._id
-      );
-      if (index !== -1) {
-        state.supplier[index] = action.payload;
+      state.allSuppliers.push(action.payload);
+      if (action.payload.status === "active") {
+        state.supplier.push(action.payload);
       }
     },
+    updateSupplier: (state, action) => {
+      const updated = action.payload;
+      const updateList = (list) =>
+        list.map((item) => (item._id === updated._id ? updated : item));
+
+      state.allSuppliers = updateList(state.allSuppliers);
+      state.supplier = updated.status === "active"
+        ? [...state.supplier.filter((s) => s._id !== updated._id), updated]
+        : state.supplier.filter((s) => s._id !== updated._id);
+    },
+    supplierStatusUpdate: (state, action) => {
+      const { supplierId, newStatus } = action.payload;
+
+      state.allSuppliers = state.allSuppliers.map((supplier) =>
+        supplier._id === supplierId
+          ? { ...supplier, status: newStatus }
+          : supplier
+      );
+
+      const updatedSupplier = state.allSuppliers.find(s => s._id === supplierId);
+      if (newStatus === "Active") {
+        if (!state.supplier.some(s => s._id === supplierId)) {
+          state.supplier.push(updatedSupplier);
+        }
+      } else {
+        state.supplier = state.supplier.filter(s => s._id !== supplierId);
+      }
+    },
+
     searchSupplierPending: (state) => {
       state.status = "searching";
       state.loading = true;
     },
     searchSupplierSuccess: (state, action) => {
       state.status = "search success";
-      state.supplier = action.payload.data;
+      state.supplier = action.payload;
       state.loading = false;
       state.error = null;
     },
@@ -58,43 +90,42 @@ const supplierSlice = createSlice({
       state.supplier = [];
       state.error = null;
     },
-    supplierStatusUpdate: (state, action) => {
-      const { supplierId, newStatus } = action.payload;
-      state.supplier = state.supplier.map((supplier) =>
-        supplier._id === supplierId
-          ? { ...supplier, status: newStatus }
-          : supplier
-      );
-    },
   },
 });
 
 export const {
   supplierPending,
   supplierFetch,
+  supplierAllFetch,
   supplierError,
   addSupplier,
   updateSupplier,
+  supplierStatusUpdate,
   searchSupplierPending,
   searchSupplierSuccess,
   searchSupplierError,
   clearSearch,
-  supplierStatusUpdate,
 } = supplierSlice.actions;
 
+// Thunk: fetch only active suppliers
 export const fetchSuppliers = () => async (dispatch) => {
   dispatch(supplierPending());
   try {
     const response = await axios.get("http://localhost:4004/api/suppliers/getSuppliers");
-
-    dispatch(
-      supplierFetch({
-        data: response.data, // or response.data.data if wrapped
-      })
-    );
+    dispatch(supplierFetch(response.data));
   } catch (error) {
     dispatch(supplierError(error.message || "Error fetching suppliers"));
-    console.error(error);
+  }
+};
+
+// Thunk: fetch all suppliers
+export const fetchAllSuppliers = () => async (dispatch) => {
+  dispatch(supplierPending());
+  try {
+    const response = await axios.get("http://localhost:4004/api/suppliers/getAllSuppliers");
+    dispatch(supplierAllFetch(response.data));
+  } catch (error) {
+    dispatch(supplierError(error.message || "Error fetching all suppliers"));
   }
 };
 
