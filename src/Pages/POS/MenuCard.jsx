@@ -2,6 +2,8 @@ import { useEffect, useState, useCallback } from "react";
 import axios from "axios";
 import { useDispatch, useSelector } from "react-redux";
 import { addItems } from "../../Redux/cartSlice";
+import { FaSearch } from "react-icons/fa";
+import { searchItemsEveryWhere } from "../../Redux/items";
 
 const MenuCard = ({ refreshTrigger }) => {
   const cartData = useSelector((state) => state.cart.cart);
@@ -14,6 +16,7 @@ const MenuCard = ({ refreshTrigger }) => {
   const [isLoading, setIsLoading] = useState(true);
   const dispatch = useDispatch();
   const [searchTerm, setSearchTerm] = useState("");
+  const [searchQuery, setSearchQuery] = useState("");
 
   const filteredCategories = categories.filter((cat) =>
     cat.name.toLowerCase().includes(searchTerm.toLowerCase())
@@ -34,7 +37,9 @@ const MenuCard = ({ refreshTrigger }) => {
               );
               return {
                 ...category,
-                itemCount: itemCount.data.success ? itemCount.data.totalItems : 0,
+                itemCount: itemCount.data.success
+                  ? itemCount.data.totalItems
+                  : 0,
               };
             })
           );
@@ -63,26 +68,29 @@ const MenuCard = ({ refreshTrigger }) => {
     fetchCategories();
   }, [refreshTrigger]);
 
-  const fetchItems = useCallback(async (categoryId) => {
-    try {
-      const { data } = await axios.get(
-        `http://localhost:4004/api/items/getAllItems?category=${categoryId}`
-      );
+  const fetchItems = useCallback(
+    async (categoryId) => {
+      try {
+        const { data } = await axios.get(
+          `http://localhost:4004/api/items/getAllItems?category=${categoryId}`
+        );
 
-      if (data.success) {
-        setItems(data.data);
-        const initialItemCounts = {};
-        data.data.forEach((item) => {
-          initialItemCounts[item._id] = 1;
-        });
-        setItemCounts(initialItemCounts);
+        if (data.success) {
+          setItems(data.data);
+          const initialItemCounts = {};
+          data.data.forEach((item) => {
+            initialItemCounts[item._id] = 1;
+          });
+          setItemCounts(initialItemCounts);
+        }
+      } catch (error) {
+        console.error("Error fetching items:", error);
+      } finally {
+        setIsLoading(false);
       }
-    } catch (error) {
-      console.error("Error fetching items:", error);
-    } finally {
-      setIsLoading(false);
-    }
-  }, [refreshTrigger]);
+    },
+    [refreshTrigger]
+  );
 
   const formatPriceWithCommas = (price) => {
     return new Intl.NumberFormat("en-US").format(price);
@@ -132,15 +140,34 @@ const MenuCard = ({ refreshTrigger }) => {
           <div className="animate-spin rounded-full h-32 w-32 border-t-4 border-green-500 border-solid"></div>
         </div>
       )}
+      <div className="flex justify-between items-center mb-4">
+        <div className="hidden sm:flex items-center bg-gray-100 rounded-[30px] px-3 sm:px-4 py-1 sm:py-2 w-full max-w-[300px] border border-gray-400">
+          <FaSearch className="w-4 h-4 sm:w-5 sm:h-5 mr-2 text-black" />
+          <input
+            type="text"
+            placeholder="Item.."
+            value={searchQuery}
+            onChange={(e) => {
+              const value = e.target.value;
+              setSearchQuery(value);
+              if (selected?._id) {
+                fetchItems(selected._id, value);
+              }
+            }}
+            className="bg-transparent outline-none px-2 py-1 w-full text-black"
+          />
+        </div>
 
-      <div className="w-full mb-3 mt-8">
-        <input
-          type="text"
-          placeholder="Search category..."
-          className="w-full px-3 py-2 border border-gray-300 rounded-full shadow-sm focus:outline-none focus:ring-2  focus:ring-green-400"
-          value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
-        />
+        <div className="hidden sm:flex items-center bg-gray-100 rounded-[30px] px-3 sm:px-4 py-1 sm:py-2 w-full max-w-[300px] border border-gray-400">
+          <FaSearch className="w-4 h-4 sm:w-5 sm:h-5 mr-2 text-black" />
+          <input
+            type="text"
+            placeholder="Search category..."
+            className="bg-transparent outline-none px-2 py-1 w-full text-black"
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+          />
+        </div>
       </div>
 
       <div className="flex flex-wrap gap-2 max-h-[30vh] overflow-y-auto scrollbar-hide">
@@ -174,7 +201,7 @@ const MenuCard = ({ refreshTrigger }) => {
             key={item._id}
             className="bg-gradient-to-r from-blue-100 to-green-200 rounded-2xl shadow-lg p-6 flex flex-col justify-between transition-all hover:shadow-xl"
           >
-            <h2 className="text-xl font-bold text-center text-gray-800 mb-4">
+            <h2 className="text-2xl font-bold text-center text-gray-800 mb-4">
               {item.name}
             </h2>
 
@@ -187,9 +214,7 @@ const MenuCard = ({ refreshTrigger }) => {
               </div>
               <div className="text-right">
                 <p className="font-semibold">Stock</p>
-                <p className="text-gray-600">
-                  ({item.itemQuantity} available)
-                </p>
+                <p className="text-gray-600">({item.itemQuantity} available)</p>
               </div>
             </div>
 

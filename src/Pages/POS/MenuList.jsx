@@ -3,7 +3,7 @@ import MenuCard from "./MenuCard";
 // import CustomerInfo from "./CustomerInfo";
 import CartInfo from "./CartInfo";
 import CartBill from "./CartBill";
-import { FaSearch } from "react-icons/fa";
+import { FcSalesPerformance } from "react-icons/fc";
 
 const MenuList = () => {
   const [currentTime, setCurrentTime] = useState(new Date());
@@ -58,14 +58,7 @@ const MenuList = () => {
       <div className="flex-[3] bg-secondary rounded-xl p-4 sm:p-6 shadow-md overflow-auto min-h-[50vh] md:min-h-[auto]">
         {/* Display Table Number */}
         <div className="flex flex-col sm:flex-row items-center justify-between p-4 bg-secondary rounded-lg  w-full sm:w-auto gap-2 sm:gap-4">
-          <div className="hidden sm:flex items-center bg-gray-100 rounded-[30px] px-3 sm:px-4 py-1 sm:py-2 w-full max-w-[300px] border border-gray-400">
-            <FaSearch className="w-4 h-4 sm:w-5 sm:h-5 mr-2 text-black" />
-            <input
-              type="text"
-              placeholder="Barcode.."
-              className="bg-transparent outline-none px-2 py-1 w-full text-black"
-            />
-          </div>
+          <FcSalesPerformance size={50} />
           <div className="text-center w-full sm:w-auto">
             <h1 className="text-xl sm:text-2xl font-bold text-black bg-greyBackg px-4 py-2 rounded-lg">
               {formatTime(currentTime)}

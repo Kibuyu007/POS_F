@@ -497,7 +497,7 @@ const ItemModal = ({ open, onSave, onClose, selectedItem }) => {
                     <input
                       type="number"
                       name="sellingPrice"
-                      value={formData.sellingPrice || formData.previousPrice}
+                      value={ formData.previousPrice || formData.sellingPrice }
                       onChange={handleChange}
                       className="bg-gray-50 border border-gray-400 text-gray-900 text-sm rounded-[30px]  focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-600 dark:border-gray-500 dark:placeholder-gray-400 dark:text-white"
                     />

@@ -22,6 +22,7 @@ const PoGrn = () => {
   const [selectedSession, setSelectedSession] = useState(null);
   const [showPreviewModal, setShowPreviewModal] = useState(false);
   const [filteredSessions, setFilteredSessions] = useState([]);
+  const [filterStatus, setFilterStatus] = useState("All");
   const [selectedSupplier, setSelectedSupplier] = useState("");
 
   const [value, setValue] = useState([null, null]);
@@ -53,12 +54,20 @@ const PoGrn = () => {
         );
       }
 
+      // Filter by status
+      if (filterStatus !== "All") {
+        filtered = filtered.filter(
+          (session) =>
+            session.status?.toLowerCase() === filterStatus.toLowerCase()
+        );
+      }
+
       setFilteredSessions(filtered);
       setCurrentPage(1);
     };
 
     applyFilters();
-  }, [sessions, value, selectedSupplier]);
+  }, [sessions, value, selectedSupplier, filterStatus]);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -115,8 +124,8 @@ const PoGrn = () => {
     setShowPreviewModal(true);
   };
 
-   // Function ya ku upadte Status akisave kwenye Process Modal ---
-   const handlePoStatusUpdate = (poGrnSessionId, newStatus) => {
+  // Function ya ku upadte Status akisave kwenye Process Modal ---
+  const handlePoStatusUpdate = (poGrnSessionId, newStatus) => {
     // Update the local state of sessions to reflect the new status
     setSessions((prevSessions) =>
       prevSessions.map((session) =>
@@ -145,26 +154,59 @@ const PoGrn = () => {
     if (currentPage < totalPages) setCurrentPage(currentPage + 1);
   };
 
+
+  //*************************************************************************************************************************************** */
+
   return (
     <div className=" overflow-y-auto mt-4  rounded-lg">
+      <div className="px-4 py-4 md:py-7">
+        <div className="flex items-center justify-between">
+          <p className="text-lg md:text-xl lg:text-2xl font-bold text-gray-800">
+            COMPLETED PURCHASE ORDERS
+          </p>
+          <p className="text-sm md:text-base lg:text-lg text-gray-800 bg-gray-200 px-4 py-2 rounded-lg">
+            Total Purchase Orders: {totalItems}
+          </p>
+        </div>
+      </div>
       <div className="flex-[1] bg-secondary p-4  rounded-lg">
         <div>
-          <div className="font-bold text-xl text-black">Products</div>
-
           <div className=" flex justify-start gap-4">
             {/* Date Filter */}
-
             <LocalizationProvider dateAdapter={AdapterDayjs}>
               <DateRangePicker
                 value={value}
                 onChange={(newValue) => setValue(newValue)}
                 localeText={{ start: "Start date", end: "End date" }}
                 className="w-1/4"
+                slotProps={{
+                  textField: {
+                    variant: "outlined",
+                    size: "small",
+                  },
+                }}
               />
             </LocalizationProvider>
 
-            {/* Supplier Filter */}
+            {/* Status Filter */}
+            <div className="flex items-center text-black">
+              {["All", "Approved", "Pending"].map((status) => (
+                <button
+                  key={status}
+                  className={`rounded-full py-2 px-8 mx-2 ${
+                    filterStatus === status ? "bg-green-300" : "bg-gray-200"
+                  } hover:bg-indigo-100`}
+                  onClick={() => {
+                    setFilterStatus(status);
+                    setCurrentPage(1);
+                  }}
+                >
+                  {status}
+                </button>
+              ))}
+            </div>
 
+            {/* Supplier Filter */}
             <select
               className="border border-gray-700 px-2 py-2 w-1/5 rounded-full text-black"
               value={selectedSupplier}
@@ -173,7 +215,7 @@ const PoGrn = () => {
               <option value="">All Suppliers</option>
               {supplier.map((sup) => (
                 <option key={sup._id} value={sup._id}>
-                  <p className="text-black border">{sup.supplierName}</p>
+                  {sup.supplierName}
                 </option>
               ))}
             </select>

@@ -41,6 +41,23 @@ const ProcessPo = ({ onClose, session, onPoStatusUpdate }) => {
   });
 
   useEffect(() => {
+    if (session?.supplierName && supplier.length > 0) {
+      const found = supplier.find(
+        (s) =>
+          s._id === session.supplierName ||
+          s.supplierName === session.supplierName
+      );
+      if (found) {
+        setRegi((prev) => ({
+          ...prev,
+          supplierName: found._id,
+        }));
+      }
+    }
+    console.log("Session supplierName:", session?.supplierName);
+  }, [session?.supplierName, supplier]);
+
+  useEffect(() => {
     dispatch(fetchSuppliers());
   }, [dispatch]);
 
@@ -154,7 +171,7 @@ const ProcessPo = ({ onClose, session, onPoStatusUpdate }) => {
         rejected: item.rejected || false,
         comments: item.comments || "",
         totalCost: item.totalCost,
-        status:item.status || "Completed",
+        status: item.status || "Completed",
       })),
     };
 
@@ -286,7 +303,7 @@ const ProcessPo = ({ onClose, session, onPoStatusUpdate }) => {
                   name="supplierName"
                   onChange={handleChange}
                   value={regi.supplierName}
-                  className="bg-white rounded-[30px] px-1 sm:px-4 py-1 sm:py-2 max-w-[300px] border border-gray-500  p-2 w-full capitalize text-black"
+                  className="bg-white rounded-[30px] px-1 sm:px-4 py-1 sm:py-2 max-w-[300px] border border-gray-500 w-full capitalize text-black"
                 >
                   <option value="" disabled>
                     Select Supplier

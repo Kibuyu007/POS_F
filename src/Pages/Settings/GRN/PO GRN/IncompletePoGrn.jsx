@@ -2,11 +2,15 @@ import axios from "axios";
 import { useEffect } from "react";
 import { useState } from "react";
 import OutstandingPdf from "./OutstandingPdf";
+import { IoIosArrowBack, IoIosArrowForward } from "react-icons/io";
 
 const IncompletePoGrn = () => {
   const [items, setItems] = useState([]);
   const [modalData, setModalData] = useState(null);
   const [openModal, setOpenModal] = useState(false);
+
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 5;
 
   const fetchOutstandingItems = async () => {
     try {
@@ -36,111 +40,233 @@ const IncompletePoGrn = () => {
   };
 
   const submitFilledQuantities = async () => {
-      const updates = items.filter(
-    (item) => item.filledQuantity > 0 && item.outstandingQuantity > 0
-  );
+    const updates = items.filter(
+      (item) => item.filledQuantity > 0 && item.outstandingQuantity > 0
+    );
 
-  for (const item of updates) {
-    try {
-      const res = await axios.put("http://localhost:4004/api/grn/updateOutstanding", {
-        grnId: item.grnId,
-        itemId: item.itemId,
-        filledQuantity: item.filledQuantity,
-      });
+    for (const item of updates) {
+      try {
+        const res = await axios.put(
+          "http://localhost:4004/api/grn/updateOutstanding",
+          {
+            grnId: item.grnId,
+            itemId: item.itemId,
+            filledQuantity: item.filledQuantity,
+          }
+        );
 
-      if (res.data.success) {
-        console.log(`Updated ${item.name}`);
+        if (res.data.success) {
+          console.log(`Updated ${item.name}`);
+        }
+      } catch (err) {
+        console.error("Error updating item " + item.name, err);
       }
-    } catch (err) {
-      console.error("Error updating item " + item.name, err);
     }
-  }
 
-  fetchOutstandingItems()
+    fetchOutstandingItems();
   };
 
+  const totalItems = items.length;
+  const totalPages = Math.ceil(totalItems / itemsPerPage);
 
+  const paginatedItems = items.slice(
+    (currentPage - 1) * itemsPerPage,
+    currentPage * itemsPerPage
+  );
+
+  const prevPage = () => {
+    if (currentPage > 1) setCurrentPage(currentPage - 1);
+  };
+
+  const nextPage = () => {
+    if (currentPage < totalPages) setCurrentPage(currentPage + 1);
+  };
 
   return (
     <div className="p-4">
+      <div className="px-4 py-4 md:py-7">
+        <div className="flex items-center justify-between">
+          <p className="text-lg md:text-xl lg:text-2xl font-bold text-gray-800">
+            COMPLETED PURCHASE ORDERS
+          </p>
+          <p className="text-sm md:text-base lg:text-lg text-gray-800 bg-gray-200 px-4 py-2 rounded-lg">
+            Total Purchase Orders: {totalItems}
+          </p>
+        </div>
+      </div>
       <h2 className="text-xl font-bold mb-4">Outstanding PO Items</h2>
-      <table className="w-full border border-gray-300">
+      <table className="w-full">
         <thead className="bg-gray-100">
           <tr className="text-black">
-            <th className="p-2 border">Item Name</th>
-            <th className="p-2 border">Buying Price</th>
-            <th className="p-2 border">Supplier</th>
-            <th className="p-2 border">Created By</th>
-            <th className="p-2 border">Created At</th>
-            <th className="p-2 border">Required Quantity</th>
-            <th className="p-2 border">Outstanding Quantity</th>
-            <th className="p-2 border">Received Quantity</th>
-            <th className="p-2 border">Update</th>
-            <th className="p-2 border">Preview</th>
+            <th className="px-5 py-3 border-b-2 border-gray-200 bg-gray-200 text-center text-xs font-bold text-gray-900 uppercase tracking-wider">
+              SN
+            </th>
+            <th className="px-5 py-3 border-b-2 border-gray-200 bg-gray-200 text-center text-xs font-bold text-gray-900 uppercase tracking-wider">
+              Item Name
+            </th>
+            <th className="px-5 py-3 border-b-2 border-gray-200 bg-gray-200 text-center text-xs font-bold text-gray-900 uppercase tracking-wider">
+              Buying Price
+            </th>
+            <th className="px-5 py-3 border-b-2 border-gray-200 bg-gray-200 text-center text-xs font-bold text-gray-900 uppercase tracking-wider">
+              Supplier
+            </th>
+            <th className="px-5 py-3 border-b-2 border-gray-200 bg-gray-200 text-center text-xs font-bold text-gray-900 uppercase tracking-wider">
+              Created By
+            </th>
+            <th className="px-5 py-3 border-b-2 border-gray-200 bg-gray-200 text-center text-xs font-bold text-gray-900 uppercase tracking-wider">
+              Created At
+            </th>
+            <th className="px-5 py-3 border-b-2 border-gray-200 bg-gray-200 text-center text-xs font-bold text-gray-900 uppercase tracking-wider">
+              Required Quantity
+            </th>
+            <th className="px-5 py-3 border-b-2 border-gray-200 bg-gray-200 text-center text-xs font-bold text-gray-900 uppercase tracking-wider">
+              Outstanding Quantity
+            </th>
+            <th className="px-5 py-3 border-b-2 border-gray-200 bg-gray-200 text-center text-xs font-bold text-gray-900 uppercase tracking-wider">
+              Received Quantity
+            </th>
+            <th className="px-5 py-3 border-b-2 border-gray-200 bg-gray-200 text-center text-xs font-bold text-gray-900 uppercase tracking-wider">
+              Update
+            </th>
+            <th className="px-5 py-3 border-b-2 border-gray-200 bg-gray-200 text-center text-xs font-bold text-gray-900 uppercase tracking-wider">
+              Preview
+            </th>
           </tr>
         </thead>
+        <tr className="h-4" />
         <tbody>
-          {items.map((item, idx) => (
-            <tr key={idx} className="text-center text-black">
-              <td className="p-2 border">{item.name}</td>
-              <td className="p-2 border">Tsh {item.newBuyingPrice}</td>
-              <td className="p-2 border">{item.supplier}</td>
-              <td className="p-2 border">{item.createdBy}</td>
-              <td className="p-2 border">
-                {" "}
-                {new Date(item.createdAt).toLocaleDateString()}
-              </td>
-              <td className="p-2 border">{item.requiredQuantity}</td>
-              <td className="p-2 border">{item.outstandingQuantity}</td>
+          {paginatedItems.map((item, idx) => (
+            <>
+              <tr key={idx} className="text-center text-black">
+                <td className="h-16 border-gray-00 shadow-md bg-gray-100 text-center">
+                  <span className="bg-green-300 rounded-full px-3 py-2">
+                    {(currentPage - 1) * itemsPerPage + idx + 1}
+                  </span>
+                </td>
 
-              <td className="p-2 border">
-                <input
-                  type="number"
-                  min={1}
-                  max={item.outstandingQuantity}
-                  disabled={item.outstandingQuantity === 0}
-                  value={
-                    item.filledQuantity === undefined ? "" : item.filledQuantity
-                  }
-                  onChange={(e) => {
-                    const value = e.target.value;
-                    if (value === "") {
-                      items[idx].filledQuantity = undefined;
-                    } else {
-                      const number = parseInt(value);
-                      if (
-                        !isNaN(number) &&
-                        number <= item.outstandingQuantity
-                      ) {
-                        items[idx].filledQuantity = number;
-                      }
-                    }
-                    setItems([...items]);
-                  }}
-                  className="border px-2 py-1 w-20"
-                />
-              </td>
+                <td className="py-2 px-3 font-normal text-base border-x shadow-md bg-gray-200  hover:bg-gray-100  whitespace-nowrap overflow-hidden overflow-ellipsis max-w-[200px]">
+                  <div className="items-center text-center">
+                    <div className="ml-3">
+                      <p className="text-gray-900 whitespace-no-wrap font-semibold capitalize">
+                        {item.name}
+                      </p>
+                    </div>
+                  </div>
+                </td>
+                <td className="py-2 px-3 font-normal text-base border-x shadow-md bg-gray-100  hover:bg-gray-100  whitespace-nowrap overflow-hidden overflow-ellipsis max-w-[200px]">
+                  <div className="items-center text-center">
+                    <div className="ml-3">
+                      <p className="text-gray-900 whitespace-no-wrap font-semibold capitalize">
+                        Tsh {item.newBuyingPrice}
+                      </p>
+                    </div>
+                  </div>
+                </td>
 
-              <td className="p-2 border">
-                <button
-                  onClick={submitFilledQuantities}
-                  disabled={
-                    !items[idx].filledQuantity || items[idx].filledQuantity <= 0
-                  }
-                  className="bg-green-600 text-white px-2 py-1 rounded disabled:opacity-50"
-                >
-                  Save
-                </button>
-              </td>
-              <td className="p-2 border">
-                <button
-                  onClick={() => handleViewClick(item.grnId)}
-                  className="bg-green-600 text-white px-2 py-1 rounded disabled:opacity-50"
-                >
-                  Preview GRN
-                </button>
-              </td>
-            </tr>
+                <td className="py-2 px-3 font-normal text-base border-x shadow-md bg-gray-200  hover:bg-gray-100  whitespace-nowrap overflow-hidden overflow-ellipsis max-w-[200px]">
+                  <div className="items-center text-center">
+                    <div className="ml-3">
+                      <p className="text-gray-900 whitespace-no-wrap font-semibold capitalize">
+                        {item.supplier}
+                      </p>
+                    </div>
+                  </div>
+                </td>
+
+                <td className="py-2 px-3 font-normal text-base border-x shadow-md bg-gray-100  hover:bg-gray-100  whitespace-nowrap overflow-hidden overflow-ellipsis max-w-[200px]">
+                  <div className="items-center text-center">
+                    <div className="ml-3">
+                      <p className="text-gray-900 whitespace-no-wrap font-semibold capitalize">
+                        {item.createdBy}
+                      </p>
+                    </div>
+                  </div>
+                </td>
+
+                <td className="py-2 px-3 font-normal text-base border-x shadow-md bg-gray-200  hover:bg-gray-100  whitespace-nowrap overflow-hidden overflow-ellipsis max-w-[200px]">
+                  <div className="items-center text-center">
+                    <div className="ml-3">
+                      <p className="text-gray-900 whitespace-no-wrap font-semibold capitalize">
+                        {new Date(item.createdAt).toLocaleDateString()}
+                      </p>
+                    </div>
+                  </div>
+                </td>
+
+                <td className="py-2 px-3 font-normal text-base border-x shadow-md bg-gray-100  hover:bg-gray-100  whitespace-nowrap overflow-hidden overflow-ellipsis max-w-[200px]">
+                  <div className="items-center text-center">
+                    <div className="ml-3">
+                      <p className="text-gray-900 whitespace-no-wrap font-semibold capitalize">
+                        {item.requiredQuantity}
+                      </p>
+                    </div>
+                  </div>
+                </td>
+
+                <td className="py-2 px-3 font-normal text-base border-x shadow-md bg-gray-200  hover:bg-gray-100  whitespace-nowrap overflow-hidden overflow-ellipsis max-w-[200px]">
+                  <div className="items-center text-center">
+                    <div className="ml-3">
+                      <p className="text-gray-900 whitespace-no-wrap font-semibold capitalize">
+                        {item.outstandingQuantity}
+                      </p>
+                    </div>
+                  </div>
+                </td>
+
+                <td className="py-2 px-3 border-x shadow-md bg-gray-100 font-semibold capitalize">
+                  <div className="items-center text-center">
+                    <div className="ml-3">
+                      <input
+                        type="number"
+                        min={1}
+                        max={item.outstandingQuantity}
+                        disabled={item.outstandingQuantity === 0}
+                        value={
+                          item.filledQuantity === undefined
+                            ? ""
+                            : item.filledQuantity
+                        }
+                        onChange={(e) => {
+                          const value = e.target.value;
+                          items[idx].filledQuantity =
+                            value === "" ? undefined : parseInt(value);
+                          setItems([...items]);
+                        }}
+                        className="border px-2 py-1 w-40 rounded-full focus:outline-none focus:ring-2 focus:ring-green-500"
+                      />
+                    </div>
+                  </div>
+                </td>
+                <td className="py-2 px-3 border-x shadow-md bg-gray-200 font-semibold capitalize">
+                  <div className="items-center text-center">
+                    <div className="ml-3">
+                      <button
+                        onClick={submitFilledQuantities}
+                        disabled={
+                          !item.filledQuantity || item.filledQuantity <= 0
+                        }
+                        className="bg-green-500 px-5 text-black text-xl py-1 rounded-full disabled:opacity-50 disabled:bg-gray-300"
+                      >
+                        Save
+                      </button>
+                    </div>
+                  </div>
+                </td>
+                <td className="py-2 px-3 border-x shadow-md bg-gray-100 font-semibold capitalize">
+                  <div className="items-center text-center">
+                    <div className="ml-3">
+                      <button
+                        onClick={() => handleViewClick(item.grnId)}
+                        className="bg-green-400 text-black px-4 py-2 rounded-full"
+                      >
+                        Preview
+                      </button>
+                    </div>
+                  </div>
+                </td>
+              </tr>
+              <tr className="h-4" />
+            </>
           ))}
         </tbody>
       </table>
@@ -153,6 +279,57 @@ const IncompletePoGrn = () => {
           grn={modalData}
         />
       )}
+
+      {/* Pagination */}
+      <div className="flex items-center justify-between border-t border-gray-200 bg-white py-3">
+        <p className="text-sm text-gray-700 px-2">
+          Showing{" "}
+          <span className="font-medium">
+            {(currentPage - 1) * itemsPerPage + 1}
+          </span>{" "}
+          to{" "}
+          <span className="font-medium">
+            {Math.min(currentPage * itemsPerPage, totalItems)}
+          </span>{" "}
+          of <span className="font-medium">{totalItems}</span> items
+        </p>
+
+        <nav className="isolate inline-flex -space-x-px rounded-md shadow-sm">
+          <button
+            onClick={prevPage}
+            disabled={currentPage === 1}
+            className={`relative inline-flex items-center rounded-l-md px-2 py-2 text-gray-400 ring-1 ring-gray-300 hover:bg-gray-50 ${
+              currentPage === 1 ? "opacity-50 cursor-not-allowed" : ""
+            }`}
+          >
+            <IoIosArrowBack className="size-5" />
+          </button>
+
+          {[...Array(totalPages)].map((_, i) => (
+            <button
+              key={i + 1}
+              onClick={() => setCurrentPage(i + 1)}
+              className={`relative inline-flex items-center px-4 py-2 text-sm font-semibold ring-1 ring-gray-300 hover:bg-gray-50 ${
+                currentPage === i + 1
+                  ? "bg-green-500 text-white"
+                  : "text-gray-900"
+              }`}
+            >
+              {i + 1}
+            </button>
+          ))}
+
+          <button
+            onClick={nextPage}
+            disabled={currentPage === totalPages}
+            className={`relative inline-flex items-center rounded-r-md px-2 py-2 text-gray-400 ring-1 ring-gray-300 hover:bg-gray-50 ${
+              currentPage === totalPages ? "opacity-50 cursor-not-allowed" : ""
+            }`}
+          >
+            <IoIosArrowForward className="size-5" />
+          </button>
+        </nav>
+      </div>
     </div>
   );
 };

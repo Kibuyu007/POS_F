@@ -177,7 +177,7 @@ const CompletedPo = () => {
               />
             </LocalizationProvider>
 
-            {/* Supplier Filter */}
+            {/* Status Filter */}
             <div className="flex items-center text-black">
               {["All", "Approved", "Pending"].map((status) => (
                 <button
