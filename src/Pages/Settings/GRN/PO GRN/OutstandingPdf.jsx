@@ -7,7 +7,7 @@ const OutstandingPdf = ({ open, onClose, grn }) => {
         {/* Close Button */}
         <button
           onClick={onClose}
-          className="absolute top-4 right-4 text-gray-500 hover:text-red-600 text-2xl font-bold"
+          className="absolute top-2 right-2 text-gray-600 hover:text-black text-xl bg-green-300 py-2 px-4 rounded-full"
         >
           &times;
         </button>
@@ -23,7 +23,8 @@ const OutstandingPdf = ({ open, onClose, grn }) => {
             <span className="font-medium">Supplier:</span> {grn.supplierName}
           </p>
           <p>
-            <span className="font-medium">Invoice Number:</span> {grn.invoiceNumber}
+            <span className="font-medium">Invoice Number:</span>{" "}
+            {grn.invoiceNumber}
           </p>
           <p>
             <span className="font-medium">Received On:</span>{" "}
@@ -39,33 +40,90 @@ const OutstandingPdf = ({ open, onClose, grn }) => {
           <h3 className="text-lg font-semibold mb-2 text-gray-800">
             GRN Items
           </h3>
-          <table className="min-w-full border border-gray-300 text-sm rounded-xl overflow-hidden">
+          <table className="min-w-full text-sm rounded-md overflow-hidden">
             <thead className="bg-gray-100 text-gray-700 text-xs uppercase">
               <tr>
-                <th className="p-3 border">Item Name</th>
-                <th className="p-3 border">Required</th>
-                <th className="p-3 border">Received</th>
-                <th className="p-3 border">Outstanding</th>
-                <th className="p-3 border">Buying Price</th>
-                <th className="p-3 border">Selling Price</th>
-                <th className="p-3 border">Batch</th>
-                <th className="p-3 border">Expiry</th>
+                <th className="px-5 py-3 border-b-2 border-gray-200 bg-gray-200 text-center text-xs font-bold text-gray-900 uppercase tracking-wider">
+                  Item Name
+                </th>
+                <th className="px-5 py-3 border-b-2 border-gray-200 bg-gray-200 text-center text-xs font-bold text-gray-900 uppercase tracking-wider">
+                  Required
+                </th>
+                <th className="px-5 py-3 border-b-2 border-gray-200 bg-gray-200 text-center text-xs font-bold text-gray-900 uppercase tracking-wider">
+                  Received
+                </th>
+                <th className="px-5 py-3 border-b-2 border-gray-200 bg-gray-200 text-center text-xs font-bold text-gray-900 uppercase tracking-wider">
+                  Outstanding
+                </th>
+                <th className="px-5 py-3 border-b-2 border-gray-200 bg-gray-200 text-center text-xs font-bold text-gray-900 uppercase tracking-wider">
+                  Buying Price
+                </th>
+                <th className="px-5 py-3 border-b-2 border-gray-200 bg-gray-200 text-center text-xs font-bold text-gray-900 uppercase tracking-wider">
+                  Selling Price
+                </th>
+                <th className="px-5 py-3 border-b-2 border-gray-200 bg-gray-200 text-center text-xs font-bold text-gray-900 uppercase tracking-wider">
+                  Batch
+                </th>
+                <th className="px-5 py-3 border-b-2 border-gray-200 bg-gray-200 text-center text-xs font-bold text-gray-900 uppercase tracking-wider">
+                  Expiry
+                </th>
               </tr>
             </thead>
+            <tr className="h-4" />
             <tbody className="text-center text-gray-800">
               {grn.items.map((item, idx) => (
-                <tr key={idx} className={idx % 2 === 0 ? "bg-white" : "bg-gray-50"}>
-                  <td className="p-3 border font-medium">{item.name}</td>
-                  <td className="p-3 border">{item.requiredQuantity}</td>
-                  <td className="p-3 border">{item.receivedQuantity}</td>
-                  <td className="p-3 border">{item.outstandingQuantity}</td>
-                  <td className="p-3 border">Tsh {item.newBuyingPrice}</td>
-                  <td className="p-3 border">Tsh {item.newSellingPrice}</td>
-                  <td className="p-3 border">{item.batchNumber}</td>
-                  <td className="p-3 border">
-                    {item.expiryDate ? new Date(item.expiryDate).toLocaleDateString() : "—"}
-                  </td>
-                </tr>
+                <>
+                  <tr
+                    key={idx}
+                    className={idx % 2 === 0 ? "bg-white" : "bg-gray-50"}
+                  >
+                    <td className="py-2 px-3 font-normal text-base border-x shadow-md bg-gray-200  hover:bg-gray-100  whitespace-nowrap overflow-hidden overflow-ellipsis max-w-[200px]">
+                      <div className="items-center text-center">
+                        <div className="ml-3">{item.name}</div>
+                      </div>
+                    </td>
+                    <td className="py-2 px-3 font-normal text-base border-x shadow-md bg-gray-200  hover:bg-gray-100  whitespace-nowrap overflow-hidden overflow-ellipsis max-w-[200px]">
+                      <div className="items-center text-center">
+                        <div className="ml-3">{item.requiredQuantity}</div>
+                      </div>
+                    </td>
+                    <td className="py-2 px-3 font-normal text-base border-x shadow-md bg-gray-200  hover:bg-gray-100  whitespace-nowrap overflow-hidden overflow-ellipsis max-w-[200px]">
+                      <div className="items-center text-center">
+                        <div className="ml-3">{item.receivedQuantity}</div>
+                      </div>
+                    </td>
+                    <td className="py-2 px-3 font-normal text-base border-x shadow-md bg-gray-200  hover:bg-gray-100  whitespace-nowrap overflow-hidden overflow-ellipsis max-w-[200px]">
+                      <div className="items-center text-center">
+                        <div className="ml-3">{item.outstandingQuantity}</div>
+                      </div>
+                    </td>
+                    <td className="py-2 px-3 font-normal text-base border-x shadow-md bg-gray-200  hover:bg-gray-100  whitespace-nowrap overflow-hidden overflow-ellipsis max-w-[200px]">
+                      <div className="items-center text-center">
+                        <div className="ml-3">Tsh {item.newBuyingPrice}</div>
+                      </div>
+                    </td>
+                    <td className="py-2 px-3 font-normal text-base border-x shadow-md bg-gray-200  hover:bg-gray-100  whitespace-nowrap overflow-hidden overflow-ellipsis max-w-[200px]">
+                      <div className="items-center text-center">
+                        <div className="ml-3">Tsh {item.newSellingPrice}</div>
+                      </div>
+                    </td>
+                    <td className="py-2 px-3 font-normal text-base border-x shadow-md bg-gray-200  hover:bg-gray-100  whitespace-nowrap overflow-hidden overflow-ellipsis max-w-[200px]">
+                      <div className="items-center text-center">
+                        <div className="ml-3">{item.batchNumber}</div>
+                      </div>
+                    </td>
+                    <td className="py-2 px-3 font-normal text-base border-x shadow-md bg-gray-200  hover:bg-gray-100  whitespace-nowrap overflow-hidden overflow-ellipsis max-w-[200px]">
+                      <div className="items-center text-center">
+                        <div className="ml-3">
+                          {item.expiryDate
+                            ? new Date(item.expiryDate).toLocaleDateString()
+                            : "—"}
+                        </div>
+                      </div>
+                    </td>
+                  </tr>
+                  <tr className="h-4" />
+                </>
               ))}
             </tbody>
           </table>

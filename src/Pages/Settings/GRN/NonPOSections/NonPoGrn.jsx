@@ -384,9 +384,9 @@ const NonPoGrn = () => {
       {/* Table ya items zilizojazwa details  */}
       <div
         style={{ maxHeight: "500px" }}
-        className="mx-auto rounded-md border-2 mt-10 max-h-96 px-4 py-6 sm:px-6 lg:px-8 shadow-lg"
+        className="mx-auto rounded-md border-2 mt-10 max-h-96 px-4 py-6 sm:px-6 lg:px-8 shadow-lg overflow-x-auto"
       >
-        <div className="overflow-auto">
+        <div className="">
           <table className="min-w-full leading-normal  table-fixed">
             <thead>
               <tr>

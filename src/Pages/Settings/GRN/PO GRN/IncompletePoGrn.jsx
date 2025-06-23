@@ -3,6 +3,12 @@ import { useEffect } from "react";
 import { useState } from "react";
 import OutstandingPdf from "./OutstandingPdf";
 import { IoIosArrowBack, IoIosArrowForward } from "react-icons/io";
+import Loading from "../../../../Components/Shared/Loading";
+
+import { LocalizationProvider } from "@mui/x-date-pickers/LocalizationProvider";
+import { DatePicker } from "@mui/x-date-pickers/DatePicker";
+import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs";
+import dayjs from "dayjs";
 
 const IncompletePoGrn = () => {
   const [items, setItems] = useState([]);
@@ -10,13 +16,20 @@ const IncompletePoGrn = () => {
   const [openModal, setOpenModal] = useState(false);
 
   const [currentPage, setCurrentPage] = useState(1);
+  const [load, setLoad] = useState(false);
   const itemsPerPage = 5;
+
+  const [filterItem, setFilterItem] = useState("");
+  const [filterSupplier, setFilterSupplier] = useState("");
+  const [filterDate, setFilterDate] = useState("");
 
   const fetchOutstandingItems = async () => {
     try {
+      setLoad(true);
       const res = await axios.get("http://localhost:4004/api/grn/outstand");
       if (res.data.success) {
         setItems(res.data.data);
+        setLoad(false);
       }
     } catch (err) {
       console.error("Error fetching outstanding items:", err);
@@ -66,10 +79,24 @@ const IncompletePoGrn = () => {
     fetchOutstandingItems();
   };
 
-  const totalItems = items.length;
+  const filteredItems = items.filter((item) => {
+    const matchesItem = item.name
+      .toLowerCase()
+      .includes(filterItem.toLowerCase());
+    const matchesSupplier = item.supplier
+      .toLowerCase()
+      .includes(filterSupplier.toLowerCase());
+    const matchesDate = filterDate
+      ? dayjs(item.createdAt).format("MM-DD-YYYY") ===
+        dayjs(filterDate).format("MM-DD-YYYY")
+      : true;
+    return matchesItem && matchesSupplier && matchesDate;
+  });
+
+  const totalItems = filteredItems.length;
   const totalPages = Math.ceil(totalItems / itemsPerPage);
 
-  const paginatedItems = items.slice(
+  const paginatedItems = filteredItems.slice(
     (currentPage - 1) * itemsPerPage,
     currentPage * itemsPerPage
   );
@@ -87,15 +114,55 @@ const IncompletePoGrn = () => {
       <div className="px-4 py-4 md:py-7">
         <div className="flex items-center justify-between">
           <p className="text-lg md:text-xl lg:text-2xl font-bold text-gray-800">
-            COMPLETED PURCHASE ORDERS
+            INCOMPLETE GRN AGAINST PO
           </p>
-          <p className="text-sm md:text-base lg:text-lg text-gray-800 bg-gray-200 px-4 py-2 rounded-lg">
+          <p className="text-sm md:text-base lg:text-lg text-gray-800 bg-green-200 px-4 py-2 rounded-full shadow-lg">
             Total Purchase Orders: {totalItems}
           </p>
         </div>
       </div>
+
+      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 mb-4">
+        <input
+          type="text"
+          placeholder="Search Item..."
+          value={filterItem}
+          onChange={(e) => setFilterItem(e.target.value)}
+          className="border-2 border-gray-300 text-black bg-gray-100 px-2 py-1 w-full rounded-full focus:outline-none focus:ring-1 focus:ring-green-500"
+        />
+        <input
+          type="text"
+          placeholder="Search Supplier..."
+          value={filterSupplier}
+          onChange={(e) => setFilterSupplier(e.target.value)}
+          className="border-2 border-gray-300 text-black bg-gray-100 px-2 py-1 w-full rounded-full focus:outline-none focus:ring-1 focus:ring-green-500"
+        />
+
+        <LocalizationProvider dateAdapter={AdapterDayjs}>
+          <div>
+            <DatePicker
+              views={["year", "month", "day"]}
+              format="MM-DD-YYYY"
+              value={filterDate ? dayjs(filterDate) : null}
+              onChange={(newValue) =>
+                setFilterDate(newValue ? newValue.format("MM/DD/YYYY") : "")
+              }
+              slotProps={{
+                textField: {
+                  size: "small",
+                  fullWidth: true,
+                  className:
+                    "bg-gray-50 border border-gray-400 text-gray-900 text-sm rounded-[30px] focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-600 dark:border-gray-500 dark:placeholder-gray-400 dark:text-white",
+                },
+              }}
+            />
+          </div>
+        </LocalizationProvider>
+      </div>
+
       <h2 className="text-xl font-bold mb-4">Outstanding PO Items</h2>
-      <table className="w-full">
+      <Loading load={load} />
+      <table className="w-full mt-4">
         <thead className="bg-gray-100">
           <tr className="text-black">
             <th className="px-5 py-3 border-b-2 border-gray-200 bg-gray-200 text-center text-xs font-bold text-gray-900 uppercase tracking-wider">
@@ -232,7 +299,7 @@ const IncompletePoGrn = () => {
                             value === "" ? undefined : parseInt(value);
                           setItems([...items]);
                         }}
-                        className="border px-2 py-1 w-40 rounded-full focus:outline-none focus:ring-2 focus:ring-green-500"
+                        className="border px-2 py-1 w-40 rounded-full focus:outline-none focus:ring-1 focus:ring-green-500"
                       />
                     </div>
                   </div>

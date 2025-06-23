@@ -15,7 +15,7 @@ import Loading from "../../../Components/Shared/Loading";
 import { fetchSuppliers } from "../../../Redux/suppliers";
 
 const CompletedPo = () => {
-  const { supplier, error, loading } = useSelector((state) => state.suppliers);
+  const { supplier } = useSelector((state) => state.suppliers);
   const [sessions, setSessions] = useState([]);
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 5;
@@ -138,10 +138,6 @@ const CompletedPo = () => {
   };
 
   // Check if suppliers are loading or if there's an error
-  if (loading) return <p>Loading suppliers...</p>;
-  if (error) return <p>Error loading suppliers: {error}</p>;
-  if (!supplier || supplier.length === 0)
-    return <p>No active suppliers available</p>;
 
   //*************************************************************************************************************************************** */
 
@@ -152,7 +148,7 @@ const CompletedPo = () => {
           <p className="text-lg md:text-xl lg:text-2xl font-bold text-gray-800">
             COMPLETED PURCHASE ORDERS
           </p>
-          <p className="text-sm md:text-base lg:text-lg text-gray-800 bg-gray-200 px-4 py-2 rounded-lg">
+          <p className="text-sm md:text-base lg:text-lg text-gray-800 bg-green-200 px-4 py-2 rounded-full shadow-lg">
             Total Purchase Orders: {totalItems}
           </p>
         </div>

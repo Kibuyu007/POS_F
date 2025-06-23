@@ -12,6 +12,7 @@ import { DateRangePicker } from "@mui/x-date-pickers-pro/DateRangePicker";
 import { useDispatch, useSelector } from "react-redux";
 import ProcessPo from "./ProcessPo";
 import { fetchSuppliers } from "../../../../Redux/suppliers";
+import Loading from "../../../../Components/Shared/Loading";
 
 const PoGrn = () => {
   const { supplier } = useSelector((state) => state.suppliers);
@@ -24,6 +25,7 @@ const PoGrn = () => {
   const [filteredSessions, setFilteredSessions] = useState([]);
   const [filterStatus, setFilterStatus] = useState("All");
   const [selectedSupplier, setSelectedSupplier] = useState("");
+  const [load, setLoad] = useState(false);
 
   const [value, setValue] = useState([null, null]);
   const dispatch = useDispatch();
@@ -72,6 +74,7 @@ const PoGrn = () => {
   useEffect(() => {
     const fetchData = async () => {
       try {
+        setLoad(true);
         const res = await axios.get("http://localhost:4004/api/manunuzi/getPo");
         if (res.data.success) {
           // Summarize sessions
@@ -90,6 +93,7 @@ const PoGrn = () => {
             ),
           }));
           setSessions(summarized);
+          setLoad(false);
         } else {
           console.error("Failed to fetch GRN data");
         }
@@ -154,7 +158,6 @@ const PoGrn = () => {
     if (currentPage < totalPages) setCurrentPage(currentPage + 1);
   };
 
-
   //*************************************************************************************************************************************** */
 
   return (
@@ -162,9 +165,9 @@ const PoGrn = () => {
       <div className="px-4 py-4 md:py-7">
         <div className="flex items-center justify-between">
           <p className="text-lg md:text-xl lg:text-2xl font-bold text-gray-800">
-            COMPLETED PURCHASE ORDERS
+            GRN AGAINST PO
           </p>
-          <p className="text-sm md:text-base lg:text-lg text-gray-800 bg-gray-200 px-4 py-2 rounded-lg">
+          <p className="text-sm md:text-base lg:text-lg text-gray-800 bg-green-200 px-4 py-2 rounded-full shadow-lg">
             Total Purchase Orders: {totalItems}
           </p>
         </div>
@@ -222,7 +225,9 @@ const PoGrn = () => {
           </div>
         </div>
       </div>
+      <Loading load={load} />
 
+      {/* Table for displaying GRN sessions */}
       <table className="min-w-full text-sm text-left text-gray-700 mt-6">
         <thead className="bg-gray-100 text-xs uppercase">
           <tr>
