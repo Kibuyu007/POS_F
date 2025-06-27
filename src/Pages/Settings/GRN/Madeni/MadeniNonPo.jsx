@@ -139,8 +139,8 @@ const MadeniNonPo = () => {
       </div>
       <Loading load={load} />
       {/* Table */}
-      <div className="overflow-x-auto rounded-lg">
-        <table className="min-w-full text-sm text-gray-700">
+      <div className="overflow-x-auto rounded-lg mt-4">
+        <table className="min-w-full text-sm text-gray-700 rounded-2xl">
           <thead className="bg-gray-100 text-xs uppercase text-gray-900 font-bold">
             <tr>
               <th className="px-5 py-3 border-b-2 border-gray-200 bg-gray-200 text-center text-xs font-bold text-gray-900 uppercase tracking-wider">
@@ -185,7 +185,7 @@ const MadeniNonPo = () => {
                       <div className="ml-3">{item.name}</div>
                     </div>
                   </td>
-                  <td className="py-2 px-3 font-normal text-base border-x shadow-md bg-gray-100  hover:bg-gray-100  whitespace-nowrap overflow-hidden overflow-ellipsis max-w-[200px]">
+                  <td className="py-2 px-3 font-normal text-base border-x shadow-md bg-yellow-100  hover:bg-gray-100  whitespace-nowrap overflow-hidden overflow-ellipsis max-w-[200px]">
                     <div className="items-center text-center">
                       <div className="ml-3">Tsh {item.buyingPrice}</div>
                     </div>

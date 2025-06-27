@@ -3,6 +3,8 @@ import ReportList from "./ReportList";
 import cover from "../../assets/cover1.jpg";
 import Madeni from "./Sales/Madeni";
 import Mauzo from "./Sales/Mauzo";
+import BillNonPo from "./Procurement/BillNonPo";
+import BillPo from "./Procurement/BillPo";
 
 const ReportsDashboard = () => {
   const [selectedReport, setSelectedReport] = useState(null);
@@ -19,8 +21,8 @@ const ReportsDashboard = () => {
             handleSelect={setSelectedReport}
           />
           <ReportList
-            title="Procurement Reports"
-            reports={["Purchase Orders", "Supplier Reports", "Inventory Reports"]}
+            title="Manunuzi"
+            reports={["Report ya Madeni PO", "Report ya Madeni Non PO"]}
             selectedReport={selectedReport}
             handleSelect={setSelectedReport}
           />
@@ -41,7 +43,11 @@ const ReportsDashboard = () => {
           <Mauzo />
         ) : selectedReport === "Madeni" ? (
           <Madeni />
-        ) : selectedReport ? (
+        ) : selectedReport === "Report ya Madeni PO" ? (
+          <BillPo />
+        ): selectedReport === "Report ya Madeni Non PO" ? (
+          <BillNonPo />
+        ): selectedReport ? (
           <p className="text-lg">{selectedReport}</p>
         ) : (
           <div className="flex flex-col items-center justify-center h-full">

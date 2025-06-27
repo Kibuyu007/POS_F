@@ -26,7 +26,9 @@ const IncompletePoGrn = () => {
   const fetchOutstandingItems = async () => {
     try {
       setLoad(true);
-      const res = await axios.get("http://localhost:4004/api/grn/outstand");
+      const res = await axios.get("http://localhost:4004/api/grn/outstand",{
+  withCredentials: true,
+});
       if (res.data.success) {
         setItems(res.data.data);
         setLoad(false);
@@ -65,7 +67,7 @@ const IncompletePoGrn = () => {
             grnId: item.grnId,
             itemId: item.itemId,
             filledQuantity: item.filledQuantity,
-          }
+          },{ withCredentials: true }
         );
 
         if (res.data.success) {
@@ -162,181 +164,184 @@ const IncompletePoGrn = () => {
 
       <h2 className="text-xl font-bold mb-4">Outstanding PO Items</h2>
       <Loading load={load} />
-      <table className="w-full mt-4">
-        <thead className="bg-gray-100">
-          <tr className="text-black">
-            <th className="px-5 py-3 border-b-2 border-gray-200 bg-gray-200 text-center text-xs font-bold text-gray-900 uppercase tracking-wider">
-              SN
-            </th>
-            <th className="px-5 py-3 border-b-2 border-gray-200 bg-gray-200 text-center text-xs font-bold text-gray-900 uppercase tracking-wider">
-              Item Name
-            </th>
-            <th className="px-5 py-3 border-b-2 border-gray-200 bg-gray-200 text-center text-xs font-bold text-gray-900 uppercase tracking-wider">
-              Buying Price
-            </th>
-            <th className="px-5 py-3 border-b-2 border-gray-200 bg-gray-200 text-center text-xs font-bold text-gray-900 uppercase tracking-wider">
-              Supplier
-            </th>
-            <th className="px-5 py-3 border-b-2 border-gray-200 bg-gray-200 text-center text-xs font-bold text-gray-900 uppercase tracking-wider">
-              Created By
-            </th>
-            <th className="px-5 py-3 border-b-2 border-gray-200 bg-gray-200 text-center text-xs font-bold text-gray-900 uppercase tracking-wider">
-              Created At
-            </th>
-            <th className="px-5 py-3 border-b-2 border-gray-200 bg-gray-200 text-center text-xs font-bold text-gray-900 uppercase tracking-wider">
-              Required Quantity
-            </th>
-            <th className="px-5 py-3 border-b-2 border-gray-200 bg-gray-200 text-center text-xs font-bold text-gray-900 uppercase tracking-wider">
-              Outstanding Quantity
-            </th>
-            <th className="px-5 py-3 border-b-2 border-gray-200 bg-gray-200 text-center text-xs font-bold text-gray-900 uppercase tracking-wider">
-              Received Quantity
-            </th>
-            <th className="px-5 py-3 border-b-2 border-gray-200 bg-gray-200 text-center text-xs font-bold text-gray-900 uppercase tracking-wider">
-              Update
-            </th>
-            <th className="px-5 py-3 border-b-2 border-gray-200 bg-gray-200 text-center text-xs font-bold text-gray-900 uppercase tracking-wider">
-              Preview
-            </th>
-          </tr>
-        </thead>
-        <tr className="h-4" />
-        <tbody>
-          {paginatedItems.map((item, idx) => (
-            <>
-              <tr key={idx} className="text-center text-black">
-                <td className="h-16 border-gray-00 shadow-md bg-gray-100 text-center">
-                  <span className="bg-green-300 rounded-full px-3 py-2">
-                    {(currentPage - 1) * itemsPerPage + idx + 1}
-                  </span>
-                </td>
 
-                <td className="py-2 px-3 font-normal text-base border-x shadow-md bg-gray-200  hover:bg-gray-100  whitespace-nowrap overflow-hidden overflow-ellipsis max-w-[200px]">
-                  <div className="items-center text-center">
-                    <div className="ml-3">
-                      <p className="text-gray-900 whitespace-no-wrap font-semibold capitalize">
-                        {item.name}
-                      </p>
-                    </div>
-                  </div>
-                </td>
-                <td className="py-2 px-3 font-normal text-base border-x shadow-md bg-gray-100  hover:bg-gray-100  whitespace-nowrap overflow-hidden overflow-ellipsis max-w-[200px]">
-                  <div className="items-center text-center">
-                    <div className="ml-3">
-                      <p className="text-gray-900 whitespace-no-wrap font-semibold capitalize">
-                        Tsh {item.newBuyingPrice}
-                      </p>
-                    </div>
-                  </div>
-                </td>
+      <div className="overflow-x-auto rounded-lg mt-4">
+        <table className="min-w-full text-sm text-gray-700 rounded-2xl">
+          <thead className="bg-gray-100">
+            <tr className="text-black">
+              <th className="px-5 py-3 border-b-2 border-gray-200 bg-gray-200 text-center text-xs font-bold text-gray-900 uppercase tracking-wider">
+                SN
+              </th>
+              <th className="px-5 py-3 border-b-2 border-gray-200 bg-gray-200 text-center text-xs font-bold text-gray-900 uppercase tracking-wider">
+                Item Name
+              </th>
+              <th className="px-5 py-3 border-b-2 border-gray-200 bg-gray-200 text-center text-xs font-bold text-gray-900 uppercase tracking-wider">
+                Buying Price
+              </th>
+              <th className="px-5 py-3 border-b-2 border-gray-200 bg-gray-200 text-center text-xs font-bold text-gray-900 uppercase tracking-wider">
+                Supplier
+              </th>
+              <th className="px-5 py-3 border-b-2 border-gray-200 bg-gray-200 text-center text-xs font-bold text-gray-900 uppercase tracking-wider">
+                Created By
+              </th>
+              <th className="px-5 py-3 border-b-2 border-gray-200 bg-gray-200 text-center text-xs font-bold text-gray-900 uppercase tracking-wider">
+                Created At
+              </th>
+              <th className="px-5 py-3 border-b-2 border-gray-200 bg-gray-200 text-center text-xs font-bold text-gray-900 uppercase tracking-wider">
+                Required Quantity
+              </th>
+              <th className="px-5 py-3 border-b-2 border-gray-200 bg-gray-200 text-center text-xs font-bold text-gray-900 uppercase tracking-wider">
+                Outstanding Quantity
+              </th>
+              <th className="px-5 py-3 border-b-2 border-gray-200 bg-gray-200 text-center text-xs font-bold text-gray-900 uppercase tracking-wider">
+                Received Quantity
+              </th>
+              <th className="px-5 py-3 border-b-2 border-gray-200 bg-gray-200 text-center text-xs font-bold text-gray-900 uppercase tracking-wider">
+                Update
+              </th>
+              <th className="px-5 py-3 border-b-2 border-gray-200 bg-gray-200 text-center text-xs font-bold text-gray-900 uppercase tracking-wider">
+                Preview
+              </th>
+            </tr>
+          </thead>
+          <tr className="h-4" />
+          <tbody>
+            {paginatedItems.map((item, idx) => (
+              <>
+                <tr key={idx} className="text-center text-black">
+                  <td className="h-16 border-gray-00 shadow-md bg-gray-100 text-center">
+                    <span className="bg-green-300 rounded-full px-3 py-2">
+                      {(currentPage - 1) * itemsPerPage + idx + 1}
+                    </span>
+                  </td>
 
-                <td className="py-2 px-3 font-normal text-base border-x shadow-md bg-gray-200  hover:bg-gray-100  whitespace-nowrap overflow-hidden overflow-ellipsis max-w-[200px]">
-                  <div className="items-center text-center">
-                    <div className="ml-3">
-                      <p className="text-gray-900 whitespace-no-wrap font-semibold capitalize">
-                        {item.supplier}
-                      </p>
+                  <td className="py-2 px-3 font-normal text-base border-x shadow-md bg-gray-200  hover:bg-gray-100  whitespace-nowrap overflow-hidden overflow-ellipsis max-w-[200px]">
+                    <div className="items-center text-center">
+                      <div className="ml-3">
+                        <p className="text-gray-900 whitespace-no-wrap font-semibold capitalize">
+                          {item.name}
+                        </p>
+                      </div>
                     </div>
-                  </div>
-                </td>
+                  </td>
+                  <td className="py-2 px-3 font-normal text-base border-x shadow-md bg-gray-100  hover:bg-gray-100  whitespace-nowrap overflow-hidden overflow-ellipsis max-w-[200px]">
+                    <div className="items-center text-center">
+                      <div className="ml-3">
+                        <p className="text-gray-900 whitespace-no-wrap font-semibold capitalize">
+                          Tsh {item.newBuyingPrice}
+                        </p>
+                      </div>
+                    </div>
+                  </td>
 
-                <td className="py-2 px-3 font-normal text-base border-x shadow-md bg-gray-100  hover:bg-gray-100  whitespace-nowrap overflow-hidden overflow-ellipsis max-w-[200px]">
-                  <div className="items-center text-center">
-                    <div className="ml-3">
-                      <p className="text-gray-900 whitespace-no-wrap font-semibold capitalize">
-                        {item.createdBy}
-                      </p>
+                  <td className="py-2 px-3 font-normal text-base border-x shadow-md bg-green-200  hover:bg-gray-100  whitespace-nowrap overflow-hidden overflow-ellipsis max-w-[200px]">
+                    <div className="items-center text-center">
+                      <div className="ml-3">
+                        <p className="text-gray-900 whitespace-no-wrap font-semibold capitalize">
+                          {item.supplier}
+                        </p>
+                      </div>
                     </div>
-                  </div>
-                </td>
+                  </td>
 
-                <td className="py-2 px-3 font-normal text-base border-x shadow-md bg-gray-200  hover:bg-gray-100  whitespace-nowrap overflow-hidden overflow-ellipsis max-w-[200px]">
-                  <div className="items-center text-center">
-                    <div className="ml-3">
-                      <p className="text-gray-900 whitespace-no-wrap font-semibold capitalize">
-                        {new Date(item.createdAt).toLocaleDateString()}
-                      </p>
+                  <td className="py-2 px-3 font-normal text-base border-x shadow-md bg-gray-100  hover:bg-gray-100  whitespace-nowrap overflow-hidden overflow-ellipsis max-w-[200px]">
+                    <div className="items-center text-center">
+                      <div className="ml-3">
+                        <p className="text-gray-900 whitespace-no-wrap font-semibold capitalize">
+                          {item.createdBy}
+                        </p>
+                      </div>
                     </div>
-                  </div>
-                </td>
+                  </td>
 
-                <td className="py-2 px-3 font-normal text-base border-x shadow-md bg-gray-100  hover:bg-gray-100  whitespace-nowrap overflow-hidden overflow-ellipsis max-w-[200px]">
-                  <div className="items-center text-center">
-                    <div className="ml-3">
-                      <p className="text-gray-900 whitespace-no-wrap font-semibold capitalize">
-                        {item.requiredQuantity}
-                      </p>
+                  <td className="py-2 px-3 font-normal text-base border-x shadow-md bg-gray-200  hover:bg-gray-100  whitespace-nowrap overflow-hidden overflow-ellipsis max-w-[200px]">
+                    <div className="items-center text-center">
+                      <div className="ml-3">
+                        <p className="text-gray-900 whitespace-no-wrap font-semibold capitalize">
+                          {new Date(item.createdAt).toLocaleDateString()}
+                        </p>
+                      </div>
                     </div>
-                  </div>
-                </td>
+                  </td>
 
-                <td className="py-2 px-3 font-normal text-base border-x shadow-md bg-gray-200  hover:bg-gray-100  whitespace-nowrap overflow-hidden overflow-ellipsis max-w-[200px]">
-                  <div className="items-center text-center">
-                    <div className="ml-3">
-                      <p className="text-gray-900 whitespace-no-wrap font-semibold capitalize">
-                        {item.outstandingQuantity}
-                      </p>
+                  <td className="py-2 px-3 font-normal text-base border-x shadow-md bg-gray-100  hover:bg-gray-100  whitespace-nowrap overflow-hidden overflow-ellipsis max-w-[200px]">
+                    <div className="items-center text-center">
+                      <div className="ml-3">
+                        <p className="text-gray-900 whitespace-no-wrap font-semibold capitalize">
+                          {item.requiredQuantity}
+                        </p>
+                      </div>
                     </div>
-                  </div>
-                </td>
+                  </td>
 
-                <td className="py-2 px-3 border-x shadow-md bg-gray-100 font-semibold capitalize">
-                  <div className="items-center text-center">
-                    <div className="ml-3">
-                      <input
-                        type="number"
-                        min={1}
-                        max={item.outstandingQuantity}
-                        disabled={item.outstandingQuantity === 0}
-                        value={
-                          item.filledQuantity === undefined
-                            ? ""
-                            : item.filledQuantity
-                        }
-                        onChange={(e) => {
-                          const value = e.target.value;
-                          items[idx].filledQuantity =
-                            value === "" ? undefined : parseInt(value);
-                          setItems([...items]);
-                        }}
-                        className="border px-2 py-1 w-40 rounded-full focus:outline-none focus:ring-1 focus:ring-green-500"
-                      />
+                  <td className="py-2 px-3 font-normal text-base border-x shadow-md bg-yellow-100  hover:bg-gray-100  whitespace-nowrap overflow-hidden overflow-ellipsis max-w-[200px]">
+                    <div className="items-center text-center">
+                      <div className="ml-3">
+                        <p className="text-gray-900 whitespace-no-wrap font-semibold capitalize">
+                          {item.outstandingQuantity}
+                        </p>
+                      </div>
                     </div>
-                  </div>
-                </td>
-                <td className="py-2 px-3 border-x shadow-md bg-gray-200 font-semibold capitalize">
-                  <div className="items-center text-center">
-                    <div className="ml-3">
-                      <button
-                        onClick={submitFilledQuantities}
-                        disabled={
-                          !item.filledQuantity || item.filledQuantity <= 0
-                        }
-                        className="bg-green-500 px-5 text-black text-xl py-1 rounded-full disabled:opacity-50 disabled:bg-gray-300"
-                      >
-                        Save
-                      </button>
+                  </td>
+
+                  <td className="py-2 px-3 border-x shadow-md bg-gray-100 font-semibold capitalize">
+                    <div className="items-center text-center">
+                      <div className="ml-3">
+                        <input
+                          type="number"
+                          min={1}
+                          max={item.outstandingQuantity}
+                          disabled={item.outstandingQuantity === 0}
+                          value={
+                            item.filledQuantity === undefined
+                              ? ""
+                              : item.filledQuantity
+                          }
+                          onChange={(e) => {
+                            const value = e.target.value;
+                            items[idx].filledQuantity =
+                              value === "" ? undefined : parseInt(value);
+                            setItems([...items]);
+                          }}
+                          className="border px-2 py-1 w-40 rounded-full focus:outline-none focus:ring-1 focus:ring-green-500"
+                        />
+                      </div>
                     </div>
-                  </div>
-                </td>
-                <td className="py-2 px-3 border-x shadow-md bg-gray-100 font-semibold capitalize">
-                  <div className="items-center text-center">
-                    <div className="ml-3">
-                      <button
-                        onClick={() => handleViewClick(item.grnId)}
-                        className="bg-green-400 text-black px-4 py-2 rounded-full"
-                      >
-                        Preview
-                      </button>
+                  </td>
+                  <td className="py-2 px-3 border-x shadow-md bg-gray-200 font-semibold capitalize">
+                    <div className="items-center text-center">
+                      <div className="ml-3">
+                        <button
+                          onClick={submitFilledQuantities}
+                          disabled={
+                            !item.filledQuantity || item.filledQuantity <= 0
+                          }
+                          className="bg-green-500 px-5 text-black text-xl py-1 rounded-full disabled:opacity-50 disabled:bg-gray-300"
+                        >
+                          Save
+                        </button>
+                      </div>
                     </div>
-                  </div>
-                </td>
-              </tr>
-              <tr className="h-4" />
-            </>
-          ))}
-        </tbody>
-      </table>
+                  </td>
+                  <td className="py-2 px-3 border-x shadow-md bg-gray-100 font-semibold capitalize">
+                    <div className="items-center text-center">
+                      <div className="ml-3">
+                        <button
+                          onClick={() => handleViewClick(item.grnId)}
+                          className="bg-green-400 text-black px-4 py-2 rounded-full"
+                        >
+                          Preview
+                        </button>
+                      </div>
+                    </div>
+                  </td>
+                </tr>
+                <tr className="h-4" />
+              </>
+            ))}
+          </tbody>
+        </table>
+      </div>
 
       {/* Modal */}
       {openModal && modalData && (

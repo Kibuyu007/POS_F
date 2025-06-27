@@ -155,134 +155,135 @@ const MadeniPo = () => {
 
       <h2 className="text-xl font-bold mb-4">Outstanding PO Items</h2>
       <Loading load={load} />
-
-      <table className="w-full">
-        <thead className="bg-gray-100">
-          <tr className="text-black">
-            <th className="px-5 py-3 border-b-2 border-gray-200 bg-gray-200 text-center text-xs font-bold text-gray-900 uppercase tracking-wider">
-              SN
-            </th>
-            <th className="px-5 py-3 border-b-2 border-gray-200 bg-gray-200 text-center text-xs font-bold text-gray-900 uppercase tracking-wider">
-              Item Name
-            </th>
-            <th className="px-5 py-3 border-b-2 border-gray-200 bg-gray-200 text-center text-xs font-bold text-gray-900 uppercase tracking-wider">
-              Buying Price
-            </th>
-            <th className="px-5 py-3 border-b-2 border-gray-200 bg-gray-200 text-center text-xs font-bold text-gray-900 uppercase tracking-wider">
-              Supplier
-            </th>
-            <th className="px-5 py-3 border-b-2 border-gray-200 bg-gray-200 text-center text-xs font-bold text-gray-900 uppercase tracking-wider">
-              Created By
-            </th>
-            <th className="px-5 py-3 border-b-2 border-gray-200 bg-gray-200 text-center text-xs font-bold text-gray-900 uppercase tracking-wider">
-              Created At
-            </th>
-            <th className="px-5 py-3 border-b-2 border-gray-200 bg-gray-200 text-center text-xs font-bold text-gray-900 uppercase tracking-wider">
-              Required Quantity
-            </th>
-            <th className="px-5 py-3 border-b-2 border-gray-200 bg-gray-200 text-center text-xs font-bold text-gray-900 uppercase tracking-wider">
-              Update
-            </th>
-            <th className="px-5 py-3 border-b-2 border-gray-200 bg-gray-200 text-center text-xs font-bold text-gray-900 uppercase tracking-wider">
-              Preview
-            </th>
-          </tr>
-        </thead>
-        <tr className="h-4" />
-        <tbody>
-          {paginatedItems.map((item, idx) => (
-            <>
-              <tr key={idx} className="text-center text-black">
-                <td className="h-16 border-gray-00 shadow-md bg-gray-100 text-center">
-                  <span className="bg-green-300 rounded-full px-3 py-2">
-                    {(currentPage - 1) * itemsPerPage + idx + 1}
-                  </span>
-                </td>
-                <td className="py-2 px-3 font-normal text-base border-x shadow-md bg-gray-200  hover:bg-gray-100  whitespace-nowrap overflow-hidden overflow-ellipsis max-w-[200px]">
-                  <div className="items-center text-center">
-                    <div className="ml-3">
-                      <p className="text-gray-900 whitespace-no-wrap font-semibold capitalize">
-                        {item.name}
-                      </p>
+      <div className="overflow-x-auto  rounded-2xl mt-4">
+        <table className="w-full">
+          <thead className="bg-gray-100">
+            <tr className="text-black">
+              <th className="px-5 py-3 border-b-2 border-gray-200 bg-gray-200 text-center text-xs font-bold text-gray-900 uppercase tracking-wider">
+                SN
+              </th>
+              <th className="px-5 py-3 border-b-2 border-gray-200 bg-gray-200 text-center text-xs font-bold text-gray-900 uppercase tracking-wider">
+                Item Name
+              </th>
+              <th className="px-5 py-3 border-b-2 border-gray-200 bg-gray-200 text-center text-xs font-bold text-gray-900 uppercase tracking-wider">
+                Buying Price
+              </th>
+              <th className="px-5 py-3 border-b-2 border-gray-200 bg-gray-200 text-center text-xs font-bold text-gray-900 uppercase tracking-wider">
+                Supplier
+              </th>
+              <th className="px-5 py-3 border-b-2 border-gray-200 bg-gray-200 text-center text-xs font-bold text-gray-900 uppercase tracking-wider">
+                Created By
+              </th>
+              <th className="px-5 py-3 border-b-2 border-gray-200 bg-gray-200 text-center text-xs font-bold text-gray-900 uppercase tracking-wider">
+                Created At
+              </th>
+              <th className="px-5 py-3 border-b-2 border-gray-200 bg-gray-200 text-center text-xs font-bold text-gray-900 uppercase tracking-wider">
+                Required Quantity
+              </th>
+              <th className="px-5 py-3 border-b-2 border-gray-200 bg-gray-200 text-center text-xs font-bold text-gray-900 uppercase tracking-wider">
+                Update
+              </th>
+              <th className="px-5 py-3 border-b-2 border-gray-200 bg-gray-200 text-center text-xs font-bold text-gray-900 uppercase tracking-wider">
+                Preview
+              </th>
+            </tr>
+          </thead>
+          <tr className="h-4" />
+          <tbody>
+            {paginatedItems.map((item, idx) => (
+              <>
+                <tr key={idx} className="text-center text-black">
+                  <td className="h-16 border-gray-00 shadow-md bg-gray-100 text-center">
+                    <span className="bg-green-300 rounded-full px-3 py-2">
+                      {(currentPage - 1) * itemsPerPage + idx + 1}
+                    </span>
+                  </td>
+                  <td className="py-2 px-3 font-normal text-base border-x shadow-md bg-gray-200  hover:bg-gray-100  whitespace-nowrap overflow-hidden overflow-ellipsis max-w-[200px]">
+                    <div className="items-center text-center">
+                      <div className="ml-3">
+                        <p className="text-gray-900 whitespace-no-wrap font-semibold capitalize">
+                          {item.name}
+                        </p>
+                      </div>
                     </div>
-                  </div>
-                </td>
-                <td className="py-2 px-3 font-normal text-base border-x shadow-md bg-gray-100  hover:bg-gray-100  whitespace-nowrap overflow-hidden overflow-ellipsis max-w-[200px]">
-                  <div className="items-center text-center">
-                    <div className="ml-3">
-                      <p className="text-gray-900 whitespace-no-wrap font-semibold capitalize">
-                        Tsh {item.newBuyingPrice}
-                      </p>
+                  </td>
+                  <td className="py-2 px-3 font-normal text-base border-x shadow-md bg-green-200  hover:bg-gray-100  whitespace-nowrap overflow-hidden overflow-ellipsis max-w-[200px]">
+                    <div className="items-center text-center">
+                      <div className="ml-3">
+                        <p className="text-gray-900 whitespace-no-wrap font-semibold capitalize">
+                          Tsh {item.newBuyingPrice}
+                        </p>
+                      </div>
                     </div>
-                  </div>
-                </td>
-                <td className="py-2 px-3 font-normal text-base border-x shadow-md bg-gray-200  hover:bg-gray-100  whitespace-nowrap overflow-hidden overflow-ellipsis max-w-[200px]">
-                  <div className="items-center text-center">
-                    <div className="ml-3">
-                      <p className="text-gray-900 whitespace-no-wrap font-semibold capitalize">
-                        {item.supplier}
-                      </p>
+                  </td>
+                  <td className="py-2 px-3 font-normal text-base border-x shadow-md bg-gray-200  hover:bg-gray-100  whitespace-nowrap overflow-hidden overflow-ellipsis max-w-[200px]">
+                    <div className="items-center text-center">
+                      <div className="ml-3">
+                        <p className="text-gray-900 whitespace-no-wrap font-semibold capitalize">
+                          {item.supplier}
+                        </p>
+                      </div>
                     </div>
-                  </div>
-                </td>
-                <td className="py-2 px-3 font-normal text-base border-x shadow-md bg-gray-100  hover:bg-gray-100  whitespace-nowrap overflow-hidden overflow-ellipsis max-w-[200px]">
-                  <div className="items-center text-center">
-                    <div className="ml-3">
-                      <p className="text-gray-900 whitespace-no-wrap font-semibold capitalize">
-                        {item.createdBy}
-                      </p>
+                  </td>
+                  <td className="py-2 px-3 font-normal text-base border-x shadow-md bg-gray-100  hover:bg-gray-100  whitespace-nowrap overflow-hidden overflow-ellipsis max-w-[200px]">
+                    <div className="items-center text-center">
+                      <div className="ml-3">
+                        <p className="text-gray-900 whitespace-no-wrap font-semibold capitalize">
+                          {item.createdBy}
+                        </p>
+                      </div>
                     </div>
-                  </div>
-                </td>
-                <td className="py-2 px-3 font-normal text-base border-x shadow-md bg-gray-200  hover:bg-gray-100  whitespace-nowrap overflow-hidden overflow-ellipsis max-w-[200px]">
-                  <div className="items-center text-center">
-                    <div className="ml-3">
-                      <p className="text-gray-900 whitespace-no-wrap font-semibold capitalize">
-                        {new Date(item.createdAt).toLocaleDateString()}
-                      </p>
+                  </td>
+                  <td className="py-2 px-3 font-normal text-base border-x shadow-md bg-gray-200  hover:bg-gray-100  whitespace-nowrap overflow-hidden overflow-ellipsis max-w-[200px]">
+                    <div className="items-center text-center">
+                      <div className="ml-3">
+                        <p className="text-gray-900 whitespace-no-wrap font-semibold capitalize">
+                          {new Date(item.createdAt).toLocaleDateString()}
+                        </p>
+                      </div>
                     </div>
-                  </div>
-                </td>
-                <td className="py-2 px-3 font-normal text-base border-x shadow-md bg-gray-100  hover:bg-gray-100  whitespace-nowrap overflow-hidden overflow-ellipsis max-w-[200px]">
-                  <div className="items-center text-center">
-                    <div className="ml-3">
-                      <p className="text-gray-900 whitespace-no-wrap font-semibold capitalize">
-                        {item.requiredQuantity}
-                      </p>
+                  </td>
+                  <td className="py-2 px-3 font-normal text-base border-x shadow-md bg-yellow-100  hover:bg-gray-100  whitespace-nowrap overflow-hidden overflow-ellipsis max-w-[200px]">
+                    <div className="items-center text-center">
+                      <div className="ml-3">
+                        <p className="text-gray-900 whitespace-no-wrap font-semibold capitalize">
+                          {item.requiredQuantity}
+                        </p>
+                      </div>
                     </div>
-                  </div>
-                </td>
-                <td className="py-2 px-3 font-normal text-base border-x shadow-md bg-gray-200  hover:bg-gray-100  whitespace-nowrap overflow-hidden overflow-ellipsis max-w-[200px]">
-                  <div>
+                  </td>
+                  <td className="py-2 px-3 font-normal text-base border-x shadow-md bg-gray-200  hover:bg-gray-100  whitespace-nowrap overflow-hidden overflow-ellipsis max-w-[200px]">
                     <div>
-                      <button
-                        className="text-green-600"
-                        onClick={() => toggleStatus(item.grnId, item.itemId)}
-                      >
-                        <FaCheckCircle size={30} />
-                      </button>
+                      <div>
+                        <button
+                          className="text-green-600"
+                          onClick={() => toggleStatus(item.grnId, item.itemId)}
+                        >
+                          <FaCheckCircle size={30} />
+                        </button>
+                      </div>
                     </div>
-                  </div>
-                </td>
+                  </td>
 
-                <td className="py-2 px-3 font-normal text-base border-x shadow-md bg-gray-100  hover:bg-gray-100  whitespace-nowrap overflow-hidden overflow-ellipsis max-w-[200px]">
-                  <div>
+                  <td className="py-2 px-3 font-normal text-base border-x shadow-md bg-gray-100  hover:bg-gray-100  whitespace-nowrap overflow-hidden overflow-ellipsis max-w-[200px]">
                     <div>
-                      <button
-                        onClick={() => handlePreview(item.grnId)}
-                        className="bg-green-400 text-black px-4 py-2 rounded-full"
-                      >
-                        Preview GRN
-                      </button>
+                      <div>
+                        <button
+                          onClick={() => handlePreview(item.grnId)}
+                          className="bg-green-400 text-black px-4 py-2 rounded-full"
+                        >
+                          Preview GRN
+                        </button>
+                      </div>
                     </div>
-                  </div>
-                </td>
-              </tr>
-              <tr className="h-4" />
-            </>
-          ))}
-        </tbody>
-      </table>
+                  </td>
+                </tr>
+                <tr className="h-4" />
+              </>
+            ))}
+          </tbody>
+        </table>
+      </div>
 
       {/* Modal */}
       {openModal && modalData && (

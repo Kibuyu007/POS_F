@@ -7,10 +7,11 @@ import { DatePicker } from "@mui/x-date-pickers/DatePicker";
 import { IoIosArrowBack, IoIosArrowForward } from "react-icons/io";
 import Loading from "../../../Components/Shared/Loading";
 
-const BillNonPo = () => {
+const BillPo = () => {
   const [reportData, setReportData] = useState([]);
   const [filteredData, setFilteredData] = useState([]);
   const [load, setLoad] = useState(true);
+
   const [startDate, setStartDate] = useState(null);
   const [endDate, setEndDate] = useState(null);
   const [selectedSupplier, setSelectedSupplier] = useState("");
@@ -26,9 +27,7 @@ const BillNonPo = () => {
   const fetchReport = async () => {
     try {
       setLoad(true);
-      const res = await axios.get(
-        "http://localhost:4004/api/grn/nonPoBillReport"
-      );
+      const res = await axios.get("http://localhost:4004/api/grn/billPo");
       if (res.data.success) {
         setReportData(res.data.data);
         setFilteredData(res.data.data);
@@ -89,7 +88,7 @@ const BillNonPo = () => {
   return (
     <div className="p-4">
       <h2 className="text-2xl font-bold mb-6 text-gray-800">
-        Non-PO Billed Report
+        PO Billed Report
       </h2>
 
       {/* Filters */}
@@ -157,7 +156,7 @@ const BillNonPo = () => {
 
       {/* Table */}
       <div className="overflow-x-auto  rounded-2xl mt-4">
-        <table className="min-w-full text-sm text-left text-black">
+        <table className="min-w-full text-sm text-left text-gray-700">
           <thead className="bg-gray-200 text-gray-800">
             <tr>
               <th className="px-5 py-3 border-b-2 border-gray-200 bg-gray-200 text-center text-xs font-bold text-gray-900 uppercase tracking-wider">
@@ -223,7 +222,7 @@ const BillNonPo = () => {
                   <td className="py-2 px-3 font-normal text-base border-x shadow-md bg-gray-100  hover:bg-gray-100  whitespace-nowrap overflow-hidden overflow-ellipsis max-w-[200px]">
                     <div className="items-center text-center">
                       <div className="ml-3">
-                        {log.changedBy?.userName || "-"} 
+                        {log.lastModifiedBy?.username || "-"}
                       </div>
                     </div>
                   </td>
@@ -293,4 +292,4 @@ const BillNonPo = () => {
   );
 };
 
-export default BillNonPo;
+export default BillPo;

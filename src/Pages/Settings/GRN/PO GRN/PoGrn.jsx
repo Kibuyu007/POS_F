@@ -228,140 +228,142 @@ const PoGrn = () => {
       <Loading load={load} />
 
       {/* Table for displaying GRN sessions */}
-      <table className="min-w-full text-sm text-left text-gray-700 mt-6">
-        <thead className="bg-gray-100 text-xs uppercase">
-          <tr>
-            <th className="px-5 py-3 border-b-2 border-gray-200 bg-gray-200 text-center text-xs font-bold text-gray-900 uppercase tracking-wider">
-              SN
-            </th>
-            <th className="px-5 py-3 border-b-2 border-gray-200 bg-gray-200 text-center text-xs font-bold text-gray-900 uppercase tracking-wider">
-              GRN Number
-            </th>
-            <th className="px-5 py-3 border-b-2 border-gray-200 bg-gray-200 text-center text-xs font-bold text-gray-900 uppercase tracking-wider">
-              Total Products
-            </th>
-            <th className="px-5 py-3 border-b-2 border-gray-200 bg-gray-200 text-center text-xs font-bold text-gray-900 uppercase tracking-wider">
-              Purchase Comments
-            </th>
-            <th className="px-5 py-3 border-b-2 border-gray-200 bg-gray-200 text-center text-xs font-bold text-gray-900 uppercase tracking-wider">
-              Supplier
-            </th>
-            <th className="px-5 py-3 border-b-2 border-gray-200 bg-gray-200 text-center text-xs font-bold text-gray-900 uppercase tracking-wider">
-              Created At
-            </th>
-            <th className="px-5 py-3 border-b-2 border-gray-200 bg-gray-200 text-center text-xs font-bold text-gray-900 uppercase tracking-wider">
-              Status
-            </th>
-            <th className="px-5 py-3 border-b-2 border-gray-200 bg-gray-200 text-center text-xs font-bold text-gray-900 uppercase tracking-wider">
-              Action
-            </th>
-          </tr>
-          <tr className="h-4" />
-        </thead>
-        <tbody>
-          {paginatedSessions.map((session, idx) => (
-            <>
-              <tr key={idx} className="border-b">
-                <td className="h-16 border-gray-200 shadow-md bg-gray-200 text-center">
-                  {(currentPage - 1) * itemsPerPage + idx + 1}
-                </td>
+      <div className="overflow-x-auto rounded-lg mt-4">
+        <table className="min-w-full text-sm text-gray-700 rounded-2xl">
+          <thead className="bg-gray-100 text-xs uppercase">
+            <tr>
+              <th className="px-5 py-3 border-b-2 border-gray-200 bg-gray-200 text-center text-xs font-bold text-gray-900 uppercase tracking-wider">
+                SN
+              </th>
+              <th className="px-5 py-3 border-b-2 border-gray-200 bg-gray-200 text-center text-xs font-bold text-gray-900 uppercase tracking-wider">
+                GRN Number
+              </th>
+              <th className="px-5 py-3 border-b-2 border-gray-200 bg-gray-200 text-center text-xs font-bold text-gray-900 uppercase tracking-wider">
+                Total Products
+              </th>
+              <th className="px-5 py-3 border-b-2 border-gray-200 bg-gray-200 text-center text-xs font-bold text-gray-900 uppercase tracking-wider">
+                Purchase Comments
+              </th>
+              <th className="px-5 py-3 border-b-2 border-gray-200 bg-gray-200 text-center text-xs font-bold text-gray-900 uppercase tracking-wider">
+                Supplier
+              </th>
+              <th className="px-5 py-3 border-b-2 border-gray-200 bg-gray-200 text-center text-xs font-bold text-gray-900 uppercase tracking-wider">
+                Created At
+              </th>
+              <th className="px-5 py-3 border-b-2 border-gray-200 bg-gray-200 text-center text-xs font-bold text-gray-900 uppercase tracking-wider">
+                Status
+              </th>
+              <th className="px-5 py-3 border-b-2 border-gray-200 bg-gray-200 text-center text-xs font-bold text-gray-900 uppercase tracking-wider">
+                Action
+              </th>
+            </tr>
+            <tr className="h-4" />
+          </thead>
+          <tbody>
+            {paginatedSessions.map((session, idx) => (
+              <>
+                <tr key={idx} className="border-b">
+                  <td className="h-16 border-gray-200 shadow-md bg-gray-200 text-center">
+                    {(currentPage - 1) * itemsPerPage + idx + 1}
+                  </td>
 
-                <td className="py-2 px-3 font-normal text-base border-x shadow-md bg-gray-100  hover:bg-gray-100  whitespace-nowrap overflow-hidden overflow-ellipsis max-w-[200px]">
-                  <div className="items-center text-center">
-                    <div className="ml-3">
-                      <p className="text-gray-900 whitespace-no-wrap font-semibold capitalize">
-                        {session.grnNumber}
-                      </p>
+                  <td className="py-2 px-3 font-normal text-base border-x shadow-md bg-gray-100  hover:bg-gray-100  whitespace-nowrap overflow-hidden overflow-ellipsis max-w-[200px]">
+                    <div className="items-center text-center">
+                      <div className="ml-3">
+                        <p className="text-gray-900 whitespace-no-wrap font-semibold capitalize">
+                          {session.grnNumber}
+                        </p>
+                      </div>
                     </div>
-                  </div>
-                </td>
+                  </td>
 
-                <td className="py-2 px-3 font-normal text-base border-x shadow-md bg-gray-100  hover:bg-gray-100  whitespace-nowrap overflow-hidden overflow-ellipsis max-w-[200px]">
-                  <div className="items-center text-center">
-                    <div className="ml-3">
-                      <p className="text-gray-900 whitespace-no-wrap font-semibold capitalize">
-                        {session.totalProducts}
-                      </p>
+                  <td className="py-2 px-3 font-normal text-base border-x shadow-md bg-gray-200  hover:bg-gray-100  whitespace-nowrap overflow-hidden overflow-ellipsis max-w-[200px]">
+                    <div className="items-center text-center">
+                      <div className="ml-3">
+                        <p className="text-gray-900 whitespace-no-wrap font-semibold capitalize">
+                          {session.totalProducts}
+                        </p>
+                      </div>
                     </div>
-                  </div>
-                </td>
+                  </td>
 
-                <td className="py-2 px-3 font-normal text-base border-x shadow-md bg-gray-100  hover:bg-gray-100  whitespace-nowrap overflow-hidden overflow-ellipsis max-w-[200px]">
-                  <div className="items-center text-center">
-                    <div className="ml-3">
-                      <p className="text-gray-900 whitespace-no-wrap font-semibold capitalize">
-                        {session.comments}
-                      </p>
+                  <td className="py-2 px-3 font-normal text-base border-x shadow-md bg-gray-100  hover:bg-gray-100  whitespace-nowrap overflow-hidden overflow-ellipsis max-w-[200px]">
+                    <div className="items-center text-center">
+                      <div className="ml-3">
+                        <p className="text-gray-900 whitespace-no-wrap font-semibold capitalize">
+                          {session.comments}
+                        </p>
+                      </div>
                     </div>
-                  </div>
-                </td>
+                  </td>
 
-                <td className="py-2 px-3 font-normal text-base border-x shadow-md bg-gray-100  hover:bg-gray-100  whitespace-nowrap overflow-hidden overflow-ellipsis max-w-[200px]">
-                  <div className="items-center text-center">
-                    <div className="ml-3">
-                      <p className="text-gray-900 whitespace-no-wrap font-semibold capitalize">
-                        {
-                          supplier.find((u) => u._id === session.supplierName)
-                            ?.supplierName
-                        }
-                      </p>
+                  <td className="py-2 px-3 font-normal text-base border-x shadow-md bg-green-200  hover:bg-gray-100  whitespace-nowrap overflow-hidden overflow-ellipsis max-w-[200px]">
+                    <div className="items-center text-center">
+                      <div className="ml-3">
+                        <p className="text-gray-900 whitespace-no-wrap font-semibold capitalize">
+                          {
+                            supplier.find((u) => u._id === session.supplierName)
+                              ?.supplierName
+                          }
+                        </p>
+                      </div>
                     </div>
-                  </div>
-                </td>
+                  </td>
 
-                <td className="py-2 px-3 font-normal text-base border-x shadow-md bg-gray-200  hover:bg-gray-100  whitespace-nowrap overflow-hidden overflow-ellipsis max-w-[200px]">
-                  <div className="items-center text-center">
-                    <div className="ml-3">
-                      <p className="text-gray-900 whitespace-no-wrap font-semibold capitalize">
-                        {new Date(session.createdAt).toLocaleDateString()}
-                      </p>
+                  <td className="py-2 px-3 font-normal text-base border-x shadow-md bg-gray-200  hover:bg-gray-100  whitespace-nowrap overflow-hidden overflow-ellipsis max-w-[200px]">
+                    <div className="items-center text-center">
+                      <div className="ml-3">
+                        <p className="text-gray-900 whitespace-no-wrap font-semibold capitalize">
+                          {new Date(session.createdAt).toLocaleDateString()}
+                        </p>
+                      </div>
                     </div>
-                  </div>
-                </td>
+                  </td>
 
-                <td className="py-2 px-3 font-normal text-base border-x shadow-md bg-gray-100 hover:bg-gray-100 whitespace-nowrap overflow-hidden overflow-ellipsis max-w-[200px]">
-                  <div className="items-center text-center">
-                    <div className="ml-3">
-                      {session.status === "Pending" ? (
-                        <span className="bg-yellow-400 px-6 py-2 rounded-3xl shadow-md">
-                          Pending
-                        </span>
-                      ) : (
-                        <span className="bg-gray-300 px-6 py-2 rounded-3xl shadow-md">
-                          Approved
-                        </span>
-                      )}
+                  <td className="py-2 px-3 font-normal text-base border-x shadow-md bg-gray-100 hover:bg-gray-100 whitespace-nowrap overflow-hidden overflow-ellipsis max-w-[200px]">
+                    <div className="items-center text-center">
+                      <div className="ml-3">
+                        {session.status === "Pending" ? (
+                          <span className="bg-yellow-400 px-6 py-2 rounded-3xl shadow-md">
+                            Pending
+                          </span>
+                        ) : (
+                          <span className="bg-gray-300 px-6 py-2 rounded-3xl shadow-md">
+                            Approved
+                          </span>
+                        )}
+                      </div>
                     </div>
-                  </div>
-                </td>
+                  </td>
 
-                <td className="py-2 px-3 font-normal text-base border-x shadow-md bg-gray-100  hover:bg-gray-100  whitespace-nowrap overflow-hidden overflow-ellipsis max-w-[200px]">
-                  <div className="items-center text-center">
-                    <div className="ml-3">
-                      {session.status === "Approved" ? (
-                        <button
-                          className="bg-gray-400 px-6 py-2 rounded-3xl shadow-md cursor-not-allowed"
-                          disabled // Disable the button when status is approved
-                        >
-                          Completed
-                        </button>
-                      ) : (
-                        <button
-                          className="bg-green-400 px-6 py-2 rounded-3xl shadow-md"
-                          onClick={() => handlePreview(session)}
-                        >
-                          Process
-                        </button>
-                      )}
+                  <td className="py-2 px-3 font-normal text-base border-x shadow-md bg-gray-100  hover:bg-gray-100  whitespace-nowrap overflow-hidden overflow-ellipsis max-w-[200px]">
+                    <div className="items-center text-center">
+                      <div className="ml-3">
+                        {session.status === "Approved" ? (
+                          <button
+                            className="bg-gray-400 px-6 py-2 rounded-3xl shadow-md cursor-not-allowed"
+                            disabled // Disable the button when status is approved
+                          >
+                            Completed
+                          </button>
+                        ) : (
+                          <button
+                            className="bg-green-400 px-6 py-2 rounded-3xl shadow-md"
+                            onClick={() => handlePreview(session)}
+                          >
+                            Process
+                          </button>
+                        )}
+                      </div>
                     </div>
-                  </div>
-                </td>
-              </tr>
-              <tr className="h-4" />
-            </>
-          ))}
-        </tbody>
-      </table>
+                  </td>
+                </tr>
+                <tr className="h-4" />
+              </>
+            ))}
+          </tbody>
+        </table>
+      </div>
 
       {showPreviewModal && selectedSession && (
         <ProcessPo

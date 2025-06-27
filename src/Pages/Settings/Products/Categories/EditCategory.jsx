@@ -38,7 +38,7 @@ const EditCategory = ({
     try {
       const response = await axios.put(
         `http://localhost:4004/api/itemsCategories/editItemCategories/${catego._id}`,
-        editData
+        editData,{ withCredentials: true }
       );
       console.log(response);
       dispatch(editCategory(response?.data.data));

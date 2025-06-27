@@ -3,7 +3,7 @@ import axios from "axios";
 import { useDispatch, useSelector } from "react-redux";
 import { addItems } from "../../Redux/cartSlice";
 import { FaSearch } from "react-icons/fa";
-import { searchItemsEveryWhere } from "../../Redux/items";
+import toast from "react-hot-toast";
 
 const MenuCard = ({ refreshTrigger }) => {
   const cartData = useSelector((state) => state.cart.cart);
@@ -59,7 +59,11 @@ const MenuCard = ({ refreshTrigger }) => {
           }
         }
       } catch (error) {
-        console.error("Error fetching categories:", error);
+        console.error("Error fetching items:", error);
+        toast.error("Failed to load items. Please try again.", {
+          position: "top-right",
+          autoClose: 4000,
+        });
       } finally {
         setIsLoading(false);
       }
@@ -85,12 +89,46 @@ const MenuCard = ({ refreshTrigger }) => {
         }
       } catch (error) {
         console.error("Error fetching items:", error);
+        toast.error("Failed to load items. Please try again.", {
+          position: "bottom-right",
+          style: {
+            borderRadius: "12px",
+            background: "#ffccbc",
+            color: "#212121",
+            fontSize: "18px",
+          },
+        });
       } finally {
         setIsLoading(false);
       }
     },
     [refreshTrigger]
   );
+
+  const searchItemsByCategoryAndName = async (categoryId, searchTerm) => {
+    try {
+      const res = await axios.get(
+        "http://localhost:4004/api/items/searchInPos",
+        {
+          params: {
+            category: categoryId,
+            search: searchTerm,
+          },
+        }
+      );
+
+      if (res.data.success) {
+        setItems(res.data.data);
+        const initialItemCounts = {};
+        res.data.data.forEach((item) => {
+          initialItemCounts[item._id] = 1;
+        });
+        setItemCounts(initialItemCounts);
+      }
+    } catch (error) {
+      console.error("Error searching items:", error);
+    }
+  };
 
   const formatPriceWithCommas = (price) => {
     return new Intl.NumberFormat("en-US").format(price);
@@ -110,8 +148,17 @@ const MenuCard = ({ refreshTrigger }) => {
     const totalIfAdded = alreadyInCart + quantityToAdd;
 
     if (totalIfAdded > item.itemQuantity) {
-      alert(
-        `Cannot add ${quantityToAdd}. You already have ${alreadyInCart} of "${item.name}" in cart, and only ${item.itemQuantity} are available in stock.`
+      toast.error(
+        `Stock ya  ( ${item.name} )  imeisha , kwa sasa ipo : ( ${item.itemQuantity} ) , Ongeza Stock ili undelee na mauzo.`,
+        {
+          position: "bottom-right",
+          style: {
+            borderRadius: "18px",
+            background: "#ffccbc",
+            color: "#212121",
+            fontSize: "18px",
+          },
+        }
       );
       return;
     }
@@ -126,7 +173,18 @@ const MenuCard = ({ refreshTrigger }) => {
     };
 
     if (!zuiaAdd) {
-      alert("Please print the receipt before adding new items.");
+      toast.error(
+        "Oyaa, Malizia Ku Print Receipt ya Mauzo uliyoyafanya Kwanza .",
+        {
+          position: "bottom-right",
+          style: {
+            borderRadius: "12px",
+            background: "#ffccbc",
+            color: "#212121",
+            fontSize: "18px",
+          },
+        }
+      );
       return;
     }
 
@@ -151,7 +209,7 @@ const MenuCard = ({ refreshTrigger }) => {
               const value = e.target.value;
               setSearchQuery(value);
               if (selected?._id) {
-                fetchItems(selected._id, value);
+                searchItemsByCategoryAndName(selected._id, value);
               }
             }}
             className="bg-transparent outline-none px-2 py-1 w-full text-black"
@@ -208,13 +266,21 @@ const MenuCard = ({ refreshTrigger }) => {
             <div className="flex justify-between items-center text-base text-gray-700 mb-4">
               <div>
                 <p className="font-semibold">Price</p>
-                <p className="text-gray-600">
+                <p className="text-gray-600 px-4 bg-gray-300 py-1 rounded-full">
                   Tsh {formatPriceWithCommas(item.price)} /=
                 </p>
               </div>
               <div className="text-right">
                 <p className="font-semibold">Stock</p>
-                <p className="text-gray-600">({item.itemQuantity} available)</p>
+                <p
+                  className={`text-sm text-center font-medium ${
+                    item.itemQuantity === 0
+                      ? "text-black bg-red-500 rounded-full py-2 px-2"
+                      : "text-gray-600  bg-green-400 rounded-full py-1 px-4"
+                  }`}
+                >
+                  ({item.itemQuantity})
+                </p>
               </div>
             </div>
 
@@ -228,6 +294,31 @@ const MenuCard = ({ refreshTrigger }) => {
                 }
                 className="w-20 text-center border border-gray-300 rounded-md py-2"
               />
+            </div>
+
+            <div className="flex mb-4 justify-center gap-2">
+              {item.status === "Expired" && (
+                <>
+                  <span className="bg-red-50 px-3 text-center py-1 rounded-full">
+                    x
+                  </span>
+                  <span className="bg-red-100 px-3 text-center py-1 rounded-full">
+                    x
+                  </span>
+                  <span className="bg-red-200 px-3 text-center py-1 rounded-full">
+                    x
+                  </span>
+                  <span className="bg-red-300 px-3 text-center py-1 rounded-full">
+                    x
+                  </span>
+                  <span className="bg-red-400 px-3 text-center py-1 rounded-full">
+                    x
+                  </span>
+                  <span className="bg-red-500 px-3 text-center py-1 rounded-full">
+                    x
+                  </span>
+                </>
+              )}
             </div>
 
             <button

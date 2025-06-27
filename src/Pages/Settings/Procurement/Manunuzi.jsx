@@ -188,8 +188,8 @@ const Manunuzi = () => {
             </div>
             <Loading load={load} />
 
-            <div className="max-h-[400px] overflow-y-auto mt-4  rounded-lg">
-              <table className="min-w-full leading-normal mt-6  rounded-lg p-4">
+            <div className="overflow-x-auto rounded-lg mt-4">
+              <table className="min-w-full text-sm text-gray-700 rounded-2xl">
                 <thead>
                   <tr>
                     <th className="px-5 py-3 border-b-2 border-gray-200 bg-gray-200 text-center text-xs font-bold text-gray-900 uppercase tracking-wider">

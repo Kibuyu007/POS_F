@@ -6,12 +6,15 @@ import {
 } from "../../Redux/cartSlice";
 import { useState } from "react";
 import axios from "axios";
+import toast from "react-hot-toast";
 
 const Cart = ({ triggerRefreshMenu }) => {
   const dispatch = useDispatch();
 
   const [errorMsg, setErrorMsg] = useState("");
   const [lastTransactionDetails, setLastTransactionDetails] = useState(null);
+  const [isProcessing, setIsProcessing] = useState(false);
+  const [showLoadingModal, setShowLoadingModal] = useState(false);
 
   const [customerDetails, setCustomerDetails] = useState({
     name: "Mteja",
@@ -40,6 +43,10 @@ const Cart = ({ triggerRefreshMenu }) => {
   const finalTotal = total + tax;
 
   const handleTransaction = async (status) => {
+    if (isProcessing) return;
+    setIsProcessing(true);
+    setShowLoadingModal(true);
+
     try {
       const payload = {
         items: cartData.map((item) => ({
@@ -54,19 +61,28 @@ const Cart = ({ triggerRefreshMenu }) => {
 
       const response = await axios.post(
         "http://localhost:4004/api/transactions/sales",
-        payload
+        payload,{ withCredentials: true }
       );
 
       if (response.status === 201) {
-        alert(
+        toast.success(
           `Transaction ${
             status === "Paid" ? "completed" : "saved as bill"
-          } successfully!`
+          } successfully!`,
+          {
+            position: "bottom-right",
+            style: {
+              borderRadius: "12px",
+              background: "#27ae60",
+              color: "#fff",
+              fontSize: "18px",
+            },
+          }
         );
+
         dispatch(clearCart());
         triggerRefreshMenu();
 
-        // Save for receipt generation
         setLastTransactionDetails({
           items: payload.items,
           totalAmount: payload.totalAmount,
@@ -74,20 +90,16 @@ const Cart = ({ triggerRefreshMenu }) => {
         });
 
         dispatch(setReceiptPrinted(false));
-        setShowPrintButton(true); // Show button
+        setShowPrintButton(true);
+        setShowLoadingModal(false);
       } else {
         alert("Transaction failed");
       }
     } catch (error) {
-      if (
-        error.response &&
-        error.response.data &&
-        error.response.data.message
-      ) {
-        setErrorMsg(error.response.data.message);
-      } else {
-        setErrorMsg("Something went wrong.");
-      }
+      setShowLoadingModal(false);
+      setErrorMsg(error.response?.data?.message || "Something went wrong.");
+    } finally {
+      setIsProcessing(false);
     }
   };
 
@@ -110,7 +122,15 @@ const Cart = ({ triggerRefreshMenu }) => {
       window.open(pdfUrl, "_blank");
       dispatch(setReceiptPrinted(true));
     } catch (err) {
-      alert("Failed to generate receipt");
+      toast.error("Failed to generate receipt", {
+        position: "bottom-right",
+        style: {
+          borderRadius: "12px",
+          background: "#e74c3c",
+          color: "#fff",
+          fontSize: "18px",
+        },
+      });
       console.error("Receipt error:", err);
     } finally {
       window.location.reload();
@@ -183,26 +203,37 @@ const Cart = ({ triggerRefreshMenu }) => {
           </div>
         </div>
 
+        {showLoadingModal && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
+            <div className="bg-white px-6 py-8 rounded-lg shadow-xl text-center w-80">
+              <h2 className="text-lg font-semibold mb-4 text-gray-700">
+                Processing Transaction...
+              </h2>
+              <div className="w-full bg-gray-200 rounded-full h-4 overflow-hidden">
+                <div className="bg-green-500 h-4 animate-pulse w-full" />
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* Buttons */}
-        <div className="flex gap-4">
-          <button
-            onClick={() => handleTransaction("Paid")}
-            className="w-full py-3 rounded-lg bg-green-500 text-white font-semibold hover:bg-green-600 transition"
-          >
-            Cash
-          </button>
-          <button
-            onClick={() => handleTransaction("Bill")}
-            className="w-full py-3 rounded-lg bg-gray-300 text-black font-semibold hover:bg-gray-400 transition"
-          >
-            Bill
-          </button>
-        </div>
-
-        <hr className="border-gray-400 mt-2" />
-
-        {/* Receipt print */}
-        {showPrintButton && (
+        {!showPrintButton ? (
+          <div className="flex gap-4">
+            <button
+              onClick={() => handleTransaction("Paid")}
+              className="w-full py-3 rounded-lg bg-green-500 text-white font-semibold hover:bg-green-600 transition"
+            >
+              Cash
+            </button>
+            <button
+              onClick={() => handleTransaction("Bill")}
+              className="w-full py-3 rounded-lg bg-gray-300 text-black font-semibold hover:bg-gray-400 transition"
+            >
+              Bill
+            </button>
+          </div>
+        ) : (
+          //Print Receipt
           <div className="mt-4">
             <button
               onClick={handlePrintReceipt}
@@ -221,6 +252,9 @@ const Cart = ({ triggerRefreshMenu }) => {
             )}
           </div>
         )}
+
+        <hr className="border-gray-400 mt-2" />
+        <div className="mb-2">{""}</div>
       </div>
     </>
   );

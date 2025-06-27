@@ -207,7 +207,9 @@ const CompletedPo = () => {
         </div>
       </div>
       <Loading load={load} />
-      <table className="min-w-full text-sm text-left text-gray-700 mt-6">
+
+      <div className="overflow-x-auto rounded-lg mt-4">
+          <table className="min-w-full text-sm text-gray-700 rounded-2xl">
         <thead className="bg-gray-100 text-xs uppercase">
           <tr>
             <th className="px-5 py-3 border-b-2 border-gray-200 bg-gray-200 text-center text-xs font-bold text-gray-900 uppercase tracking-wider">
@@ -332,6 +334,8 @@ const CompletedPo = () => {
           ))}
         </tbody>
       </table>
+      </div>
+    
 
       {showPreviewModal && selectedSession && (
         <PreviewPo

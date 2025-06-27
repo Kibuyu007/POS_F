@@ -124,7 +124,7 @@ const Suppliers = () => {
 
         <button
           onClick={() => setShowModalAdd(true)}
-          className="mr-10 mt-4 sm:mt-0 px-6 py-3 bg-green-300 hover:bg-gray-200 rounded"
+          className="mr-10 mt-4 sm:mt-0 px-6 py-3 bg-green-300 hover:bg-gray-200 rounded-full"
         >
           <p className="text-sm font-medium text-black">+ Add Supplier</p>
         </button>
@@ -139,7 +139,7 @@ const Suppliers = () => {
 
         <Loading load={load} />
 
-        <div className="mt-7 overflow-x-auto">
+        <div className="overflow-x-auto rounded-lg mt-4">
           <table className="w-full whitespace-nowrap">
             <thead className="bg-gray-200 text-black">
               <tr>

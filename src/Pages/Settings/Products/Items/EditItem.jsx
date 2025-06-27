@@ -70,7 +70,7 @@ const EditItem = ({ showModal, setShowModal, item, onItemUpdated }) => {
     try {
       const response = await axios.put(
         `http://localhost:4004/api/items/editItem/${item._id}`,
-        editData
+        editData,{ withCredentials: true }
       );
       console.log(response);
       setShowModal(false);

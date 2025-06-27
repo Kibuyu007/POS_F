@@ -62,7 +62,7 @@ const AddItem = ({ showModal, setShowModal, onUserAdded }) => {
     try {
       const response = await axios.post(
         "http://localhost:4004/api/items/addItem",
-        regi
+        regi,{ withCredentials: true }
       );
       console.log(response);
       dispatch(additem(response?.data));

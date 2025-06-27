@@ -23,7 +23,7 @@ const AddCategory = ({ showModal, setShowModal, onCategoryAdded }) => {
     try {
       const response = await axios.post(
         "http://localhost:4004/api/itemsCategories/addItemCategories",
-        regi
+        regi,{ withCredentials: true }
       );
       console.log(response);
       dispatch(addCategory(response?.data));
