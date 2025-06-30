@@ -14,9 +14,11 @@ import cover from "../../assets/cover1.jpg";
 import IncompleteNonPo from "./GRN/Madeni/MadeniNonPo";
 import MadeniPo from "./GRN/Madeni/MadeniPo";
 import MadeniNonPo from "./GRN/Madeni/MadeniNonPo";
+import { useSelector } from "react-redux";
 
 const Settings = () => {
   const [selectedSetting, setSelectedSetting] = useState(null);
+  const user = useSelector((state) => state.user.user);
 
   return (
     <section className="h-[90vh] flex flex-col md:flex-row gap-3 pt-24 px-4 overflow-hidden">
@@ -37,7 +39,7 @@ const Settings = () => {
           settings={[
             {
               group: "PO GRN",
-              items: ["Process PO GRN", "Icomplete PO GRN","Unpaid PO"],
+              items: ["Process PO GRN", "Icomplete PO GRN", "Unpaid PO"],
             },
             {
               group: "Non-PO GRN",
@@ -59,12 +61,14 @@ const Settings = () => {
           handleSelect={setSelectedSetting}
         />
 
-        <SettingsList
-          title="User Management"
-          settings={["All Users", "User Logs"]}
-          selectedSetting={selectedSetting}
-          handleSelect={setSelectedSetting}
-        />
+        {user?.roles?.canAccessUserManagement && (
+          <SettingsList
+            title="User Management"
+            settings={["All Users", "User Logs"]}
+            selectedSetting={selectedSetting}
+            handleSelect={setSelectedSetting}
+          />
+        )}
       </div>
 
       {/* Right Section - Display Content */}
@@ -96,7 +100,7 @@ const Settings = () => {
           <MadeniPo />
         ) : selectedSetting === "Unpaid Non-PO" ? (
           <MadeniNonPo />
-        ): selectedSetting ? (
+        ) : selectedSetting ? (
           <p className="text-lg">{selectedSetting}</p>
         ) : (
           <div className="flex flex-col items-center justify-center h-full">

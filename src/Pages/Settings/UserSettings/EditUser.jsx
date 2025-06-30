@@ -1,12 +1,7 @@
 import axios from "axios";
 import { useEffect, useState } from "react";
 
-
-const EditUser = ({ showModal, setShowModal, onUserAdded,user }) => {
-
-  
-
-
+const EditUser = ({ showModal, setShowModal, onUserAdded, user }) => {
   const [showError, setShowError] = useState("");
   const [file, setFile] = useState(null);
   const [photoPreview, setPhotoPreview] = useState(null);
@@ -31,22 +26,36 @@ const EditUser = ({ showModal, setShowModal, onUserAdded,user }) => {
     password: "",
   });
 
-  useEffect(() => {
-    if (user) {
-      setEditUser({
-        ...user,
-        roles: user.roles || {
-          canAddItems: false,
-          canEditItems: false,
-          canSeeReports: false,
-          canAccessSettings: false,
-        },
-      });
-    }
-  }, [user]);
+useEffect(() => {
+  if (user) {
+    setEditUser({
+      firstName: user.firstName || "",
+      secondName: user.secondName || "",
+      lastName: user.lastName || "",
+      userName: user.userName || "",
+      dateOfBirth: user.dateOfBirth ? user.dateOfBirth.split("T")[0] : "",
+      gender: user.gender || "",
+      email: user.email || "",
+      contacts: user.contacts || "",
+      address: user.address || "",
+      title: user.title || "",
+      password: "", // Don't pre-fill for security
+      roles: {
+        canAddItems: user.roles?.canAddItems || false,
+        canEditItems: user.roles?.canEditItems || false,
+        canSeeReports: user.roles?.canSeeReports || false,
+        canAccessSettings: user.roles?.canAccessSettings || false,
+        canMakeTransaction: user.roles?.canMakeTransaction || false,
+        canAccessUserManagement: user.roles?.canAccessUserManagement || false,
+      },
+    });
+    setPhotoPreview(user.photo ? `/uploads/${user.photo}` : null); // if you display existing image
+  }
+}, [user]);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
+    console.log("Changed", name, value);
     setEditUser((prevUser) => ({ ...prevUser, [name]: value }));
   };
 
@@ -66,65 +75,68 @@ const EditUser = ({ showModal, setShowModal, onUserAdded,user }) => {
     }
   };
 
-  const handleEditUser = async (e) => {
+   const handleEditUser = async (e) => {
     e.preventDefault();
 
-    const formData = new FormData();
-    Object.entries(editUser).forEach(([key, value]) => {
-      if (typeof value === "object" && key === "roles") {
-        formData.append(key, JSON.stringify(value));
-      } else {
-        formData.append(key, value);
-      }
-    });
-
-    if (file) {
-      formData.append("photo", file);
-    }
-
     try {
-      const response = await axios.put(
-        `http://localhost:4004/api/suppliers/updateSupplier/${user._id}`,
-        formData,
-        { headers: { "Content-Type": "multipart/form-data" } }
-      );
-      console.log(response);
-      setShowModal(false);
-      onUserAdded();
-    } 
-    
-    
-    catch (error) {
-      // Extract the correct error message from backend
-      if (error.response && error.response.data) {
-        setShowError(
-          error.response.data.error ||
-            "Login failed. Please check your credentials."
-        );
-      } else {
-        setShowError("An error occurred. Please Contact System Adminstrator.");
+      // Build FormData object
+      const formData = new FormData();
+      formData.append("firstName", editUser.firstName);
+      formData.append("secondName", editUser.secondName);
+      formData.append("lastName", editUser.lastName);
+      formData.append("userName", editUser.userName);
+      formData.append("dateOfBirth", editUser.dateOfBirth);
+      formData.append("gender", editUser.gender);
+      formData.append("email", editUser.email);
+      formData.append("contacts", editUser.contacts);
+      formData.append("address", editUser.address);
+      formData.append("title", editUser.title);
+      formData.append("password", editUser.password || "");
+      formData.append("roles", JSON.stringify(editUser.roles));
+      if (file) {
+        formData.append("photo", file);
       }
 
-      console.error("Login failed", error);
+      // Send PUT request to backend
+      const response = await axios.put(
+        `http://localhost:4004/api/users/update/${user._id}`,
+        formData,
+        {
+          headers: { "Content-Type": "multipart/form-data" },
+          withCredentials: true,
+        }
+      );
+
+      console.log("Update success:", response.data);
+      console.log("Submitting data:", editUser);
+      setShowModal(false);
+      onUserAdded(); // Refresh user list or UI
+
+    } catch (error) {
+      if (error.response && error.response.data) {
+        setShowError(error.response.data.error || "Update failed.");
+      } else {
+        setShowError("An error occurred. Please contact support.");
+      }
+      console.error("Update error:", error);
     }
   };
-
 
   return (
     showModal && (
       <div className="flex justify-center items-center fixed inset-0 z-50 bg-indigo-600 bg-opacity-10">
         <div className="w-full md:w-3/4 lg:w-2/3 xl:w-1/2 max-h-[90vh] overflow-y-auto scrollbar-hide bg-white rounded-lg shadow-lg">
-        <div className="flex items-start justify-between p-5 border-b border-solid border-gray-300 rounded-t ">
-                  <h3 className="text-3xl font=semibold">Add Item</h3>
-                  <button
-                    className="bg-transparent border-0 text-black float-right"
-                    onClick={() => setShowModal(false)}
-                  >
-                    <span className="text-red-700 opacity-7 h-6 w-6 text-xl blockpy-0 rounded-lg bg-grey py-3 px-7">
-                      x
-                    </span>
-                  </button>
-                </div>
+          <div className="flex items-start justify-between p-5 border-b border-solid border-gray-300 rounded-t ">
+            <h3 className="text-3xl font=semibold">Add Item</h3>
+            <button
+              className="bg-transparent border-0 text-black float-right"
+              onClick={() => setShowModal(false)}
+            >
+              <span className="text-red-700 opacity-7 h-6 w-6 text-xl blockpy-0 rounded-lg bg-grey py-3 px-7">
+                x
+              </span>
+            </button>
+          </div>
 
           <div className="p-6">
             <form onSubmit={handleEditUser} className="grid grid-cols-2 gap-4">
@@ -162,7 +174,6 @@ const EditUser = ({ showModal, setShowModal, onUserAdded,user }) => {
                 </div>
               ))}
 
-
               <div>
                 <label className="block text-sm font-medium text-gray-900">
                   Gender
@@ -192,7 +203,6 @@ const EditUser = ({ showModal, setShowModal, onUserAdded,user }) => {
                 )}
               </div>
 
-
               <div className="col-span-2 mt-4 max-h-60 overflow-y-auto">
                 <p className="font-semibold mb-2">Roles and Permissions</p>
                 {[
@@ -200,6 +210,8 @@ const EditUser = ({ showModal, setShowModal, onUserAdded,user }) => {
                   "canEditItems",
                   "canSeeReports",
                   "canAccessSettings",
+                  "canMakeTransaction",
+                  "canAccessUserManagement",
                 ].map((role) => (
                   <label
                     key={role}

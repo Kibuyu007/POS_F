@@ -9,6 +9,7 @@ import axios from "axios";
 import toast from "react-hot-toast";
 
 const Cart = ({ triggerRefreshMenu }) => {
+ const user = useSelector((state) => state.user.user);
   const dispatch = useDispatch();
 
   const [errorMsg, setErrorMsg] = useState("");
@@ -61,7 +62,8 @@ const Cart = ({ triggerRefreshMenu }) => {
 
       const response = await axios.post(
         "http://localhost:4004/api/transactions/sales",
-        payload,{ withCredentials: true }
+        payload,
+        { withCredentials: true }
       );
 
       if (response.status === 201) {
@@ -219,18 +221,26 @@ const Cart = ({ triggerRefreshMenu }) => {
         {/* Buttons */}
         {!showPrintButton ? (
           <div className="flex gap-4">
-            <button
-              onClick={() => handleTransaction("Paid")}
-              className="w-full py-3 rounded-lg bg-green-500 text-white font-semibold hover:bg-green-600 transition"
-            >
-              Cash
-            </button>
-            <button
-              onClick={() => handleTransaction("Bill")}
-              className="w-full py-3 rounded-lg bg-gray-300 text-black font-semibold hover:bg-gray-400 transition"
-            >
-              Bill
-            </button>
+            {user?.roles?.canMakeTransaction ? (
+              <>
+                <button
+                  onClick={() => handleTransaction("Paid")}
+                  className="w-full py-3 rounded-lg bg-green-500 text-white font-semibold hover:bg-green-600 transition"
+                >
+                  Cash
+                </button>
+                <button
+                  onClick={() => handleTransaction("Bill")}
+                  className="w-full py-3 rounded-lg bg-gray-300 text-black font-semibold hover:bg-gray-400 transition"
+                >
+                  Bill
+                </button>
+              </>
+            ) : (
+              <p className="text-center text-red-500 font-semibold mt-2 bg-red-200 px-2 py-2 rounded-md pr-14">
+                You do not have permission to perform transactions.
+              </p>
+            )}
           </div>
         ) : (
           //Print Receipt

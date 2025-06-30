@@ -19,16 +19,15 @@ const Header = () => {
   // Handle Logout
   const handleLogout = async () => {
     try {
-      await axios.get(
-        "http://localhost:4004/api/auth/logout",
-        { withCredentials: true }
-      );
+      await axios.get("http://localhost:4004/api/auth/logout", {
+        withCredentials: true,
+      });
 
       // Clear Redux state & localStorage
       setDropdownOpen(false);
       dispatch(logoutSuccess());
       localStorage.removeItem("token");
-      localStorage.removeItem("user"); 
+      localStorage.removeItem("user");
 
       // Redirect to login page
       navigate("/auth");
@@ -76,34 +75,42 @@ const Header = () => {
               className=" gap-2 sm:gap-3 cursor-pointer hs-dropdown-toggle py-2 ps-1 pe-3 inline-flex items-center gap-x-2 text-sm font-medium rounded-full border border-gray-200 bg-white text-gray-800 shadow-2xs hover:bg-gray-50 focus:outline-hidden focus:bg-gray-50 disabled:opacity-50 disabled:pointer-events-none dark:bg-neutral-900 dark:border-neutral-700 dark:text-white dark:hover:bg-neutral-800 dark:focus:bg-neutral-800 shadow-[0px_0px_0px_1px_rgba(0,0,0,0.06),0px_1px_1px_-0.5px_rgba(0,0,0,0.06),0px_3px_3px_-1.5px_rgba(0,0,0,0.06),_0px_6px_6px_-3px_rgba(0,0,0,0.06),0px_12px_12px_-6px_rgba(0,0,0,0.06),0px_24px_24px_-12px_rgba(0,0,0,0.06)]"
               onClick={() => setDropdownOpen(!dropdownOpen)}
             >
-              <svg
-                className="w-8 h-auto rounded-full"
-                viewBox="0 0 24 24"
-                fill="none"
-                xmlns="http://www.w3.org/2000/svg"
-              >
-                <path
-                  d="M12.12 12.78C12.05 12.77 11.96 12.77 11.88 12.78C10.12 12.72 8.71997 11.28 8.71997 9.50998C8.71997 7.69998 10.18 6.22998 12 6.22998C13.81 6.22998 15.28 7.69998 15.28 9.50998C15.27 11.28 13.88 12.72 12.12 12.78Z"
-                  stroke="#292D32"
-                  strokeWidth="1.5"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
+              {user?.photo ? (
+                <img
+                  src={`http://localhost:4004/pfps/${user.photo}`}
+                  className="h-4 w-4 sm:h-10 sm:w-10 rounded-full object-cover shadow-md"
+                  alt="User"
                 />
-                <path
-                  d="M18.74 19.3801C16.96 21.0101 14.6 22.0001 12 22.0001C9.40001 22.0001 7.04001 21.0101 5.26001 19.3801C5.36001 18.4401 5.96001 17.5201 7.03001 16.8001C9.77001 14.9801 14.25 14.9801 16.97 16.8001C18.04 17.5201 18.64 18.4401 18.74 19.3801Z"
-                  stroke="#292D32"
-                  strokeWidth="1.5"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                />
-                <path
-                  d="M12 22C17.5228 22 22 17.5228 22 12C22 6.47715 17.5228 2 12 2C6.47715 2 2 6.47715 2 12C2 17.5228 6.47715 22 12 22Z"
-                  stroke="#292D32"
-                  strokeWidth="1.5"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                />
-              </svg>
+              ) : (
+                <svg
+                  className="w-10 h-10 sm:w-12 sm:h-12 rounded-full"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  xmlns="http://www.w3.org/2000/svg"
+                >
+                  <path
+                    d="M12.12 12.78C12.05 12.77 11.96 12.77 11.88 12.78C10.12 12.72 8.71997 11.28 8.71997 9.50998C8.71997 7.69998 10.18 6.22998 12 6.22998C13.81 6.22998 15.28 7.69998 15.28 9.50998C15.27 11.28 13.88 12.72 12.12 12.78Z"
+                    stroke="#292D32"
+                    strokeWidth="1.5"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  />
+                  <path
+                    d="M18.74 19.3801C16.96 21.0101 14.6 22.0001 12 22.0001C9.40001 22.0001 7.04001 21.0101 5.26001 19.3801C5.36001 18.4401 5.96001 17.5201 7.03001 16.8001C9.77001 14.9801 14.25 14.9801 16.97 16.8001C18.04 17.5201 18.64 18.4401 18.74 19.3801Z"
+                    stroke="#292D32"
+                    strokeWidth="1.5"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  />
+                  <path
+                    d="M12 22C17.5228 22 22 17.5228 22 12C22 6.47715 17.5228 2 12 2C6.47715 2 2 6.47715 2 12C2 17.5228 6.47715 22 12 22Z"
+                    stroke="#292D32"
+                    strokeWidth="1.5"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  />
+                </svg>
+              )}
 
               <span className="text-green-700 font-xl font-bold truncate max-w-30 dark:text-neutral-400">
                 {uName}
@@ -152,7 +159,9 @@ const Header = () => {
                 </div>
 
                 <div className="py-2 sm:py-2 sm:flex sm:flex-cols-2 gap-6 sm:px-6 bg-gray-200 rounded-md shadow-sm">
-                  <h3 className="text-xl font-bold text-gray-900">Contacts :</h3>
+                  <h3 className="text-xl font-bold text-gray-900">
+                    Contacts :
+                  </h3>
                   <span className="text-xl font-bold text-gray-900 sm:mt-0 sm:col-span-2">
                     {user?.contacts}
                   </span>
