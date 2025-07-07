@@ -13,7 +13,27 @@ const Home = () => {
   const [totalPaid, setTotalPaid] = useState(0);
   const [totalBills, setTotalBills] = useState(0);
   const [totalgrn, setTotalgrn] = useState(0);
-  const [billed,setBilled] = useState([]);
+  const [billed, setBilled] = useState([]);
+  const [filter, setFilter] = useState("day");
+  const [composedData, setComposedData] = useState([]);
+
+  const getStartDate = (filter) => {
+    const now = dayjs();
+    switch (filter) {
+      case "week":
+        return now.subtract(7, "day");
+      case "month":
+        return now.subtract(1, "month");
+      case "3-Months":
+        return now.subtract(3, "month");
+      case "6-Months":
+        return now.subtract(6, "month");
+      case "A Year":
+        return now.subtract(12, "month");
+      default:
+        return now.startOf("day");
+    }
+  };
 
   useEffect(() => {
     const fetchSales = async () => {
@@ -26,48 +46,40 @@ const Home = () => {
         );
 
         const allSales = res.data.data;
+        const startDate = getStartDate(filter);
 
-        // Get today's date in YYYY-MM-DD format
-        const today = dayjs().format("YYYY-MM-DD");
-
-        // Filter only today's sales
-        const todaySales = allSales.filter(
-          (tx) => dayjs(tx.createdAt).format("YYYY-MM-DD") === today
+        const filteredSales = allSales.filter((tx) =>
+          dayjs(tx.createdAt).isAfter(startDate)
         );
 
-        // Total sales
-        const total = todaySales.reduce((sum, tx) => sum + tx.totalAmount, 0);
-        setTotalSales(total);
-
-        // Total paid
-        const paid = todaySales
-          .filter((tx) => tx.status === "Paid")
-          .reduce((sum, tx) => sum + tx.totalAmount, 0);
-        setTotalPaid(paid);
-
-        // Total bills
-        const bills = todaySales
-          .filter((tx) => tx.status === "Bill")
-          .reduce((sum, tx) => sum + tx.totalAmount, 0);
-        setTotalBills(bills);
-
-        const billTransactions = allSales.filter(
-          (tx) => tx.status === "Bill"
+        setTotalSales(
+          filteredSales.reduce((sum, tx) => sum + tx.totalAmount, 0)
         );
-        setBilled(billTransactions)
+
+        setTotalPaid(
+          filteredSales
+            .filter((tx) => tx.status === "Paid")
+            .reduce((sum, tx) => sum + tx.totalAmount, 0)
+        );
+
+        setTotalBills(
+          filteredSales
+            .filter((tx) => tx.status === "Bill")
+            .reduce((sum, tx) => sum + tx.totalAmount, 0)
+        );
+
+        setBilled(filteredSales.filter((tx) => tx.status === "Bill"));
       } catch (error) {
         console.error("Failed to fetch transactions", error);
       }
     };
 
     fetchSales();
-  }, []);
+  }, [filter]);
 
   useEffect(() => {
-    const fetchgrn = async () => {
+    const fetchGrn = async () => {
       try {
-        const today = dayjs().format("YYYY-MM-DD");
-
         const [resPo, resNonPo] = await Promise.all([
           axios.get("http://localhost:4004/api/grn/allGrnPo", {
             withCredentials: true,
@@ -77,61 +89,114 @@ const Home = () => {
           }),
         ]);
 
-        const allPo = resPo.data?.data || [];
-        const allNonPo = resNonPo.data?.data || [];
+        const poGrns = resPo.data.data || [];
+        const nonPoGrns = resNonPo.data.data || [];
 
-        // 🔐 Safely calculate today's total for PO
-        const todayPoCost = allPo
-          .filter((grn) => dayjs(grn.createdAt).format("YYYY-MM-DD") === today)
-          .reduce((total, grn) => {
-            const items = Array.isArray(grn.items) ? grn.items : [];
-            const grnTotal = items.reduce((sum, item) => {
-              const cost = parseFloat(item?.totalCost) || 0;
-              return sum + cost;
-            }, 0);
-            return total + grnTotal;
-          }, 0);
+        const startDate = getStartDate(filter);
 
-        // 🔐 Safely calculate today's total for non-PO
-        const todayNonPoCost = allNonPo
-          .filter((grn) => dayjs(grn.createdAt).format("YYYY-MM-DD") === today)
-          .reduce((total, grn) => {
-            const items = Array.isArray(grn.allItems) ? grn.allItems : [];
-            const grnTotal = items.reduce((sum, item) => {
-              const cost = parseFloat(item?.totalCost) || 0;
-              return sum + cost;
-            }, 0);
-            return total + grnTotal;
-          }, 0);
+        const poTodayCost = poGrns
+          .filter((grn) => dayjs(grn.receivingDate).isAfter(startDate))
+          .flatMap((grn) => grn.items)
+          .reduce((sum, item) => sum + (item.totalCost || 0), 0);
 
-        setTotalgrn(todayPoCost + todayNonPoCost);
-        console.log("Total GRN cost for today:", todayPoCost + todayNonPoCost);
+        const nonPoTodayCost = nonPoGrns
+          .filter((grn) => dayjs(grn.receivingDate).isAfter(startDate))
+          .flatMap((grn) => grn.items)
+          .reduce((sum, item) => sum + (item.totalCost || 0), 0);
+
+        setTotalgrn(poTodayCost + nonPoTodayCost);
       } catch (error) {
         console.error("Failed to fetch GRNs:", error);
       }
     };
 
-    fetchgrn();
-  }, []);
+    fetchGrn();
+  }, [filter]);
+
+  useEffect(() => {
+    const fetchComposedData = async () => {
+      try {
+        const res = await axios.get(
+          "http://localhost:4004/api/transactions/all",
+          {
+            withCredentials: true,
+          }
+        );
+
+        const allSales = res.data.data;
+        const startDate = getStartDate(filter);
+
+        // Initialize structure: Sun to Sat
+        const days = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+        const dailyTotals = days.map((day) => ({
+          name: day,
+          sales: 0,
+          paid: 0,
+          bills: 0,
+        }));
+
+        allSales.forEach((tx) => {
+          const txDate = dayjs(tx.createdAt);
+          if (txDate.isBefore(startDate)) return;
+
+          const dayName = txDate.format("ddd"); // e.g., "Mon"
+          const match = dailyTotals.find((d) => d.name === dayName);
+          if (match) {
+            match.sales += tx.totalAmount;
+            if (tx.status === "Paid") {
+              match.paid += tx.totalAmount;
+            } else if (tx.status === "Bill") {
+              match.bills += tx.totalAmount;
+            }
+          }
+        });
+
+        setComposedData(dailyTotals);
+      } catch (error) {
+        console.error("Failed to fetch composed chart data", error);
+      }
+    };
+
+    fetchComposedData();
+  }, [filter]);
 
   const paidPercentage =
     totalSales > 0 ? ((totalPaid / totalSales) * 100).toFixed(1) : 0;
   const billsPercentage =
     totalSales > 0 ? ((totalBills / totalSales) * 100).toFixed(1) : 0;
-
   const manunuziPercentage =
-    totalSales > 0 ? ((totalSales / totalgrn) * 100).toFixed(1) : 0;
+    totalgrn > 0 ? ((totalSales / totalgrn) * 100).toFixed(1) : 0;
 
   return (
-    <section className="h-[90vh] flex flex-col md:flex-row gap-3 pt-24 px-2 sm:px-4 md:px-6 lg:px-8 xl:px-12 overflow-hidden ">
+    <section className="h-[90vh] flex flex-col md:flex-row gap-3 pt-24 px-2 sm:px-4 md:px-6 lg:px-8 xl:px-12 overflow-hidden">
       {/* Right Section */}
-      <div className="flex-[3] bg-secondary rounded-xl p-4 sm:p-6 shadow-md overflow-auto min-h-[50vh] md:min-h-[auto]">
+      <div className="flex-[3] bg-secondary rounded-xl p-4 sm:p-6 shadow-md overflow-auto min-h-[50vh]">
         <ShiftDetails />
 
+        {/* Filter Buttons */}
+        <div className="flex gap-2 mt-4">
+          {["day", "week", "month", "3-Months", "6-Months", "A Year"].map(
+            (option) => (
+              <button
+                key={option}
+                onClick={() => setFilter(option)}
+                className={`px-3 py-2 rounded-full text-sm font-semibold shadow-sm transition border
+                ${
+                  filter === option
+                    ? "bg-green-500 text-white"
+                    : "bg-white text-gray-700"
+                }`}
+              >
+                {option.charAt(0).toUpperCase() + option.slice(1)}
+              </button>
+            )
+          )}
+        </div>
+
         {/* Cards */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-4 gap-3 mt-4 ">
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 mt-4">
           <CardOne
-            title="Sales Today"
+            title="Sales"
             icon={<BsCashCoin />}
             number={`${totalSales.toLocaleString()} : TSh`}
             footerNum={100}
@@ -156,18 +221,19 @@ const Home = () => {
           />
         </div>
 
-        {/* Charts Section */}
+        {/* Chart */}
         <Chart
-          totalSales={totalSales}
-          totalPaid={totalPaid}
-          totalBills={totalBills}
-          totalManunuzi={totalgrn}
+          salesPercent={totalSales}
+          paidPercent={totalPaid}
+          billPercent={totalBills}
+          manunuziPercent={manunuziPercentage}
+          composedData={composedData}
         />
       </div>
 
       {/* Left Section */}
-      <div className="flex-[1] bg-secondary rounded-xl p-4 sm:p-6 shadow-md text-black w-full md:w-auto overflow-y-auto max-h-[80vh] md:max-h-[120vh] scrollbar-hide">
-        <MostSold list={billed}/>
+      <div className="flex-[1] bg-secondary rounded-xl p-4 sm:p-6 shadow-md text-black overflow-y-auto max-h-[80vh] scrollbar-hide">
+        <MostSold list={billed} />
       </div>
     </section>
   );

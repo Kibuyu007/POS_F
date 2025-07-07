@@ -1,5 +1,15 @@
 import { Link } from "react-router-dom";
 const MostSold = ({ list }) => {
+  const toDate = (timestamp) => {
+    return new Date(timestamp).toLocaleDateString("en-GB", {
+      day: "2-digit",
+      month: "short",
+      year: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
+    });
+  };
+
   return (
     <div className="mt-6 pr-4">
       <div className="w-full rounded-2xl shadow-lg bg-white">
@@ -47,9 +57,15 @@ const MostSold = ({ list }) => {
                   </div>
 
                   {/* Item Name */}
-                  <h2 className="text-lg font-bold text-gray-900 mb-1 text-center">
-                    {item.item?.name || "Unknown Item"}
-                  </h2>
+                  <div className="mb-2 flex justify-between">
+                    <h2 className="text-lg font-bold text-gray-900 mb-1">
+                      {item.item?.name || "Unknown Item"}
+                    </h2>
+
+                    <p className="text-gray-500 font-bold text-end">
+                      {toDate(tx.createdAt)}
+                    </p>
+                  </div>
 
                   {/* Item Details */}
                   <div className="flex text-sm text-gray-700 justify-between">
