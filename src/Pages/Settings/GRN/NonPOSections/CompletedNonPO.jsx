@@ -53,7 +53,7 @@ const CompletedNonPO = () => {
         ?.toLowerCase()
         .includes(filterSupplier.toLowerCase());
 
-      const date = dayjs(grn.receivingDate);
+      const date = dayjs(grn.createdAt);
       const fromMatch = filterFrom
         ? date.isAfter(dayjs(filterFrom).subtract(1, "day"))
         : true;

@@ -51,13 +51,13 @@ const Header = () => {
   };
 
   return (
-    <div className="fixed top-4 left-4 right-4 flex justify-center z-50">
+    <div className="fixed  left-4 right-4 flex justify-center z-50">
       <header className="w-full max-w-[1500px] backdrop-blur-md px-4 sm:px-6 md:px-8 lg:px-10 xl:px-12 py-3 sm:py-4 flex justify-between items-center">
         {/* Logo */}
         <div className="flex items-center gap-2 sm:gap-3">
           <img
             src={logo}
-            className="h-10 w-10 sm:h-12 sm:w-12 rounded-md shadow-md"
+            className="h-80 w-10 sm:h-12 sm:w-12 rounded-md shadow-md"
             alt="Logo"
           />
           <h1 className="text-base sm:text-lg md:text-xl font-bold">Uza</h1>
@@ -83,7 +83,7 @@ const Header = () => {
                 />
               ) : (
                 <svg
-                  className="w-10 h-10 sm:w-12 sm:h-12 rounded-full"
+                  className="w-4 h-4 sm:w-12 sm:h-12 rounded-full"
                   viewBox="0 0 24 24"
                   fill="none"
                   xmlns="http://www.w3.org/2000/svg"

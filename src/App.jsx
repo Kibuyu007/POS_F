@@ -1,5 +1,18 @@
-import { BrowserRouter as Router, Routes, Route, Navigate, useLocation } from "react-router-dom";
-import { Home, Auth, Orders, MenuList, Navigation, Settings } from "./Pages/PageIndex";
+import {
+  BrowserRouter as Router,
+  Routes,
+  Route,
+  Navigate,
+  useLocation,
+} from "react-router-dom";
+import {
+  Home,
+  Auth,
+  Orders,
+  MenuList,
+  Navigation,
+  Settings,
+} from "./Pages/PageIndex";
 import Header from "./Components/Shared/Header";
 import ReportsDashboard from "./Pages/Reports/ReportsDashboard";
 import ProtectedRoute from "./Components/Shared/ProtectedRoute";
@@ -7,13 +20,13 @@ import ProtectedRoute from "./Components/Shared/ProtectedRoute";
 import { Toaster } from "react-hot-toast";
 
 function Layout() {
-  const location = useLocation();  // Get current route
+  const location = useLocation(); // Get current route
 
   return (
     <div className="relative min-h-screen">
       {/* Render Header and Navigation only if not on /auth route */}
       {location.pathname !== "/auth" && <Header />}
-      
+
       <Routes>
         {/* Redirect root to login */}
         <Route path="/" element={<Navigate to="/auth" replace />} />
