@@ -142,6 +142,19 @@ const MenuCard = ({ refreshTrigger }) => {
   };
 
   const handleAddCart = (item) => {
+    if (!item.price || item.price === 0) {
+      toast.error("Bidhaa haina Bei, weka bei ndo uendelee na Mauzo ", {
+        position: "bottom-right",
+        style: {
+          borderRadius: "18px",
+          background: "#ffccbc",
+          color: "#212121",
+          fontSize: "18px",
+        },
+      });
+      return;
+    }
+
     const quantityToAdd = itemCounts[item._id] || 1;
     const cartItem = cartData.find((ci) => ci.id === item._id);
     const alreadyInCart = cartItem ? cartItem.quantity : 0;
