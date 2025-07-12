@@ -54,7 +54,7 @@ const Charts = ({ salesPercent, paidPercent, billPercent, composedData }) => {
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
       {/* Composed Chart */}
-      <div className="bg-white p-4 rounded-xl shadow-md">
+      <div className="bg-gray-100 p-4 rounded-xl shadow-md">
         <h2 className="text-xl font-semibold text-center mb-2 text-gray-700">
           Sales Breakdown (Daily)
         </h2>
@@ -95,7 +95,7 @@ const Charts = ({ salesPercent, paidPercent, billPercent, composedData }) => {
       </div>
 
       {/* Pie Chart */}
-      <div className="bg-white p-4 rounded-xl shadow-md">
+      <div className="bg-gray-100 p-4 rounded-xl shadow-md">
         <h2 className="text-xl font-semibold text-center mb-3 text-gray-700">
           Revenue Breakdown
         </h2>
