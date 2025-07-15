@@ -24,7 +24,8 @@ const Madeni = () => {
     setLoad(true);
     try {
       const res = await axios.get(
-        "http://localhost:4004/api/transactions/bill",{ withCredentials: true }
+        "http://localhost:4004/api/transactions/bill",
+        { withCredentials: true }
       );
       if (res.data.success) {
         setBilledData(res.data.data);
@@ -47,7 +48,7 @@ const Madeni = () => {
       const res = await axios.patch(
         `http://localhost:4004/api/transactions/payBill/${id}`,
         { paymentAmount: amount },
-        { withCredentials: true },
+        { withCredentials: true }
       );
       if (res.data.success) {
         alert("Payment updated!");
@@ -140,7 +141,7 @@ const Madeni = () => {
         <table className="min-w-full">
           <thead className="bg-gray-100">
             <tr>
-               <th className="px-5 py-3 border-b-2 border-gray-200 bg-gray-200 text-center text-xs font-bold text-gray-900 uppercase tracking-wider">
+              <th className="px-5 py-3 border-b-2 border-gray-200 bg-gray-200 text-center text-xs font-bold text-gray-900 uppercase tracking-wider">
                 SN
               </th>
               <th className="px-5 py-3 border-b-2 border-gray-200 bg-gray-200 text-center text-xs font-bold text-gray-900 uppercase tracking-wider">
@@ -152,11 +153,12 @@ const Madeni = () => {
               <th className="px-5 py-3 border-b-2 border-gray-200 bg-gray-200 text-center text-xs font-bold text-gray-900 uppercase tracking-wider">
                 Phone
               </th>
-              <th className="px-5 py-3 border-b-2 border-gray-200 bg-gray-200 text-center text-xs font-bold text-gray-900 uppercase tracking-wider">
-                Total
-              </th>
+
               <th className="px-5 py-3 border-b-2 border-gray-200 bg-gray-200 text-center text-xs font-bold text-gray-900 uppercase tracking-wider">
                 Items
+              </th>
+              <th className="px-5 py-3 border-b-2 border-gray-200 bg-gray-200 text-center text-xs font-bold text-gray-900 uppercase tracking-wider">
+                Total
               </th>
               <th className="px-5 py-3 border-b-2 border-gray-200 bg-gray-200 text-center text-xs font-bold text-gray-900 uppercase tracking-wider">
                 Deduct
@@ -197,13 +199,7 @@ const Madeni = () => {
                       </div>
                     </div>
                   </td>
-                  <td className="py-2 px-3 font-normal text-base border-x shadow-md bg-yellow-100  hover:bg-gray-100  whitespace-nowrap overflow-hidden overflow-ellipsis max-w-[200px]">
-                    <div className="items-center text-center">
-                      <div className="ml-3">
-                        Tsh {sale.totalAmount.toLocaleString()}
-                      </div>
-                    </div>
-                  </td>
+
                   <td className="py-2 px-3 font-normal text-base border-x shadow-md bg-gray-200  hover:bg-gray-100  whitespace-nowrap overflow-hidden overflow-ellipsis max-w-[200px]">
                     <div className="items-center text-center">
                       <div className="flex flex-col gap-1">
@@ -218,26 +214,36 @@ const Madeni = () => {
                       </div>
                     </div>
                   </td>
+                  <td className="py-2 px-3 font-normal text-base border-x shadow-md bg-yellow-100  hover:bg-gray-100  whitespace-nowrap overflow-hidden overflow-ellipsis max-w-[200px]">
+                    <div className="items-center text-center">
+                      <div className="ml-3">
+                        Tsh{" "}
+                        {(
+                          sale.totalAmount - (sale.paidAmount || 0)
+                        ).toLocaleString()}
+                      </div>
+                    </div>
+                  </td>
                   <td className="py-2 px-3 font-normal text-base border-x shadow-md bg-gray-100  hover:bg-gray-100  whitespace-nowrap overflow-hidden overflow-ellipsis max-w-[200px]">
                     <div className="items-center text-center">
                       <div className="ml-3">
-                     <input
-  type="number"
-  value={deductions[sale._id] || ""}
-  onChange={(e) => {
-    const val = parseFloat(e.target.value);
-    if (val <= sale.totalAmount || !val) {
-      setDeductions({
-        ...deductions,
-        [sale._id]: e.target.value,
-      });
-    } else {
-      alert("Amount cannot exceed total.");
-    }
-  }}
-  className="w-28 px-3 py-2 rounded-full border border-gray-400 bg-gray-50 text-sm focus:outline-none focus:ring-2 focus:ring-green-400 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-  placeholder="Tsh"
-/>
+                        <input
+                          type="number"
+                          value={deductions[sale._id] || ""}
+                          onChange={(e) => {
+                            const val = parseFloat(e.target.value);
+                            if (val <= sale.totalAmount || !val) {
+                              setDeductions({
+                                ...deductions,
+                                [sale._id]: e.target.value,
+                              });
+                            } else {
+                              alert("Amount cannot exceed total.");
+                            }
+                          }}
+                          className="w-28 px-3 py-2 rounded-full border border-gray-400 bg-gray-50 text-sm focus:outline-none focus:ring-2 focus:ring-green-400 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                          placeholder="Tsh"
+                        />
                       </div>
                     </div>
                   </td>
