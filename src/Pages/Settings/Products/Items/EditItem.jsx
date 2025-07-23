@@ -19,6 +19,7 @@ const EditItem = ({ showModal, setShowModal, item, onItemUpdated }) => {
     photo: "",
     barcode: "",
     itemQuantity: 0,
+    reOrder: 0,
     manufactureDate: new Date(),
     expireDate: new Date(),
   });
@@ -32,6 +33,7 @@ const EditItem = ({ showModal, setShowModal, item, onItemUpdated }) => {
         category: item.category,
         itemQuantity: item.itemQuantity,
         barcode: item.barcode,
+        reOrder: item.reOrder,
         manufactureDate: new Date(item.manufactureDate),
         expireDate: new Date(item.expireDate),
       });
@@ -80,6 +82,7 @@ const EditItem = ({ showModal, setShowModal, item, onItemUpdated }) => {
         category: "",
         itemQuantity: 0,
         barcode: "",
+        reOrder: 0,
         manufactureDate: new Date(),
         expireDate: new Date(),
       });
@@ -249,6 +252,23 @@ const EditItem = ({ showModal, setShowModal, item, onItemUpdated }) => {
                           dateFormat="Pp"
                         />
                       </span>
+                    </div>
+
+                     <div>
+                      <label
+                        htmlFor="barcode"
+                        className="block mb-2 text-sm font-medium text-gray-900 dark:text-white"
+                      >
+                        Re-Order Quantity
+                      </label>
+                      <input
+                        type="number"
+                        name="reOrder"
+                        value={editData.reOrder}
+                        onChange={handleChange}
+                        className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-600 dark:border-gray-500 dark:placeholder-gray-400 dark:text-white"
+                        placeholder="..."
+                      />
                     </div>
 
                     <div className="col-span-2 mt-4">

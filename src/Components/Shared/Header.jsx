@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useSelector, useDispatch } from "react-redux";
 import { FaBell } from "react-icons/fa";
 import { useNavigate } from "react-router-dom";
@@ -6,15 +6,39 @@ import axios from "axios";
 import logo from "../../assets/logo.jpg";
 import { logoutSuccess } from "../../Redux/userSlice";
 import { AiOutlineLogout } from "react-icons/ai";
+import { itemsError, itemsFetch, itemsPending } from "../../Redux/items";
 
 const Header = () => {
+  const { items = [] } = useSelector((state) => state.items);
   const [dropdownOpen, setDropdownOpen] = useState(false);
+  const [notifyOpen, setNotifyOpen] = useState(false);
   const dispatch = useDispatch();
   const navigate = useNavigate();
 
   // Get user details from Redux store
   const user = useSelector((state) => state.user?.user);
   const uName = user ? `${user.firstName} ${user.lastName}` : "Guest";
+
+  const fetchData = async () => {
+    try {
+      dispatch(itemsPending());
+      let url = "http://localhost:4004/api/items/allItemsRaw";
+
+      const response = await fetch(url);
+      if (!response.ok) throw new Error("Failed to fetch items");
+
+      const data = await response.json();
+      dispatch(itemsFetch(data));
+    } catch (error) {
+      console.error("Error fetching items:", error);
+
+      dispatch(itemsError(error.message));
+    }
+  };
+
+  useEffect(() => {
+    fetchData();
+  }, []);
 
   // Handle Logout
   const handleLogout = async () => {
@@ -50,6 +74,28 @@ const Header = () => {
     return age;
   };
 
+  // Filter for items with reOrderStatus === "Low"
+  const lowStockItems = items.filter((item) => item.reOrderStatus === "Low");
+
+  //Use Ref for Closing Dropdowns
+  const dropdownRef = useRef();
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
+        setDropdownOpen(false);
+      }
+
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
+        setNotifyOpen(false);
+      }
+    };
+
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, []);
+
   return (
     <div className="fixed  left-4 right-4 flex justify-center z-50">
       <header className="w-full max-w-[1500px] backdrop-blur-md px-4 sm:px-6 md:px-8 lg:px-10 xl:px-12 py-3 sm:py-4 flex justify-between items-center">
@@ -63,124 +109,155 @@ const Header = () => {
           <h1 className="text-base sm:text-lg md:text-xl font-bold">Uza</h1>
         </div>
 
-        {/* Notifications */}
         <div className="flex items-center gap-2 sm:gap-4">
-          <div className="bg-secondary rounded-[30px] p-2 sm:p-3 cursor-pointer shadow-md">
-            <FaBell className="text-sm sm:text-base" />
+          <div className="relative" ref={dropdownRef}>
+            {/* Bell Button */}
+            <div
+              onClick={() => setNotifyOpen(!notifyOpen)}
+              className="relative p-3 bg-white dark:bg-neutral-800 rounded-full shadow-md cursor-pointer hover:scale-105 transition-transform"
+            >
+              <FaBell className="text-gray-800 dark:text-white text-xl" />
+              {lowStockItems.length > 0 && (
+                <span className="absolute -top-1 -right-1 bg-red-600 text-white text-[10px] font-bold w-5 h-5 rounded-full flex items-center justify-center animate-bounce shadow">
+                  {lowStockItems.length}
+                </span>
+              )}
+            </div>
+
+            {/* Notification Dropdown */}
+            {notifyOpen && (
+              <div className="absolute right-0 mt-3 w-[400px] max-h-[400px] overflow-y-auto bg-white dark:bg-neutral-900 border border-gray-200 dark:border-neutral-700 shadow-2xl rounded-2xl z-50 animate-fade-in-up">
+                {/* Header */}
+                <div className="px-5 py-4 bg-gradient-to-r from-red-600 to-pink-500 rounded-t-2xl flex justify-between items-center">
+                  <div className="text-white">
+                    <h4 className="text-sm font-bold">
+                      {lowStockItems.length} Item
+                      {lowStockItems.length !== 1 && "s"} Low in Stock
+                    </h4>
+                    <p className="text-xs">Check and Reorder</p>
+                  </div>
+                  <span className="text-xs bg-white text-red-600 font-semibold px-2 py-0.5 rounded-full">
+                    Urgent
+                  </span>
+                </div>
+
+                {/* Body */}
+                <div className="px-5 py-4 space-y-3">
+                  {lowStockItems.length === 0 ? (
+                    <p className="text-sm text-gray-500 dark:text-gray-400">
+                      All items are sufficiently stocked.
+                    </p>
+                  ) : (
+                    lowStockItems.map((item, index) => (
+                      <div
+                        key={item._id}
+                        className="bg-red-50 dark:bg-red-800/20 px-4 py-3 rounded-xl flex items-center justify-between gap-3 hover:bg-red-100 dark:hover:bg-red-700/40 transition"
+                      >
+                        <div className="flex items-center gap-3">
+                          <div className="w-8 h-8 flex items-center justify-center bg-white dark:bg-neutral-800 rounded-full shadow text-red-600 font-bold text-xs">
+                            {index + 1}
+                          </div>
+                          <div className="text-sm">
+                            <p className="font-medium text-gray-800 dark:text-white truncate max-w-[200px]">
+                              {item.name}
+                            </p>
+                            <p className="text-xs text-gray-500 dark:text-gray-400">
+                              Item Code: #{item._id.slice(-4).toUpperCase()}
+                            </p>
+                          </div>
+                        </div>
+                        <span className="text-sm font-bold text-red-600 dark:text-red-300">
+                          {item.itemQuantity.toLocaleString()}
+                        </span>
+                      </div>
+                    ))
+                  )}
+                </div>
+              </div>
+            )}
           </div>
 
           {/* User Dropdown */}
-          <div className="relative">
+          <div className="relative" ref={dropdownRef}>
+            {/* User Button */}
             <div
-              className=" gap-2 sm:gap-3 cursor-pointer hs-dropdown-toggle py-2 ps-1 pe-3 inline-flex items-center gap-x-2 text-sm font-medium rounded-full border border-gray-200 bg-white text-gray-800 shadow-2xs hover:bg-gray-50 focus:outline-hidden focus:bg-gray-50 disabled:opacity-50 disabled:pointer-events-none dark:bg-neutral-900 dark:border-neutral-700 dark:text-white dark:hover:bg-neutral-800 dark:focus:bg-neutral-800 shadow-[0px_0px_0px_1px_rgba(0,0,0,0.06),0px_1px_1px_-0.5px_rgba(0,0,0,0.06),0px_3px_3px_-1.5px_rgba(0,0,0,0.06),_0px_6px_6px_-3px_rgba(0,0,0,0.06),0px_12px_12px_-6px_rgba(0,0,0,0.06),0px_24px_24px_-12px_rgba(0,0,0,0.06)]"
               onClick={() => setDropdownOpen(!dropdownOpen)}
+              className="flex items-center gap-3 px-3 py-2 rounded-full bg-white dark:bg-neutral-900 shadow-md border border-gray-200 dark:border-neutral-700 cursor-pointer hover:bg-gray-50 dark:hover:bg-neutral-800 transition-all"
             >
+              {/* Profile Image or Placeholder */}
               {user?.photo ? (
                 <img
                   src={`http://localhost:4004/pfps/${user.photo}`}
-                  className="h-4 w-4 sm:h-10 sm:w-10 rounded-full object-cover shadow-md"
+                  className="h-10 w-10 rounded-full object-cover ring-2 ring-green-500 shadow-sm"
                   alt="User"
                 />
               ) : (
-                <svg
-                  className="w-4 h-4 sm:w-12 sm:h-12 rounded-full"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  xmlns="http://www.w3.org/2000/svg"
-                >
-                  <path
-                    d="M12.12 12.78C12.05 12.77 11.96 12.77 11.88 12.78C10.12 12.72 8.71997 11.28 8.71997 9.50998C8.71997 7.69998 10.18 6.22998 12 6.22998C13.81 6.22998 15.28 7.69998 15.28 9.50998C15.27 11.28 13.88 12.72 12.12 12.78Z"
-                    stroke="#292D32"
-                    strokeWidth="1.5"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  />
-                  <path
-                    d="M18.74 19.3801C16.96 21.0101 14.6 22.0001 12 22.0001C9.40001 22.0001 7.04001 21.0101 5.26001 19.3801C5.36001 18.4401 5.96001 17.5201 7.03001 16.8001C9.77001 14.9801 14.25 14.9801 16.97 16.8001C18.04 17.5201 18.64 18.4401 18.74 19.3801Z"
-                    stroke="#292D32"
-                    strokeWidth="1.5"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  />
-                  <path
-                    d="M12 22C17.5228 22 22 17.5228 22 12C22 6.47715 17.5228 2 12 2C6.47715 2 2 6.47715 2 12C2 17.5228 6.47715 22 12 22Z"
-                    stroke="#292D32"
-                    strokeWidth="1.5"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  />
-                </svg>
+                <div className="h-10 w-10 flex items-center justify-center bg-gray-300 dark:bg-gray-700 text-white text-sm font-bold rounded-full ring-2 ring-green-500">
+                  {user?.userName?.[0] || "U"}
+                </div>
               )}
 
-              <span className="text-green-700 font-xl font-bold truncate max-w-30 dark:text-neutral-400">
+              {/* Username */}
+              <span className="font-semibold text-gray-800 dark:text-white truncate max-w-[120px]">
                 {uName}
               </span>
-              <AiOutlineLogout className="text-xl" />
+
+              {/* Logout Icon */}
+              <AiOutlineLogout className="text-xl text-green-600" />
             </div>
 
-            {/* Dropdown Menu */}
+            {/* Dropdown Panel */}
             {dropdownOpen && (
-              <div className="absolute right-0 mt-2 w-80 bg-white shadow-[4.0px_8.0px_8.0px_rgba(0,0,0,0.38)] rounded-lg p-4 ">
-                <div className="px-4 py-5 sm:px-6">
-                  <h3 className="text-xl leading-6 font-bold text-gray-900">
-                    User Profile
-                  </h3>
-                </div>
-                <hr className="my-2" />
+              <div className="absolute right-0 mt-4 w-[360px] bg-white dark:bg-neutral-900 border border-gray-200 dark:border-neutral-700 shadow-2xl rounded-3xl z-50 overflow-hidden animate-fade-in-up">
+                {/* Header */}
+                <div className="fixed top-20 right-10 z-50">
+                  <div className="backdrop-blur-md bg-white/70 dark:bg-gray-800/70 border border-gray-200 dark:border-gray-700 rounded-3xl shadow-2xl max-w-md w-full overflow-hidden">
+                    {/* Header */}
+                    <div className="bg-gradient-to-r from-green-500 to-emerald-600 text-white px-6 py-4 rounded-t-3xl flex items-center justify-between">
+                      <div className="flex items-center gap-3">
+                        <span className="text-3xl">👤</span>
+                        <h3 className="text-xl font-semibold">Profile</h3>
+                      </div>
+                    </div>
 
-                <div className="py-2 sm:py-2 sm:flex sm:flex-cols-2 gap-6 sm:px-6 bg-gray-200 rounded-md shadow-sm">
-                  <h3 className="text-xl font-bold text-gray-900">
-                    User name :
-                  </h3>
-                  <span className="text-xl font-bold text-gray-900 sm:mt-0 sm:col-span-2">
-                    {user?.userName}
-                  </span>
-                </div>
+                    {/* Profile Content in Two Columns */}
+                    <div className="p-5 text-gray-700 dark:text-gray-200 text-sm grid grid-cols-2 gap-4">
+                      {[
+                        { label: "Username", value: user?.userName },
+                        {
+                          label: "Age",
+                          value: `${calculateAge(user?.dateOfBirth)} yrs`,
+                        },
+                        { label: "Title", value: user?.title },
+                        { label: "Address", value: user?.address },
+                        { label: "Contacts", value: user?.contacts },
+                        { label: "Email", value: user?.email },
+                      ].map((item, i) => (
+                        <div
+                          key={i}
+                          className="bg-white/40 dark:bg-gray-900/40 px-3 py-2 rounded-xl shadow-sm border dark:border-gray-700"
+                        >
+                          <span className="block text-gray-500 dark:text-gray-400 text-xs font-medium">
+                            {item.label}
+                          </span>
+                          <span className="text-sm font-semibold text-gray-800 dark:text-white">
+                            {item.value || "-"}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
 
-                <div className="py-3 sm:py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
-                  <h3 className="text-md font-bold text-green-700">Age</h3>
-                  <span className="mt-1 text-md text-gray-900 sm:mt-0 sm:col-span-2">
-                    {calculateAge(user?.dateOfBirth)} years old
-                  </span>
+                    {/* Logout Button */}
+                    <div className="p-5 pt-0 flex justify-center">
+                      <button
+                        onClick={handleLogout}
+                        className="bg-gray-400 hover:bg-green-400 transition duration-300 text-white font-semibold px-6 py-2 rounded-full shadow-md"
+                      >
+                        Logout
+                      </button>
+                    </div>
+                  </div>
                 </div>
-
-                <div className="py-2 sm:py-2 sm:flex sm:flex-cols-2 gap-6 sm:px-6 bg-gray-200 rounded-md shadow-sm">
-                  <h3 className="text-xl font-bold text-gray-900">Title :</h3>
-                  <span className="text-xl font-bold text-gray-900 sm:mt-0 sm:col-span-2">
-                    {user?.title}
-                  </span>
-                </div>
-
-                <div className="py-3 sm:py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
-                  <h3 className="text-md font-bold text-green-700">Address</h3>
-                  <span className="mt-1 text-md text-gray-900 sm:mt-0 sm:col-span-2">
-                    {user?.address}
-                  </span>
-                </div>
-
-                <div className="py-2 sm:py-2 sm:flex sm:flex-cols-2 gap-6 sm:px-6 bg-gray-200 rounded-md shadow-sm">
-                  <h3 className="text-xl font-bold text-gray-900">
-                    Contacts :
-                  </h3>
-                  <span className="text-xl font-bold text-gray-900 sm:mt-0 sm:col-span-2">
-                    {user?.contacts}
-                  </span>
-                </div>
-
-                <div className="py-3 sm:py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
-                  <h3 className="text-md font-bold text-green-700">Email</h3>
-                  <span className="mt-1 text-md text-gray-900 sm:mt-0 sm:col-span-2">
-                    {user?.email}
-                  </span>
-                </div>
-
-                <hr className="my-2" />
-                <button
-                  className="w-full bg-green-500 font-bold text-lg text-white py-2 rounded-lg hover:bg-grey transition"
-                  onClick={handleLogout}
-                >
-                  Logout
-                </button>
               </div>
             )}
           </div>

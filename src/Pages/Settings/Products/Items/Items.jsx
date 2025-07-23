@@ -56,9 +56,7 @@ const Items = () => {
       const data = await response.json();
       dispatch(itemsFetch(data));
       setShowError("");
-    } 
-    
-    catch (error) {
+    } catch (error) {
       console.error("Error fetching items:", error);
       setShowError(
         "An error occurred. Please contact the system administrator."
@@ -83,7 +81,6 @@ const Items = () => {
       dispatch(itemsFetch({ ...items, currentPage: currentPage - 1 }));
     }
   };
-  
 
   //formating Price
   const formatPriceWithCommas = (price) => {
@@ -133,11 +130,11 @@ const Items = () => {
             onChange={(e) => {
               setCategoryFilter(e.target.value);
               // Reset to first page when category filter changes
-              dispatch(itemsFetch({ ...items, }));
+              dispatch(itemsFetch({ ...items }));
             }}
             className="ml-4 px-6 py-3 border border-gray-400 rounded-full bg-gray-200/70  text-black"
           >
-            <option  value="All">All Categories</option>
+            <option value="All">All Categories</option>
             {category.map((category) => (
               <option key={category._id} value={category._id}>
                 {category.name}
@@ -145,7 +142,6 @@ const Items = () => {
             ))}
           </select>
         </div>
-
 
         {/* Search Bar */}
         <div className="hidden sm:flex items-center bg-gray-100 rounded-[30px] px-3 sm:px-4 py-1 sm:py-2 w-full max-w-[300px] border border-gray-400">
@@ -184,6 +180,33 @@ const Items = () => {
             <span className="font-bold">Error: </span> {showError}
           </div>
         )}
+
+        {/* Status Legend */}
+        <div className="mt-4 flex flex-wrap items-center justify-end gap-4 text-sm">
+          <div className="flex items-center gap-2">
+            <div className="w-4 h-4 rounded-full bg-red-500 shadow" />
+            <span className="text-gray-600 dark:text-gray-300">Low Stock</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <div className="w-4 h-4 rounded-full bg-blue-200 shadow" />
+            <span className="text-gray-600 dark:text-gray-300">
+              Normal Stock
+            </span>
+          </div>
+          <div className="flex items-center gap-2">
+            <div className="w-4 h-4 rounded-full bg-green-200 shadow" />
+            <span className="text-gray-600 dark:text-gray-300">
+              Manufactured
+            </span>
+          </div>
+          <div className="flex items-center gap-2">
+            <div className="w-4 h-4 rounded-full bg-red-100 shadow" />
+            <span className="text-gray-600 dark:text-gray-300">
+              Expires Soon / Expired
+            </span>
+          </div>
+        </div>
+
         <div className="mt-7 overflow-x-auto">
           <table className="w-full whitespace-nowrap">
             <thead className="bg-gray-200 text-black">
@@ -296,7 +319,13 @@ const Items = () => {
                             : "border-t border-gray"
                         } hover:bg-gray-100`}
                       >
-                        <span className="ml-2 mr-3 rounded-full bg-blue-200 px-2 py-0.5 text-blue-800">
+                        <span
+                          className={`ml-2 mr-3 rounded-full ${
+                            item.reOrderStatus === "Low"
+                              ? "bg-red-500 text-white"
+                              : "bg-blue-200"
+                          }  px-2 py-0.5 text-blue-800`}
+                        >
                           {formatPriceWithCommas(item.itemQuantity)}
                         </span>
                       </td>
@@ -354,10 +383,7 @@ const Items = () => {
                         } hover:bg-gray-100`}
                       >
                         <p className="text-gray-900 whitespace-no-wrap capitalize">
-                          {
-                            category.find((u) => u._id === item.category)
-                              ?.name
-                          }
+                          {category.find((u) => u._id === item.category)?.name}
                         </p>
                       </td>
                       <td className="pl-4 gap-2 font-bold">

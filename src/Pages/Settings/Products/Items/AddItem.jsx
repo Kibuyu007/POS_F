@@ -22,6 +22,7 @@ const AddItem = ({ showModal, setShowModal, onUserAdded }) => {
     itemQuantity: 0,
     manufactureDate: new Date(),
     expireDate: new Date(),
+    reOrder: 0,
   });
 
   const dispatch = useDispatch();
@@ -75,6 +76,7 @@ const AddItem = ({ showModal, setShowModal, onUserAdded }) => {
         itemQuantity: "",
         manufactureDate: "",
         expireDate: "",
+        reOrder: "",
       });
 
       setFile(null);
@@ -247,6 +249,23 @@ const AddItem = ({ showModal, setShowModal, onUserAdded }) => {
                           dateFormat="Pp"
                         />
                       </span>
+                    </div>
+
+                      <div>
+                      <label
+                        htmlFor="barcode"
+                        className="block mb-2 text-sm font-medium text-gray-900 dark:text-white"
+                      >
+                        Re-Order Quantity
+                      </label>
+                      <input
+                        type="number"
+                        name="reOrder"
+                        value={regi.reOrder}
+                        onChange={handleChange}
+                        className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-green-500 focus:border-green-500 block w-full p-2.5 dark:bg-gray-600 dark:border-gray-500 dark:placeholder-gray-400 dark:text-white"
+                        placeholder="..."
+                      />
                     </div>
 
                     <div className="flex col-span-2">
