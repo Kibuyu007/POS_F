@@ -1,5 +1,5 @@
 import { PDFViewer } from "@react-pdf/renderer";
-import PoDocument from "./PdfPO";
+import PoDocument from "./PdfPo";
 
 const PreviewPo = ({ session, onClose }) => {
   if (!session) return null;

@@ -8,6 +8,9 @@ import { logoutSuccess } from "../../Redux/userSlice";
 import { AiOutlineLogout } from "react-icons/ai";
 import { itemsError, itemsFetch, itemsPending } from "../../Redux/items";
 
+//URL
+const URL = import.meta.env.VITE_API;
+
 const Header = () => {
   const { items = [] } = useSelector((state) => state.items);
   const [dropdownOpen, setDropdownOpen] = useState(false);
@@ -22,7 +25,7 @@ const Header = () => {
   const fetchData = async () => {
     try {
       dispatch(itemsPending());
-      let url = "http://localhost:4004/api/items/allItemsRaw";
+      let url = `${URL}/api/items/allItemsRaw`;
 
       const response = await fetch(url);
       if (!response.ok) throw new Error("Failed to fetch items");
