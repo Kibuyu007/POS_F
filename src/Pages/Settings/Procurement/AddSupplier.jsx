@@ -3,6 +3,10 @@ import { addSupplier, supplierFetch } from "../../../Redux/suppliers";
 import { useDispatch, useSelector } from "react-redux";
 import { useEffect, useState } from "react";
 
+//API
+const URL = import.meta.env.VITE_API;
+
+
 const AddSupplier = ({ showModal, setShowModal }) => {
   //Use selector from Redux
   const { supplier } = useSelector((state) => state.suppliers);
@@ -41,7 +45,7 @@ const AddSupplier = ({ showModal, setShowModal }) => {
     e.preventDefault();
     try {
       const response = await axios.post(
-        "http://localhost:4004/api/suppliers/addSupplier",
+        `${URL}/api/suppliers/addSupplier`,
         regi
       );
       console.log(response);

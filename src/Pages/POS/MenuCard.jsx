@@ -108,7 +108,7 @@ const MenuCard = ({ refreshTrigger }) => {
   const searchItemsByCategoryAndName = async (categoryId, searchTerm) => {
     try {
       const res = await axios.get(
-        "http://localhost:4004/api/items/searchInPos",
+        `${URL}/api/items/searchInPos`,
         {
           params: {
             category: categoryId,

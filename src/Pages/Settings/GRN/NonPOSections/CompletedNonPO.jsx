@@ -11,6 +11,11 @@ import dayjs from "dayjs";
 
 import Loading from "../../../../Components/Shared/Loading";
 
+
+//API
+const URL = import.meta.env.VITE_API;
+
+
 const CompletedNonPO = () => {
   const [grns, setGrns] = useState([]);
   const [filteredGrns, setFilteredGrns] = useState([]);
@@ -29,7 +34,7 @@ const CompletedNonPO = () => {
     const fetchCompletedNonPoGrns = async () => {
       setLoad(true);
       try {
-        const res = await axios.get("http://localhost:4004/api/grn/nonPo");
+        const res = await axios.get(`${URL}/api/grn/nonPo`);
         if (res.data.success) {
           setGrns(res.data.data);
           setLoad(false);

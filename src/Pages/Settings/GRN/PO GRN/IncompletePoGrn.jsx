@@ -10,6 +10,10 @@ import { DatePicker } from "@mui/x-date-pickers/DatePicker";
 import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs";
 import dayjs from "dayjs";
 
+//API
+const URL = import.meta.env.VITE_API;
+
+
 const IncompletePoGrn = () => {
   const [items, setItems] = useState([]);
   const [modalData, setModalData] = useState(null);
@@ -26,7 +30,7 @@ const IncompletePoGrn = () => {
   const fetchOutstandingItems = async () => {
     try {
       setLoad(true);
-      const res = await axios.get("http://localhost:4004/api/grn/outstand",{
+      const res = await axios.get(`${URL}/api/grn/outstand`,{
   withCredentials: true,
 });
       if (res.data.success) {
@@ -45,7 +49,7 @@ const IncompletePoGrn = () => {
   const handleViewClick = async (grnId) => {
     try {
       const res = await axios.get(
-        `http://localhost:4004/api/grn/grnPo/${grnId}`
+        `${URL}/api/grn/grnPo/${grnId}`
       );
       setModalData(res.data);
       setOpenModal(true);
@@ -62,7 +66,7 @@ const IncompletePoGrn = () => {
     for (const item of updates) {
       try {
         const res = await axios.put(
-          "http://localhost:4004/api/grn/updateOutstanding",
+          `${URL}/api/grn/updateOutstanding`,
           {
             grnId: item.grnId,
             itemId: item.itemId,

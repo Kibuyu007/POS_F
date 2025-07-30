@@ -7,6 +7,10 @@ import { DatePicker } from "@mui/x-date-pickers/DatePicker";
 import { IoIosArrowBack, IoIosArrowForward } from "react-icons/io";
 import Loading from "../../../Components/Shared/Loading";
 
+//API
+const URL = import.meta.env.VITE_API;
+
+
 const BillNonPo = () => {
   const [reportData, setReportData] = useState([]);
   const [filteredData, setFilteredData] = useState([]);
@@ -27,7 +31,7 @@ const BillNonPo = () => {
     try {
       setLoad(true);
       const res = await axios.get(
-        "http://localhost:4004/api/grn/nonPoBillReport"
+        `${URL}/api/grn/nonPoBillReport`
       );
       if (res.data.success) {
         setReportData(res.data.data);

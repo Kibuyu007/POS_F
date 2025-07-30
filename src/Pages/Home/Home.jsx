@@ -39,7 +39,7 @@ const Home = () => {
     const fetchSales = async () => {
       try {
         const res = await axios.get(
-          "http://localhost:4004/api/transactions/all",
+          `${URL}/api/transactions/all`,
           {
             withCredentials: true,
           }
@@ -81,10 +81,10 @@ const Home = () => {
     const fetchGrn = async () => {
       try {
         const [resPo, resNonPo] = await Promise.all([
-          axios.get("http://localhost:4004/api/grn/allGrnPo", {
+          axios.get(`${URL}/api/grn/allGrnPo`, {
             withCredentials: true,
           }),
-          axios.get("http://localhost:4004/api/grn/nonPo", {
+          axios.get(`${URL}/api/grn/nonPo`, {
             withCredentials: true,
           }),
         ]);
@@ -117,7 +117,7 @@ const Home = () => {
     const fetchComposedData = async () => {
       try {
         const res = await axios.get(
-          "http://localhost:4004/api/transactions/all",
+          `${URL}/api/transactions/all`,
           {
             withCredentials: true,
           }

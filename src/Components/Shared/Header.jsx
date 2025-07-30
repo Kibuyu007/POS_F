@@ -46,7 +46,7 @@ const Header = () => {
   // Handle Logout
   const handleLogout = async () => {
     try {
-      await axios.get("http://localhost:4004/api/auth/logout", {
+      await axios.get(`${URL}/api/auth/logout`, {
         withCredentials: true,
       });
 

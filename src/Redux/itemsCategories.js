@@ -1,6 +1,10 @@
 import { createSlice } from "@reduxjs/toolkit";
 import axios from "axios";
 
+//API
+const URL = import.meta.env.VITE_API;
+
+
 const initialState = {
   category: [],
   currentPage: 1,
@@ -114,7 +118,7 @@ export const fetchCategories = () => async (dispatch) => {
 
   try {
     const response = await axios.get(
-      "http://localhost:4004/api/itemsCategories/getItemCategories"
+      `${URL}/api/itemsCategories/getItemCategories`
     );
 
     dispatch(

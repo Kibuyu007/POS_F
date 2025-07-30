@@ -14,6 +14,10 @@ import jsPDF from "jspdf";
 import "jspdf-autotable";
 import Loading from "../../../Components/Shared/Loading";
 
+//API
+const URL = import.meta.env.VITE_API;
+
+
 const Mauzo = () => {
   const [transactions, setTransactions] = useState([]);
   const [filteredTransactions, setFilteredTransactions] = useState([]);
@@ -33,7 +37,7 @@ const Mauzo = () => {
   const fetchTransactions = async () => {
     setLoad(true);
     try {
-      const res = await axios.get("http://localhost:4004/api/transactions/all");
+      const res = await axios.get(`${URL}/api/transactions/all`);
       if (res.data.success) {
         setTransactions(res.data.data);
         setFilteredTransactions(res.data.data);

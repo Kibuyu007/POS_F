@@ -11,6 +11,10 @@ import ItemModal from "./ItemModal";
 import toast from "react-hot-toast";
 import axios from "axios";
 
+//API
+const URL = import.meta.env.VITE_API;
+
+
 const ProcessPo = ({ onClose, session, onPoStatusUpdate }) => {
   const { supplier } = useSelector((state) => state.suppliers);
   const [loading, setLoading] = useState(false);
@@ -177,7 +181,7 @@ const ProcessPo = ({ onClose, session, onPoStatusUpdate }) => {
 
     try {
       const response = await axios.post(
-        "http://localhost:4004/api/grn/poGrn",
+        `${URL}/api/grn/poGrn`,
         poGrnData
       );
 
@@ -202,7 +206,7 @@ const ProcessPo = ({ onClose, session, onPoStatusUpdate }) => {
         });
 
         const poUpdateResponse = await axios.put(
-          `http://localhost:4004/api/manunuzi/updatePo/${session.grnSessionId}`,
+          `${URL}/api/manunuzi/updatePo/${session.grnSessionId}`,
           { status: "Approved" }
         );
 

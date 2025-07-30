@@ -14,6 +14,10 @@ import { useDispatch, useSelector } from "react-redux";
 import Loading from "../../../Components/Shared/Loading";
 import { fetchSuppliers } from "../../../Redux/suppliers";
 
+//API
+const URL = import.meta.env.VITE_API;
+
+
 const CompletedPo = () => {
   const { supplier } = useSelector((state) => state.suppliers);
   const [sessions, setSessions] = useState([]);
@@ -74,7 +78,7 @@ const CompletedPo = () => {
     const fetchData = async () => {
       try {
         setLoad(true);
-        const res = await axios.get("http://localhost:4004/api/manunuzi/getPo");
+        const res = await axios.get(`${URL}/api/manunuzi/getPo`);
         if (res.data.success) {
           // Summarize sessions
           const summarized = res.data.data.map((session) => ({

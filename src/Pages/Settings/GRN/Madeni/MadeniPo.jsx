@@ -10,6 +10,10 @@ import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs";
 import dayjs from "dayjs";
 import Loading from "../../../../Components/Shared/Loading";
 
+//API
+const URL = import.meta.env.VITE_API;
+
+
 const MadeniPo = () => {
   const [deni, setDeni] = useState([]);
   const [modalData, setModalData] = useState(null);
@@ -26,7 +30,7 @@ const MadeniPo = () => {
   const fetchUnpaidPo = async () => {
     try {
       setLoad(true);
-      const res = await axios.get("http://localhost:4004/api/grn/unpaidPo");
+      const res = await axios.get(`${URL}/api/grn/unpaidPo`);
       if (res.data.success) {
         setDeni(res.data.data);
         setLoad(false);
@@ -43,7 +47,7 @@ const MadeniPo = () => {
   const handlePreview = async (grnId) => {
     try {
       const res = await axios.get(
-        `http://localhost:4004/api/grn/billDetails/${grnId}`
+        `${URL}/api/grn/billDetails/${grnId}`
       );
       if (res.data.success) {
         setModalData(res.data.data);
@@ -56,7 +60,7 @@ const MadeniPo = () => {
 
   const toggleStatus = async (grnId, itemId) => {
     try {
-      const res = await axios.put("http://localhost:4004/api/grn/updateBill", {
+      const res = await axios.put(`${URL}/api/grn/updateBill`, {
         grnId,
         itemId,
       });

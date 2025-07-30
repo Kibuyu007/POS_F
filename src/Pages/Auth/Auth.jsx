@@ -5,6 +5,9 @@ import { useNavigate } from "react-router-dom";
 import { useDispatch } from "react-redux";
 import { loginSuccess, logoutSuccess } from "../../Redux/userSlice";
 
+//API
+const URL = import.meta.env.VITE_API;
+
 const Login = () => {
   const [userLogin, setUserLogin] = useState({
     userName: "",
@@ -41,7 +44,7 @@ const Login = () => {
 
   const handleLogout = async () => {
     try {
-      await axios.get("http://localhost:4004/api/auth/logout", {
+      await axios.get(`${URL}/api/auth/logout`, {
         withCredentials: true,
       });
 
@@ -63,7 +66,7 @@ const Login = () => {
 
     try {
       const res = await axios.post(
-        "http://localhost:4004/api/auth/login",
+        `${URL}/api/auth/login`,
         userLogin,
         {
           withCredentials: true,

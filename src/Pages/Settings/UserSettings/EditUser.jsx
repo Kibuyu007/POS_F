@@ -1,6 +1,10 @@
 import axios from "axios";
 import { useEffect, useState } from "react";
 
+//API
+const URL = import.meta.env.VITE_API;
+
+
 const EditUser = ({ showModal, setShowModal, onUserAdded, user }) => {
   const [showError, setShowError] = useState("");
   const [file, setFile] = useState(null);
@@ -99,7 +103,7 @@ useEffect(() => {
 
       // Send PUT request to backend
       const response = await axios.put(
-        `http://localhost:4004/api/users/update/${user._id}`,
+        `${URL}/api/users/update/${user._id}`,
         formData,
         {
           headers: { "Content-Type": "multipart/form-data" },

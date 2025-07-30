@@ -3,6 +3,11 @@ import { useEffect, useState } from "react";
 import { editCategory } from "../../../../Redux/itemsCategories";
 import { useDispatch } from "react-redux";
 
+
+//API
+const URL = import.meta.env.VITE_API;
+
+
 const EditCategory = ({
   showModal,
   setShowModal,
@@ -37,7 +42,7 @@ const EditCategory = ({
 
     try {
       const response = await axios.put(
-        `http://localhost:4004/api/itemsCategories/editItemCategories/${catego._id}`,
+        `${URL}/api/itemsCategories/editItemCategories/${catego._id}`,
         editData,{ withCredentials: true }
       );
       console.log(response);

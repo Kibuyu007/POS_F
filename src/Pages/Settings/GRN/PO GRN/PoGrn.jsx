@@ -14,6 +14,10 @@ import ProcessPo from "./ProcessPo";
 import { fetchSuppliers } from "../../../../Redux/suppliers";
 import Loading from "../../../../Components/Shared/Loading";
 
+//API
+const URL = import.meta.env.VITE_API;
+
+
 const PoGrn = () => {
   const { supplier } = useSelector((state) => state.suppliers);
   const [sessions, setSessions] = useState([]);
@@ -75,7 +79,7 @@ const PoGrn = () => {
     const fetchData = async () => {
       try {
         setLoad(true);
-        const res = await axios.get("http://localhost:4004/api/manunuzi/getPo");
+        const res = await axios.get(`${URL}/api/manunuzi/getPo`);
         if (res.data.success) {
           // Summarize sessions
           const summarized = res.data.data.map((session) => ({

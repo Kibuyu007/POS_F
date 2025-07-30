@@ -4,6 +4,10 @@ import { useDispatch, useSelector } from "react-redux";
 import { fetchCategories } from "../../../../Redux/itemsCategories";
 import axios from "axios";
 
+//API
+const URL = import.meta.env.VITE_API;
+
+
 const EditItem = ({ showModal, setShowModal, item, onItemUpdated }) => {
   const { category } = useSelector((state) => state.category);
   const dispatch = useDispatch();
@@ -71,7 +75,7 @@ const EditItem = ({ showModal, setShowModal, item, onItemUpdated }) => {
 
     try {
       const response = await axios.put(
-        `http://localhost:4004/api/items/editItem/${item._id}`,
+        `${URL}/api/items/editItem/${item._id}`,
         editData,{ withCredentials: true }
       );
       console.log(response);

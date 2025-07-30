@@ -6,6 +6,10 @@ import { LocalizationProvider } from "@mui/x-date-pickers";
 import { DatePicker } from "@mui/x-date-pickers/DatePicker";
 import Loading from "../../../Components/Shared/Loading";
 
+//API
+const URL = import.meta.env.VITE_API;
+
+
 const Madeni = () => {
   const [billedData, setBilledData] = useState([]);
   const [load, setLoad] = useState(false);
@@ -24,7 +28,7 @@ const Madeni = () => {
     setLoad(true);
     try {
       const res = await axios.get(
-        "http://localhost:4004/api/transactions/bill",
+        `${URL}/api/transactions/bill`,
         { withCredentials: true }
       );
       if (res.data.success) {
@@ -46,7 +50,7 @@ const Madeni = () => {
     }
     try {
       const res = await axios.patch(
-        `http://localhost:4004/api/transactions/payBill/${id}`,
+        `${URL}/api/transactions/payBill/${id}`,
         { paymentAmount: amount },
         { withCredentials: true }
       );

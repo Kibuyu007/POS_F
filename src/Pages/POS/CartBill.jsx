@@ -8,6 +8,10 @@ import { useState } from "react";
 import axios from "axios";
 import toast from "react-hot-toast";
 
+//API
+const URL = import.meta.env.VITE_API;
+
+
 const Cart = ({ triggerRefreshMenu }) => {
  const user = useSelector((state) => state.user.user);
   const dispatch = useDispatch();
@@ -61,7 +65,7 @@ const Cart = ({ triggerRefreshMenu }) => {
       };
 
       const response = await axios.post(
-        "http://localhost:4004/api/transactions/sales",
+        `${URL}/api/transactions/sales`,
         payload,
         { withCredentials: true }
       );
@@ -111,7 +115,7 @@ const Cart = ({ triggerRefreshMenu }) => {
   const handlePrintReceipt = async () => {
     try {
       const response = await axios.get(
-        "http://localhost:4004/api/receipt/receipt",
+        `${URL}/api/receipt/receipt`,
         lastTransactionDetails,
         {
           responseType: "blob", // PDF blob

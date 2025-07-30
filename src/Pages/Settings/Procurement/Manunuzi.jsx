@@ -11,6 +11,10 @@ import { IoMdRemoveCircle } from "react-icons/io";
 import { fetchSuppliers } from "../../../Redux/suppliers";
 import Loading from "../../../Components/Shared/Loading";
 
+//API
+const URL = import.meta.env.VITE_API;
+
+
 const Manunuzi = () => {
   const [selectedItem, setSelectedItem] = useState([]);
   const { items } = useSelector((state) => state.items);
@@ -89,7 +93,7 @@ const Manunuzi = () => {
       }
 
       const response = await axios.post(
-        "http://localhost:4004/api/manunuzi/addPo",
+        `${URL}/api/manunuzi/addPo`,
         {
           ...regi,
           allItems: selectedItem.map((item) => ({

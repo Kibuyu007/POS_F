@@ -12,6 +12,10 @@ import { useDispatch, useSelector } from "react-redux";
 import { categoriesFetch } from "../../../../Redux/itemsCategories";
 import { AiTwotoneEdit } from "react-icons/ai";
 
+//API
+const URL = import.meta.env.VITE_API;
+
+
 const ItemsCategories = () => {
   // Redux State
   const {
@@ -31,7 +35,7 @@ const ItemsCategories = () => {
   const fetchData = async () => {
     try {
       const response = await fetch(
-        `http://localhost:4004/api/itemsCategories/getItemCategories?page=${currentPage}&limit=${itemsPerPage}&search=${searchQuery}`
+        `${URL}/api/itemsCategories/getItemCategories?page=${currentPage}&limit=${itemsPerPage}&search=${searchQuery}`
       );
 
       if (!response.ok) {

@@ -18,6 +18,10 @@ import { BsToggleOff, BsToggleOn } from "react-icons/bs";
 import axios from "axios";
 import { IoIosArrowBack, IoIosArrowForward } from "react-icons/io";
 
+//API
+const URL = import.meta.env.VITE_API;
+
+
 const Suppliers = () => {
   const dispatch = useDispatch();
   const { allSuppliers = [], error } = useSelector((state) => state.suppliers);
@@ -66,7 +70,7 @@ const Suppliers = () => {
     const newStatus = currentStatus === "Active" ? "Inactive" : "Active";
     try {
       const res = await axios.put(
-        `http://localhost:4004/api/suppliers/status/${supplierId}`,
+        `${URL}/api/suppliers/status/${supplierId}`,
         {
           status: newStatus,
         }

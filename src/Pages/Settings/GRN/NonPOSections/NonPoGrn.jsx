@@ -15,6 +15,10 @@ import dayjs from "dayjs";
 import { DatePicker } from "@mui/x-date-pickers/DatePicker";
 import { BsToggleOff, BsToggleOn } from "react-icons/bs";
 
+//API
+const URL = import.meta.env.VITE_API;
+
+
 const NonPoGrn = () => {
   const { supplier } = useSelector((state) => state.suppliers);
   const [loading, setLoading] = useState(false);
@@ -144,7 +148,7 @@ const NonPoGrn = () => {
 
     try {
       const response = await axios.post(
-        "http://localhost:4004/api/grn/newGrn",
+        `${URL}/api/grn/newGrn`,
         grnData
       );
 

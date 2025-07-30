@@ -2,6 +2,10 @@
 import { createSlice } from "@reduxjs/toolkit";
 import axios from "axios";
 
+//API
+const URL = import.meta.env.VITE_API;
+
+
 const initialState = {
   items: [],
   currentPage: 1,
@@ -110,7 +114,7 @@ export const fetchProducts = () => async (dispatch) => {
   
     try {
       const response = await axios.get(
-        "http://localhost:4004/api/items/getAllItems"
+        `${URL}/api/items/getAllItems`
       );
   
       dispatch(
@@ -133,7 +137,7 @@ export const fetchProducts = () => async (dispatch) => {
   dispatch(searchItemsPending());
 
   try {
-   const endpoint = query ? `http://localhost:4004/api/items/search?` : "http://localhost:4004/api/items/getAllItems";
+   const endpoint = query ? `${URL}/api/items/search?` : `${URL}/api/items/getAllItems`;
     const response = await axios.get(endpoint, {
       params: {
         query: query,

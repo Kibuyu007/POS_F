@@ -3,6 +3,10 @@ import { useState, useEffect } from "react";
 import { useDispatch } from "react-redux";
 import { updateSupplier } from "../../../Redux/suppliers";
 
+//API
+const URL = import.meta.env.VITE_API;
+
+
 const EditSupplier = ({ showModal, setShowModal, supplier }) => {
   const dispatch = useDispatch();
 
@@ -41,7 +45,7 @@ const EditSupplier = ({ showModal, setShowModal, supplier }) => {
 
     try {
       const response = await axios.put(
-        `http://localhost:4004/api/suppliers/updateSupplier/${editSupplier._id}`,
+        `${URL}/api/suppliers/updateSupplier/${editSupplier._id}`,
         editSupplier
       );
 

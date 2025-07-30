@@ -11,6 +11,10 @@ import { IoIosArrowForward } from "react-icons/io";
 import AddUser from "./AddUser";
 import EditUser from "./EditUser";
 
+//API
+const URL = import.meta.env.VITE_API;
+
+
 const UserManagement = () => {
   const [users, setUsers] = useState([]);
   const [showError, setShowError] = useState("");
@@ -55,7 +59,7 @@ const UserManagement = () => {
   // Fetch data from API or use dummy data
   const fetchData = async () => {
     try {
-      const response = await fetch("http://localhost:4004/api/users/allUsers");
+      const response = await fetch(`${URL}/api/users/allUsers`);
       if (!response.ok) {
         throw new Error("Failed to fetch users");
       }
@@ -83,7 +87,7 @@ const UserManagement = () => {
       const newStatus = currentStatus === "Active" ? "Inactive" : "Active";
 
       const response = await axios.put(
-        `http://localhost:4004/api/users/status/${userId}`,
+        `${URL}/api/users/status/${userId}`,
         {
           status: newStatus,
         }

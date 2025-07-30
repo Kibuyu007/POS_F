@@ -6,6 +6,10 @@ import { fetchCategories } from "../../../../Redux/itemsCategories";
 import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
 
+//API
+const URL = import.meta.env.VITE_API;
+
+
 const AddItem = ({ showModal, setShowModal, onUserAdded }) => {
   //Use selector from Redux
   const { category } = useSelector((state) => state.category);
@@ -62,7 +66,7 @@ const AddItem = ({ showModal, setShowModal, onUserAdded }) => {
     e.preventDefault();
     try {
       const response = await axios.post(
-        "http://localhost:4004/api/items/addItem",
+        `${URL}/api/items/addItem`,
         regi,{ withCredentials: true }
       );
       console.log(response);

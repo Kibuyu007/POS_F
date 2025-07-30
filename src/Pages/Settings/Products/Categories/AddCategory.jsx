@@ -3,6 +3,10 @@ import { addCategory } from "../../../../Redux/itemsCategories";
 import { useDispatch } from "react-redux";
 import { useState } from "react";
 
+//API
+const URL = import.meta.env.VITE_API;
+
+
 const AddCategory = ({ showModal, setShowModal, onCategoryAdded }) => {
   const dispatch = useDispatch();
 
@@ -22,7 +26,7 @@ const AddCategory = ({ showModal, setShowModal, onCategoryAdded }) => {
     e.preventDefault();
     try {
       const response = await axios.post(
-        "http://localhost:4004/api/itemsCategories/addItemCategories",
+        `${URL}/api/itemsCategories/addItemCategories`,
         regi,{ withCredentials: true }
       );
       console.log(response);

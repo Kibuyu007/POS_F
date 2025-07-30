@@ -9,6 +9,10 @@ import dayjs from "dayjs";
 import DeniNonPoPdf from "./DeniNonPoPdf";
 import Loading from "../../../../Components/Shared/Loading";
 
+//API
+const URL = import.meta.env.VITE_API;
+
+
 const MadeniNonPo = () => {
   const [deniNon, setDeniNon] = useState([]);
   const [modalData, setModalData] = useState(null);
@@ -25,7 +29,7 @@ const MadeniNonPo = () => {
   const fetchUnpaidNonPo = async () => {
     try {
       setLoad(true);
-      const res = await axios.get("http://localhost:4004/api/grn/unpaidNonPo");
+      const res = await axios.get(`${URL}/api/grn/unpaidNonPo`);
       if (res.data.success) {
         setDeniNon(res.data.data);
         setLoad(false);
@@ -47,7 +51,7 @@ const MadeniNonPo = () => {
   const toggleStatus = async (grnId, itemId) => {
     try {
       const res = await axios.put(
-        "http://localhost:4004/api/grn/updateNonPoBill",
+        `${URL}/api/grn/updateNonPoBill`,
         {
           grnId,
           itemId,
