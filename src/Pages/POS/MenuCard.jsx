@@ -5,6 +5,10 @@ import { addItems } from "../../Redux/cartSlice";
 import { FaSearch } from "react-icons/fa";
 import toast from "react-hot-toast";
 
+
+//API
+const URL = import.meta.env.VITE_API;
+
 const MenuCard = ({ refreshTrigger }) => {
   const cartData = useSelector((state) => state.cart.cart);
   const zuiaAdd = useSelector((state) => state.cart.receiptPrinted);
@@ -26,14 +30,14 @@ const MenuCard = ({ refreshTrigger }) => {
     const fetchCategories = async () => {
       try {
         const { data } = await axios.get(
-          "http://localhost:4004/api/itemsCategories/getItemCategories"
+          `${URL}/api/itemsCategories/getItemCategories`
         );
 
         if (data.success) {
           const categoriesWithItemCount = await Promise.all(
             data.data.map(async (category) => {
               const itemCount = await axios.get(
-                `http://localhost:4004/api/items/getAllItems?category=${category._id}`
+                `${URL}/api/items/getAllItems?category=${category._id}`
               );
               return {
                 ...category,
@@ -76,7 +80,7 @@ const MenuCard = ({ refreshTrigger }) => {
     async (categoryId) => {
       try {
         const { data } = await axios.get(
-          `http://localhost:4004/api/items/getAllItems?category=${categoryId}`
+          `${URL}/api/items/getAllItems?category=${categoryId}`
         );
 
         if (data.success) {

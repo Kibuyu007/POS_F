@@ -30,6 +30,7 @@ const Login = () => {
           localStorage.removeItem("token");
           localStorage.removeItem("user");
           dispatch(loginSuccess(null));
+          setLoginSuccessfuly(".");
           navigate("/login");
         }
       }

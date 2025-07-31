@@ -129,9 +129,9 @@ const Header = () => {
 
             {/* Notification Dropdown */}
             {notifyOpen && (
-              <div className="absolute right-0 mt-3 w-[400px] max-h-[400px] overflow-y-auto bg-white dark:bg-neutral-900 border border-gray-200 dark:border-neutral-700 shadow-2xl rounded-2xl z-50 animate-fade-in-up">
+              <div className="absolute right-0 mt-3 w-[400px] max-h-[400px] overflow-y-auto backdrop-blur-md bg-white/5 dark:bg-white/5 border border-white/10 dark:border-white/10 shadow-xl rounded-2xl z-50 animate-fade-in-up transition-all">
                 {/* Header */}
-                <div className="px-5 py-4 bg-gradient-to-r from-red-600 to-pink-500 rounded-t-2xl flex justify-between items-center">
+                <div className="px-5 py-4 bg-gradient-to-r from-rose-500 to-pink-500 rounded-t-2xl flex justify-between items-center shadow-sm">
                   <div className="text-white">
                     <h4 className="text-sm font-bold">
                       {lowStockItems.length} Item
@@ -139,7 +139,7 @@ const Header = () => {
                     </h4>
                     <p className="text-xs">Check and Reorder</p>
                   </div>
-                  <span className="text-xs bg-white text-red-600 font-semibold px-2 py-0.5 rounded-full">
+                  <span className="text-xs bg-white/90 text-red-600 font-semibold px-2 py-0.5 rounded-full shadow">
                     Urgent
                   </span>
                 </div>
@@ -147,21 +147,21 @@ const Header = () => {
                 {/* Body */}
                 <div className="px-5 py-4 space-y-3">
                   {lowStockItems.length === 0 ? (
-                    <p className="text-sm text-gray-500 dark:text-gray-400">
+                    <p className="text-sm text-gray-600 dark:text-gray-300">
                       All items are sufficiently stocked.
                     </p>
                   ) : (
                     lowStockItems.map((item, index) => (
                       <div
                         key={item._id}
-                        className="bg-red-50 dark:bg-red-800/20 px-4 py-3 rounded-xl flex items-center justify-between gap-3 hover:bg-red-100 dark:hover:bg-red-700/40 transition"
+                        className="bg-black/30 dark:bg-white/10 backdrop-blur-sm border border-white/20 dark:border-white/10 px-4 py-3 rounded-xl flex items-center justify-between gap-3 hover:bg-gray-400/40 dark:hover:bg-white/20 transition-all"
                       >
                         <div className="flex items-center gap-3">
-                          <div className="w-8 h-8 flex items-center justify-center bg-white dark:bg-neutral-800 rounded-full shadow text-red-600 font-bold text-xs">
+                          <div className="w-8 h-8 flex items-center justify-center bg-white dark:bg-neutral-800 rounded-full shadow text-rose-600 font-bold text-xs">
                             {index + 1}
                           </div>
                           <div className="text-sm">
-                            <p className="font-medium text-gray-800 dark:text-white truncate max-w-[200px]">
+                            <p className="font-medium text-gray-900 dark:text-white truncate max-w-[200px]">
                               {item.name}
                             </p>
                             <p className="text-xs text-gray-500 dark:text-gray-400">
@@ -169,7 +169,7 @@ const Header = () => {
                             </p>
                           </div>
                         </div>
-                        <span className="text-sm font-bold text-red-600 dark:text-red-300">
+                        <span className="text-sm font-bold text-rose-600 dark:text-rose-300">
                           {item.itemQuantity.toLocaleString()}
                         </span>
                       </div>

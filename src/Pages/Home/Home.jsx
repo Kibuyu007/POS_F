@@ -8,6 +8,10 @@ import { useEffect, useState } from "react";
 import axios from "axios";
 import dayjs from "dayjs";
 
+//API
+const URL = import.meta.env.VITE_API;
+
+
 const Home = () => {
   const [totalSales, setTotalSales] = useState(0);
   const [totalPaid, setTotalPaid] = useState(0);
