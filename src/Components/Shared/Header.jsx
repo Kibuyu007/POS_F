@@ -129,17 +129,17 @@ const Header = () => {
 
             {/* Notification Dropdown */}
             {notifyOpen && (
-              <div className="absolute right-0 mt-3 w-[400px] max-h-[400px] overflow-y-auto backdrop-blur-md bg-white/5 dark:bg-white/5 border border-white/10 dark:border-white/10 shadow-xl rounded-2xl z-50 animate-fade-in-up transition-all">
+              <div className="absolute right-0 mt-3 w-[400px] max-h-[400px] overflow-y-auto bg-white dark:bg-neutral-900 border border-gray-300 dark:border-neutral-700 shadow-lg rounded-2xl z-50 animate-fade-in-up transition-all">
                 {/* Header */}
-                <div className="px-5 py-4 bg-gradient-to-r from-rose-500 to-pink-500 rounded-t-2xl flex justify-between items-center shadow-sm">
+                <div className="px-5 py-4 bg-gradient-to-r from-rose-600 to-pink-500 rounded-t-2xl flex justify-between items-center shadow-md">
                   <div className="text-white">
                     <h4 className="text-sm font-bold">
                       {lowStockItems.length} Item
                       {lowStockItems.length !== 1 && "s"} Low in Stock
                     </h4>
-                    <p className="text-xs">Check and Reorder</p>
+                    <p className="text-xs opacity-90">Check and Reorder</p>
                   </div>
-                  <span className="text-xs bg-white/90 text-red-600 font-semibold px-2 py-0.5 rounded-full shadow">
+                  <span className="text-xs bg-white text-red-600 font-semibold px-2 py-0.5 rounded-full shadow-sm">
                     Urgent
                   </span>
                 </div>
@@ -147,17 +147,17 @@ const Header = () => {
                 {/* Body */}
                 <div className="px-5 py-4 space-y-3">
                   {lowStockItems.length === 0 ? (
-                    <p className="text-sm text-gray-600 dark:text-gray-300">
+                    <p className="text-sm text-gray-700 dark:text-gray-300">
                       All items are sufficiently stocked.
                     </p>
                   ) : (
                     lowStockItems.map((item, index) => (
                       <div
                         key={item._id}
-                        className="bg-black/30 dark:bg-white/10 backdrop-blur-sm border border-white/20 dark:border-white/10 px-4 py-3 rounded-xl flex items-center justify-between gap-3 hover:bg-gray-400/40 dark:hover:bg-white/20 transition-all"
+                        className="bg-gray-100 dark:bg-neutral-800 border border-gray-300 dark:border-neutral-700 px-4 py-3 rounded-xl flex items-center justify-between gap-3 hover:bg-gray-200 dark:hover:bg-neutral-700 transition"
                       >
                         <div className="flex items-center gap-3">
-                          <div className="w-8 h-8 flex items-center justify-center bg-white dark:bg-neutral-800 rounded-full shadow text-rose-600 font-bold text-xs">
+                          <div className="w-8 h-8 flex items-center justify-center bg-white dark:bg-neutral-900 rounded-full shadow text-rose-600 font-bold text-xs select-none">
                             {index + 1}
                           </div>
                           <div className="text-sm">
@@ -169,7 +169,7 @@ const Header = () => {
                             </p>
                           </div>
                         </div>
-                        <span className="text-sm font-bold text-rose-600 dark:text-rose-300">
+                        <span className="text-sm font-bold text-rose-600 dark:text-rose-400 select-none">
                           {item.itemQuantity.toLocaleString()}
                         </span>
                       </div>
