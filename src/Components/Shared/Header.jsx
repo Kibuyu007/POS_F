@@ -185,9 +185,8 @@ const Header = () => {
             {/* User Button */}
             <div
               onClick={() => setDropdownOpen(!dropdownOpen)}
-              className="flex items-center gap-3 px-3 py-2 rounded-full bg-white dark:bg-neutral-900 shadow-md border border-gray-200 dark:border-neutral-700 cursor-pointer hover:bg-gray-50 dark:hover:bg-neutral-800 transition-all"
+              className="flex items-center gap-3 px-4 py-2 rounded-full bg-white dark:bg-neutral-900 shadow-xl border border-gray-200 dark:border-neutral-700 cursor-pointer hover:bg-gray-100 dark:hover:bg-neutral-800 transition-all"
             >
-              {/* Profile Image or Placeholder */}
               {user?.photo ? (
                 <img
                   src={`http://localhost:4004/pfps/${user.photo}`}
@@ -195,70 +194,65 @@ const Header = () => {
                   alt="User"
                 />
               ) : (
-                <div className="h-10 w-10 flex items-center justify-center bg-gray-300 dark:bg-gray-700 text-white text-sm font-bold rounded-full ring-2 ring-green-500">
+                <div className="h-10 w-10 flex items-center justify-center bg-gray-400 dark:bg-gray-700 text-white text-sm font-bold rounded-full ring-2 ring-green-500">
                   {user?.userName?.[0] || "U"}
                 </div>
               )}
-
-              {/* Username */}
-              <span className="font-semibold text-gray-800 dark:text-white truncate max-w-[120px]">
+              <span className="font-semibold text-gray-800 dark:text-white truncate max-w-[140px]">
                 {uName}
               </span>
-
-              {/* Logout Icon */}
               <AiOutlineLogout className="text-xl text-green-600" />
             </div>
 
             {/* Dropdown Panel */}
             {dropdownOpen && (
-              <div className="absolute right-0 mt-4 w-[360px] bg-white dark:bg-neutral-900 border border-gray-200 dark:border-neutral-700 shadow-2xl rounded-3xl z-50 overflow-hidden animate-fade-in-up">
-                {/* Header */}
-                <div className="fixed top-20 right-10 z-50">
-                  <div className="backdrop-blur-md bg-white/70 dark:bg-gray-800/70 border border-gray-200 dark:border-gray-700 rounded-3xl shadow-2xl max-w-md w-full overflow-hidden">
-                    {/* Header */}
-                    <div className="bg-gradient-to-r from-green-500 to-emerald-600 text-white px-6 py-4 rounded-t-3xl flex items-center justify-between">
-                      <div className="flex items-center gap-3">
-                        <span className="text-3xl">👤</span>
-                        <h3 className="text-xl font-semibold">Profile</h3>
-                      </div>
+              <div className="absolute right-0 mt-4 w-[700px] backdrop-blur-sm bg-white/80 dark:bg-neutral-900/90 border border-gray-200 dark:border-neutral-700 shadow-2xl rounded-3xl z-50 overflow-hidden animate-fade-in-up transition-all duration-300">
+                <div className="rounded-3xl overflow-hidden">
+                  {/* Header */}
+                  <div className="bg-gradient-to-r from-green-500 to-emerald-600 text-white px-6 py-5 flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <span className="text-3xl">👤</span>
+                      <h3 className="text-xl font-bold tracking-wide">
+                        My Profile
+                      </h3>
                     </div>
+                  </div>
 
-                    {/* Profile Content in Two Columns */}
-                    <div className="p-5 text-gray-700 dark:text-gray-200 text-sm grid grid-cols-2 gap-4">
-                      {[
-                        { label: "Username", value: user?.userName },
-                        {
-                          label: "Age",
-                          value: `${calculateAge(user?.dateOfBirth)} yrs`,
-                        },
-                        { label: "Title", value: user?.title },
-                        { label: "Address", value: user?.address },
-                        { label: "Contacts", value: user?.contacts },
-                        { label: "Email", value: user?.email },
-                      ].map((item, i) => (
-                        <div
-                          key={i}
-                          className="bg-white/40 dark:bg-gray-900/40 px-3 py-2 rounded-xl shadow-sm border dark:border-gray-700"
-                        >
-                          <span className="block text-gray-500 dark:text-gray-400 text-xs font-medium">
-                            {item.label}
-                          </span>
-                          <span className="text-sm font-semibold text-gray-800 dark:text-white">
-                            {item.value || "-"}
-                          </span>
-                        </div>
-                      ))}
-                    </div>
-
-                    {/* Logout Button */}
-                    <div className="p-5 pt-0 flex justify-center">
-                      <button
-                        onClick={handleLogout}
-                        className="bg-gray-400 hover:bg-green-400 transition duration-300 text-white font-semibold px-6 py-2 rounded-full shadow-md"
+                  {/* Profile Info */}
+                  <div className="p-6 grid grid-cols-3 gap-5 text-gray-700 dark:text-gray-200 text-sm">
+                    {[
+                      { label: "Username", value: user?.userName },
+                      {
+                        label: "Age",
+                        value: `${calculateAge(user?.dateOfBirth)} yrs`,
+                      },
+                      { label: "Title", value: user?.title },
+                      { label: "Address", value: user?.address },
+                      { label: "Contacts", value: user?.contacts },
+                      { label: "Email", value: user?.email },
+                    ].map((item, i) => (
+                      <div
+                        key={i}
+                        className="bg-white dark:bg-neutral-800 px-5 py-4 rounded-xl border border-gray-200 dark:border-neutral-700 shadow-sm"
                       >
-                        Logout
-                      </button>
-                    </div>
+                        <span className="block text-gray-500 dark:text-gray-400 text-xs font-medium mb-1">
+                          {item.label}
+                        </span>
+                        <span className="text-sm font-semibold text-gray-900 dark:text-white break-words">
+                          {item.value || "-"}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+
+                  {/* Logout Button */}
+                  <div className="p-6 pt-0 flex justify-center">
+                    <button
+                      onClick={handleLogout}
+                      className="bg-gradient-to-r from-green-500 to-emerald-600 hover:brightness-110 transition duration-300 text-white font-semibold px-10 py-3 rounded-full shadow-lg"
+                    >
+                      Logout
+                    </button>
                   </div>
                 </div>
               </div>
