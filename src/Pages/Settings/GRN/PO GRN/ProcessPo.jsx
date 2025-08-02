@@ -12,7 +12,7 @@ import toast from "react-hot-toast";
 import axios from "axios";
 
 //API
-const URL = import.meta.env.VITE_API;
+const URL = import.meta.env.VITE_API_URL;
 
 
 const ProcessPo = ({ onClose, session, onPoStatusUpdate }) => {

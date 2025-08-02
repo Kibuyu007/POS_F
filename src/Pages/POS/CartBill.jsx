@@ -9,7 +9,7 @@ import axios from "axios";
 import toast from "react-hot-toast";
 
 //API
-const URL = import.meta.env.VITE_API;
+const URL = import.meta.env.VITE_API_URL;
 
 
 const Cart = ({ triggerRefreshMenu }) => {

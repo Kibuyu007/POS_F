@@ -6,7 +6,7 @@ import { useDispatch } from "react-redux";
 import { loginSuccess, logoutSuccess } from "../../Redux/userSlice";
 
 //API
-const URL = import.meta.env.VITE_API;
+const URL = import.meta.env.VITE_API_URL;
 
 const Login = () => {
   const [userLogin, setUserLogin] = useState({

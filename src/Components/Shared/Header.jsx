@@ -9,7 +9,7 @@ import { AiOutlineLogout } from "react-icons/ai";
 import { itemsError, itemsFetch, itemsPending } from "../../Redux/items";
 
 //URL
-const URL = import.meta.env.VITE_API;
+const URL = import.meta.env.VITE_API_URL;
 
 const Header = () => {
   const { items = [] } = useSelector((state) => state.items);

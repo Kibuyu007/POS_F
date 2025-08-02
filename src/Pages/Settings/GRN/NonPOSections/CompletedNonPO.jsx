@@ -13,7 +13,7 @@ import Loading from "../../../../Components/Shared/Loading";
 
 
 //API
-const URL = import.meta.env.VITE_API;
+const URL = import.meta.env.VITE_API_URL;
 
 
 const CompletedNonPO = () => {
