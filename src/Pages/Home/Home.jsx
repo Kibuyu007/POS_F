@@ -9,8 +9,8 @@ import axios from "axios";
 import dayjs from "dayjs";
 
 //API
-import BASE_URL from "../../Utils/config"
-
+import BASE_URL from "../../Utils/config";
+import TableDash from "./TableDash";
 
 const Home = () => {
   const [totalSales, setTotalSales] = useState(0);
@@ -42,12 +42,9 @@ const Home = () => {
   useEffect(() => {
     const fetchSales = async () => {
       try {
-        const res = await axios.get(
-          `${BASE_URL}/api/transactions/all`,
-          {
-            withCredentials: true,
-          }
-        );
+        const res = await axios.get(`${BASE_URL}/api/transactions/all`, {
+          withCredentials: true,
+        });
 
         const allSales = res.data.data;
         const startDate = getStartDate(filter);
@@ -120,12 +117,9 @@ const Home = () => {
   useEffect(() => {
     const fetchComposedData = async () => {
       try {
-        const res = await axios.get(
-          `${BASE_URL}/api/transactions/all`,
-          {
-            withCredentials: true,
-          }
-        );
+        const res = await axios.get(`${BASE_URL}/api/transactions/all`, {
+          withCredentials: true,
+        });
 
         const allSales = res.data.data;
         const startDate = getStartDate(filter);
@@ -224,6 +218,9 @@ const Home = () => {
             footerNum={manunuziPercentage}
           />
         </div>
+
+        {/* Recent Orders */}
+        <TableDash />
 
         {/* Chart */}
         <Chart
