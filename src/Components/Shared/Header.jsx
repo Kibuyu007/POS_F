@@ -9,7 +9,7 @@ import { AiOutlineLogout } from "react-icons/ai";
 import { itemsError, itemsFetch, itemsPending } from "../../Redux/items";
 
 //URL
-import BASE_URL from "../../Utils/config"
+import BASE_URL from "../../Utils/config";
 
 const Header = () => {
   const { items = [] } = useSelector((state) => state.items);
@@ -233,7 +233,7 @@ const Header = () => {
                     ].map((item, i) => (
                       <div
                         key={i}
-                        className="bg-white dark:bg-neutral-800 px-5 py-4 rounded-xl border border-gray-200 dark:border-neutral-700 shadow-sm"
+                        className="bg-gray-100 dark:bg-neutral-800 px-5 py-4 rounded-xl border border-gray-400 dark:border-neutral-700 shadow-md hover:shadow-xl transition-shadow"
                       >
                         <span className="block text-gray-500 dark:text-gray-400 text-xs font-medium mb-1">
                           {item.label}
