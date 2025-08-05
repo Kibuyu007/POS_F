@@ -8,7 +8,7 @@ import { IoIosArrowBack, IoIosArrowForward } from "react-icons/io";
 import Loading from "../../../Components/Shared/Loading";
 
 //API
-const URL = import.meta.env.VITE_API_URL;
+import BASE_URL from "../../../Utils/config"
 
 
 const BillNonPo = () => {
@@ -31,7 +31,7 @@ const BillNonPo = () => {
     try {
       setLoad(true);
       const res = await axios.get(
-        `${URL}/api/grn/nonPoBillReport`
+        `${BASE_URL}/api/grn/nonPoBillReport`
       );
       if (res.data.success) {
         setReportData(res.data.data);

@@ -9,7 +9,7 @@ import axios from "axios";
 import dayjs from "dayjs";
 
 //API
-const URL = import.meta.env.VITE_API_URL;
+import BASE_URL from "../../Utils/config"
 
 
 const Home = () => {
@@ -43,7 +43,7 @@ const Home = () => {
     const fetchSales = async () => {
       try {
         const res = await axios.get(
-          `${URL}/api/transactions/all`,
+          `${BASE_URL}/api/transactions/all`,
           {
             withCredentials: true,
           }
@@ -85,10 +85,10 @@ const Home = () => {
     const fetchGrn = async () => {
       try {
         const [resPo, resNonPo] = await Promise.all([
-          axios.get(`${URL}/api/grn/allGrnPo`, {
+          axios.get(`${BASE_URL}/api/grn/allGrnPo`, {
             withCredentials: true,
           }),
-          axios.get(`${URL}/api/grn/nonPo`, {
+          axios.get(`${BASE_URL}/api/grn/nonPo`, {
             withCredentials: true,
           }),
         ]);
@@ -121,7 +121,7 @@ const Home = () => {
     const fetchComposedData = async () => {
       try {
         const res = await axios.get(
-          `${URL}/api/transactions/all`,
+          `${BASE_URL}/api/transactions/all`,
           {
             withCredentials: true,
           }

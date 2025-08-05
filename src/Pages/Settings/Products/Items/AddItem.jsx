@@ -7,7 +7,7 @@ import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
 
 //API
-const URL = import.meta.env.VITE_API;
+import BASE_URL from "../../../../Utils/config"
 
 
 const AddItem = ({ showModal, setShowModal, onUserAdded }) => {
@@ -66,7 +66,7 @@ const AddItem = ({ showModal, setShowModal, onUserAdded }) => {
     e.preventDefault();
     try {
       const response = await axios.post(
-        `${URL}/api/items/addItem`,
+        `${BASE_URL}/api/items/addItem`,
         regi,{ withCredentials: true }
       );
       console.log(response);

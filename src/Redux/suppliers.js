@@ -3,7 +3,7 @@ import axios from "axios";
 
 
 //API
-const URL = import.meta.env.VITE_API;
+import BASE_URL from "../Utils/config"
 
 
 // Initial state
@@ -116,7 +116,7 @@ export const {
 export const fetchSuppliers = () => async (dispatch) => {
   dispatch(supplierPending());
   try {
-    const response = await axios.get(`${URL}/api/suppliers/getSuppliers`);
+    const response = await axios.get(`${BASE_URL}/api/suppliers/getSuppliers`);
     dispatch(supplierFetch(response.data));
   } catch (error) {
     dispatch(supplierError(error.message || "Error fetching suppliers"));
@@ -127,7 +127,7 @@ export const fetchSuppliers = () => async (dispatch) => {
 export const fetchAllSuppliers = () => async (dispatch) => {
   dispatch(supplierPending());
   try {
-    const response = await axios.get(`${URL}/api/suppliers/getAllSuppliers`);
+    const response = await axios.get(`${BASE_URL}/api/suppliers/getAllSuppliers`);
     dispatch(supplierAllFetch(response.data));
   } catch (error) {
     dispatch(supplierError(error.message || "Error fetching all suppliers"));

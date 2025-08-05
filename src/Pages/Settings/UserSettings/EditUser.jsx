@@ -2,7 +2,7 @@ import axios from "axios";
 import { useEffect, useState } from "react";
 
 //API
-const URL = import.meta.env.VITE_API;
+import BASE_URL from "../../../Utils/config"
 
 
 const EditUser = ({ showModal, setShowModal, onUserAdded, user }) => {
@@ -103,7 +103,7 @@ useEffect(() => {
 
       // Send PUT request to backend
       const response = await axios.put(
-        `${URL}/api/users/update/${user._id}`,
+        `${BASE_URL}/api/users/update/${user._id}`,
         formData,
         {
           headers: { "Content-Type": "multipart/form-data" },

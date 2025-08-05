@@ -6,7 +6,7 @@ import { useDispatch } from "react-redux";
 import { loginSuccess, logoutSuccess } from "../../Redux/userSlice";
 
 //API
-const URL = import.meta.env.VITE_API_URL;
+import BASE_URL from './../../Utils/config';
 
 const Login = () => {
   const [userLogin, setUserLogin] = useState({
@@ -45,7 +45,7 @@ const Login = () => {
 
   const handleLogout = async () => {
     try {
-      await axios.get(`${URL}/api/auth/logout`, {
+      await axios.get(`${BASE_URL}/api/auth/logout`, {
         withCredentials: true,
       });
 
@@ -67,7 +67,7 @@ const Login = () => {
 
     try {
       const res = await axios.post(
-        `${URL}/api/auth/login`,
+        `${BASE_URL}/api/auth/login`,
         userLogin,
         {
           withCredentials: true,

@@ -9,7 +9,7 @@ import Loading from "../../../Components/Shared/Loading";
 
 
 //API
-const URL = import.meta.env.VITE_API_URL;
+import BASE_URL from "../../../Utils/config"
 
 
 const BillPo = () => {
@@ -32,7 +32,7 @@ const BillPo = () => {
   const fetchReport = async () => {
     try {
       setLoad(true);
-      const res = await axios.get(`${URL}/api/grn/billPo`);
+      const res = await axios.get(`${BASE_URL}/api/grn/billPo`);
       if (res.data.success) {
         setReportData(res.data.data);
         setFilteredData(res.data.data);

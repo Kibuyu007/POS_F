@@ -16,7 +16,7 @@ import { DatePicker } from "@mui/x-date-pickers/DatePicker";
 import { BsToggleOff, BsToggleOn } from "react-icons/bs";
 
 //API
-const URL = import.meta.env.VITE_API_URL;
+import BASE_URL from "../../../../Utils/config"
 
 
 const NonPoGrn = () => {
@@ -148,7 +148,7 @@ const NonPoGrn = () => {
 
     try {
       const response = await axios.post(
-        `${URL}/api/grn/newGrn`,
+        `${BASE_URL}/api/grn/newGrn`,
         grnData
       );
 

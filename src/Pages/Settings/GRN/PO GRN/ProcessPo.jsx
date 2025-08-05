@@ -12,7 +12,7 @@ import toast from "react-hot-toast";
 import axios from "axios";
 
 //API
-const URL = import.meta.env.VITE_API_URL;
+import BASE_URL from "../../../../Utils/config"
 
 
 const ProcessPo = ({ onClose, session, onPoStatusUpdate }) => {
@@ -181,7 +181,7 @@ const ProcessPo = ({ onClose, session, onPoStatusUpdate }) => {
 
     try {
       const response = await axios.post(
-        `${URL}/api/grn/poGrn`,
+        `${BASE_URL}/api/grn/poGrn`,
         poGrnData
       );
 
@@ -206,7 +206,7 @@ const ProcessPo = ({ onClose, session, onPoStatusUpdate }) => {
         });
 
         const poUpdateResponse = await axios.put(
-          `${URL}/api/manunuzi/updatePo/${session.grnSessionId}`,
+          `${BASE_URL}/api/manunuzi/updatePo/${session.grnSessionId}`,
           { status: "Approved" }
         );
 

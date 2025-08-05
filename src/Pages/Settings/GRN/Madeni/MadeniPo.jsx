@@ -11,7 +11,7 @@ import dayjs from "dayjs";
 import Loading from "../../../../Components/Shared/Loading";
 
 //API
-const URL = import.meta.env.VITE_API_URL;
+import BASE_URL from "../../../../Utils/config"
 
 
 const MadeniPo = () => {
@@ -30,7 +30,7 @@ const MadeniPo = () => {
   const fetchUnpaidPo = async () => {
     try {
       setLoad(true);
-      const res = await axios.get(`${URL}/api/grn/unpaidPo`);
+      const res = await axios.get(`${BASE_URL}/api/grn/unpaidPo`);
       if (res.data.success) {
         setDeni(res.data.data);
         setLoad(false);
@@ -47,7 +47,7 @@ const MadeniPo = () => {
   const handlePreview = async (grnId) => {
     try {
       const res = await axios.get(
-        `${URL}/api/grn/billDetails/${grnId}`
+        `${BASE_URL}/api/grn/billDetails/${grnId}`
       );
       if (res.data.success) {
         setModalData(res.data.data);
@@ -60,7 +60,7 @@ const MadeniPo = () => {
 
   const toggleStatus = async (grnId, itemId) => {
     try {
-      const res = await axios.put(`${URL}/api/grn/updateBill`, {
+      const res = await axios.put(`${BASE_URL}/api/grn/updateBill`, {
         grnId,
         itemId,
       });

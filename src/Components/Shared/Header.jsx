@@ -9,7 +9,7 @@ import { AiOutlineLogout } from "react-icons/ai";
 import { itemsError, itemsFetch, itemsPending } from "../../Redux/items";
 
 //URL
-const URL = import.meta.env.VITE_API_URL;
+import BASE_URL from "../../Utils/config"
 
 const Header = () => {
   const { items = [] } = useSelector((state) => state.items);
@@ -25,7 +25,7 @@ const Header = () => {
   const fetchData = async () => {
     try {
       dispatch(itemsPending());
-      let url = `${URL}/api/items/allItemsRaw`;
+      let url = `${BASE_URL}/api/items/allItemsRaw`;
 
       const response = await fetch(url);
       if (!response.ok) throw new Error("Failed to fetch items");
@@ -46,7 +46,7 @@ const Header = () => {
   // Handle Logout
   const handleLogout = async () => {
     try {
-      await axios.get(`${URL}/api/auth/logout`, {
+      await axios.get(`${BASE_URL}/api/auth/logout`, {
         withCredentials: true,
       });
 

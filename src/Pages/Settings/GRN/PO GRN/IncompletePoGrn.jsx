@@ -11,8 +11,7 @@ import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs";
 import dayjs from "dayjs";
 
 //API
-const URL = import.meta.env.VITE_API_URL;
-
+import BASE_URL from "../../../../Utils/config"
 
 const IncompletePoGrn = () => {
   const [items, setItems] = useState([]);
@@ -30,7 +29,7 @@ const IncompletePoGrn = () => {
   const fetchOutstandingItems = async () => {
     try {
       setLoad(true);
-      const res = await axios.get(`${URL}/api/grn/outstand`,{
+      const res = await axios.get(`${BASE_URL}/api/grn/outstand`,{
   withCredentials: true,
 });
       if (res.data.success) {
@@ -66,7 +65,7 @@ const IncompletePoGrn = () => {
     for (const item of updates) {
       try {
         const res = await axios.put(
-          `${URL}/api/grn/updateOutstanding`,
+          `${BASE_URL}/api/grn/updateOutstanding`,
           {
             grnId: item.grnId,
             itemId: item.itemId,

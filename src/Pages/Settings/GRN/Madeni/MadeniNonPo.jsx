@@ -10,7 +10,7 @@ import DeniNonPoPdf from "./DeniNonPoPdf";
 import Loading from "../../../../Components/Shared/Loading";
 
 //API
-const URL = import.meta.env.VITE_API_URL;
+import BASE_URL from "../../../../Utils/config"
 
 
 const MadeniNonPo = () => {
@@ -29,7 +29,7 @@ const MadeniNonPo = () => {
   const fetchUnpaidNonPo = async () => {
     try {
       setLoad(true);
-      const res = await axios.get(`${URL}/api/grn/unpaidNonPo`);
+      const res = await axios.get(`${BASE_URL}/api/grn/unpaidNonPo`);
       if (res.data.success) {
         setDeniNon(res.data.data);
         setLoad(false);
@@ -51,7 +51,7 @@ const MadeniNonPo = () => {
   const toggleStatus = async (grnId, itemId) => {
     try {
       const res = await axios.put(
-        `${URL}/api/grn/updateNonPoBill`,
+        `${BASE_URL}/api/grn/updateNonPoBill`,
         {
           grnId,
           itemId,

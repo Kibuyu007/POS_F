@@ -5,7 +5,7 @@ import { useDispatch } from "react-redux";
 
 
 //API
-const URL = import.meta.env.VITE_API;
+import BASE_URL from "../../../../Utils/config"
 
 
 const EditCategory = ({
@@ -42,7 +42,7 @@ const EditCategory = ({
 
     try {
       const response = await axios.put(
-        `${URL}/api/itemsCategories/editItemCategories/${catego._id}`,
+        `${BASE_URL}/api/itemsCategories/editItemCategories/${catego._id}`,
         editData,{ withCredentials: true }
       );
       console.log(response);

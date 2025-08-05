@@ -2,7 +2,7 @@ import { useState } from "react";
 import axios from "axios";
 
 //API
-const URL = import.meta.env.VITE_API;
+import BASE_URL from "../../../Utils/config"
 
 
 const AddUser = ({ showModal, setShowModal, onUserAdded }) => {
@@ -77,7 +77,7 @@ const AddUser = ({ showModal, setShowModal, onUserAdded }) => {
       formData.append("roles", JSON.stringify(newUser.roles));
       formData.append("password", newUser.password);
 
-      await axios.post(`${URL}/api/auth/register`, formData, {
+      await axios.post(`${BASE_URL}/api/auth/register`, formData, {
         headers: { "Content-Type": "multipart/form-data" },
       });
       console.log("User added:");

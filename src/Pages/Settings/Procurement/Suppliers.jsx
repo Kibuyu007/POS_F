@@ -19,7 +19,7 @@ import axios from "axios";
 import { IoIosArrowBack, IoIosArrowForward } from "react-icons/io";
 
 //API
-const URL = import.meta.env.VITE_API;
+import BASE_URL from "../../../Utils/config"
 
 
 const Suppliers = () => {
@@ -70,7 +70,7 @@ const Suppliers = () => {
     const newStatus = currentStatus === "Active" ? "Inactive" : "Active";
     try {
       const res = await axios.put(
-        `${URL}/api/suppliers/status/${supplierId}`,
+        `${BASE_URL}/api/suppliers/status/${supplierId}`,
         {
           status: newStatus,
         }

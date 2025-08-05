@@ -4,7 +4,7 @@ import { useDispatch } from "react-redux";
 import { useState } from "react";
 
 //API
-const URL = import.meta.env.VITE_API;
+import BASE_URL from "../../../../Utils/config"
 
 
 const AddCategory = ({ showModal, setShowModal, onCategoryAdded }) => {
@@ -26,7 +26,7 @@ const AddCategory = ({ showModal, setShowModal, onCategoryAdded }) => {
     e.preventDefault();
     try {
       const response = await axios.post(
-        `${URL}/api/itemsCategories/addItemCategories`,
+        `${BASE_URL}/api/itemsCategories/addItemCategories`,
         regi,{ withCredentials: true }
       );
       console.log(response);

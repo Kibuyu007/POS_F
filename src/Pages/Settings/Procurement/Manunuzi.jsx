@@ -12,7 +12,7 @@ import { fetchSuppliers } from "../../../Redux/suppliers";
 import Loading from "../../../Components/Shared/Loading";
 
 //API
-const URL = import.meta.env.VITE_API;
+import BASE_URL from "../../../Utils/config"
 
 
 const Manunuzi = () => {
@@ -93,7 +93,7 @@ const Manunuzi = () => {
       }
 
       const response = await axios.post(
-        `${URL}/api/manunuzi/addPo`,
+        `${BASE_URL}/api/manunuzi/addPo`,
         {
           ...regi,
           allItems: selectedItem.map((item) => ({

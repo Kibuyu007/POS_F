@@ -4,7 +4,7 @@ import { useDispatch, useSelector } from "react-redux";
 import { useEffect, useState } from "react";
 
 //API
-const URL = import.meta.env.VITE_API;
+import BASE_URL from "../../../Utils/config"
 
 
 const AddSupplier = ({ showModal, setShowModal }) => {
@@ -45,7 +45,7 @@ const AddSupplier = ({ showModal, setShowModal }) => {
     e.preventDefault();
     try {
       const response = await axios.post(
-        `${URL}/api/suppliers/addSupplier`,
+        `${BASE_URL}/api/suppliers/addSupplier`,
         regi
       );
       console.log(response);

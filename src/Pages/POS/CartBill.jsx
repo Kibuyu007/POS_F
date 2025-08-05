@@ -9,7 +9,7 @@ import axios from "axios";
 import toast from "react-hot-toast";
 
 //API
-const URL = import.meta.env.VITE_API_URL;
+import BASE_URL from "../../Utils/config"
 
 
 const Cart = ({ triggerRefreshMenu }) => {
@@ -65,7 +65,7 @@ const Cart = ({ triggerRefreshMenu }) => {
       };
 
       const response = await axios.post(
-        `${URL}/api/transactions/sales`,
+        `${BASE_URL}/api/transactions/sales`,
         payload,
         { withCredentials: true }
       );
@@ -115,7 +115,7 @@ const Cart = ({ triggerRefreshMenu }) => {
   const handlePrintReceipt = async () => {
     try {
       const response = await axios.get(
-        `${URL}/api/receipt/receipt`,
+        `${BASE_URL}/api/receipt/receipt`,
         lastTransactionDetails,
         {
           responseType: "blob", // PDF blob

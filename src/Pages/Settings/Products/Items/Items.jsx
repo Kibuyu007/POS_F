@@ -17,7 +17,7 @@ import { FaSearch } from "react-icons/fa";
 import { IoIosArrowBack, IoIosArrowForward } from "react-icons/io";
 
 //API
-const URL = import.meta.env.VITE_API;
+import BASE_URL from "../../../../Utils/config"
 
 
 const Items = () => {
@@ -44,7 +44,7 @@ const Items = () => {
   const fetchData = async () => {
     try {
       dispatch(itemsPending());
-      let url = `${URL}/api/items/getAllItems?page=${currentPage}&limit=${itemsPerPage}&search=${searchQuery}`;
+      let url = `${BASE_URL}/api/items/getAllItems?page=${currentPage}&limit=${itemsPerPage}&search=${searchQuery}`;
 
       if (filterStatus !== "All") {
         url += `&status=${filterStatus.toLowerCase()}`;

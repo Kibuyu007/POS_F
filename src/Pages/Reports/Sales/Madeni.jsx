@@ -7,7 +7,7 @@ import { DatePicker } from "@mui/x-date-pickers/DatePicker";
 import Loading from "../../../Components/Shared/Loading";
 
 //API
-const URL = import.meta.env.VITE_API_URL;
+import BASE_URL from "../../../Utils/config"
 
 
 const Madeni = () => {
@@ -28,7 +28,7 @@ const Madeni = () => {
     setLoad(true);
     try {
       const res = await axios.get(
-        `${URL}/api/transactions/bill`,
+        `${BASE_URL}/api/transactions/bill`,
         { withCredentials: true }
       );
       if (res.data.success) {
@@ -50,7 +50,7 @@ const Madeni = () => {
     }
     try {
       const res = await axios.patch(
-        `${URL}/api/transactions/payBill/${id}`,
+        `${BASE_URL}/api/transactions/payBill/${id}`,
         { paymentAmount: amount },
         { withCredentials: true }
       );

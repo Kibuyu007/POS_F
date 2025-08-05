@@ -13,7 +13,7 @@ import Loading from "../../../../Components/Shared/Loading";
 
 
 //API
-const URL = import.meta.env.VITE_API_URL;
+import BASE_URL from "../../../../Utils/config"
 
 
 const CompletedNonPO = () => {
@@ -34,7 +34,7 @@ const CompletedNonPO = () => {
     const fetchCompletedNonPoGrns = async () => {
       setLoad(true);
       try {
-        const res = await axios.get(`${URL}/api/grn/nonPo`);
+        const res = await axios.get(`${BASE_URL}/api/grn/nonPo`);
         if (res.data.success) {
           setGrns(res.data.data);
           setLoad(false);

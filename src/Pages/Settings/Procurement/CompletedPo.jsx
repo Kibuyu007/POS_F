@@ -15,7 +15,7 @@ import Loading from "../../../Components/Shared/Loading";
 import { fetchSuppliers } from "../../../Redux/suppliers";
 
 //API
-const URL = import.meta.env.VITE_API;
+import BASE_URL from "../../../Utils/config"
 
 
 const CompletedPo = () => {
@@ -78,7 +78,7 @@ const CompletedPo = () => {
     const fetchData = async () => {
       try {
         setLoad(true);
-        const res = await axios.get(`${URL}/api/manunuzi/getPo`);
+        const res = await axios.get(`${BASE_URL}/api/manunuzi/getPo`);
         if (res.data.success) {
           // Summarize sessions
           const summarized = res.data.data.map((session) => ({

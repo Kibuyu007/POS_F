@@ -7,7 +7,7 @@ import toast from "react-hot-toast";
 
 
 //API
-const URL = import.meta.env.VITE_API_URL;
+import BASE_URL from "../../Utils/config"
 
 const MenuCard = ({ refreshTrigger }) => {
   const cartData = useSelector((state) => state.cart.cart);
@@ -30,14 +30,14 @@ const MenuCard = ({ refreshTrigger }) => {
     const fetchCategories = async () => {
       try {
         const { data } = await axios.get(
-          `${URL}/api/itemsCategories/getItemCategories`
+          `${BASE_URL}/api/itemsCategories/getItemCategories`
         );
 
         if (data.success) {
           const categoriesWithItemCount = await Promise.all(
             data.data.map(async (category) => {
               const itemCount = await axios.get(
-                `${URL}/api/items/getAllItems?category=${category._id}`
+                `${BASE_URL}/api/items/getAllItems?category=${category._id}`
               );
               return {
                 ...category,
@@ -80,7 +80,7 @@ const MenuCard = ({ refreshTrigger }) => {
     async (categoryId) => {
       try {
         const { data } = await axios.get(
-          `${URL}/api/items/getAllItems?category=${categoryId}`
+          `${BASE_URL}/api/items/getAllItems?category=${categoryId}`
         );
 
         if (data.success) {
@@ -112,7 +112,7 @@ const MenuCard = ({ refreshTrigger }) => {
   const searchItemsByCategoryAndName = async (categoryId, searchTerm) => {
     try {
       const res = await axios.get(
-        `${URL}/api/items/searchInPos`,
+        `${BASE_URL}/api/items/searchInPos`,
         {
           params: {
             category: categoryId,

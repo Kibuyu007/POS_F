@@ -12,7 +12,7 @@ import AddUser from "./AddUser";
 import EditUser from "./EditUser";
 
 //API
-const URL = import.meta.env.VITE_API;
+import BASE_URL from "../../../Utils/config"
 
 
 const UserManagement = () => {
@@ -59,7 +59,7 @@ const UserManagement = () => {
   // Fetch data from API or use dummy data
   const fetchData = async () => {
     try {
-      const response = await fetch(`${URL}/api/users/allUsers`);
+      const response = await fetch(`${BASE_URL}/api/users/allUsers`);
       if (!response.ok) {
         throw new Error("Failed to fetch users");
       }
@@ -87,7 +87,7 @@ const UserManagement = () => {
       const newStatus = currentStatus === "Active" ? "Inactive" : "Active";
 
       const response = await axios.put(
-        `${URL}/api/users/status/${userId}`,
+        `${BASE_URL}/api/users/status/${userId}`,
         {
           status: newStatus,
         }

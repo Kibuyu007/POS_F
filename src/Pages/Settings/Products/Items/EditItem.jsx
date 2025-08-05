@@ -5,7 +5,7 @@ import { fetchCategories } from "../../../../Redux/itemsCategories";
 import axios from "axios";
 
 //API
-const URL = import.meta.env.VITE_API;
+import BASE_URL from "../../../../Utils/config"
 
 
 const EditItem = ({ showModal, setShowModal, item, onItemUpdated }) => {
@@ -75,7 +75,7 @@ const EditItem = ({ showModal, setShowModal, item, onItemUpdated }) => {
 
     try {
       const response = await axios.put(
-        `${URL}/api/items/editItem/${item._id}`,
+        `${BASE_URL}/api/items/editItem/${item._id}`,
         editData,{ withCredentials: true }
       );
       console.log(response);
