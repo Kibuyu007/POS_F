@@ -109,7 +109,7 @@ const NonPoGrn = () => {
     const selectedSupplier = supplier.find(
       (sup) => sup._id === regi.supplierName
     );
-    if (!regi.supplierName || !regi.invoiceNumber || !regi.receivingDate) {
+    if (!regi.supplierName ||  !regi.receivingDate) {
       setError("Please fill all required fields.");
       return;
     }

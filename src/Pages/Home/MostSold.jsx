@@ -14,7 +14,7 @@ const MostSold = ({ list }) => {
     <div className="mt-6 pr-4">
       <div className="w-full rounded-2xl shadow-lg bg-white">
         {/* Header */}
-        <div className="flex justify-between items-center px-6 py-4 border-b border-gray-200">
+        <div className="flex justify-between items-center px-6 py-4 border-b border-gray-200  sm:flex-col sm:items-center sm:justify-between">
           <h1 className="text-xl font-bold text-gray-800 tracking-wide">
             Madeni
           </h1>
@@ -37,7 +37,7 @@ const MostSold = ({ list }) => {
               tx.items?.map((item, itemIndex) => (
                 <div
                   key={`${tx._id}-${item.item?._id || itemIndex}`}
-                  className="bg-gradient-to-r from-gray-100 to-gray-200 rounded-xl p-4 mb-4 shadow-sm hover:shadow-md transition"
+                  className="bg-gradient-to-r from-gray-100 to-gray-200 rounded-xl p-4 mb-4 shadow-sm hover:shadow-md transition "
                 >
                   {/* Customer Name */}
                   <div className="flex text-sm font-semibold text-gray-600 mb-1 justify-between">

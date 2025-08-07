@@ -1,9 +1,6 @@
 /** @type {import('tailwindcss').Config} */
 export default {
-  content: [
-    "./index.html",
-    "./src/**/*.{js,ts,jsx,tsx}",
-  ],
+  content: ["./index.html", "./src/**/*.{js,ts,jsx,tsx}"],
   theme: {
     extend: {
       colors: {
@@ -23,26 +20,39 @@ export default {
         lightGreen: "#1b5e20",
       },
       screens: {
-        xs: "400px",  // Extra small screens (phones)
-        sm: "640px",  // Small screens (larger phones)
-        md: "768px",  // Medium screens (tablets)
+        xs: "400px", // Extra small screens (phones)
+        sm: "640px", // Small screens (larger phones)
+        md: "768px", // Medium screens (tablets)
         lg: "1024px", // Large screens (laptops)
         xl: "1280px", // Extra large screens (desktops)
         "2xl": "1536px", // Bigger screens
+        // Phones
+        phone: "480px",
+
+        // Tablets
+        tablet: "768px", // Base tablet (portrait)
+        "tablet-md": "800px", // Slightly wider portrait tablets
+        "tablet-lg": "1024px", // Tablet landscape start
+        "tablet-xl": "1280px", // Larger landscape tablets
+
+        // Laptops / Desktops
+        laptop: "1366px", // Common laptop width
+        "laptop-md": "1440px",
+
+        // Desktops
+        desktop: "1920px",
+        "desktop-xl": "2560px",
       },
-          animation: {
-        loadingBar: 'loadingBar 2s linear infinite',
+      animation: {
+        loadingBar: "loadingBar 2s linear infinite",
       },
       keyframes: {
         loadingBar: {
-          '40%': { transform: 'translateX(-100%)' },
-          '100%': { transform: 'translateX(100%)' },
+          "40%": { transform: "translateX(-100%)" },
+          "100%": { transform: "translateX(100%)" },
         },
       },
     },
   },
-  plugins: [
-    require('tailwind-scrollbar-hide'),
-  ],
-}
-
+  plugins: [require("tailwind-scrollbar-hide")],
+};

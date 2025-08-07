@@ -101,12 +101,12 @@ const Header = () => {
 
   return (
     <div className="fixed  left-4 right-4 flex justify-center z-50">
-      <header className="w-full max-w-[1500px] backdrop-blur-md px-4 sm:px-6 md:px-8 lg:px-10 xl:px-12 py-3 sm:py-4 flex justify-between items-center">
+      <header className="w-full max-w-[1500px] mx-auto backdrop-blur-md px-4 sm:px-6 md:px-8 py-3 sm:py-4 flex justify-between items-center">
         {/* Logo */}
         <div className="flex items-center gap-2 sm:gap-3">
           <img
             src={logo}
-            className="h-80 w-10 sm:h-12 sm:w-12 rounded-md shadow-md"
+            className="h-10 w-10 sm:h-12 sm:w-12 rounded-md shadow-md"
             alt="Logo"
           />
           <h1 className="text-base sm:text-lg md:text-xl font-bold">Uza</h1>
@@ -129,7 +129,7 @@ const Header = () => {
 
             {/* Notification Dropdown */}
             {notifyOpen && (
-              <div className="absolute right-0 mt-3 w-[400px] max-h-[400px] overflow-y-auto bg-white dark:bg-neutral-900 border border-gray-300 dark:border-neutral-700 shadow-lg rounded-2xl z-50 animate-fade-in-up transition-all">
+              <div className="absolute right-0 mt-3 w-[90vw] sm:w-[400px] max-h-[80vh] overflow-y-auto bg-white dark:bg-neutral-900 border border-gray-300 dark:border-neutral-700 shadow-lg rounded-2xl z-50 animate-fade-in-up transition-all">
                 {/* Header */}
                 <div className="px-5 py-4 bg-gradient-to-r from-rose-600 to-pink-500 rounded-t-2xl flex justify-between items-center shadow-md">
                   <div className="text-white">
@@ -206,7 +206,7 @@ const Header = () => {
 
             {/* Dropdown Panel */}
             {dropdownOpen && (
-              <div className="absolute right-0 mt-4 w-[700px] backdrop-blur-sm bg-white/80 dark:bg-neutral-900/90 border border-gray-200 dark:border-neutral-700 shadow-2xl rounded-3xl z-50 overflow-hidden animate-fade-in-up transition-all duration-300">
+              <div className="absolute right-0 mt-4 w-[90vw] sm:w-[600px] md:w-[700px]backdrop-blur-sm bg-white/80 dark:bg-neutral-900/90 border border-gray-200 dark:border-neutral-700 shadow-2xl rounded-3xl z-50 overflow-hidden animate-fade-in-up transition-all duration-300">
                 <div className="rounded-3xl overflow-hidden">
                   {/* Header */}
                   <div className="bg-gradient-to-r from-green-500 to-emerald-600 text-white px-6 py-5 flex items-center justify-between">
@@ -219,7 +219,7 @@ const Header = () => {
                   </div>
 
                   {/* Profile Info */}
-                  <div className="p-6 grid grid-cols-3 gap-5 text-gray-700 dark:text-gray-200 text-sm">
+                  <div className="p-6 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-5 text-gray-700 dark:text-gray-200 text-sm">
                     {[
                       { label: "Username", value: user?.userName },
                       {

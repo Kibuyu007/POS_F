@@ -1,6 +1,6 @@
 const CardOne = ({ title, icon, footerNum, number }) => {
   return (
-    <div className="bg-[#d6d6d6] py-5 px-5 rounded-lg w-full sm:w-[48%] md:w-[32%] lg:w-[24%] xl:w-[100%] shadow-md md:flex-col-3">
+    <div className="bg-[#d6d6d6] py-5 px-5 rounded-lg w-full sm:w-[48%] md:w-[100%] lg:w-[100%] xl:w-[100%] shadow-md md:flex-col-3">
       <div className="flex items-start justify-between">
         <h1 className="text-black text-lg font-bold tracking-wide">{title}</h1>
         <button
