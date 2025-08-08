@@ -2,19 +2,15 @@ import axios from "axios";
 import { useState, useEffect } from "react";
 import { IoIosArrowBack, IoIosArrowForward } from "react-icons/io";
 
-
 import { DatePicker } from "@mui/x-date-pickers/DatePicker";
 import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs";
 import { LocalizationProvider } from "@mui/x-date-pickers";
 import dayjs from "dayjs";
 
-
 import Loading from "../../../../Components/Shared/Loading";
 
-
 //API
-import BASE_URL from "../../../../Utils/config"
-
+import BASE_URL from "../../../../Utils/config";
 
 const CompletedNonPO = () => {
   const [grns, setGrns] = useState([]);
@@ -262,6 +258,7 @@ const CompletedNonPO = () => {
           </p>
 
           <nav className="isolate inline-flex -space-x-px rounded-md shadow-sm">
+            {/* Prev Button */}
             <button
               onClick={prevPage}
               disabled={currentPage === 1}
@@ -272,20 +269,69 @@ const CompletedNonPO = () => {
               <IoIosArrowBack className="size-5" />
             </button>
 
-            {[...Array(totalPages)].map((_, i) => (
-              <button
-                key={i + 1}
-                onClick={() => setCurrentPage(i + 1)}
-                className={`relative inline-flex items-center px-4 py-2 text-sm font-semibold ring-1 ring-gray-300 hover:bg-gray-50 ${
-                  currentPage === i + 1
-                    ? "bg-green-500 text-white"
-                    : "text-gray-900"
-                }`}
-              >
-                {i + 1}
-              </button>
-            ))}
+            {/* Page buttons with ellipsis */}
+            {(() => {
+              const maxPagesToShow = 10;
+              const pages = [];
 
+              if (totalPages <= maxPagesToShow) {
+                for (let i = 1; i <= totalPages; i++) {
+                  pages.push(i);
+                }
+              } else {
+                pages.push(1); // always show first page
+
+                let startPage, endPage;
+
+                if (currentPage <= 6) {
+                  startPage = 2;
+                  endPage = 8;
+                  for (let i = startPage; i <= endPage; i++) pages.push(i);
+                  pages.push("ellipsis-right");
+                  pages.push(totalPages);
+                } else if (currentPage >= totalPages - 5) {
+                  pages.push("ellipsis-left");
+                  startPage = totalPages - 7;
+                  for (let i = startPage; i < totalPages; i++) pages.push(i);
+                  pages.push(totalPages);
+                } else {
+                  pages.push("ellipsis-left");
+                  startPage = currentPage - 2;
+                  endPage = currentPage + 2;
+                  for (let i = startPage; i <= endPage; i++) pages.push(i);
+                  pages.push("ellipsis-right");
+                  pages.push(totalPages);
+                }
+              }
+
+              return pages.map((page, idx) => {
+                if (page === "ellipsis-left" || page === "ellipsis-right") {
+                  return (
+                    <span
+                      key={`ellipsis-${idx}`}
+                      className="relative inline-flex items-center px-4 py-2 text-sm text-gray-700 select-none"
+                    >
+                      ...
+                    </span>
+                  );
+                }
+                return (
+                  <button
+                    key={page}
+                    onClick={() => setCurrentPage(page)}
+                    className={`relative inline-flex items-center px-4 py-2 text-sm font-semibold ring-1 ring-gray-300 hover:bg-gray-50 ${
+                      currentPage === page
+                        ? "bg-green-500 text-white"
+                        : "text-gray-900"
+                    }`}
+                  >
+                    {page}
+                  </button>
+                );
+              });
+            })()}
+
+            {/* Next Button */}
             <button
               onClick={nextPage}
               disabled={currentPage === totalPages}

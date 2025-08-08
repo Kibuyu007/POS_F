@@ -122,34 +122,48 @@ const Home = () => {
         });
 
         const allSales = res.data.data;
-        const startDate = getStartDate(filter);
 
-        // Initialize structure: Sun to Sat
-        const days = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
-        const dailyTotals = days.map((day) => ({
-          name: day,
-          sales: 0,
-          paid: 0,
-          bills: 0,
-        }));
+        // Get date range: last 3 months from today
+        const threeMonthsAgo = dayjs().subtract(3, "month").startOf("month");
+
+        // Prepare structure for weekly data
+        // Example: Week 1, Week 2 ... Week 12 (3 months ≈ 12-13 weeks)
+        const weeklyTotals = {};
 
         allSales.forEach((tx) => {
           const txDate = dayjs(tx.createdAt);
-          if (txDate.isBefore(startDate)) return;
+          if (txDate.isBefore(threeMonthsAgo)) return;
 
-          const dayName = txDate.format("ddd"); // e.g., "Mon"
-          const match = dailyTotals.find((d) => d.name === dayName);
-          if (match) {
-            match.sales += tx.totalAmount;
-            if (tx.status === "Paid") {
-              match.paid += tx.totalAmount;
-            } else if (tx.status === "Bill") {
-              match.bills += tx.totalAmount;
-            }
+          // Create a key like "2025-W32"
+          const weekKey = `W${txDate.week()}`;
+
+          if (!weeklyTotals[weekKey]) {
+            weeklyTotals[weekKey] = {
+              name: weekKey,
+              sales: 0,
+              paid: 0,
+              bills: 0,
+            };
+          }
+
+          weeklyTotals[weekKey].sales += tx.totalAmount;
+
+          if (tx.status === "Paid") {
+            weeklyTotals[weekKey].paid += tx.totalAmount;
+          } else if (tx.status === "Bill") {
+            weeklyTotals[weekKey].bills += tx.totalAmount;
           }
         });
 
-        setComposedData(dailyTotals);
+        // Convert object → sorted array for chart
+        const sortedWeeklyData = Object.values(weeklyTotals).sort((a, b) => {
+          return (
+            dayjs(a.name.split("-W")[0]).week(a.name.split("-W")[1]) -
+            dayjs(b.name.split("-W")[0]).week(b.name.split("-W")[1])
+          );
+        });
+
+        setComposedData(sortedWeeklyData);
       } catch (error) {
         console.error("Failed to fetch composed chart data", error);
       }
@@ -220,7 +234,7 @@ const Home = () => {
         </div>
 
         {/* Recent Orders */}
-        <TableDash />
+        <TableDash list={billed} />
 
         {/* Chart */}
         <Chart
@@ -234,7 +248,7 @@ const Home = () => {
 
       {/* Left Section */}
       <div className="flex-[1] bg-secondary rounded-xl p-4 sm:p-6 shadow-md text-black overflow-y-auto max-h-[80vh] scrollbar-hide">
-        <MostSold list={billed} />
+        <MostSold />
       </div>
     </section>
   );

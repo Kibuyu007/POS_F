@@ -54,44 +54,47 @@ const Charts = ({ salesPercent, paidPercent, billPercent, composedData }) => {
   return (
     <div className="grid grid-cols-1 md:grid-cols-1 sm:grid-cols-1 gap-4 mt-4">
       {/* Composed Chart */}
-      <div className="bg-gray-100 p-4 rounded-xl shadow-md">
-        <h2 className="text-xl font-semibold text-center mb-2 text-gray-700">
-          Sales Breakdown (Daily)
-        </h2>
-        <ResponsiveContainer width="100%" height={270}>
-          <ComposedChart
-            data={composedData}
-            margin={{ top: 20, right: 20, bottom: 20, left: 0 }}
-          >
-            <CartesianGrid stroke="#f0f0f0" />
-            <XAxis dataKey="name" />
-            <YAxis />
-            <Tooltip
-              formatter={(value) => `${value.toLocaleString()} TSh`}
-              contentStyle={{
-                backgroundColor: "#ffffff",
-                borderColor: "#ccc",
-                borderRadius: 6,
-              }}
-            />
-            <Legend />
-            <Bar dataKey="sales" name="Sales" barSize={25} fill="#212121" />
-            <Line
-              type="monotone"
-              dataKey="paid"
-              name="Paid"
-              stroke="#4caf50"
-              strokeWidth={2}
-            />
-            <Line
-              type="monotone"
-              dataKey="bills"
-              name="Bills"
-              stroke="#ffd740"
-              strokeWidth={2}
-            />
-          </ComposedChart>
-        </ResponsiveContainer>
+
+      <div className="bg-white p-4 rounded-xl shadow-md ">
+        <div className="relative flex flex-col min-w-0 break-words border border-dashed bg-clip-border rounded-2xl border-stone-400 bg-light/30">
+          <h2 className="text-xl font-semibold text-center mb-2 text-gray-700 mt-2">
+            Sales Breakdown (Cuurent Quarter)
+          </h2>
+          <ResponsiveContainer width="100%" height={270}>
+            <ComposedChart
+              data={composedData}
+              margin={{ top: 20, right: 20, bottom: 20, left: 40 }}
+            >
+              <CartesianGrid stroke="#f0f0f0" />
+              <XAxis dataKey="name" />
+              <YAxis />
+              <Tooltip
+                formatter={(value) => `${value.toLocaleString()} TSh`}
+                contentStyle={{
+                  backgroundColor: "#ffffff",
+                  borderColor: "#ccc",
+                  borderRadius: 6,
+                }}
+              />
+              <Legend />
+              <Bar dataKey="sales" name="Sales" barSize={25} fill="#212121" />
+              <Line
+                type="monotone"
+                dataKey="paid"
+                name="Paid"
+                stroke="#4caf50"
+                strokeWidth={2}
+              />
+              <Line
+                type="monotone"
+                dataKey="bills"
+                name="Bills"
+                stroke="#ffd740"
+                strokeWidth={2}
+              />
+            </ComposedChart>
+          </ResponsiveContainer>
+        </div>
       </div>
 
       {/* Pie Chart */}

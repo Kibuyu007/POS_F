@@ -13,8 +13,7 @@ import { categoriesFetch } from "../../../../Redux/itemsCategories";
 import { AiTwotoneEdit } from "react-icons/ai";
 
 //API
-import BASE_URL from "../../../../Utils/config"
-
+import BASE_URL from "../../../../Utils/config";
 
 const ItemsCategories = () => {
   // Redux State
@@ -248,6 +247,7 @@ const ItemsCategories = () => {
               aria-label="Pagination"
               className="isolate inline-flex -space-x-px rounded-md shadow-xs"
             >
+              {/* Prev Button */}
               <button
                 onClick={prevPage}
                 disabled={currentPage === 1}
@@ -258,22 +258,69 @@ const ItemsCategories = () => {
                 <IoIosArrowBack aria-hidden="true" className="size-5" />
               </button>
 
-              {[...Array(totalPages)].map((_, i) => (
-                <button
-                  key={i + 1}
-                  onClick={() =>
-                    dispatch(
-                      categoriesFetch({ ...category, currentPage: i + 1 })
-                    )
-                  }
-                  className={`relative inline-flex items-center px-4 py-2 text-sm font-semibold text-gray-900 ring-1 ring-gray-300 ring-inset hover:bg-gray-50 focus:z-20 focus:outline-offset-0 ${
-                    currentPage === i + 1 ? "bg-green-500/80 text-white" : ""
-                  }`}
-                >
-                  {i + 1}
-                </button>
-              ))}
+              {/* Page buttons with ellipsis */}
+              {(() => {
+                const maxPagesToShow = 10;
+                const pages = [];
 
+                if (totalPages <= maxPagesToShow) {
+                  for (let i = 1; i <= totalPages; i++) {
+                    pages.push(i);
+                  }
+                } else {
+                  pages.push(1); // always show first page
+
+                  let startPage, endPage;
+
+                  if (currentPage <= 6) {
+                    startPage = 2;
+                    endPage = 8;
+                    for (let i = startPage; i <= endPage; i++) pages.push(i);
+                    pages.push("ellipsis-right");
+                    pages.push(totalPages);
+                  } else if (currentPage >= totalPages - 5) {
+                    pages.push("ellipsis-left");
+                    startPage = totalPages - 7;
+                    for (let i = startPage; i < totalPages; i++) pages.push(i);
+                    pages.push(totalPages);
+                  } else {
+                    pages.push("ellipsis-left");
+                    startPage = currentPage - 2;
+                    endPage = currentPage + 2;
+                    for (let i = startPage; i <= endPage; i++) pages.push(i);
+                    pages.push("ellipsis-right");
+                    pages.push(totalPages);
+                  }
+                }
+
+                return pages.map((page, idx) => {
+                  if (page === "ellipsis-left" || page === "ellipsis-right") {
+                    return (
+                      <span
+                        key={`ellipsis-${idx}`}
+                        className="relative inline-flex items-center px-4 py-2 text-sm text-gray-700 select-none"
+                      >
+                        ...
+                      </span>
+                    );
+                  }
+                  return (
+                    <button
+                      key={page}
+                      onClick={() =>
+                        dispatch(itemsFetch({ ...items, currentPage: page }))
+                      }
+                      className={`relative inline-flex items-center px-4 py-2 text-sm font-semibold text-gray-900 ring-1 ring-gray-300 ring-inset hover:bg-gray-50 focus:z-20 focus:outline-offset-0 ${
+                        currentPage === page ? "bg-green-500/80 text-white" : ""
+                      }`}
+                    >
+                      {page}
+                    </button>
+                  );
+                });
+              })()}
+
+              {/* Next Button */}
               <button
                 onClick={nextPage}
                 disabled={currentPage === totalPages}

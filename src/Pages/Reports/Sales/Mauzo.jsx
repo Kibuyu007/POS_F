@@ -15,8 +15,7 @@ import "jspdf-autotable";
 import Loading from "../../../Components/Shared/Loading";
 
 //API
-import BASE_URL from "../../../Utils/config"
-
+import BASE_URL from "../../../Utils/config";
 
 const Mauzo = () => {
   const [transactions, setTransactions] = useState([]);
@@ -324,31 +323,30 @@ const Mauzo = () => {
                       {txn.status === "Bill" ? (
                         <>
                           <div className="flex items-center gap-2">
-                            <MdReceipt className="text-yellow-500 text-xl" />
+                            <MdReceipt className="text-yellow-500 text-md" />
                             <span className="text-yellow-700 font-semibold tracking-wide">
                               Bill:
                             </span>
-                            <span className="ml-auto font-bold text-yellow-800 text-lg">
+                            <span className="ml-auto font-bold text-yellow-800 text-md">
                               {txn.totalAmount.toLocaleString()} Tsh
                             </span>
                           </div>
                           <div className="flex items-center gap-2">
-                            <MdPayment className="text-black text-xl" />
+                            <MdPayment className="text-black text-md" />
                             <span className="text-green-700 font-semibold tracking-wide">
                               Paid:
                             </span>
-                            <span className="ml-auto font-bold text-green-800 text-lg">
+                            <span className="ml-auto font-bold text-green-800 text-md">
                               {txn.paidAmount?.toLocaleString() || 0} Tsh
                             </span>
                           </div>
                         </>
                       ) : (
                         <div className="flex items-center gap-2 bg-green-100 rounded-full px-4 py-2 shadow-md">
-                          <MdPayment className="text-black text-2xl" />
                           <span className="text-green-700 font-semibold tracking-wide">
                             Paid:
                           </span>
-                          <span className="ml-auto font-extrabold text-green-900 text-lg">
+                          <span className="ml-auto font-extrabold text-green-900 text-sm">
                             {(
                               txn.paidAmount || txn.totalAmount
                             ).toLocaleString()}{" "}
@@ -431,6 +429,7 @@ const Mauzo = () => {
           </p>
 
           <nav className="isolate inline-flex -space-x-px rounded-md shadow-sm">
+            {/* Prev Button */}
             <button
               onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
               disabled={currentPage === 1}
@@ -441,20 +440,80 @@ const Mauzo = () => {
               <IoIosArrowBack className="size-5" />
             </button>
 
-            {[...Array(totalPages)].map((_, i) => (
-              <button
-                key={i + 1}
-                onClick={() => setCurrentPage(i + 1)}
-                className={`relative inline-flex items-center px-4 py-2 text-sm font-semibold ring-1 ring-gray-300 hover:bg-gray-50 ${
-                  currentPage === i + 1
-                    ? "bg-green-500 text-white"
-                    : "text-gray-900"
-                }`}
-              >
-                {i + 1}
-              </button>
-            ))}
+            {/* Page Buttons with Ellipsis */}
+            {(() => {
+              const maxPagesToShow = 10;
+              const pageButtons = [];
 
+              // If total pages <= maxPagesToShow, show all pages
+              if (totalPages <= maxPagesToShow) {
+                for (let i = 1; i <= totalPages; i++) {
+                  pageButtons.push(i);
+                }
+              } else {
+                // Show first page
+                pageButtons.push(1);
+
+                let startPage, endPage;
+                // Calculate start and end page for the sliding window
+                if (currentPage <= 6) {
+                  startPage = 2;
+                  endPage = 8;
+                  // Show pages 2 to 8, then ...
+                  for (let i = startPage; i <= endPage; i++) {
+                    pageButtons.push(i);
+                  }
+                  pageButtons.push("ellipsis-right");
+                  pageButtons.push(totalPages);
+                } else if (currentPage >= totalPages - 5) {
+                  // Show first page, ellipsis, pages near the end
+                  pageButtons.push("ellipsis-left");
+                  startPage = totalPages - 7;
+                  for (let i = startPage; i < totalPages; i++) {
+                    pageButtons.push(i);
+                  }
+                  pageButtons.push(totalPages);
+                } else {
+                  // Middle: first page, ellipsis, 5 pages around current, ellipsis, last page
+                  pageButtons.push("ellipsis-left");
+                  startPage = currentPage - 2;
+                  endPage = currentPage + 2;
+                  for (let i = startPage; i <= endPage; i++) {
+                    pageButtons.push(i);
+                  }
+                  pageButtons.push("ellipsis-right");
+                  pageButtons.push(totalPages);
+                }
+              }
+
+              return pageButtons.map((page, idx) => {
+                if (page === "ellipsis-left" || page === "ellipsis-right") {
+                  return (
+                    <span
+                      key={"ellipsis-" + idx}
+                      className="relative inline-flex items-center px-4 py-2 text-sm text-gray-700 select-none"
+                    >
+                      ...
+                    </span>
+                  );
+                }
+                return (
+                  <button
+                    key={page}
+                    onClick={() => setCurrentPage(page)}
+                    className={`relative inline-flex items-center px-4 py-2 text-sm font-semibold ring-1 ring-gray-300 hover:bg-gray-50 ${
+                      currentPage === page
+                        ? "bg-green-500 text-white"
+                        : "text-gray-900"
+                    }`}
+                  >
+                    {page}
+                  </button>
+                );
+              });
+            })()}
+
+            {/* Next Button */}
             <button
               onClick={() =>
                 setCurrentPage((prev) => Math.min(prev + 1, totalPages))
