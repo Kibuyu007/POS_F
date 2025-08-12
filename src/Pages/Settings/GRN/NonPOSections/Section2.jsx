@@ -29,6 +29,12 @@ const Section2 = ({ onAddItem }) => {
     dispatch(fetchProducts());
   }, [dispatch]);
 
+  // Initialize form data with default values
+  // First day of current month
+  const firstDayOfMonth = dayjs().startOf("month").format("YYYY-MM-DD");
+  // Last day of current month
+  const lastDayOfMonth = dayjs().endOf("month").format("YYYY-MM-DD");
+
   const [formData, setFormData] = useState({
     buyingPrice: "",
     units: 1,
@@ -38,8 +44,8 @@ const Section2 = ({ onAddItem }) => {
     billedAmount: "",
     foc: "",
     batchNumber: "",
-    manufactureDate: "",
-    expiryDate: "",
+    manufactureDate: firstDayOfMonth,
+    expiryDate: lastDayOfMonth,
     receivedDate: new Date().toISOString().split("T")[0],
     comments: "",
     totalCost: "",
@@ -448,7 +454,7 @@ const Section2 = ({ onAddItem }) => {
                             errorDate.manufactureDate &&
                             "Manufacture Date cannot be in the future",
                           className:
-                            "bg-gray-50 border border-gray-400 text-gray-900 text-sm rounded-[30px]  focus:ring-blue-500 focus:border-blue-500 block dark:bg-gray-600 dark:border-gray-500 dark:placeholder-gray-400 dark:text-white",
+                            "bg-gray-50 border border-gray-400 text-gray-900 text-sm rounded-[30px] focus:ring-blue-500 focus:border-blue-500 block dark:bg-gray-600 dark:border-gray-500 dark:placeholder-gray-400 dark:text-white",
                         },
                       }}
                     />
@@ -461,7 +467,7 @@ const Section2 = ({ onAddItem }) => {
                       htmlFor="expiryDate"
                       className="block mb-2 text-sm font-medium text-gray-900 dark:text-white"
                     >
-                      Expire Date
+                      Expiry Date
                     </label>
                     <DatePicker
                       views={["year", "month", "day"]}
@@ -492,7 +498,7 @@ const Section2 = ({ onAddItem }) => {
                             errorDate.expiryDate &&
                             "Expiry Date must be after Manufacture Date",
                           className:
-                            "bg-gray-50 border border-gray-400 text-gray-900 text-sm rounded-[30px]  focus:ring-blue-500 focus:border-blue-500 block dark:bg-gray-600 dark:border-gray-500 dark:placeholder-gray-400 dark:text-white",
+                            "bg-gray-50 border border-gray-400 text-gray-900 text-sm rounded-[30px] focus:ring-blue-500 focus:border-blue-500 block dark:bg-gray-600 dark:border-gray-500 dark:placeholder-gray-400 dark:text-white",
                         },
                       }}
                     />

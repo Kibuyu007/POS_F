@@ -21,6 +21,7 @@ const CompletedNonPO = () => {
   const [filterSupplier, setFilterSupplier] = useState("");
   const [filterFrom, setFilterFrom] = useState(null);
   const [filterTo, setFilterTo] = useState(null);
+  const [filterStatus, setFilterStatus] = useState("");
   const [load, setLoad] = useState(false);
 
   const itemsPerPage = 3;
@@ -62,12 +63,19 @@ const CompletedNonPO = () => {
         ? date.isBefore(dayjs(filterTo).add(1, "day"))
         : true;
 
-      return supplierMatch && fromMatch && toMatch;
+      let statusMatch = true;
+      if (filterStatus) {
+        statusMatch = grn.items.some(
+          (item) => item.status.toLowerCase() === filterStatus.toLowerCase()
+        );
+      }
+
+      return supplierMatch && fromMatch && toMatch && statusMatch;
     });
 
     setFilteredGrns(filtered);
-    setCurrentPage(1); // reset to first page when filters change
-  }, [grns, filterSupplier, filterFrom, filterTo]);
+    setCurrentPage(1);
+  }, [grns, filterSupplier, filterFrom, filterTo, filterStatus]);
 
   const totalItems = filteredGrns.length;
   const totalPages = Math.ceil(totalItems / itemsPerPage);
@@ -93,7 +101,7 @@ const CompletedNonPO = () => {
         </div>
       </div>
 
-      <div className="grid md:grid-cols-3 gap-3 mb-4">
+      <div className="grid md:grid-cols-4 gap-3 mb-4">
         <input
           type="text"
           placeholder="Search Supplier..."
@@ -133,20 +141,30 @@ const CompletedNonPO = () => {
             }}
           />
         </LocalizationProvider>
+
+        <select
+          value={filterStatus}
+          onChange={(e) => setFilterStatus(e.target.value)}
+          className="w-full rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 shadow-sm    focus:border-green-500 focus:ring focus:ring-gray-100 focus:ring-opacity-50 transition  duration-200 ease-in-out cursor-pointer "
+        >
+          <option value="">All Status</option>
+          <option value="Billed">Billed</option>
+          <option value="Completed">Completed</option>
+        </select>
       </div>
       <Loading load={load} />
       {loading && <p>Loading...</p>}
       {error && <p className="text-red-500">{error}</p>}
 
       {!loading && !error && (
-        <div className="space-y-6 text-black">
+        <div className="space-y-8 text-gray-900 dark:text-gray-100">
           {paginatedGrns.map((grn) => (
             <div
               key={grn._id}
-              className="bg-white rounded-lg shadow-lg p-6 mb-6 border border-gray-200"
+              className="bg-white dark:bg-neutral-900 rounded-xl shadow-lg p-6 mb-8 border border-gray-300 dark:border-gray-700"
             >
               {/* Info row - horizontal, responsive */}
-              <div className="flex flex-wrap justify-between gap-6 text-gray-700 text-sm font-medium bg-gray-200 p-4 rounded-lg shadow-md">
+              <div className="flex flex-wrap justify-between gap-6 text-gray-700 dark:text-gray-400 text-sm font-semibold bg-gray-100 dark:bg-neutral-800 p-5 rounded-lg shadow-inner">
                 {[
                   { label: "Supplier", value: grn.supplierName?.supplierName },
                   { label: "Invoice #", value: grn.invoiceNumber },
@@ -169,14 +187,14 @@ const CompletedNonPO = () => {
                       isDescription ? "flex-grow" : ""
                     }`}
                   >
-                    <span className="text-gray-500 uppercase tracking-wide text-xs font-semibold mb-1">
+                    <span className="text-green-600 uppercase tracking-wide text-xs mb-1">
                       {label}
                     </span>
                     <span
                       className={`mt-1 ${
                         isDescription
-                          ? "text-gray-900 font-semibold truncate"
-                          : "text-gray-800"
+                          ? "text-gray-900 dark:text-gray-100 font-semibold truncate"
+                          : "text-gray-800 dark:text-gray-200"
                       }`}
                       title={isDescription ? value : ""}
                     >
@@ -187,53 +205,74 @@ const CompletedNonPO = () => {
               </div>
 
               {/* Items Table */}
-              <h4 className="mt-6 mb-3 text-gray-900 font-semibold border-b pb-1">
+              <h4 className="mt-8 mb-4 text-gray-900 dark:text-gray-100 font-semibold border-b border-gray-300 dark:border-gray-700 pb-2 tracking-wide text-lg">
                 Items
               </h4>
-              <div className="overflow-x-auto">
-                <table className="w-full text-left text-gray-700 text-sm">
-                  <thead>
-                    <tr className="bg-gray-100 border-b border-gray-300">
-                      <th className="py-2 px-3 uppercase font-semibold tracking-wider">
-                        Item
-                      </th>
-                      <th className="py-2 px-3 uppercase font-semibold tracking-wider">
-                        Qty
-                      </th>
-                      <th className="py-2 px-3 uppercase font-semibold tracking-wider">
-                        Buy Price
-                      </th>
-                      <th className="py-2 px-3 uppercase font-semibold tracking-wider">
-                        Sell Price
-                      </th>
-                      <th className="py-2 px-3 uppercase font-semibold tracking-wider">
-                        Status
-                      </th>
+              <div className="overflow-x-auto rounded-lg border border-gray-200 dark:border-gray-700 shadow-sm">
+                <table className="w-full text-center text-gray-700 dark:text-gray-300 text-sm">
+                  <thead className="bg-gray-50 dark:bg-neutral-800">
+                    <tr>
+                      {[
+                        "Item",
+                        "Billed Qty",
+                        "Paid Qty",
+                        "Total Purchased Qty",
+                        "Buy Price",
+                        "Total Cost",
+                        "Sell Price",
+                        "Estimated Profit",
+                        "Status",
+                      ].map((header) => (
+                        <th
+                          key={header}
+                          className="py-3 px-4 uppercase font-semibold tracking-wide text-gray-600 dark:text-gray-400"
+                        >
+                          {header}
+                        </th>
+                      ))}
                     </tr>
                   </thead>
                   <tbody>
-                    {grn.items.map((item) => (
-                      <tr
-                        key={item._id}
-                        className="border-b last:border-0 hover:bg-gray-50 transition-colors"
-                      >
-                        <td className="py-2 px-3">{item.name?.name}</td>
-                        <td className="py-2 px-3">{item.quantity}</td>
-                        <td className="py-2 px-3">Tsh {item.buyingPrice}</td>
-                        <td className="py-2 px-3">Tsh {item.sellingPrice}</td>
-                        <td
-                          className={`py-2 px-3 capitalize ${
-                            item.status === "Billed"
-                              ? "bg-yellow-300 text-yellow-900 font-semibold"
-                              : item.status === "Completed"
-                              ? "bg-green-300 text-green-900 font-semibold"
-                              : ""
-                          }`}
-                        >
-                          {item.status}
-                        </td>
-                      </tr>
-                    ))}
+                    {grn.items
+                      .filter((item) => {
+                        if (!filterStatus) return true;
+                        return (
+                          item.status.toLowerCase() ===
+                          filterStatus.toLowerCase()
+                        );
+                      })
+                      .map((item) => {
+                        const billed = item.billedAmount || 0;
+                        const paid = item.quantity || 0;
+                        const totalQty = billed + paid;
+                        const totalCost = totalQty * (item.buyingPrice || 0);
+                        const estimatedProfit =
+                          totalQty * (item.sellingPrice || 0);
+
+                        return (
+                          <tr key={item._id} className="border-b ...">
+                            <td>{item.name?.name || "-"}</td>
+                            <td>{billed}</td>
+                            <td>{paid}</td>
+                            <td>{totalQty}</td>
+                            <td>{item.buyingPrice?.toLocaleString() || 0}</td>
+                            <td>{totalCost.toLocaleString()}</td>
+                            <td>{item.sellingPrice?.toLocaleString() || 0}</td>
+                            <td>{estimatedProfit.toLocaleString()}</td>
+                            <td
+                              className={`py-2 px-3 capitalize ${
+                                item.status === "Billed"
+                                  ? "bg-yellow-300 text-yellow-900 font-semibold"
+                                  : item.status === "Completed"
+                                  ? "bg-green-300 text-green-900 font-semibold"
+                                  : ""
+                              }`}
+                            >
+                              {item.status}
+                            </td>
+                          </tr>
+                        );
+                      })}
                   </tbody>
                 </table>
               </div>
