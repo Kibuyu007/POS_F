@@ -13,11 +13,9 @@ import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs";
 import { LocalizationProvider } from "@mui/x-date-pickers/LocalizationProvider";
 import dayjs from "dayjs";
 import { DatePicker } from "@mui/x-date-pickers/DatePicker";
-import { BsToggleOff, BsToggleOn } from "react-icons/bs";
 
 //API
-import BASE_URL from "../../../../Utils/config"
-
+import BASE_URL from "../../../../Utils/config";
 
 const NonPoGrn = () => {
   const { supplier } = useSelector((state) => state.suppliers);
@@ -91,25 +89,11 @@ const NonPoGrn = () => {
     setItemHold((items) => items.filter((item) => item !== itemToRemove));
   };
 
-  const toggleStatus = async (itemId) => {
-    setItemHold((prevItems) =>
-      prevItems.map((item) =>
-        item._id === itemId
-          ? {
-              ...item,
-              status: item.status === "Completed" ? "Billed" : "Completed",
-            }
-          : item
-      )
-    );
-    toast.info("Item status updated!");
-  };
-
   const handleSubmit = async () => {
     const selectedSupplier = supplier.find(
       (sup) => sup._id === regi.supplierName
     );
-    if (!regi.supplierName ||  !regi.receivingDate) {
+    if (!regi.supplierName || !regi.receivingDate) {
       setError("Please fill all required fields.");
       return;
     }
@@ -140,17 +124,16 @@ const NonPoGrn = () => {
         expiryDate: item.expiryDate,
         foc: item.foc || false,
         rejected: item.rejected || false,
+        billedAmount: item.billedAmount,
         comments: item.comments || "",
         totalCost: item.totalCost || 0,
-        status: item.status || "Completed",
       })),
     };
 
     try {
-      const response = await axios.post(
-        `${BASE_URL}/api/grn/newGrn`,
-        grnData
-      );
+      const response = await axios.post(`${BASE_URL}/api/grn/newGrn`, grnData, {
+        withCredentials: true,
+      });
 
       if (response.status === 200 && response.data.success) {
         setRegi({
@@ -166,9 +149,9 @@ const NonPoGrn = () => {
           position: "button-right",
           style: {
             borderRadius: "12px",
-            background: "#00e676",
-            color: "#212121",
-            fontSize: "26px",
+            background: "#27ae60",
+            color: "#fff",
+            fontSize: "18px",
           },
         });
         setItemHold([]);
@@ -435,10 +418,6 @@ const NonPoGrn = () => {
                 </th>
 
                 <th className="px-5 py-3 border-b-2 border-gray-200 bg-gray-200  text-xs font-bold text-gray-600 uppercase tracking-wider">
-                  Bill
-                </th>
-
-                <th className="px-5 py-3 border-b-2 border-gray-200 bg-gray-200  text-xs font-bold text-gray-600 uppercase tracking-wider">
                   Remove
                 </th>
               </tr>
@@ -565,25 +544,6 @@ const NonPoGrn = () => {
                               </p>
                             </div>
                           </div>
-                        </td>
-
-                        <td className="pl-5 font-bold bg-gray-200">
-                          <button
-                            onClick={() => toggleStatus(item._id)}
-                            className=" text-sm leading-none text-gray-600 py-3 px-5 bg-gray-200 rounded hover:bg-gray-100 focus:outline-none"
-                          >
-                            {item.status === "Billed" ? (
-                              <BsToggleOn
-                                size={35}
-                                className="text-green-600"
-                              />
-                            ) : (
-                              <BsToggleOff
-                                size={35}
-                                className="text-gray-500"
-                              />
-                            )}
-                          </button>
                         </td>
 
                         <td>

@@ -10,8 +10,7 @@ import DeniNonPoPdf from "./DeniNonPoPdf";
 import Loading from "../../../../Components/Shared/Loading";
 
 //API
-import BASE_URL from "../../../../Utils/config"
-
+import BASE_URL from "../../../../Utils/config";
 
 const MadeniNonPo = () => {
   const [deniNon, setDeniNon] = useState([]);
@@ -55,7 +54,8 @@ const MadeniNonPo = () => {
         {
           grnId,
           itemId,
-        }
+        },
+        { withCredentials: true }
       );
       if (res.data.success) fetchUnpaidNonPo();
     } catch (error) {
@@ -166,6 +166,12 @@ const MadeniNonPo = () => {
                 Created At
               </th>
               <th className="px-5 py-3 border-b-2 border-gray-200 bg-gray-200 text-center text-xs font-bold text-gray-900 uppercase tracking-wider">
+                Billed Items
+              </th>
+              <th className="px-5 py-3 border-b-2 border-gray-200 bg-gray-200 text-center text-xs font-bold text-gray-900 uppercase tracking-wider">
+                Total Cost
+              </th>
+              <th className="px-5 py-3 border-b-2 border-gray-200 bg-gray-200 text-center text-xs font-bold text-gray-900 uppercase tracking-wider">
                 Update
               </th>
               <th className="px-5 py-3 border-b-2 border-gray-200 bg-gray-200 text-center text-xs font-bold text-gray-900 uppercase tracking-wider">
@@ -191,7 +197,10 @@ const MadeniNonPo = () => {
                   </td>
                   <td className="py-2 px-3 font-normal text-base border-x shadow-md bg-yellow-100  hover:bg-gray-100  whitespace-nowrap overflow-hidden overflow-ellipsis max-w-[200px]">
                     <div className="items-center text-center">
-                      <div className="ml-3">Tsh {item.buyingPrice}</div>
+                      <div className="ml-3 font-bold">
+                        {" "}
+                        {item.buyingPrice.toLocaleString()}
+                      </div>
                     </div>
                   </td>
                   <td className="py-2 px-3 font-normal text-base border-x shadow-md bg-gray-200  hover:bg-gray-100  whitespace-nowrap overflow-hidden overflow-ellipsis max-w-[200px]">
@@ -201,13 +210,31 @@ const MadeniNonPo = () => {
                   </td>
                   <td className="py-2 px-3 font-normal text-base border-x shadow-md bg-gray-100  hover:bg-gray-100  whitespace-nowrap overflow-hidden overflow-ellipsis max-w-[200px]">
                     <div className="items-center text-center">
-                      <div className="ml-3">{item.createdBy}</div>
+                      <div className="ml-3">
+                        {" "}
+                        {item.createdBy?.firstName} {item.createdBy?.lastName}
+                      </div>
                     </div>
                   </td>
+
                   <td className="py-2 px-3 font-normal text-base border-x shadow-md bg-gray-200  hover:bg-gray-100  whitespace-nowrap overflow-hidden overflow-ellipsis max-w-[200px]">
                     <div className="items-center text-center">
                       <div className="ml-3">
                         {new Date(item.createdAt).toLocaleDateString()}
+                      </div>
+                    </div>
+                  </td>
+                  <td className="py-2 px-3 font-normal text-base border-x shadow-md bg-gray-100  hover:bg-gray-100  whitespace-nowrap overflow-hidden overflow-ellipsis max-w-[200px]">
+                    <div className="items-center text-center">
+                      <div className="ml-3">
+                        {item.billedAmount.toLocaleString()}
+                      </div>
+                    </div>
+                  </td>
+                  <td className="py-2 px-3 font-normal text-base border-x shadow-md bg-gray-200  hover:bg-gray-100  whitespace-nowrap overflow-hidden overflow-ellipsis max-w-[200px]">
+                    <div className="items-center text-center">
+                      <div className="ml-3 font-bold">
+                        {item.billedTotalCost.toLocaleString()}
                       </div>
                     </div>
                   </td>

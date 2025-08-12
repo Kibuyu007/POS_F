@@ -31,10 +31,11 @@ const Section2 = ({ onAddItem }) => {
 
   const [formData, setFormData] = useState({
     buyingPrice: "",
-    units: "",
-    itemsPerUnit: "",
+    units: 1,
+    itemsPerUnit: 1,
     quantity: "",
     rejected: "",
+    billedAmount: "",
     foc: "",
     batchNumber: "",
     manufactureDate: "",
@@ -79,9 +80,10 @@ const Section2 = ({ onAddItem }) => {
       const foc = parseInt(updatedForm.foc) || 0;
       const rejected = parseInt(updatedForm.rejected) || 0;
       const buyingPrice = parseFloat(updatedForm.buyingPrice) || 0;
+      const billedAmount = parseFloat(updatedForm.billedAmount) || 0;
 
       // Compute and clamp quantity
-      const rawQuantity = units * itemsPerUnit + foc - rejected;
+      const rawQuantity = units * itemsPerUnit + foc - rejected - billedAmount;
       const quantityMath = Math.max(0, rawQuantity); // kusiwe kuna neg mzee
 
       //hii itakuwa thamani ya mzigo bila nyiongeza
@@ -149,6 +151,7 @@ const Section2 = ({ onAddItem }) => {
       batchNumber: formData.batchNumber,
       foc: formData.foc,
       rejected: formData.rejected,
+      billedAmount: formData.billedAmount,
       comments: formData.comments,
       totalCost: formData.totalCost,
       sellingPrice: formData.sellingPrice || selectedItem.price,
@@ -165,6 +168,7 @@ const Section2 = ({ onAddItem }) => {
       balance: "",
       rejected: "",
       foc: "",
+      billedAmount: "",
       batchNumber: "",
       manufactureDate: "",
       expiryDate: "",
@@ -297,7 +301,14 @@ const Section2 = ({ onAddItem }) => {
                     name="buyingPrice"
                     value={formData.buyingPrice}
                     onChange={handleChange}
-                    className="bg-gray-50 border border-gray-400 text-gray-900 text-sm rounded-[30px]  focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-600 dark:border-gray-500 dark:placeholder-gray-400 dark:text-white"
+                    className={`bg-gray-50 border text-gray-900 text-sm rounded-[30px] focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 
+                    dark:bg-gray-600 dark:placeholder-gray-400 dark:text-white
+                         ${
+                           Number(formData.buyingPrice) >
+                           Number(selectedItem.price)
+                             ? "border-red-500 dark:border-red-400"
+                             : "border-gray-400 dark:border-gray-500"
+                         }`}
                   />
                 </div>
 
@@ -360,6 +371,22 @@ const Section2 = ({ onAddItem }) => {
                     type="number"
                     name="foc"
                     value={formData.foc}
+                    onChange={handleChange}
+                    className="bg-gray-50 border border-gray-400 text-gray-900 text-sm rounded-[30px]  focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-600 dark:border-gray-500 dark:placeholder-gray-400 dark:text-white"
+                  />
+                </div>
+
+                <div>
+                  <label
+                    htmlFor="itemsPerUnit"
+                    className="block mb-2 text-sm font-medium text-gray-900 dark:text-white"
+                  >
+                    Unpaid Amount (Deni)
+                  </label>
+                  <input
+                    type="number"
+                    name="billedAmount"
+                    value={formData.billedAmount}
                     onChange={handleChange}
                     className="bg-gray-50 border border-gray-400 text-gray-900 text-sm rounded-[30px]  focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-600 dark:border-gray-500 dark:placeholder-gray-400 dark:text-white"
                   />

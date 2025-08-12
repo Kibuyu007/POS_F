@@ -8,8 +8,7 @@ import { IoIosArrowBack, IoIosArrowForward } from "react-icons/io";
 import Loading from "../../../Components/Shared/Loading";
 
 //API
-import BASE_URL from "../../../Utils/config"
-
+import BASE_URL from "../../../Utils/config";
 
 const BillNonPo = () => {
   const [reportData, setReportData] = useState([]);
@@ -30,9 +29,7 @@ const BillNonPo = () => {
   const fetchReport = async () => {
     try {
       setLoad(true);
-      const res = await axios.get(
-        `${BASE_URL}/api/grn/nonPoBillReport`
-      );
+      const res = await axios.get(`${BASE_URL}/api/grn/nonPoBillReport`);
       if (res.data.success) {
         setReportData(res.data.data);
         setFilteredData(res.data.data);
@@ -227,7 +224,8 @@ const BillNonPo = () => {
                   <td className="py-2 px-3 font-normal text-base border-x shadow-md bg-gray-100  hover:bg-gray-100  whitespace-nowrap overflow-hidden overflow-ellipsis max-w-[200px]">
                     <div className="items-center text-center">
                       <div className="ml-3">
-                        {log.changedBy?.userName || "-"} 
+                        {log.createdBy.firstName}{" "}
+                        {log.createdBy.lastName || "-"}
                       </div>
                     </div>
                   </td>
