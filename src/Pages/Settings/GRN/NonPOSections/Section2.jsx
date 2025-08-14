@@ -86,10 +86,9 @@ const Section2 = ({ onAddItem }) => {
       const foc = parseInt(updatedForm.foc) || 0;
       const rejected = parseInt(updatedForm.rejected) || 0;
       const buyingPrice = parseFloat(updatedForm.buyingPrice) || 0;
-      const billedAmount = parseFloat(updatedForm.billedAmount) || 0;
 
       // Compute and clamp quantity
-      const rawQuantity = units * itemsPerUnit + foc - rejected - billedAmount;
+      const rawQuantity = units * itemsPerUnit + foc - rejected;
       const quantityMath = Math.max(0, rawQuantity); // kusiwe kuna neg mzee
 
       //hii itakuwa thamani ya mzigo bila nyiongeza
@@ -316,6 +315,17 @@ const Section2 = ({ onAddItem }) => {
                              : "border-gray-400 dark:border-gray-500"
                          }`}
                   />
+                  {/* Warning Text */}
+                  {Number(formData.buyingPrice) >
+                    Number(selectedItem.price) && (
+                    <p className="mt-1 text-xs text-red-500 dark:text-red-400">
+                      Bei ya manunuzi ni kubwa kuliko bei ya kuuzia kwa sasa.{" "}
+                      <span className="text-black">
+                        {" "}
+                        (Tsh: {selectedItem.price.toLocaleString()})
+                      </span>
+                    </p>
+                  )}
                 </div>
 
                 <div>
@@ -387,7 +397,7 @@ const Section2 = ({ onAddItem }) => {
                     htmlFor="itemsPerUnit"
                     className="block mb-2 text-sm font-medium text-gray-900 dark:text-white"
                   >
-                    Unpaid Amount (Deni)
+                    Unpaid Quantity (Deni)
                   </label>
                   <input
                     type="number"
@@ -403,7 +413,7 @@ const Section2 = ({ onAddItem }) => {
                     htmlFor="quantity"
                     className="block mb-2 text-sm font-medium text-gray-900 dark:text-white"
                   >
-                    Idadi Kamili
+                    Paid Quantity (Iliyolipwa)
                   </label>
                   <input
                     type="number"
@@ -595,10 +605,9 @@ const Section2 = ({ onAddItem }) => {
                     className="bg-gray-100 border border-gray-400 text-gray-900 text-sm rounded-[30px]  block w-full p-2.5 dark:bg-gray-700 dark:border-gray-500 dark:text-white"
                   />
                 </div>
-
                 <div>
                   <label
-                    htmlFor="foc"
+                    htmlFor="sellingPrice"
                     className="block mb-2 text-sm font-medium text-gray-900 dark:text-white"
                   >
                     Selling Price
@@ -608,8 +617,26 @@ const Section2 = ({ onAddItem }) => {
                     name="sellingPrice"
                     value={formData.sellingPrice || selectedItem.price}
                     onChange={handleChange}
-                    className="bg-gray-50 border border-gray-400 text-gray-900 text-sm rounded-[30px]  focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-600 dark:border-gray-500 dark:placeholder-gray-400 dark:text-white"
+                    className={`bg-gray-50 border text-gray-900 text-sm rounded-[30px] focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 
+                   dark:bg-gray-600 dark:placeholder-gray-400 dark:text-white
+                   ${
+                     Number(formData.buyingPrice) >
+                     Number(formData.sellingPrice || selectedItem.price)
+                       ? "border-red-500 dark:border-red-400"
+                       : "border-gray-400 dark:border-gray-500"
+                   }`}
                   />
+
+                  {/* Warning Text */}
+                  {Number(formData.buyingPrice) >
+                    Number(formData.sellingPrice || selectedItem.price) && (
+                    <p className="mt-1 text-xs text-red-500 dark:text-red-400">
+                      Bei ya kuuzia ni ndogo kuliko bei ya manunuzi kwa sasa.{" "}
+                      <span className="text-black">
+                        (Tsh: {Number(formData.buyingPrice).toLocaleString()})
+                      </span>
+                    </p>
+                  )}
                 </div>
 
                 {/* Continue with other inputs similarly */}

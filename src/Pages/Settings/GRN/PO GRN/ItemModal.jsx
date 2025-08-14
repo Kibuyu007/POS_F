@@ -2,17 +2,14 @@ import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs";
 import { DatePicker } from "@mui/x-date-pickers/DatePicker";
 import { LocalizationProvider } from "@mui/x-date-pickers/LocalizationProvider";
 import dayjs from "dayjs";
-import { useEffect } from "react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { fetchProducts } from "../../../../Redux/items";
 import { useDispatch } from "react-redux";
 
 const ItemModal = ({ open, onSave, onClose, selectedItem }) => {
-  // Single selected item
-
   const dispatch = useDispatch();
 
-  //Fetch Items
+  // Fetch Items once
   useEffect(() => {
     dispatch(fetchProducts());
   }, [dispatch]);
@@ -23,41 +20,44 @@ const ItemModal = ({ open, onSave, onClose, selectedItem }) => {
     receivedDate: false,
   });
 
-  useEffect(() => {
-    dispatch(fetchProducts());
-  }, [dispatch]);
+  // First & Last day of current month
+  const firstDayOfMonth = dayjs().startOf("month").format("YYYY-MM-DD");
+  const lastDayOfMonth = dayjs().endOf("month").format("YYYY-MM-DD");
 
   const [formData, setFormData] = useState({
     buyingPrice: "",
-    units: "",
+    units: 1,
     itemsPerUnit: "",
     quantity: "",
     rejected: "",
+    billedAmount: "",
     foc: "",
     batchNumber: "",
-    manufactureDate: "",
-    expiryDate: "",
-    receivedDate: new Date().toISOString().split("T")[0],
+    manufactureDate: firstDayOfMonth,
+    expiryDate: lastDayOfMonth,
+    receivedDate: dayjs().format("YYYY-MM-DD"),
     comments: "",
     totalCost: "",
     sellingPrice: "",
+    previousPrice: "",
   });
 
+  // Prefill form when editing
   useEffect(() => {
     if (selectedItem) {
       setFormData({
         buyingPrice:
           selectedItem.newBuyingPrice || selectedItem.item?.buyingPrice || "",
-        // ... ensure all fields are initialized similarly
         quantity: selectedItem.receivedQuantity || "",
         previousPrice: selectedItem.item?.price || "",
         rejected: selectedItem.rejected || "",
+        units: selectedItem.units || 1,
         foc: selectedItem.foc || "",
+        billedAmount: selectedItem.billedAmount || "",
         batchNumber: selectedItem.batchNumber || "",
-        manufactureDate: selectedItem.manufactureDate || "",
-        expiryDate: selectedItem.expiryDate || "",
-        receivedDate:
-          selectedItem.receivedDate || new Date().toISOString().split("T")[0],
+        manufactureDate: selectedItem.manufactureDate || firstDayOfMonth,
+        expiryDate: selectedItem.expiryDate || lastDayOfMonth,
+        receivedDate: selectedItem.receivedDate || dayjs().format("YYYY-MM-DD"),
         comments: selectedItem.comments || "",
         totalCost: selectedItem.totalCost || "",
         requiredQuantity: selectedItem.requiredQuantity || "",
@@ -67,93 +67,51 @@ const ItemModal = ({ open, onSave, onClose, selectedItem }) => {
     }
   }, [selectedItem]);
 
-  //Handle Change for input fields
+  // Handle changes
   const handleChange = (e) => {
     const { name, value } = e.target;
 
     setFormData((prev) => {
-      const updatedValue = value;
+      const updatedForm = { ...prev, [name]: value };
 
-      const updatedForm = {
-        ...prev,
-        [name]: updatedValue,
-      };
-
-      // Parse numbers safely
       const units = parseInt(updatedForm.units) || 0;
       const itemsPerUnit = parseInt(updatedForm.itemsPerUnit) || 0;
       const foc = parseInt(updatedForm.foc) || 0;
       const rejected = parseInt(updatedForm.rejected) || 0;
       const buyingPrice = parseFloat(updatedForm.buyingPrice) || 0;
 
-      // Compute and clamp quantity
-      const rawQuantity = units * itemsPerUnit + foc - rejected;
-      const quantityMath = Math.max(0, rawQuantity); // kusiwe kuna neg mzee
+      const quantity = Math.max(0, units * itemsPerUnit + foc - rejected);
+      const totalCost = buyingPrice * (units * itemsPerUnit);
 
-      //hii itakuwa thamani ya mzigo bila nyiongeza
-      const totalCostRaw = buyingPrice * (units * itemsPerUnit);
-
-      return {
-        ...updatedForm,
-        quantity: rawQuantity,
-        totalCost: totalCostRaw,
-        rawQuantity: quantityMath,
-      };
+      return { ...updatedForm, quantity, totalCost };
     });
   };
 
-  // Add the selected item with details to parent component
+  // Save handler
   const handleSave = () => {
     const newErrors = {
-      manufactureDate: !formData.manufactureDate,
-      expiryDate: !formData.expiryDate,
-      receivedDate: !formData.receivedDate,
+      manufactureDate:
+        !formData.manufactureDate ||
+        dayjs(formData.manufactureDate).isAfter(dayjs(), "day"),
+      expiryDate:
+        !formData.expiryDate ||
+        dayjs(formData.expiryDate).isBefore(
+          dayjs(formData.manufactureDate),
+          "day"
+        ),
+      receivedDate:
+        !formData.receivedDate ||
+        dayjs(formData.receivedDate).isBefore(
+          dayjs(formData.manufactureDate),
+          "day"
+        ) ||
+        dayjs(formData.receivedDate).isAfter(dayjs(formData.expiryDate), "day"),
     };
-
-    const today = dayjs().format("YYYY-MM-DD"); // Use dayjs for consistency
-
-    // Date validation
-    if (
-      formData.manufactureDate &&
-      dayjs(formData.manufactureDate).isAfter(today, "day")
-    ) {
-      newErrors.manufactureDate = true;
-    }
-
-    if (
-      formData.expiryDate &&
-      formData.manufactureDate &&
-      dayjs(formData.expiryDate).isBefore(
-        dayjs(formData.manufactureDate),
-        "day"
-      )
-    ) {
-      newErrors.expiryDate = true;
-    }
-
-    if (
-      formData.receivedDate &&
-      (dayjs(formData.receivedDate).isBefore(
-        dayjs(formData.manufactureDate),
-        "day"
-      ) ||
-        dayjs(formData.receivedDate).isAfter(dayjs(formData.expiryDate), "day"))
-    ) {
-      // Only set error if all three dates are present for comparison
-      if (formData.manufactureDate && formData.expiryDate) {
-        newErrors.receivedDate = true;
-      }
-    }
 
     setErrorDate(newErrors);
 
-    // Stop if any error is true
-    if (Object.values(newErrors).some((val) => val)) {
-      console.error("Date validation failed. Please check the dates.");
-      return;
-    }
+    if (Object.values(newErrors).some(Boolean)) return;
 
-    // Prepare the updated item object to send back to ProcessPo
     const updatedItemData = {
       ...selectedItem,
       receivedQuantity: formData.quantity,
@@ -165,6 +123,7 @@ const ItemModal = ({ open, onSave, onClose, selectedItem }) => {
       receivedDate: formData.receivedDate,
       foc: parseInt(formData.foc) || 0,
       rejected: parseInt(formData.rejected) || 0,
+      billedAmount: parseFloat(formData.billedAmount) || 0,
       comments: formData.comments,
       totalCost: parseFloat(formData.totalCost),
       detailsAdded: true,
@@ -219,8 +178,26 @@ const ItemModal = ({ open, onSave, onClose, selectedItem }) => {
                       name="buyingPrice"
                       value={formData.buyingPrice}
                       onChange={handleChange}
-                      className="bg-gray-50 border border-gray-400 text-gray-900 text-sm rounded-[30px]  focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-600 dark:border-gray-500 dark:placeholder-gray-400 dark:text-white"
+                      className={`bg-gray-50 border text-gray-900 text-sm rounded-[30px] focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 
+                    dark:bg-gray-600 dark:placeholder-gray-400 dark:text-white
+                         ${
+                           Number(formData.buyingPrice) >
+                           Number(formData.previousPrice)
+                             ? "border-red-500 dark:border-red-400"
+                             : "border-gray-400 dark:border-gray-500"
+                         }`}
                     />
+                    {/* Warning Text */}
+                    {Number(formData.buyingPrice) >
+                      Number(formData.previousPrice) && (
+                      <p className="mt-1 text-xs text-red-500 dark:text-red-400">
+                        Bei ya manunuzi ni kubwa kuliko bei ya kuuzia kwa sasa.{" "}
+                        <span className="text-black">
+                          {" "}
+                          (Tsh: {formData.previousPrice.toLocaleString()})
+                        </span>
+                      </p>
+                    )}
                   </div>
 
                   <div>
@@ -289,10 +266,26 @@ const ItemModal = ({ open, onSave, onClose, selectedItem }) => {
 
                   <div>
                     <label
+                      htmlFor="billedAmount"
+                      className="block mb-2 text-sm font-medium text-gray-900 dark:text-white"
+                    >
+                      Unpaid Amount (Deni)
+                    </label>
+                    <input
+                      type="number"
+                      name="billedAmount"
+                      value={formData.billedAmount}
+                      onChange={handleChange}
+                      className="bg-gray-50 border border-gray-400 text-gray-900 text-sm rounded-[30px]  focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-600 dark:border-gray-500 dark:placeholder-gray-400 dark:text-white"
+                    />
+                  </div>
+
+                  <div>
+                    <label
                       htmlFor="quantity"
                       className="block mb-2 text-sm font-medium text-gray-900 dark:text-white"
                     >
-                      Idadi Kamili
+                      Paid Quantity (Iliyolipwa)
                     </label>
                     <input
                       type="number"
@@ -300,8 +293,27 @@ const ItemModal = ({ open, onSave, onClose, selectedItem }) => {
                       value={formData.quantity}
                       readOnly
                       onChange={handleChange}
-                      className="bg-gray-50 border border-gray-400 text-gray-900 text-sm rounded-[30px]  focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-600 dark:border-gray-500 dark:placeholder-gray-400 dark:text-white"
+                      className={`bg-gray-50 border text-gray-900 text-sm rounded-[30px] focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 
+                    dark:bg-gray-600 dark:placeholder-gray-400 dark:text-white
+                           ${
+                             Number(formData.quantity) >
+                             Number(selectedItem?.requiredQuantity)
+                               ? "border-red-500 dark:border-red-400"
+                               : "border-gray-400 dark:border-gray-500"
+                           }`}
                     />
+
+                    {/* Warning Text */}
+                    {Number(formData.quantity) >
+                      Number(selectedItem?.requiredQuantity) && (
+                      <p className="mt-1 text-xs text-red-500 dark:text-red-400">
+                        Idadi imezidi kiwango kilichohitajika.{" "}
+                        <span className="text-black">
+                          (`{selectedItem?.requiredQuantity}`)
+                        </span>{" "}
+                        ni kiwango kilichohitajika.
+                      </p>
+                    )}
                   </div>
 
                   <LocalizationProvider dateAdapter={AdapterDayjs}>
@@ -489,18 +501,53 @@ const ItemModal = ({ open, onSave, onClose, selectedItem }) => {
 
                   <div>
                     <label
-                      htmlFor="foc"
+                      htmlFor="previousPrice"
                       className="block mb-2 text-sm font-medium text-gray-900 dark:text-white"
                     >
-                      Selling Price
+                      Previous Selling Price
                     </label>
                     <input
                       type="number"
                       name="sellingPrice"
-                      value={ formData.previousPrice || formData.sellingPrice }
+                      readOnly
+                      value={formData.previousPrice}
                       onChange={handleChange}
                       className="bg-gray-50 border border-gray-400 text-gray-900 text-sm rounded-[30px]  focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-600 dark:border-gray-500 dark:placeholder-gray-400 dark:text-white"
                     />
+                  </div>
+
+                  <div>
+                    <label
+                      htmlFor="sellingPrice"
+                      className="block mb-2 text-sm font-medium text-gray-900 dark:text-white"
+                    >
+                      New Selling Price
+                    </label>
+                    <input
+                      type="number"
+                      name="sellingPrice"
+                      value={formData.sellingPrice}
+                      onChange={handleChange}
+                      className={`bg-gray-50 border text-gray-900 text-sm rounded-[30px] focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 
+                    dark:bg-gray-600 dark:placeholder-gray-400 dark:text-white
+                         ${
+                           Number(formData.buyingPrice) >
+                           Number(formData.sellingPrice)
+                             ? "border-red-500 dark:border-red-400"
+                             : "border-gray-400 dark:border-gray-500"
+                         }`}
+                    />
+                    {/* Warning Text */}
+                    {Number(formData.buyingPrice) >
+                      Number(formData.previousPrice) && (
+                      <p className="mt-1 text-xs text-red-500 dark:text-red-400">
+                        Bei ya kuuzia ni ndogo kuliko bei ya manunuzi kwa sasa.{" "}
+                        <span className="text-black">
+                          {" "}
+                          (Tsh: {formData.buyingPrice.toLocaleString()})
+                        </span>
+                      </p>
+                    )}
                   </div>
                 </div>
               </div>

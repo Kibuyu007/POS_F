@@ -12,8 +12,7 @@ import toast from "react-hot-toast";
 import axios from "axios";
 
 //API
-import BASE_URL from "../../../../Utils/config"
-
+import BASE_URL from "../../../../Utils/config";
 
 const ProcessPo = ({ onClose, session, onPoStatusUpdate }) => {
   const { supplier } = useSelector((state) => state.suppliers);
@@ -125,20 +124,6 @@ const ProcessPo = ({ onClose, session, onPoStatusUpdate }) => {
     }));
   };
 
-  const toggleStatus = async (itemId) => {
-    setProcessedItems((prevItems) =>
-      prevItems.map((item) =>
-        item._id === itemId
-          ? {
-              ...item,
-              status: item.status === "Completed" ? "Billed" : "Completed",
-            }
-          : item
-      )
-    );
-    toast.info("Item status updated!");
-  };
-
   //HANDLE SUBMIT
   const handleSubmit = async () => {
     const selectedSupplier = supplier.find(
@@ -173,17 +158,14 @@ const ProcessPo = ({ onClose, session, onPoStatusUpdate }) => {
         receivedDate: item.receivedDate || new Date().toISOString(),
         foc: item.foc || false,
         rejected: item.rejected || false,
+        billedAmount: item.billedAmount || 0,
         comments: item.comments || "",
         totalCost: item.totalCost,
-        status: item.status || "Completed",
       })),
     };
 
     try {
-      const response = await axios.post(
-        `${BASE_URL}/api/grn/poGrn`,
-        poGrnData
-      );
+      const response = await axios.post(`${BASE_URL}/api/grn/poGrn`, poGrnData);
 
       if (response.status === 200 && response.data.success) {
         setRegi({
@@ -207,7 +189,8 @@ const ProcessPo = ({ onClose, session, onPoStatusUpdate }) => {
 
         const poUpdateResponse = await axios.put(
           `${BASE_URL}/api/manunuzi/updatePo/${session.grnSessionId}`,
-          { status: "Approved" }
+          { status: "Approved" },
+          { withCredentials: true }
         );
 
         if (poUpdateResponse.data.success) {
@@ -617,25 +600,6 @@ const ProcessPo = ({ onClose, session, onPoStatusUpdate }) => {
                                 </button>
                               </div>
                             </div>
-                          </td>
-
-                          <td className="pl-5 font-bold bg-gray-200">
-                            <button
-                              onClick={() => toggleStatus(item._id)}
-                              className=" text-sm leading-none text-gray-600 py-3 px-5 bg-gray-200 rounded hover:bg-gray-100 focus:outline-none"
-                            >
-                              {item.status === "Billed" ? (
-                                <BsToggleOn
-                                  size={35}
-                                  className="text-green-600"
-                                />
-                              ) : (
-                                <BsToggleOff
-                                  size={35}
-                                  className="text-gray-500"
-                                />
-                              )}
-                            </button>
                           </td>
                         </tr>
                         <tr className="h-4" />

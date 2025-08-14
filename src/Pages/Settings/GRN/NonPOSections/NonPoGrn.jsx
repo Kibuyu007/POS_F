@@ -224,7 +224,6 @@ const NonPoGrn = () => {
         </div>
       </div>
       {/* end header */}
-
       {/* Section One Suppliers Details *********************************************************** */}
       {/* Manunuzi Details */}
       <div className="mx-auto  px-4 py-6 sm:px-6 lg:px-8 border rounded-lg shadow-md">
@@ -479,8 +478,11 @@ const NonPoGrn = () => {
                         <td className="py-2 px-3 font-normal text-base border-x hover:bg-gray-100">
                           <div className="items-center text-center">
                             <div className="ml-3">
-                              <p className="text-gray-900 whitespace-no-wrap font-semibold capitalize">
-                                {formatPriceWithCommas(item.quantity)}
+                              <p className="text-gray-900 whitespace-nowrap font-semibold capitalize">
+                                {formatPriceWithCommas(
+                                  (Number(item.quantity) || 0) +
+                                    (Number(item.billedAmount) || 0)
+                                )}
                               </p>
                             </div>
                           </div>
