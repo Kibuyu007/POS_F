@@ -12,8 +12,7 @@ import { fetchSuppliers } from "../../../Redux/suppliers";
 import Loading from "../../../Components/Shared/Loading";
 
 //API
-import BASE_URL from "../../../Utils/config"
-
+import BASE_URL from "../../../Utils/config";
 
 const Manunuzi = () => {
   const [selectedItem, setSelectedItem] = useState([]);
@@ -82,11 +81,12 @@ const Manunuzi = () => {
 
       if (missingQuantity) {
         toast.error("Please provide a valid quantity for all selected items.", {
+          position: "button-right",
           style: {
             borderRadius: "12px",
-            background: "#e74c3c",
+            background: "#27ae60",
             color: "#fff",
-            fontSize: "20px",
+            fontSize: "18px",
           },
         });
         return;
@@ -111,11 +111,12 @@ const Manunuzi = () => {
       const successMessage = response.data;
 
       toast.success(successMessage.message, {
+        position: "button-right",
         style: {
           borderRadius: "12px",
           background: "#27ae60",
           color: "#fff",
-          fontSize: "26px",
+          fontSize: "18px",
         },
       });
 
@@ -128,11 +129,12 @@ const Manunuzi = () => {
     } catch (error) {
       console.error("Error adding new stocks:", error);
       toast.error("There is Error in Addning  New Stock", {
+        position: "button-right",
         style: {
           borderRadius: "12px",
           background: "#27ae60",
           color: "#fff",
-          fontSize: "26px",
+          fontSize: "18px",
         },
       });
     }

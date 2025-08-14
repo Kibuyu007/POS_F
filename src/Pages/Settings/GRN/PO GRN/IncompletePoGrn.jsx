@@ -11,7 +11,8 @@ import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs";
 import dayjs from "dayjs";
 
 //API
-import BASE_URL from "../../../../Utils/config"
+import BASE_URL from "../../../../Utils/config";
+import toast from "react-hot-toast";
 
 const IncompletePoGrn = () => {
   const [items, setItems] = useState([]);
@@ -24,20 +25,44 @@ const IncompletePoGrn = () => {
 
   const [filterItem, setFilterItem] = useState("");
   const [filterSupplier, setFilterSupplier] = useState("");
-  const [filterDate, setFilterDate] = useState("");
+  const [filterDate, setFilterDate] = useState(null);
 
   const fetchOutstandingItems = async () => {
     try {
       setLoad(true);
-      const res = await axios.get(`${BASE_URL}/api/grn/outstand`,{
-  withCredentials: true,
-});
+      const res = await axios.get(`${BASE_URL}/api/grn/outstand`, {
+        withCredentials: true,
+      });
+
       if (res.data.success) {
         setItems(res.data.data);
         setLoad(false);
+
+        toast.success("Outstanding items loaded successfully", {
+          position: "bottom-right",
+          style: {
+            borderRadius: "12px",
+            background: "#27ae60",
+            color: "#fff",
+            fontSize: "18px",
+          },
+        });
       }
     } catch (err) {
+      toast.error(
+        err.response?.data?.error || "Failed to load outstanding items",
+        {
+          position: "bottom-right",
+          style: {
+            borderRadius: "12px",
+            background: "#c0392b",
+            color: "#fff",
+            fontSize: "18px",
+          },
+        }
+      );
       console.error("Error fetching outstanding items:", err);
+      setLoad(false);
     }
   };
 
@@ -45,14 +70,34 @@ const IncompletePoGrn = () => {
     fetchOutstandingItems();
   }, []);
 
+  // Handle view click to fetch GRN details
+  // This function fetches the GRN details and opens the modal
   const handleViewClick = async (grnId) => {
     try {
-      const res = await axios.get(
-        `${URL}/api/grn/grnPo/${grnId}`
-      );
+      const res = await axios.get(`${BASE_URL}/api/grn/grnPo/${grnId}`, {
+        withCredentials: true,
+      });
       setModalData(res.data);
       setOpenModal(true);
+      toast.success("GRN details loaded successfully", {
+        position: "bottom-right",
+        style: {
+          borderRadius: "12px",
+          background: "#27ae60",
+          color: "#fff",
+          fontSize: "18px",
+        },
+      });
     } catch (err) {
+      toast.error(err.response?.data?.error || "Failed to fetch GRN items", {
+        position: "bottom-right",
+        style: {
+          borderRadius: "12px",
+          background: "#c0392b",
+          color: "#fff",
+          fontSize: "18px",
+        },
+      });
       console.error("Failed to fetch GRN items:", err);
     }
   };
@@ -70,30 +115,51 @@ const IncompletePoGrn = () => {
             grnId: item.grnId,
             itemId: item.itemId,
             filledQuantity: item.filledQuantity,
-          },{ withCredentials: true }
+          },
+          { withCredentials: true }
         );
 
         if (res.data.success) {
+          toast.success(`${res.data.message} - ${item.name}`, {
+            position: "bottom-right",
+            style: {
+              borderRadius: "12px",
+              background: "#27ae60",
+              color: "#fff",
+              fontSize: "18px",
+            },
+          });
           console.log(`Updated ${item.name}`);
         }
       } catch (err) {
+        toast.error(
+          err.response?.data?.error || `Failed to update ${item.name}`,
+          {
+            position: "bottom-right",
+            style: {
+              borderRadius: "12px",
+              background: "#c0392b", // red for error
+              color: "#fff",
+              fontSize: "18px",
+            },
+          }
+        );
         console.error("Error updating item " + item.name, err);
       }
     }
 
+    // Refresh after all updates
     fetchOutstandingItems();
   };
 
+  // Filtering (no string formats, just compare by day)
   const filteredItems = items.filter((item) => {
-    const matchesItem = item.name
-      .toLowerCase()
-      .includes(filterItem.toLowerCase());
-    const matchesSupplier = item.supplier
-      .toLowerCase()
-      .includes(filterSupplier.toLowerCase());
+    const name = (item.name || "").toLowerCase();
+    const supplier = (item.supplier || "").toLowerCase();
+    const matchesItem = name.includes(filterItem.toLowerCase());
+    const matchesSupplier = supplier.includes(filterSupplier.toLowerCase());
     const matchesDate = filterDate
-      ? dayjs(item.createdAt).format("MM-DD-YYYY") ===
-        dayjs(filterDate).format("MM-DD-YYYY")
+      ? dayjs(item.createdAt).isSame(filterDate, "day")
       : true;
     return matchesItem && matchesSupplier && matchesDate;
   });
@@ -113,6 +179,10 @@ const IncompletePoGrn = () => {
   const nextPage = () => {
     if (currentPage < totalPages) setCurrentPage(currentPage + 1);
   };
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [filterItem, filterSupplier, filterDate, items.length]);
 
   return (
     <div className="p-4">
@@ -144,24 +214,20 @@ const IncompletePoGrn = () => {
         />
 
         <LocalizationProvider dateAdapter={AdapterDayjs}>
-          <div>
-            <DatePicker
-              views={["year", "month", "day"]}
-              format="MM-DD-YYYY"
-              value={filterDate ? dayjs(filterDate) : null}
-              onChange={(newValue) =>
-                setFilterDate(newValue ? newValue.format("MM/DD/YYYY") : "")
-              }
-              slotProps={{
-                textField: {
-                  size: "small",
-                  fullWidth: true,
-                  className:
-                    "bg-gray-50 border border-gray-400 text-gray-900 text-sm rounded-[30px] focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-600 dark:border-gray-500 dark:placeholder-gray-400 dark:text-white",
-                },
-              }}
-            />
-          </div>
+          <DatePicker
+            label="Date"
+            value={filterDate}
+            onChange={(newVal) => setFilterDate(newVal)} // store Dayjs, not string
+            format="MM-DD-YYYY"
+            slotProps={{
+              textField: {
+                size: "small",
+                fullWidth: true,
+                className:
+                  "bg-gray-50 border border-gray-400 text-gray-900 text-sm rounded-[30px] focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-600 dark:border-gray-500 dark:placeholder-gray-400 dark:text-white",
+              },
+            }}
+          />
         </LocalizationProvider>
       </div>
 
@@ -209,139 +275,105 @@ const IncompletePoGrn = () => {
           </thead>
           <tr className="h-4" />
           <tbody>
-            {paginatedItems.map((item, idx) => (
-              <>
-                <tr key={idx} className="text-center text-black">
-                  <td className="h-16 border-gray-00 shadow-md bg-gray-100 text-center">
-                    <span className="bg-green-300 rounded-full px-3 py-2">
-                      {(currentPage - 1) * itemsPerPage + idx + 1}
-                    </span>
-                  </td>
+            {paginatedItems.map((item, idx) => {
+              const actualIndex = (currentPage - 1) * itemsPerPage + idx;
 
-                  <td className="py-2 px-3 font-normal text-base border-x shadow-md bg-gray-200  hover:bg-gray-100  whitespace-nowrap overflow-hidden overflow-ellipsis max-w-[200px]">
-                    <div className="items-center text-center">
-                      <div className="ml-3">
-                        <p className="text-gray-900 whitespace-no-wrap font-semibold capitalize">
-                          {item.name}
-                        </p>
-                      </div>
-                    </div>
-                  </td>
-                  <td className="py-2 px-3 font-normal text-base border-x shadow-md bg-gray-100  hover:bg-gray-100  whitespace-nowrap overflow-hidden overflow-ellipsis max-w-[200px]">
-                    <div className="items-center text-center">
-                      <div className="ml-3">
-                        <p className="text-gray-900 whitespace-no-wrap font-semibold capitalize">
-                          Tsh {item.newBuyingPrice}
-                        </p>
-                      </div>
-                    </div>
-                  </td>
+              return (
+                <>
+                  <tr key={actualIndex} className="text-center text-black">
+                    <td className="h-16 border-gray-00 shadow-md bg-gray-100 text-center">
+                      <span className="bg-green-300 rounded-full px-3 py-2">
+                        {actualIndex + 1}
+                      </span>
+                    </td>
 
-                  <td className="py-2 px-3 font-normal text-base border-x shadow-md bg-green-200  hover:bg-gray-100  whitespace-nowrap overflow-hidden overflow-ellipsis max-w-[200px]">
-                    <div className="items-center text-center">
-                      <div className="ml-3">
-                        <p className="text-gray-900 whitespace-no-wrap font-semibold capitalize">
-                          {item.supplier}
-                        </p>
-                      </div>
-                    </div>
-                  </td>
+                    <td className="py-2 px-3 font-normal text-base border-x shadow-md bg-gray-200 hover:bg-gray-100 whitespace-nowrap overflow-hidden overflow-ellipsis max-w-[200px]">
+                      {item.name}
+                    </td>
 
-                  <td className="py-2 px-3 font-normal text-base border-x shadow-md bg-gray-100  hover:bg-gray-100  whitespace-nowrap overflow-hidden overflow-ellipsis max-w-[200px]">
-                    <div className="items-center text-center">
-                      <div className="ml-3">
-                        <p className="text-gray-900 whitespace-no-wrap font-semibold capitalize">
-                          {item.createdBy}
-                        </p>
-                      </div>
-                    </div>
-                  </td>
+                    <td className="py-2 px-3 font-normal text-base border-x shadow-md bg-gray-100">
+                      {item.newBuyingPrice.toLocaleString()}
+                    </td>
 
-                  <td className="py-2 px-3 font-normal text-base border-x shadow-md bg-gray-200  hover:bg-gray-100  whitespace-nowrap overflow-hidden overflow-ellipsis max-w-[200px]">
-                    <div className="items-center text-center">
-                      <div className="ml-3">
-                        <p className="text-gray-900 whitespace-no-wrap font-semibold capitalize">
-                          {new Date(item.createdAt).toLocaleDateString()}
-                        </p>
-                      </div>
-                    </div>
-                  </td>
+                    <td className="py-2 px-3 font-normal text-base border-x shadow-md bg-green-200">
+                      {item.supplier}
+                    </td>
 
-                  <td className="py-2 px-3 font-normal text-base border-x shadow-md bg-gray-100  hover:bg-gray-100  whitespace-nowrap overflow-hidden overflow-ellipsis max-w-[200px]">
-                    <div className="items-center text-center">
-                      <div className="ml-3">
-                        <p className="text-gray-900 whitespace-no-wrap font-semibold capitalize">
-                          {item.requiredQuantity}
-                        </p>
-                      </div>
-                    </div>
-                  </td>
+                    <td className="py-2 px-3 font-normal text-base border-x shadow-md bg-gray-100">
+                      {item.createdBy.firstName}{" "}
+                      {item.createdBy.lastName || "Unknown"}
+                    </td>
 
-                  <td className="py-2 px-3 font-normal text-base border-x shadow-md bg-yellow-100  hover:bg-gray-100  whitespace-nowrap overflow-hidden overflow-ellipsis max-w-[200px]">
-                    <div className="items-center text-center">
-                      <div className="ml-3">
-                        <p className="text-gray-900 whitespace-no-wrap font-semibold capitalize">
-                          {item.outstandingQuantity}
-                        </p>
-                      </div>
-                    </div>
-                  </td>
+                    <td className="py-2 px-3 font-normal text-base border-x shadow-md bg-gray-200">
+                      {new Date(item.createdAt).toLocaleDateString()}
+                    </td>
 
-                  <td className="py-2 px-3 border-x shadow-md bg-gray-100 font-semibold capitalize">
-                    <div className="items-center text-center">
-                      <div className="ml-3">
-                        <input
-                          type="number"
-                          min={1}
-                          max={item.outstandingQuantity}
-                          disabled={item.outstandingQuantity === 0}
-                          value={
-                            item.filledQuantity === undefined
-                              ? ""
-                              : item.filledQuantity
-                          }
-                          onChange={(e) => {
-                            const value = e.target.value;
-                            items[idx].filledQuantity =
-                              value === "" ? undefined : parseInt(value);
-                            setItems([...items]);
-                          }}
-                          className="border px-2 py-1 w-40 rounded-full focus:outline-none focus:ring-1 focus:ring-green-500"
-                        />
-                      </div>
-                    </div>
-                  </td>
-                  <td className="py-2 px-3 border-x shadow-md bg-gray-200 font-semibold capitalize">
-                    <div className="items-center text-center">
-                      <div className="ml-3">
-                        <button
-                          onClick={submitFilledQuantities}
-                          disabled={
-                            !item.filledQuantity || item.filledQuantity <= 0
-                          }
-                          className="bg-green-500 px-5 text-black text-xl py-1 rounded-full disabled:opacity-50 disabled:bg-gray-300"
-                        >
-                          Save
-                        </button>
-                      </div>
-                    </div>
-                  </td>
-                  <td className="py-2 px-3 border-x shadow-md bg-gray-100 font-semibold capitalize">
-                    <div className="items-center text-center">
-                      <div className="ml-3">
-                        <button
-                          onClick={() => handleViewClick(item.grnId)}
-                          className="bg-green-400 text-black px-4 py-2 rounded-full"
-                        >
-                          Preview
-                        </button>
-                      </div>
-                    </div>
-                  </td>
-                </tr>
-                <tr className="h-4" />
-              </>
-            ))}
+                    <td className="py-2 px-3 font-normal text-base border-x shadow-md bg-gray-100">
+                      {item.requiredQuantity}
+                    </td>
+
+                    <td className="py-2 px-3 font-normal text-base border-x shadow-md bg-yellow-100">
+                      {item.outstandingQuantity}
+                    </td>
+
+                    <td className="py-2 px-3 border-x shadow-md bg-gray-100 font-semibold">
+                      <input
+                        type="number"
+                        min={1}
+                        max={item.outstandingQuantity}
+                        disabled={item.outstandingQuantity === 0}
+                        value={item.filledQuantity ?? ""}
+                        onChange={(e) => {
+                          const raw = e.target.value;
+                          const val = raw === "" ? undefined : Number(raw);
+                          const clamped =
+                            val === undefined
+                              ? undefined
+                              : Math.max(
+                                  0,
+                                  Math.min(val, item.outstandingQuantity)
+                                );
+
+                          setItems((prev) => {
+                            const next = [...prev];
+                            next[actualIndex] = {
+                              ...next[actualIndex],
+                              filledQuantity: clamped,
+                            };
+                            return next;
+                          });
+                        }}
+                        className="border px-2 py-1 w-40 rounded-full focus:outline-none focus:ring-1 focus:ring-green-500"
+                      />
+                    </td>
+
+                    <td className="py-2 px-3 border-x shadow-md bg-gray-200 font-semibold">
+                      <button
+                        onClick={submitFilledQuantities}
+                        disabled={
+                          !item.filledQuantity || item.filledQuantity <= 0
+                        }
+                        className="bg-green-500 px-5 text-black text-xl py-1 rounded-full disabled:opacity-50 disabled:bg-gray-300"
+                      >
+                        Save
+                      </button>
+                    </td>
+
+                    <td className="py-2 px-3 border-x shadow-md bg-gray-100 font-semibold">
+                      <button
+                        onClick={() => handleViewClick(item.grnId)}
+                        className="bg-green-400 text-black px-4 py-2 rounded-full"
+                      >
+                        Preview
+                      </button>
+                    </td>
+                  </tr>
+
+                  {/* Optional spacer row */}
+                  <tr className="h-4" />
+                </>
+              );
+            })}
           </tbody>
         </table>
       </div>

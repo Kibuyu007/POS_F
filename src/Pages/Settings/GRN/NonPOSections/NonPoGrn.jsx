@@ -146,7 +146,7 @@ const NonPoGrn = () => {
           receivingDate: "",
         });
         toast.success("Added Succeccfully", {
-          position: "button-right",
+          position: "bottom-right",
           style: {
             borderRadius: "12px",
             background: "#27ae60",
@@ -161,7 +161,7 @@ const NonPoGrn = () => {
         toast.error(
           response.data.message || "Tatizo katika kuhifadhi manunuzi.",
           {
-            position: "button-right",
+            position: "bottom-right",
             style: {
               borderRadius: "12px",
               background: "#dd2c00",
@@ -173,7 +173,7 @@ const NonPoGrn = () => {
       }
     } catch (err) {
       toast.error(error.data.message || "Tatizo katika kuhifadhi manunuzi.", {
-        position: "button-right",
+        position: "bottom-right",
         style: {
           borderRadius: "12px",
           background: "#dd2c00",

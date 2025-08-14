@@ -165,7 +165,11 @@ const ProcessPo = ({ onClose, session, onPoStatusUpdate }) => {
     };
 
     try {
-      const response = await axios.post(`${BASE_URL}/api/grn/poGrn`, poGrnData);
+      const response = await axios.post(
+        `${BASE_URL}/api/grn/poGrn`,
+        poGrnData,
+        { withCredentials: true }
+      );
 
       if (response.status === 200 && response.data.success) {
         setRegi({
@@ -181,9 +185,9 @@ const ProcessPo = ({ onClose, session, onPoStatusUpdate }) => {
           position: "button-right",
           style: {
             borderRadius: "12px",
-            background: "#00e676",
-            color: "#212121",
-            fontSize: "26px",
+            background: "#27ae60",
+            color: "#fff",
+            fontSize: "18px",
           },
         });
 
@@ -195,12 +199,12 @@ const ProcessPo = ({ onClose, session, onPoStatusUpdate }) => {
 
         if (poUpdateResponse.data.success) {
           toast.success("PO Status Updated to Approved!", {
-            position: "bottom-right",
+            position: "button-right",
             style: {
               borderRadius: "12px",
-              background: "#00c853",
-              color: "#212121",
-              fontSize: "16px",
+              background: "#27ae60",
+              color: "#fff",
+              fontSize: "18px",
             },
           });
 
@@ -219,9 +223,9 @@ const ProcessPo = ({ onClose, session, onPoStatusUpdate }) => {
             position: "button-right",
             style: {
               borderRadius: "12px",
-              background: "#dd2c00",
-              color: "#212121",
-              fontSize: "26px",
+              background: "#27ae60",
+              color: "#fff",
+              fontSize: "18px",
             },
           }
         );
@@ -231,9 +235,9 @@ const ProcessPo = ({ onClose, session, onPoStatusUpdate }) => {
         position: "button-right",
         style: {
           borderRadius: "12px",
-          background: "#dd2c00",
-          color: "#212121",
-          fontSize: "26px",
+          background: "#27ae60",
+          color: "#fff",
+          fontSize: "18px",
         },
       });
     } finally {
