@@ -176,7 +176,7 @@ const BillNonPo = () => {
               <th className="px-5 py-3 border-b-2 border-gray-200 bg-gray-200 text-center text-xs font-bold text-gray-900 uppercase tracking-wider">
                 Old Status
               </th>
-               <th className="px-5 py-3 border-b-2 border-gray-200 bg-gray-200 text-center text-xs font-bold text-gray-900 uppercase tracking-wider">
+              <th className="px-5 py-3 border-b-2 border-gray-200 bg-gray-200 text-center text-xs font-bold text-gray-900 uppercase tracking-wider">
                 Billed Amount
               </th>
               <th className="px-5 py-3 border-b-2 border-gray-200 bg-gray-200 text-center text-xs font-bold text-gray-900 uppercase tracking-wider">
@@ -219,11 +219,11 @@ const BillNonPo = () => {
                       <div className="ml-3">{log.oldStatus}</div>
                     </div>
                   </td>
-                    <td className="py-2 px-3 font-bold text-base border-x shadow-md bg-gray-100  hover:bg-gray-100  whitespace-nowrap overflow-hidden overflow-ellipsis max-w-[200px]">
+                  <td className="py-2 px-3 font-bold text-base border-x shadow-md bg-gray-100  hover:bg-gray-100  whitespace-nowrap overflow-hidden overflow-ellipsis max-w-[200px]">
                     <div className="items-center text-center">
                       <div className="ml-3">
-  {Number(log?.billedTotalCost ?? 0).toLocaleString()}
-</div>
+                        {Number(log?.billedTotalCost ?? 0).toLocaleString()}
+                      </div>
                     </div>
                   </td>
                   <td className="py-2 px-3 font-normal text-base border-x shadow-md bg-green-200  hover:bg-gray-100  whitespace-nowrap overflow-hidden overflow-ellipsis max-w-[200px]">
@@ -231,8 +231,7 @@ const BillNonPo = () => {
                       <div className="ml-3">{log.newStatus}</div>
                     </div>
                   </td>
-                
-                 
+
                   <td className="py-2 px-3 font-normal text-base border-x shadow-md bg-gray-100  hover:bg-gray-100  whitespace-nowrap overflow-hidden overflow-ellipsis max-w-[200px]">
                     <div className="items-center text-center">
                       <div className="ml-3">

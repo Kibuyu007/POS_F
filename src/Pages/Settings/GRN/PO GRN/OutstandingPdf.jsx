@@ -14,7 +14,7 @@ const OutstandingPdf = ({ open, onClose, grn }) => {
 
         {/* Header */}
         <h2 className="text-2xl font-bold text-gray-800 mb-4 text-center">
-          Goods Received Note (GRN)
+          Goods Received Note (GRN) of this Purchase Items
         </h2>
 
         {/* GRN Info Section */}
@@ -29,9 +29,6 @@ const OutstandingPdf = ({ open, onClose, grn }) => {
           <p>
             <span className="font-medium">Received On:</span>{" "}
             {new Date(grn.receivingDate).toLocaleDateString()}
-          </p>
-          <p>
-            <span className="font-medium">Created By:</span> {grn.createdBy}
           </p>
         </div>
 

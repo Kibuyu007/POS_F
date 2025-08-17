@@ -11,8 +11,7 @@ import dayjs from "dayjs";
 import Loading from "../../../../Components/Shared/Loading";
 
 //API
-import BASE_URL from "../../../../Utils/config"
-
+import BASE_URL from "../../../../Utils/config";
 
 const MadeniPo = () => {
   const [deni, setDeni] = useState([]);
@@ -46,9 +45,7 @@ const MadeniPo = () => {
 
   const handlePreview = async (grnId) => {
     try {
-      const res = await axios.get(
-        `${BASE_URL}/api/grn/billDetails/${grnId}`
-      );
+      const res = await axios.get(`${BASE_URL}/api/grn/billDetails/${grnId}`);
       if (res.data.success) {
         setModalData(res.data.data);
         setOpenModal(true);
@@ -185,6 +182,12 @@ const MadeniPo = () => {
                 Required Quantity
               </th>
               <th className="px-5 py-3 border-b-2 border-gray-200 bg-gray-200 text-center text-xs font-bold text-gray-900 uppercase tracking-wider">
+                Billed Item Quantity{" "}
+              </th>
+              <th className="px-5 py-3 border-b-2 border-gray-200 bg-gray-200 text-center text-xs font-bold text-gray-900 uppercase tracking-wider">
+                Total Cost
+              </th>
+              <th className="px-5 py-3 border-b-2 border-gray-200 bg-gray-200 text-center text-xs font-bold text-gray-900 uppercase tracking-wider">
                 Update
               </th>
               <th className="px-5 py-3 border-b-2 border-gray-200 bg-gray-200 text-center text-xs font-bold text-gray-900 uppercase tracking-wider">
@@ -233,7 +236,7 @@ const MadeniPo = () => {
                     <div className="items-center text-center">
                       <div className="ml-3">
                         <p className="text-gray-900 whitespace-no-wrap font-semibold capitalize">
-                          {item.createdBy}
+                          {item.createdBy.firstName} {item.createdBy.lastName}
                         </p>
                       </div>
                     </div>
@@ -252,6 +255,24 @@ const MadeniPo = () => {
                       <div className="ml-3">
                         <p className="text-gray-900 whitespace-no-wrap font-semibold capitalize">
                           {item.requiredQuantity}
+                        </p>
+                      </div>
+                    </div>
+                  </td>
+                  <td className="py-2 px-3 font-normal text-base border-x shadow-md bg-yellow-100  hover:bg-gray-100  whitespace-nowrap overflow-hidden overflow-ellipsis max-w-[200px]">
+                    <div className="items-center text-center">
+                      <div className="ml-3">
+                        <p className="text-gray-900 whitespace-no-wrap font-semibold capitalize">
+                          {item.billedAmount || 0}
+                        </p>
+                      </div>
+                    </div>
+                  </td>
+                  <td className="py-2 px-3 font-normal text-base border-x shadow-md bg-yellow-100  hover:bg-gray-100  whitespace-nowrap overflow-hidden overflow-ellipsis max-w-[200px]">
+                    <div className="items-center text-center">
+                      <div className="ml-3">
+                        <p className="text-gray-900 whitespace-no-wrap font-semibold capitalize">
+                          {item.billedTotalCost.toLocaleString()}
                         </p>
                       </div>
                     </div>
