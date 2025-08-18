@@ -11,6 +11,7 @@ import Loading from "../../../../Components/Shared/Loading";
 
 //API
 import BASE_URL from "../../../../Utils/config";
+import toast from "react-hot-toast";
 
 const CompletedNonPO = () => {
   const [grns, setGrns] = useState([]);
@@ -39,6 +40,15 @@ const CompletedNonPO = () => {
           setError(res.data.message || "Unknown error");
         }
       } catch (err) {
+        toast.error(error.data.message || "Tatizo katika kuhifadhi manunuzi.", {
+          position: "bottom-right",
+          style: {
+            borderRadius: "12px",
+            background: "#dd2c00",
+            color: "#212121",
+            fontSize: "26px",
+          },
+        });
         console.error("Error fetching completed GRNs:", err);
         setError("Failed to fetch completed GRNs");
       } finally {

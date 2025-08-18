@@ -145,15 +145,6 @@ const NonPoGrn = () => {
           description: "",
           receivingDate: "",
         });
-        toast.success("Added Succeccfully", {
-          position: "bottom-right",
-          style: {
-            borderRadius: "12px",
-            background: "#27ae60",
-            color: "#fff",
-            fontSize: "18px",
-          },
-        });
         setItemHold([]);
         localStorage.removeItem("nonPoGrnItems");
       } else {

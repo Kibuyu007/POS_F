@@ -11,6 +11,7 @@ import Loading from "../../../../Components/Shared/Loading";
 
 //API
 import BASE_URL from "../../../../Utils/config";
+import toast from "react-hot-toast";
 
 const MadeniNonPo = () => {
   const [deniNon, setDeniNon] = useState([]);
@@ -33,8 +34,17 @@ const MadeniNonPo = () => {
         setDeniNon(res.data.data);
         setLoad(false);
       }
-    } catch (err) {
-      console.error("Error fetching billed items:", err);
+    } catch (error) {
+      toast.error(error.data.message || "Tatizo katika kuhifadhi manunuzi.", {
+        position: "bottom-right",
+        style: {
+          borderRadius: "12px",
+          background: "#dd2c00",
+          color: "#212121",
+          fontSize: "26px",
+        },
+      });
+      console.error("Error fetching billed items:", error);
     }
   };
 
@@ -59,6 +69,15 @@ const MadeniNonPo = () => {
       );
       if (res.data.success) fetchUnpaidNonPo();
     } catch (error) {
+      toast.error(error.data.message || "Tatizo katika kuhifadhi manunuzi.", {
+        position: "bottom-right",
+        style: {
+          borderRadius: "12px",
+          background: "#dd2c00",
+          color: "#212121",
+          fontSize: "26px",
+        },
+      });
       console.error("Error updating item status:", error);
       alert("Failed to update status.");
     }

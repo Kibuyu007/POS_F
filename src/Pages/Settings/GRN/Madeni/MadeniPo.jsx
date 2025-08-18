@@ -57,10 +57,16 @@ const MadeniPo = () => {
 
   const toggleStatus = async (grnId, itemId) => {
     try {
-      const res = await axios.put(`${BASE_URL}/api/grn/updateBill`, {
-        grnId,
-        itemId,
-      });
+      const res = await axios.put(
+        `${BASE_URL}/api/grn/updateBill`,
+        {
+          grnId,
+          itemId,
+        },
+        {
+          withCredentials: true,
+        }
+      );
 
       if (res.data.success) {
         fetchUnpaidPo();
