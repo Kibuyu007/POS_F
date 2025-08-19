@@ -15,8 +15,7 @@ import { fetchSuppliers } from "../../../../Redux/suppliers";
 import Loading from "../../../../Components/Shared/Loading";
 
 //API
-import BASE_URL from "../../../../Utils/config"
-
+import BASE_URL from "../../../../Utils/config";
 
 const PoGrn = () => {
   const { supplier } = useSelector((state) => state.suppliers);
@@ -392,6 +391,7 @@ const PoGrn = () => {
         </p>
 
         <nav className="isolate inline-flex -space-x-px rounded-md shadow-sm">
+          {/* Prev Button */}
           <button
             onClick={prevPage}
             disabled={currentPage === 1}
@@ -402,24 +402,43 @@ const PoGrn = () => {
             <IoIosArrowBack className="size-5" />
           </button>
 
-          {[...Array(totalPages)].map((_, i) => (
-            <button
-              key={i + 1}
-              onClick={() => setCurrentPage(i + 1)}
-              className={`relative inline-flex items-center px-4 py-2 text-sm font-semibold ring-1 ring-gray-300 hover:bg-gray-50 ${
-                currentPage === i + 1
-                  ? "bg-green-500 text-white"
-                  : "text-gray-900"
-              }`}
-            >
-              {i + 1}
-            </button>
-          ))}
+          {/* Page Numbers (Max 10 visible) */}
+          {(() => {
+            const maxPagesToShow = 10;
+            let startPage = Math.max(
+              1,
+              currentPage - Math.floor(maxPagesToShow / 2)
+            );
+            let endPage = startPage + maxPagesToShow - 1;
 
+            if (endPage > totalPages) {
+              endPage = totalPages;
+              startPage = Math.max(1, endPage - maxPagesToShow + 1);
+            }
+
+            return Array.from(
+              { length: endPage - startPage + 1 },
+              (_, i) => startPage + i
+            ).map((page) => (
+              <button
+                key={page}
+                onClick={() => setCurrentPage(page)}
+                className={`relative inline-flex items-center px-4 py-2 text-sm font-semibold ring-1 ring-gray-300 hover:bg-green-100 ${
+                  currentPage === page
+                    ? "bg-green-500 text-white"
+                    : "text-gray-900"
+                }`}
+              >
+                {page}
+              </button>
+            ));
+          })()}
+
+          {/* Next Button */}
           <button
             onClick={nextPage}
             disabled={currentPage === totalPages}
-            className={`relative inline-flex items-center rounded-r-md px-2 py-2 text-gray-400 ring-1 ring-gray-300 hover:bg-gray-50 ${
+            className={`relative inline-flex items-center rounded-r-md px-2 py-2 text-gray-400 ring-1 ring-gray-300 hover:bg-gray-500 ${
               currentPage === totalPages ? "opacity-50 cursor-not-allowed" : ""
             }`}
           >

@@ -249,59 +249,76 @@ const BillNonPo = () => {
       </div>
 
       {/* Pagination */}
-      <div className="flex items-center justify-between border-t border-gray-200 py-3 mt-4">
-        <p className="text-sm text-gray-700 px-2">
-          Showing{" "}
-          <span className="font-medium">
-            {(currentPage - 1) * itemsPerPage + 1}
-          </span>{" "}
-          to{" "}
-          <span className="font-medium">
-            {Math.min(currentPage * itemsPerPage, totalItems)}
-          </span>{" "}
-          of <span className="font-medium">{totalItems}</span> items
-        </p>
+      {totalItems > 0 && totalPages > 0 && (
+        <div className="flex items-center justify-between border-t border-gray-200 py-3 mt-4">
+          <p className="text-sm text-gray-700 px-2">
+            Showing{" "}
+            <span className="font-medium">
+              {(currentPage - 1) * itemsPerPage + 1}
+            </span>{" "}
+            to{" "}
+            <span className="font-medium">
+              {Math.min(currentPage * itemsPerPage, totalItems)}
+            </span>{" "}
+            of <span className="font-medium">{totalItems}</span> items
+          </p>
 
-        <nav className="inline-flex -space-x-px rounded-md shadow-sm">
-          <button
-            onClick={prevPage}
-            disabled={currentPage === 1}
-            className={`px-3 py-1 text-gray-400 ring-1 ring-gray-300 ${
-              currentPage === 1
-                ? "opacity-50 cursor-not-allowed"
-                : "hover:bg-gray-100"
-            }`}
-          >
-            <IoIosArrowBack className="size-5" />
-          </button>
-
-          {[...Array(totalPages)].map((_, i) => (
+          <nav className="inline-flex -space-x-px rounded-md shadow-sm">
+            {/* Prev */}
             <button
-              key={i}
-              onClick={() => setCurrentPage(i + 1)}
-              className={`px-4 py-1 text-sm font-medium ring-1 ring-gray-300 ${
-                currentPage === i + 1
-                  ? "bg-green-500 text-white"
+              onClick={prevPage}
+              disabled={currentPage === 1}
+              className={`px-3 py-1 text-black ring-1 ring-gray-400 ${
+                currentPage === 1
+                  ? "opacity-50 cursor-not-allowed"
                   : "hover:bg-gray-100"
               }`}
             >
-              {i + 1}
+              <IoIosArrowBack className="size-5" />
             </button>
-          ))}
 
-          <button
-            onClick={nextPage}
-            disabled={currentPage === totalPages}
-            className={`px-3 py-1 text-gray-400 ring-1 ring-gray-300 ${
-              currentPage === totalPages
-                ? "opacity-50 cursor-not-allowed"
-                : "hover:bg-gray-100"
-            }`}
-          >
-            <IoIosArrowForward className="size-5" />
-          </button>
-        </nav>
-      </div>
+            {/* Page Numbers (max 10 at once) */}
+            {(() => {
+              let startPage = Math.max(1, currentPage - 4);
+              let endPage = Math.min(totalPages, startPage + 9);
+
+              if (endPage - startPage < 9) {
+                startPage = Math.max(1, endPage - 9);
+              }
+
+              return [...Array(endPage - startPage + 1)].map((_, i) => {
+                const pageNum = startPage + i;
+                return (
+                  <button
+                    key={pageNum}
+                    onClick={() => setCurrentPage(pageNum)}
+                    className={`text-black px-4 py-1 text-sm font-medium ring-1 ring-gray-300 ${
+                      currentPage === pageNum
+                        ? "bg-green-500 text-black"
+                        : "hover:bg-gray-100"
+                    }`}
+                  >
+                    {pageNum}
+                  </button>
+                );
+              });
+            })()}
+
+            {/* Next */}
+            <button
+              onClick={nextPage}
+              disabled={currentPage === totalPages}
+              className={`px-3 py-1 text-black ring-1 ring-gray-300 ${
+                currentPage === totalPages
+                  ? "opacity-50 cursor-not-allowed"
+                  : "hover:bg-gray-100"
+              }`}
+            >
+              <IoIosArrowForward className="size-5" />
+            </button>
+          </nav>
+        </div>
+      )}
     </div>
   );
 };

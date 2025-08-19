@@ -218,9 +218,9 @@ const CompletedNonPO = () => {
               <h4 className="mt-8 mb-4 text-gray-900 dark:text-gray-100 font-semibold border-b border-gray-300 dark:border-gray-700 pb-2 tracking-wide text-lg">
                 Items
               </h4>
-              <div className="overflow-x-auto rounded-lg border border-gray-200 dark:border-gray-700 shadow-sm">
+              <div className="overflow-x-auto rounded-lg border border-gray-200 dark:border-gray-700 shadow-sm bg-green-100 dark:bg-neutral-800">
                 <table className="w-full text-center text-gray-700 dark:text-gray-300 text-sm">
-                  <thead className="bg-gray-50 dark:bg-neutral-800">
+                  <thead className="bg-green-100 dark:bg-neutral-800">
                     <tr>
                       {[
                         "Item",
@@ -260,7 +260,7 @@ const CompletedNonPO = () => {
                           totalQty * (item.sellingPrice || 0);
 
                         return (
-                          <tr key={item._id} className="border-b ...">
+                          <tr key={item._id} className="border-b ... font-bold">
                             <td>{item.name?.name || "-"}</td>
                             <td>{billed}</td>
                             <td>{paid}</td>
@@ -270,7 +270,7 @@ const CompletedNonPO = () => {
                             <td>{item.sellingPrice?.toLocaleString() || 0}</td>
                             <td>{estimatedProfit.toLocaleString()}</td>
                             <td
-                              className={`py-2 px-3 capitalize ${
+                              className={`py-2 px-3 capitalize font-bold ${
                                 item.status === "Billed"
                                   ? "bg-yellow-300 text-yellow-900 font-semibold"
                                   : item.status === "Completed"

@@ -262,7 +262,8 @@ const BillPo = () => {
           of <span className="font-medium">{totalItems}</span> items
         </p>
 
-        <nav className="inline-flex -space-x-px rounded-md shadow-sm">
+        <nav className="inline-flex items-center gap-1">
+          {/* Prev */}
           <button
             onClick={prevPage}
             disabled={currentPage === 1}
@@ -275,20 +276,28 @@ const BillPo = () => {
             <IoIosArrowBack className="size-5" />
           </button>
 
-          {[...Array(totalPages)].map((_, i) => (
-            <button
-              key={i}
-              onClick={() => setCurrentPage(i + 1)}
-              className={`px-4 py-1 text-sm font-medium ring-1 ring-gray-300 ${
-                currentPage === i + 1
-                  ? "bg-green-500 text-white"
-                  : "hover:bg-gray-100"
-              }`}
-            >
-              {i + 1}
-            </button>
-          ))}
+          {/* Page numbers */}
+          <div className="flex overflow-x-auto max-w-[400px] scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100 rounded-md">
+            {[...Array(totalPages)].map((_, i) => {
+              // Show only first 10 pages, then scroll for more
+              if (i + 1 > 10) return null;
+              return (
+                <button
+                  key={i}
+                  onClick={() => setCurrentPage(i + 1)}
+                  className={`px-4 py-1 text-sm font-medium ring-1 ring-gray-300 ${
+                    currentPage === i + 1
+                      ? "bg-green-500 text-white"
+                      : "hover:bg-gray-100"
+                  }`}
+                >
+                  {i + 1}
+                </button>
+              );
+            })}
+          </div>
 
+          {/* Next */}
           <button
             onClick={nextPage}
             disabled={currentPage === totalPages}

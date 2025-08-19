@@ -340,6 +340,7 @@ const MadeniPo = () => {
         </p>
 
         <nav className="isolate inline-flex -space-x-px rounded-md shadow-sm">
+          {/* Prev Button */}
           <button
             onClick={prevPage}
             disabled={currentPage === 1}
@@ -350,20 +351,39 @@ const MadeniPo = () => {
             <IoIosArrowBack className="size-5" />
           </button>
 
-          {[...Array(totalPages)].map((_, i) => (
-            <button
-              key={i + 1}
-              onClick={() => setCurrentPage(i + 1)}
-              className={`relative inline-flex items-center px-4 py-2 text-sm font-semibold ring-1 ring-gray-300 hover:bg-gray-50 ${
-                currentPage === i + 1
-                  ? "bg-green-500 text-white"
-                  : "text-gray-900"
-              }`}
-            >
-              {i + 1}
-            </button>
-          ))}
+          {/* Dynamic Pages (Max 10) */}
+          {(() => {
+            const maxPagesToShow = 10;
+            let startPage = Math.max(
+              1,
+              currentPage - Math.floor(maxPagesToShow / 2)
+            );
+            let endPage = startPage + maxPagesToShow - 1;
 
+            if (endPage > totalPages) {
+              endPage = totalPages;
+              startPage = Math.max(1, endPage - maxPagesToShow + 1);
+            }
+
+            return Array.from(
+              { length: endPage - startPage + 1 },
+              (_, i) => startPage + i
+            ).map((page) => (
+              <button
+                key={page}
+                onClick={() => setCurrentPage(page)}
+                className={`relative inline-flex items-center px-4 py-2 text-sm font-semibold ring-1 ring-gray-300 hover:bg-gray-50 ${
+                  currentPage === page
+                    ? "bg-green-500 text-white"
+                    : "text-gray-900"
+                }`}
+              >
+                {page}
+              </button>
+            ));
+          })()}
+
+          {/* Next Button */}
           <button
             onClick={nextPage}
             disabled={currentPage === totalPages}

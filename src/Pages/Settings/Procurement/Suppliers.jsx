@@ -19,8 +19,7 @@ import axios from "axios";
 import { IoIosArrowBack, IoIosArrowForward } from "react-icons/io";
 
 //API
-import BASE_URL from "../../../Utils/config"
-
+import BASE_URL from "../../../Utils/config";
 
 const Suppliers = () => {
   const dispatch = useDispatch();
@@ -269,8 +268,7 @@ const Suppliers = () => {
             <p className="text-sm text-gray-700">
               Showing{" "}
               <span className="font-medium">
-                {" "}
-                <strong>{indexOfFirst + 1}</strong>{" "}
+                <strong>{indexOfFirst + 1}</strong>
               </span>{" "}
               to{" "}
               <span className="font-medium">
@@ -278,8 +276,7 @@ const Suppliers = () => {
               </span>{" "}
               of{" "}
               <span className="font-medium">
-                {" "}
-                <strong>{allSuppliers.length}</strong>{" "}
+                <strong>{allSuppliers.length}</strong>
               </span>{" "}
               <strong>Suppliers</strong>
             </p>
@@ -288,6 +285,7 @@ const Suppliers = () => {
               aria-label="Pagination"
               className="isolate inline-flex -space-x-px rounded-md shadow-xs"
             >
+              {/* Prev Button */}
               <button
                 onClick={prevPage}
                 disabled={currentPage === 1}
@@ -298,18 +296,37 @@ const Suppliers = () => {
                 <IoIosArrowBack aria-hidden="true" className="size-5" />
               </button>
 
-              {[...Array(totalPages)].map((_, i) => (
-                <button
-                  key={i + 1}
-                  onClick={() => setCurrentPage(i + 1)}
-                  className={`relative inline-flex items-center px-4 py-2 text-sm font-semibold text-gray-900 ring-1 ring-gray-300 ring-inset hover:bg-gray-50 focus:z-20 focus:outline-offset-0 ${
-                    currentPage === i + 1 ? "bg-green-500/80 text-white" : ""
-                  }`}
-                >
-                  {i + 1}
-                </button>
-              ))}
+              {/* Page Numbers (Max 10) */}
+              {(() => {
+                const maxPagesToShow = 10;
+                let startPage = Math.max(
+                  1,
+                  currentPage - Math.floor(maxPagesToShow / 2)
+                );
+                let endPage = startPage + maxPagesToShow - 1;
 
+                if (endPage > totalPages) {
+                  endPage = totalPages;
+                  startPage = Math.max(1, endPage - maxPagesToShow + 1);
+                }
+
+                return Array.from(
+                  { length: endPage - startPage + 1 },
+                  (_, i) => startPage + i
+                ).map((page) => (
+                  <button
+                    key={page}
+                    onClick={() => setCurrentPage(page)}
+                    className={`relative inline-flex items-center px-4 py-2 text-sm font-semibold text-gray-900 ring-1 ring-gray-300 ring-inset hover:bg-gray-50 focus:z-20 focus:outline-offset-0 ${
+                      currentPage === page ? "bg-green-500/80 text-white" : ""
+                    }`}
+                  >
+                    {page}
+                  </button>
+                ));
+              })()}
+
+              {/* Next Button */}
               <button
                 onClick={nextPage}
                 disabled={currentPage === totalPages}

@@ -15,6 +15,8 @@ import IncompleteNonPo from "./GRN/Madeni/MadeniNonPo";
 import MadeniPo from "./GRN/Madeni/MadeniPo";
 import MadeniNonPo from "./GRN/Madeni/MadeniNonPo";
 import { useSelector } from "react-redux";
+import CustomerManagement from "./Customers/CustomerManagement";
+import Wallet from "./Customers/Wallet";
 
 const Settings = () => {
   const [selectedSetting, setSelectedSetting] = useState(null);
@@ -61,6 +63,13 @@ const Settings = () => {
           handleSelect={setSelectedSetting}
         />
 
+        <SettingsList
+          title="Customer Management"
+          settings={["All Customers", "Wallet Transactions"]}
+          selectedSetting={selectedSetting}
+          handleSelect={setSelectedSetting}
+        />
+
         {user?.roles?.canAccessUserManagement && (
           <SettingsList
             title="User Management"
@@ -100,6 +109,10 @@ const Settings = () => {
           <MadeniPo />
         ) : selectedSetting === "Unpaid Non-PO" ? (
           <MadeniNonPo />
+        ): selectedSetting === "All Customers" ? (
+          <CustomerManagement />
+        ): selectedSetting === "Wallet Transactions" ? (
+          <Wallet />
         ) : selectedSetting ? (
           <p className="text-lg">{selectedSetting}</p>
         ) : (

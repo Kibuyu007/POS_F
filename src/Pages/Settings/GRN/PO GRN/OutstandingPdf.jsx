@@ -81,27 +81,27 @@ const OutstandingPdf = ({ open, onClose, grn }) => {
                     </td>
                     <td className="py-2 px-3 font-normal text-base border-x shadow-md bg-gray-200  hover:bg-gray-100  whitespace-nowrap overflow-hidden overflow-ellipsis max-w-[200px]">
                       <div className="items-center text-center">
-                        <div className="ml-3">{item.requiredQuantity}</div>
+                        <div className="ml-3">{item.requiredQuantity.toLocaleString()}</div>
                       </div>
                     </td>
                     <td className="py-2 px-3 font-normal text-base border-x shadow-md bg-gray-200  hover:bg-gray-100  whitespace-nowrap overflow-hidden overflow-ellipsis max-w-[200px]">
                       <div className="items-center text-center">
-                        <div className="ml-3">{item.receivedQuantity}</div>
+                        <div className="ml-3">{item.receivedQuantity.toLocaleString()}</div>
                       </div>
                     </td>
                     <td className="py-2 px-3 font-normal text-base border-x shadow-md bg-gray-200  hover:bg-gray-100  whitespace-nowrap overflow-hidden overflow-ellipsis max-w-[200px]">
                       <div className="items-center text-center">
-                        <div className="ml-3">{item.outstandingQuantity}</div>
+                        <div className="ml-3">{item.outstandingQuantity.toLocaleString()}</div>
                       </div>
                     </td>
                     <td className="py-2 px-3 font-normal text-base border-x shadow-md bg-gray-200  hover:bg-gray-100  whitespace-nowrap overflow-hidden overflow-ellipsis max-w-[200px]">
                       <div className="items-center text-center">
-                        <div className="ml-3">Tsh {item.newBuyingPrice}</div>
+                        <div className="ml-3">{item.newBuyingPrice.toLocaleString()}</div>
                       </div>
                     </td>
                     <td className="py-2 px-3 font-normal text-base border-x shadow-md bg-gray-200  hover:bg-gray-100  whitespace-nowrap overflow-hidden overflow-ellipsis max-w-[200px]">
                       <div className="items-center text-center">
-                        <div className="ml-3">Tsh {item.newSellingPrice}</div>
+                        <div className="ml-3">{item.newSellingPrice.toLocaleString()}</div>
                       </div>
                     </td>
                     <td className="py-2 px-3 font-normal text-base border-x shadow-md bg-gray-200  hover:bg-gray-100  whitespace-nowrap overflow-hidden overflow-ellipsis max-w-[200px]">
@@ -109,7 +109,7 @@ const OutstandingPdf = ({ open, onClose, grn }) => {
                         <div className="ml-3">{item.batchNumber}</div>
                       </div>
                     </td>
-                    <td className="py-2 px-3 font-normal text-base border-x shadow-md bg-gray-200  hover:bg-gray-100  whitespace-nowrap overflow-hidden overflow-ellipsis max-w-[200px]">
+                    <td className="py-2 px-3 font-normal text-base border-x shadow-md bg-red-200  hover:bg-gray-100  whitespace-nowrap overflow-hidden overflow-ellipsis max-w-[200px]">
                       <div className="items-center text-center">
                         <div className="ml-3">
                           {item.expiryDate

@@ -304,6 +304,7 @@ const MadeniNonPo = () => {
         </p>
 
         <nav className="isolate inline-flex -space-x-px rounded-md shadow-sm">
+          {/* Previous Button */}
           <button
             onClick={prevPage}
             disabled={currentPage === 1}
@@ -314,19 +315,35 @@ const MadeniNonPo = () => {
             <IoIosArrowBack className="size-5" />
           </button>
 
-          {[...Array(totalPages)].map((_, i) => (
-            <button
-              key={i + 1}
-              onClick={() => setCurrentPage(i + 1)}
-              className={`relative inline-flex items-center px-4 py-2 text-sm font-semibold ring-1 ring-gray-300 hover:bg-gray-50 ${
-                currentPage === i + 1
-                  ? "bg-green-500 text-white"
-                  : "text-gray-900"
-              }`}
-            >
-              {i + 1}
-            </button>
-          ))}
+          {/* Page Numbers (max 10 visible) */}
+          {(() => {
+            let start = Math.max(1, currentPage - 4); // show 4 before current
+            let end = Math.min(totalPages, start + 9); // max 10 pages
+
+            // adjust start if we are near the end
+            if (end - start < 9) {
+              start = Math.max(1, end - 9);
+            }
+
+            return Array.from({ length: end - start + 1 }, (_, i) => {
+              const page = start + i;
+              return (
+                <button
+                  key={page}
+                  onClick={() => setCurrentPage(page)}
+                  className={`relative inline-flex items-center px-4 py-2 text-sm font-semibold ring-1 ring-gray-300 hover:bg-gray-50 ${
+                    currentPage === page
+                      ? "bg-green-500 text-white"
+                      : "text-gray-900"
+                  }`}
+                >
+                  {page}
+                </button>
+              );
+            });
+          })()}
+
+          {/* Next Button */}
           <button
             onClick={nextPage}
             disabled={currentPage === totalPages}

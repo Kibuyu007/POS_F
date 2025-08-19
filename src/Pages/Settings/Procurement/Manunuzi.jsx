@@ -20,6 +20,7 @@ const Manunuzi = () => {
   const { supplier, error, loading } = useSelector((state) => state.suppliers);
   const [searchQuery, setSearchQuery] = useState("");
   const [load, setLoad] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const dispatch = useDispatch();
 
   const [regi, setRegi] = useState({
@@ -70,6 +71,10 @@ const Manunuzi = () => {
   //SUBMIT ALL DATA
   const handleSubmit = async (e) => {
     e.preventDefault();
+
+    if (isSubmitting) return; // prevent duplicate requests
+    setIsSubmitting(true);
+
     try {
       const selectedSupplier = supplier.find(
         (sup) => sup._id === regi.supplierName
@@ -81,7 +86,7 @@ const Manunuzi = () => {
 
       if (missingQuantity) {
         toast.error("Please provide a valid quantity for all selected items.", {
-          position: "button-right",
+          position: "bottom-right",
           style: {
             borderRadius: "12px",
             background: "#27ae60",
@@ -89,6 +94,7 @@ const Manunuzi = () => {
             fontSize: "18px",
           },
         });
+        setIsSubmitting(false); // reset so user can try again
         return;
       }
 
@@ -107,11 +113,12 @@ const Manunuzi = () => {
         },
         { withCredentials: true }
       );
+
       console.log("New stocks added successfully", response.data);
       const successMessage = response.data;
 
       toast.success(successMessage.message, {
-        position: "button-right",
+        position: "bottom-right",
         style: {
           borderRadius: "12px",
           background: "#27ae60",
@@ -128,8 +135,8 @@ const Manunuzi = () => {
       });
     } catch (error) {
       console.error("Error adding new stocks:", error);
-      toast.error("There is Error in Addning  New Stock", {
-        position: "button-right",
+      toast.error("There is Error in Adding New Stock", {
+        position: "bottom-right",
         style: {
           borderRadius: "12px",
           background: "#27ae60",
@@ -137,6 +144,8 @@ const Manunuzi = () => {
           fontSize: "18px",
         },
       });
+    } finally {
+      setIsSubmitting(false); // always reset after request
     }
   };
 
@@ -456,7 +465,12 @@ const Manunuzi = () => {
               <button
                 onClick={handleSubmit}
                 type="submit"
-                className="mt-6 border w-full rounded-md p-3 px-2 py-2 bg-green-300 font-bold"
+                disabled={isSubmitting}
+                className={`mt-6 border w-full rounded-md p-3 px-2 py-2 bg-green-300 font-bold ${
+                  isSubmitting
+                    ? "bg-gray-400 cursor-not-allowed"
+                    : "bg-emerald-600 hover:bg-emerald-700"
+                }`}
               >
                 Submit
               </button>

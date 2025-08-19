@@ -15,8 +15,7 @@ import Loading from "../../../Components/Shared/Loading";
 import { fetchSuppliers } from "../../../Redux/suppliers";
 
 //API
-import BASE_URL from "../../../Utils/config"
-
+import BASE_URL from "../../../Utils/config";
 
 const CompletedPo = () => {
   const { supplier } = useSelector((state) => state.suppliers);
@@ -213,133 +212,132 @@ const CompletedPo = () => {
       <Loading load={load} />
 
       <div className="overflow-x-auto rounded-lg mt-4">
-          <table className="min-w-full text-sm text-gray-700 rounded-2xl">
-        <thead className="bg-gray-100 text-xs uppercase">
-          <tr>
-            <th className="px-5 py-3 border-b-2 border-gray-200 bg-gray-200 text-center text-xs font-bold text-gray-900 uppercase tracking-wider">
-              SN
-            </th>
-            <th className="px-5 py-3 border-b-2 border-gray-200 bg-gray-200 text-center text-xs font-bold text-gray-900 uppercase tracking-wider">
-              GRN Number
-            </th>
-            <th className="px-5 py-3 border-b-2 border-gray-200 bg-gray-200 text-center text-xs font-bold text-gray-900 uppercase tracking-wider">
-              Total Products
-            </th>
-            <th className="px-5 py-3 border-b-2 border-gray-200 bg-gray-200 text-center text-xs font-bold text-gray-900 uppercase tracking-wider">
-              Purchase Comments
-            </th>
-            <th className="px-5 py-3 border-b-2 border-gray-200 bg-gray-200 text-center text-xs font-bold text-gray-900 uppercase tracking-wider">
-              Supplier
-            </th>
-            <th className="px-5 py-3 border-b-2 border-gray-200 bg-gray-200 text-center text-xs font-bold text-gray-900 uppercase tracking-wider">
-              Created At
-            </th>
-            <th className="px-5 py-3 border-b-2 border-gray-200 bg-gray-200 text-center text-xs font-bold text-gray-900 uppercase tracking-wider">
-              Status
-            </th>
-            <th className="px-5 py-3 border-b-2 border-gray-200 bg-gray-200 text-center text-xs font-bold text-gray-900 uppercase tracking-wider">
-              View PO
-            </th>
-          </tr>
-          <tr className="h-4" />
-        </thead>
-        <tbody>
-          {paginatedSessions.map((session, idx) => (
-            <>
-              <tr key={idx} className="border-b">
-                <td className="h-16 border-gray-200 shadow-md bg-gray-200 text-center">
-                  {(currentPage - 1) * itemsPerPage + idx + 1}
-                </td>
+        <table className="min-w-full text-sm text-gray-700 rounded-2xl">
+          <thead className="bg-gray-100 text-xs uppercase">
+            <tr>
+              <th className="px-5 py-3 border-b-2 border-gray-200 bg-gray-200 text-center text-xs font-bold text-gray-900 uppercase tracking-wider">
+                SN
+              </th>
+              <th className="px-5 py-3 border-b-2 border-gray-200 bg-gray-200 text-center text-xs font-bold text-gray-900 uppercase tracking-wider">
+                GRN Number
+              </th>
+              <th className="px-5 py-3 border-b-2 border-gray-200 bg-gray-200 text-center text-xs font-bold text-gray-900 uppercase tracking-wider">
+                Total Products
+              </th>
+              <th className="px-5 py-3 border-b-2 border-gray-200 bg-gray-200 text-center text-xs font-bold text-gray-900 uppercase tracking-wider">
+                Purchase Comments
+              </th>
+              <th className="px-5 py-3 border-b-2 border-gray-200 bg-gray-200 text-center text-xs font-bold text-gray-900 uppercase tracking-wider">
+                Supplier
+              </th>
+              <th className="px-5 py-3 border-b-2 border-gray-200 bg-gray-200 text-center text-xs font-bold text-gray-900 uppercase tracking-wider">
+                Created At
+              </th>
+              <th className="px-5 py-3 border-b-2 border-gray-200 bg-gray-200 text-center text-xs font-bold text-gray-900 uppercase tracking-wider">
+                Status
+              </th>
+              <th className="px-5 py-3 border-b-2 border-gray-200 bg-gray-200 text-center text-xs font-bold text-gray-900 uppercase tracking-wider">
+                View PO
+              </th>
+            </tr>
+            <tr className="h-4" />
+          </thead>
+          <tbody>
+            {paginatedSessions.map((session, idx) => (
+              <>
+                <tr key={idx} className="border-b">
+                  <td className="h-16 border-gray-200 shadow-md bg-gray-200 text-center">
+                    {(currentPage - 1) * itemsPerPage + idx + 1}
+                  </td>
 
-                <td className="py-2 px-3 font-normal text-base border-x shadow-md bg-gray-100  hover:bg-gray-100  whitespace-nowrap overflow-hidden overflow-ellipsis max-w-[200px]">
-                  <div className="items-center text-center">
-                    <div className="ml-3">
-                      <p className="text-gray-900 whitespace-no-wrap font-semibold capitalize">
-                        {session.grnNumber}
-                      </p>
+                  <td className="py-2 px-3 font-normal text-base border-x shadow-md bg-gray-100  hover:bg-gray-100  whitespace-nowrap overflow-hidden overflow-ellipsis max-w-[200px]">
+                    <div className="items-center text-center">
+                      <div className="ml-3">
+                        <p className="text-gray-900 whitespace-no-wrap font-semibold capitalize">
+                          {session.grnNumber}
+                        </p>
+                      </div>
                     </div>
-                  </div>
-                </td>
+                  </td>
 
-                <td className="py-2 px-3 font-normal text-base border-x shadow-md bg-gray-100  hover:bg-gray-100  whitespace-nowrap overflow-hidden overflow-ellipsis max-w-[200px]">
-                  <div className="items-center text-center">
-                    <div className="ml-3">
-                      <p className="text-gray-900 whitespace-no-wrap font-semibold capitalize">
-                        {session.totalProducts}
-                      </p>
+                  <td className="py-2 px-3 font-normal text-base border-x shadow-md bg-gray-100  hover:bg-gray-100  whitespace-nowrap overflow-hidden overflow-ellipsis max-w-[200px]">
+                    <div className="items-center text-center">
+                      <div className="ml-3">
+                        <p className="text-gray-900 whitespace-no-wrap font-semibold capitalize">
+                          {session.totalProducts}
+                        </p>
+                      </div>
                     </div>
-                  </div>
-                </td>
+                  </td>
 
-                <td className="py-2 px-3 font-normal text-base border-x shadow-md bg-gray-100  hover:bg-gray-100  whitespace-nowrap overflow-hidden overflow-ellipsis max-w-[200px]">
-                  <div className="items-center text-center">
-                    <div className="ml-3">
-                      <p className="text-gray-900 whitespace-no-wrap font-semibold capitalize">
-                        {session.comments}
-                      </p>
+                  <td className="py-2 px-3 font-normal text-base border-x shadow-md bg-gray-100  hover:bg-gray-100  whitespace-nowrap overflow-hidden overflow-ellipsis max-w-[200px]">
+                    <div className="items-center text-center">
+                      <div className="ml-3">
+                        <p className="text-gray-900 whitespace-no-wrap font-semibold capitalize">
+                          {session.comments}
+                        </p>
+                      </div>
                     </div>
-                  </div>
-                </td>
+                  </td>
 
-                <td className="py-2 px-3 font-normal text-base border-x shadow-md bg-gray-100  hover:bg-gray-100  whitespace-nowrap overflow-hidden overflow-ellipsis max-w-[200px]">
-                  <div className="items-center text-center">
-                    <div className="ml-3">
-                      <p className="text-gray-900 whitespace-no-wrap font-semibold capitalize">
-                        {
-                          supplier.find((u) => u._id === session.supplierName)
-                            ?.supplierName
-                        }
-                      </p>
+                  <td className="py-2 px-3 font-normal text-base border-x shadow-md bg-gray-100  hover:bg-gray-100  whitespace-nowrap overflow-hidden overflow-ellipsis max-w-[200px]">
+                    <div className="items-center text-center">
+                      <div className="ml-3">
+                        <p className="text-gray-900 whitespace-no-wrap font-semibold capitalize">
+                          {
+                            supplier.find((u) => u._id === session.supplierName)
+                              ?.supplierName
+                          }
+                        </p>
+                      </div>
                     </div>
-                  </div>
-                </td>
+                  </td>
 
-                <td className="py-2 px-3 font-normal text-base border-x shadow-md bg-gray-200  hover:bg-gray-100  whitespace-nowrap overflow-hidden overflow-ellipsis max-w-[200px]">
-                  <div className="items-center text-center">
-                    <div className="ml-3">
-                      <p className="text-gray-900 whitespace-no-wrap font-semibold capitalize">
-                        {new Date(session.createdAt).toLocaleDateString()}
-                      </p>
+                  <td className="py-2 px-3 font-normal text-base border-x shadow-md bg-gray-200  hover:bg-gray-100  whitespace-nowrap overflow-hidden overflow-ellipsis max-w-[200px]">
+                    <div className="items-center text-center">
+                      <div className="ml-3">
+                        <p className="text-gray-900 whitespace-no-wrap font-semibold capitalize">
+                          {new Date(session.createdAt).toLocaleDateString()}
+                        </p>
+                      </div>
                     </div>
-                  </div>
-                </td>
+                  </td>
 
-                <td className="py-2 px-3 font-normal text-base border-x shadow-md bg-gray-100 hover:bg-gray-100 whitespace-nowrap overflow-hidden overflow-ellipsis max-w-[200px]">
-                  <div className="items-center text-center">
-                    <div className="ml-3">
-                      {session.status === "Pending" ? (
-                        <span className="bg-yellow-400 px-6 py-2 rounded-3xl shadow-md">
-                          Pending
-                        </span>
-                      ) : (
-                        <span className="bg-gray-300 px-6 py-2 rounded-3xl shadow-md">
-                          Approved
-                        </span>
-                      )}
+                  <td className="py-2 px-3 font-normal text-base border-x shadow-md bg-gray-100 hover:bg-gray-100 whitespace-nowrap overflow-hidden overflow-ellipsis max-w-[200px]">
+                    <div className="items-center text-center">
+                      <div className="ml-3">
+                        {session.status === "Pending" ? (
+                          <span className="bg-yellow-400 px-6 py-2 rounded-3xl shadow-md">
+                            Pending
+                          </span>
+                        ) : (
+                          <span className="bg-gray-300 px-6 py-2 rounded-3xl shadow-md">
+                            Approved
+                          </span>
+                        )}
+                      </div>
                     </div>
-                  </div>
-                </td>
+                  </td>
 
-                <td className="py-2 px-3 font-normal text-base border-x shadow-md bg-gray-100  hover:bg-gray-100  whitespace-nowrap overflow-hidden overflow-ellipsis max-w-[200px]">
-                  <div className="items-center text-center">
-                    <div className="ml-3">
-                      <button
-                        className="bg-green-400 px-6 py-2 rounded-3xl shadow-md"
-                        onClick={() => handlePreview(session)}
-                      >
-                        Preview
-                      </button>
+                  <td className="py-2 px-3 font-normal text-base border-x shadow-md bg-gray-100  hover:bg-gray-100  whitespace-nowrap overflow-hidden overflow-ellipsis max-w-[200px]">
+                    <div className="items-center text-center">
+                      <div className="ml-3">
+                        <button
+                          className="bg-green-400 px-6 py-2 rounded-3xl shadow-md"
+                          onClick={() => handlePreview(session)}
+                        >
+                          Preview
+                        </button>
+                      </div>
                     </div>
-                  </div>
-                </td>
-              </tr>
-              <tr className="h-4" />
-            </>
-          ))}
-        </tbody>
-      </table>
+                  </td>
+                </tr>
+                <tr className="h-4" />
+              </>
+            ))}
+          </tbody>
+        </table>
       </div>
-    
 
       {showPreviewModal && selectedSession && (
         <PreviewPo
@@ -363,6 +361,7 @@ const CompletedPo = () => {
         </p>
 
         <nav className="isolate inline-flex -space-x-px rounded-md shadow-sm">
+          {/* Prev Button */}
           <button
             onClick={prevPage}
             disabled={currentPage === 1}
@@ -373,20 +372,66 @@ const CompletedPo = () => {
             <IoIosArrowBack className="size-5" />
           </button>
 
-          {[...Array(totalPages)].map((_, i) => (
-            <button
-              key={i + 1}
-              onClick={() => setCurrentPage(i + 1)}
-              className={`relative inline-flex items-center px-4 py-2 text-sm font-semibold ring-1 ring-gray-300 hover:bg-gray-50 ${
-                currentPage === i + 1
-                  ? "bg-green-500 text-white"
-                  : "text-gray-900"
-              }`}
-            >
-              {i + 1}
-            </button>
-          ))}
+          {/* Page numbers */}
+          {(() => {
+            const maxPagesToShow = 10;
+            const pages = [];
 
+            if (totalPages <= maxPagesToShow) {
+              // show all pages if total is small
+              for (let i = 1; i <= totalPages; i++) pages.push(i);
+            } else {
+              pages.push(1); // first page always
+
+              if (currentPage <= 6) {
+                // near start
+                for (let i = 2; i <= 9; i++) pages.push(i);
+                pages.push("ellipsis");
+                pages.push(totalPages);
+              } else if (currentPage >= totalPages - 5) {
+                // near end
+                pages.push("ellipsis");
+                for (let i = totalPages - 8; i < totalPages; i++) pages.push(i);
+                pages.push(totalPages);
+              } else {
+                // middle
+                pages.push("ellipsis");
+                for (let i = currentPage - 2; i <= currentPage + 2; i++)
+                  pages.push(i);
+                pages.push("ellipsis");
+                pages.push(totalPages);
+              }
+            }
+
+            return pages.map((page, idx) => {
+              if (page === "ellipsis") {
+                return (
+                  <span
+                    key={`ellipsis-${idx}`}
+                    className="relative inline-flex items-center px-3 py-2 text-sm text-gray-500"
+                  >
+                    ...
+                  </span>
+                );
+              }
+
+              return (
+                <button
+                  key={page}
+                  onClick={() => setCurrentPage(page)}
+                  className={`relative inline-flex items-center px-4 py-2 text-sm font-semibold ring-1 ring-gray-300 hover:bg-gray-50 ${
+                    currentPage === page
+                      ? "bg-green-500 text-white"
+                      : "text-gray-900"
+                  }`}
+                >
+                  {page}
+                </button>
+              );
+            });
+          })()}
+
+          {/* Next Button */}
           <button
             onClick={nextPage}
             disabled={currentPage === totalPages}

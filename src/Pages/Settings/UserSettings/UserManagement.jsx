@@ -12,8 +12,7 @@ import AddUser from "./AddUser";
 import EditUser from "./EditUser";
 
 //API
-import BASE_URL from "../../../Utils/config"
-
+import BASE_URL from "../../../Utils/config";
 
 const UserManagement = () => {
   const [users, setUsers] = useState([]);
@@ -302,13 +301,12 @@ const UserManagement = () => {
               ))}
             </tbody>
           </table>
-
+          {/* Pagination Controls */}
           <div className="flex items-center justify-between border-t border-gray-200 bg-white py-3 sm:px-6">
             <p className="text-sm text-gray-700">
               Showing{" "}
               <span className="font-medium">
-                {" "}
-                <strong>{indexOfFirstUser + 1}</strong>{" "}
+                <strong>{indexOfFirstUser + 1}</strong>
               </span>{" "}
               to{" "}
               <span className="font-medium">
@@ -316,8 +314,7 @@ const UserManagement = () => {
               </span>{" "}
               of{" "}
               <span className="font-medium">
-                {" "}
-                <strong>{users.length}</strong>{" "}
+                <strong>{users.length}</strong>
               </span>{" "}
               <strong>Users</strong>
             </p>
@@ -326,6 +323,7 @@ const UserManagement = () => {
               aria-label="Pagination"
               className="isolate inline-flex -space-x-px rounded-md shadow-xs"
             >
+              {/* Prev Button */}
               <button
                 onClick={prevPage}
                 disabled={currentPage === 1}
@@ -336,18 +334,37 @@ const UserManagement = () => {
                 <IoIosArrowBack aria-hidden="true" className="size-5" />
               </button>
 
-              {[...Array(totalPages)].map((_, i) => (
-                <button
-                  key={i + 1}
-                  onClick={() => setCurrentPage(i + 1)}
-                  className={`relative inline-flex items-center px-4 py-2 text-sm font-semibold text-gray-900 ring-1 ring-gray-300 ring-inset hover:bg-gray-50 focus:z-20 focus:outline-offset-0 ${
-                    currentPage === i + 1 ? "bg-green-500/80 text-white" : ""
-                  }`}
-                >
-                  {i + 1}
-                </button>
-              ))}
+              {/* Page Numbers (Max 10) */}
+              {(() => {
+                const maxPagesToShow = 10;
+                let startPage = Math.max(
+                  1,
+                  currentPage - Math.floor(maxPagesToShow / 2)
+                );
+                let endPage = startPage + maxPagesToShow - 1;
 
+                if (endPage > totalPages) {
+                  endPage = totalPages;
+                  startPage = Math.max(1, endPage - maxPagesToShow + 1);
+                }
+
+                return Array.from(
+                  { length: endPage - startPage + 1 },
+                  (_, i) => startPage + i
+                ).map((page) => (
+                  <button
+                    key={page}
+                    onClick={() => setCurrentPage(page)}
+                    className={`relative inline-flex items-center px-4 py-2 text-sm font-semibold text-gray-900 ring-1 ring-gray-300 ring-inset hover:bg-gray-50 focus:z-20 focus:outline-offset-0 ${
+                      currentPage === page ? "bg-green-500/80 text-white" : ""
+                    }`}
+                  >
+                    {page}
+                  </button>
+                ));
+              })()}
+
+              {/* Next Button */}
               <button
                 onClick={nextPage}
                 disabled={currentPage === totalPages}

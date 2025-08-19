@@ -47,7 +47,7 @@ const TableDash = ({ list }) => {
 
         {/* Card body */}
         <div className="flex-auto block pt-6">
-          <div className="overflow-x-auto">
+          <div className="max-h-[300px] overflow-x-auto">
             <table className="w-full border-collapse text-center text-gray-800">
               <thead>
                 <tr className="border-b-2 border-emerald-300 text-emerald-700 font-semibold text-sm sm:text-base">
