@@ -5,6 +5,7 @@ import userSlice from './userSlice'
 import itemSlice from './items'
 import categorySlice from './itemsCategories'
 import suppliers from './suppliers'
+import customers from './customerSlice'
 
 export const store = configureStore({
     reducer: {
@@ -14,6 +15,7 @@ export const store = configureStore({
         items: itemSlice,
         category: categorySlice,
         suppliers: suppliers,
+        customers: customers,
     },
 
     middleware: (getDefaultMiddleware) => 

@@ -4,8 +4,7 @@ import { useDispatch, useSelector } from "react-redux";
 import { useEffect, useState } from "react";
 
 //API
-import BASE_URL from "../../../Utils/config"
-
+import BASE_URL from "../../../Utils/config";
 
 const AddSupplier = ({ showModal, setShowModal }) => {
   //Use selector from Redux
