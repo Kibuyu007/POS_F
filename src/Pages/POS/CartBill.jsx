@@ -210,11 +210,13 @@ const Cart = ({ triggerRefreshMenu }) => {
                 <option value="" disabled>
                   Select Loyal Customer
                 </option>
-                {allCustomers.map((customer) => (
-                  <option key={customer._id} value={customer._id}>
-                    {customer.customerName}
-                  </option>
-                ))}
+                {allCustomers
+                  .filter((customer) => customer.status === "Active")
+                  .map((customer) => (
+                    <option key={customer._id} value={customer._id}>
+                      {customer.customerName}
+                    </option>
+                  ))}
               </select>
             </div>
           ) : (

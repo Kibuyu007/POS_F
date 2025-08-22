@@ -285,7 +285,7 @@ const Mauzo = () => {
 
                   <td className="py-2 px-3 font-normal text-base border-x shadow-md bg-gray-200  hover:bg-gray-100  whitespace-nowrap overflow-hidden overflow-ellipsis max-w-[200px]">
                     <div className="items-center text-center">
-                      <div className="ml-3">
+                      <div className="">
                         <ul className="ml-2 space-y-1 item">
                           {txn.items.map((i) => (
                             <li

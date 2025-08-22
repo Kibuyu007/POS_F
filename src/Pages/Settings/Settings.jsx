@@ -16,7 +16,7 @@ import MadeniPo from "./GRN/Madeni/MadeniPo";
 import MadeniNonPo from "./GRN/Madeni/MadeniNonPo";
 import { useSelector } from "react-redux";
 import CustomerManagement from "./Customers/CustomerManagement";
-import Wallet from "./Customers/Wallet";
+import WalletList from "./Customers/WalletList";
 
 const Settings = () => {
   const [selectedSetting, setSelectedSetting] = useState(null);
@@ -112,7 +112,7 @@ const Settings = () => {
         ): selectedSetting === "All Customers" ? (
           <CustomerManagement />
         ): selectedSetting === "Wallet Transactions" ? (
-          <Wallet />
+          <WalletList />
         ) : selectedSetting ? (
           <p className="text-lg">{selectedSetting}</p>
         ) : (
