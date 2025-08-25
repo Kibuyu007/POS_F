@@ -175,7 +175,7 @@ const CustomerManagement = () => {
               </tr>
             </thead>
 
-            <tr className="h-3" />
+            <tr className="h-3" />  
 
             <tbody>
               {currentCustomers.map((customer, index) => (
