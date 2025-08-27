@@ -1,14 +1,27 @@
-import { useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
+import axios from "axios";
+import BASE_URL from "../../../Utils/config";
 
 const formatTZS = (n = 0) => `${Number(n || 0).toLocaleString()} TSh`;
 const formatDate = (d) => (d ? new Date(d).toLocaleDateString() : "—");
 
-const Wallet = ({ selectedBill, currentBalance = 50000, onClick }) => {
-  // guard
+const Wallet = ({ selectedBill, onClick, user }) => {
+  const [openDeposit, setOpenDeposit] = useState(false);
+  const [openWithdraw, setOpenWithdraw] = useState(false);
+  const [depositAmount, setDepositAmount] = useState("");
+  const [withdrawAmount, setWithdrawAmount] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [balance, setBalance] = useState(0);
+  const [openPay, setOpenPay] = useState(false);
+  const [paidAmount, setPaidAmount] = useState("");
+
   if (!selectedBill)
     return <p className="text-gray-500">No customer selected</p>;
+
+  //  define customerId
+  const customerId = selectedBill._id;
 
   // totals
   const { totalBills, debt } = useMemo(() => {
@@ -18,41 +31,135 @@ const Wallet = ({ selectedBill, currentBalance = 50000, onClick }) => {
     );
     return {
       totalBills: total,
-      debt: total > currentBalance ? total - currentBalance : 0,
+      debt: total > balance ? total - balance : 0, // ✅ use balance from DB
     };
-  }, [selectedBill, currentBalance]);
+  }, [selectedBill, balance]);
 
+  // Fetch balance from backend
+  const fetchBalance = async () => {
+    try {
+      setLoading(true);
+      const res = await axios.get(
+        `${BASE_URL}/api/customers/currentBalance/${customerId}`
+      );
+      setBalance(res.data.balance);
+    } catch (err) {
+      console.error("Error fetching balance:", err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    if (customerId) {
+      fetchBalance();
+    }
+  }, [customerId]);
+
+  // Handle Deposit
+  const handleDeposit = async () => {
+    if (!depositAmount) return;
+    try {
+      setLoading(true);
+      await axios.post(`${BASE_URL}/api/customers/deposit`, {
+        customerId,
+        depositAmount: Number(depositAmount),
+      });
+      setDepositAmount("");
+      fetchBalance(); // refresh balance
+    } catch (err) {
+      console.error("Error depositing:", err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Handle Withdraw
+  const handleWithdraw = async () => {
+    if (!withdrawAmount) return;
+    try {
+      setLoading(true);
+      await axios.post(`${BASE_URL}/api/customers/withdraw`, {
+        customerId,
+        withdrawAmount: Number(withdrawAmount),
+      });
+      setWithdrawAmount("");
+      fetchBalance(); // refresh balance
+    } catch (err) {
+      console.error("Error withdrawing:", err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+const handlePayBill = async () => {
+  if (!customerId) return;
+
+  try {
+    setLoading(true);
+
+    // Determine total debt
+    const totalBills = (selectedBill?.bills || []).reduce(
+      (sum, b) => sum + (b?.totalAmount || 0),
+      0
+    );
+
+    let paidAmount = balance; // use current balance as amount to pay
+
+    if (paidAmount <= 0) {
+      alert("No balance available to pay.");
+      return;
+    }
+
+    // Send payment request to backend
+    await axios.post(`${BASE_URL}/api/customers/payBill`, {
+      customerId,
+      paidAmount, // send the amount customer can pay
+    });
+
+    // Refresh balance and bills
+    await fetchBalance();
+    // Optionally, refresh selectedBill from parent or fetch updated bills
+
+    alert("Payment successful!");
+  } catch (err) {
+    console.error("Payment failed:", err);
+    alert("Payment failed. Check console.");
+  } finally {
+    setLoading(false);
+  }
+};
+
+
+  // === PDF generation (left same) ===
   const generatePdf = () => {
     const doc = new jsPDF({ unit: "pt", format: "a4" });
     const marginX = 40;
     const pageWidth = doc.internal.pageSize.getWidth();
     let y = 48;
 
-    // === PDF Header ===
     doc.setFont("helvetica", "bold");
     doc.setFontSize(18);
     doc.text("Customer Wallet Summary", pageWidth / 2, y, { align: "center" });
     y += 18;
 
-    // Generated timestamp
     doc.setFont("helvetica", "normal");
     doc.setFontSize(10);
-    doc.setTextColor(100); // softer gray for subtle text
+    doc.setTextColor(100);
     doc.text(`Generated: ${new Date().toLocaleString()}`, marginX, y);
     y += 25;
 
-    // Customer Info Block
     doc.setFont("helvetica", "bold");
     doc.setFontSize(14);
-    doc.setTextColor(33); // dark color for name
+    doc.setTextColor(33);
     doc.text(`Customer: ${selectedBill.name}`, marginX, y);
     y += 18;
 
     doc.setFont("helvetica", "normal");
     doc.setFontSize(12);
-    doc.setTextColor(80); // slightly lighter gray for phone
+    doc.setTextColor(80);
     doc.text(`Phone: ${selectedBill.phone}`, marginX, y);
-    y += 30; // add spacing before next section
+    y += 30;
 
     (selectedBill.bills || []).forEach((bill, idx) => {
       if (idx > 0) {
@@ -71,7 +178,6 @@ const Wallet = ({ selectedBill, currentBalance = 50000, onClick }) => {
       );
       y += 18;
 
-      // Build table rows
       const rows =
         (bill?.items || []).map((it) => [
           it?.name || "",
@@ -80,7 +186,6 @@ const Wallet = ({ selectedBill, currentBalance = 50000, onClick }) => {
           formatTZS((it?.price || 0) * (it?.quantity || 0)),
         ]) || [];
 
-      // Table
       autoTable(doc, {
         startY: y,
         head: [["Item", "Qty", "Price", "Total"]],
@@ -99,19 +204,34 @@ const Wallet = ({ selectedBill, currentBalance = 50000, onClick }) => {
       y = doc.lastAutoTable.finalY + 20;
     });
 
-    // Downloa the PDF (only Saves)
-    // const fileName = `${(selectedBill?.name || "wallet").replace(
-    //   /\s+/g,
-    //   "_"
-    // )}-wallet.pdf`;
-    // doc.save(fileName);
-
-    // Preview the PDF in a new tab
     doc.output("dataurlnewwindow");
   };
 
   return (
     <div className="font-sans text-gray-800">
+      {/* Loading */}
+      {loading && (
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8 mt-16 animate-pulse font-sans text-gray-800">
+          {/* Current Balance Loader */}
+          <div className="bg-white p-5 shadow-sm text-center border border-dashed border-gray-400 rounded-lg">
+            <div className="h-4 bg-gray-300 rounded w-1/3 mx-auto mb-3"></div>
+            <div className="h-6 bg-gray-400 rounded w-1/2 mx-auto"></div>
+          </div>
+
+          {/* Total Bills Loader */}
+          <div className="bg-white p-5 shadow-sm text-center border border-dashed border-gray-400 rounded-lg">
+            <div className="h-4 bg-gray-300 rounded w-1/3 mx-auto mb-3"></div>
+            <div className="h-6 bg-gray-400 rounded w-1/2 mx-auto"></div>
+          </div>
+
+          {/* Debt Loader */}
+          <div className="bg-white p-5 shadow-sm text-center border border-dashed border-gray-400 rounded-lg">
+            <div className="h-4 bg-gray-300 rounded w-1/3 mx-auto mb-3"></div>
+            <div className="h-6 bg-gray-400 rounded w-1/2 mx-auto"></div>
+          </div>
+        </div>
+      )}
+
       {/* Summary Cards */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8 mt-16">
         <div className="bg-white p-5 shadow-sm text-center border border-dashed border-gray-400 rounded-lg">
@@ -119,7 +239,7 @@ const Wallet = ({ selectedBill, currentBalance = 50000, onClick }) => {
             Current Balance
           </p>
           <p className="text-2xl font-bold mt-2 text-gray-900">
-            {formatTZS(currentBalance)}
+            {formatTZS(balance)}
           </p>
         </div>
 
@@ -150,9 +270,17 @@ const Wallet = ({ selectedBill, currentBalance = 50000, onClick }) => {
           {selectedBill.name}{" "}
           <span className="text-gray-500">({selectedBill.phone})</span>
         </h2>
+        <h2 className="text-xl font-semibold">
+          Location{" "}
+          <span className="text-gray-500">({selectedBill.address})</span>{" "}
+        </h2>
+        <h2 className="text-xl font-semibold">
+          Email/NIDA{" "}
+          <span className="text-gray-500">({selectedBill.email})</span>{" "}
+        </h2>
       </div>
 
-      {/* Bills List (UI preview) */}
+      {/* Bills */}
       {(selectedBill.bills || []).map((bill) => (
         <div
           key={bill._id}
@@ -213,16 +341,21 @@ const Wallet = ({ selectedBill, currentBalance = 50000, onClick }) => {
       ))}
 
       {/* Actions */}
-
       <div className="flex flex-col md:flex-row justify-between items-center mt-4 gap-4">
         <div className="flex gap-3 mt-6">
-          <button className="bg-green-300 hover:bg-green-500 text-black font-semibold px-6 py-3 rounded-full text-sm transition">
+          <button
+            onClick={() => setOpenDeposit(true)}
+            className="bg-green-300 hover:bg-green-500 text-black font-semibold px-6 py-3 rounded-full text-sm transition"
+          >
             Deposit
           </button>
-          <button className="bg-gray-300 hover:bg-green-200 text-black font-semibold px-6 py-3 rounded-full text-sm transition">
+          <button onClick={handlePayBill} className="bg-gray-300 hover:bg-green-200 text-black font-semibold px-6 py-3 rounded-full text-sm transition">
             Pay
           </button>
-          <button className="bg-gray-200 hover:bg-green-200 text-black font-semibold px-6 py-3 rounded-full text-sm transition">
+          <button
+            onClick={() => setOpenWithdraw(true)}
+            className="bg-gray-200 hover:bg-green-200 text-black font-semibold px-6 py-3 rounded-full text-sm transition"
+          >
             Withdraw
           </button>
           <button
@@ -242,6 +375,68 @@ const Wallet = ({ selectedBill, currentBalance = 50000, onClick }) => {
           </button>
         </div>
       </div>
+
+      {/* Deposit Modal */}
+      {openDeposit && (
+        <div className="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg shadow-lg p-6 w-96">
+            <h2 className="text-lg font-bold mb-4">Deposit Money</h2>
+            <input
+              type="number"
+              placeholder="Enter amount"
+              value={depositAmount}
+              onChange={(e) => setDepositAmount(e.target.value)}
+              className="w-full border p-2 rounded mb-4"
+            />
+            <div className="flex justify-end gap-3">
+              <button
+                onClick={() => setOpenDeposit(false)}
+                className="px-4 py-2 bg-gray-200 rounded"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleDeposit}
+                className="px-4 py-2 bg-green-500 text-white rounded"
+              >
+                Save
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+  
+
+      {/* Withdraw Modal */}
+      {openWithdraw && (
+        <div className="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg shadow-lg p-6 w-96">
+            <h2 className="text-lg font-bold mb-4">Withdraw Money</h2>
+            <input
+              type="number"
+              placeholder="Enter amount"
+              value={withdrawAmount}
+              onChange={(e) => setWithdrawAmount(e.target.value)}
+              className="w-full border p-2 rounded mb-4"
+            />
+            <div className="flex justify-end gap-3">
+              <button
+                onClick={() => setOpenWithdraw(false)}
+                className="px-4 py-2 bg-gray-200 rounded"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleWithdraw}
+                className="px-4 py-2 bg-green-500 text-white rounded"
+              >
+                Save
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

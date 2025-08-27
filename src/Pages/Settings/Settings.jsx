@@ -17,6 +17,7 @@ import MadeniNonPo from "./GRN/Madeni/MadeniNonPo";
 import { useSelector } from "react-redux";
 import CustomerManagement from "./Customers/CustomerManagement";
 import WalletList from "./Customers/WalletList";
+import WalletReport from "./Customers/WalletReport";
 
 const Settings = () => {
   const [selectedSetting, setSelectedSetting] = useState(null);
@@ -65,7 +66,7 @@ const Settings = () => {
 
         <SettingsList
           title="Customer Management"
-          settings={["All Customers", "Wallet Transactions"]}
+          settings={["All Customers", "Wallet Transactions", "Report"]}
           selectedSetting={selectedSetting}
           handleSelect={setSelectedSetting}
         />
@@ -113,6 +114,8 @@ const Settings = () => {
           <CustomerManagement />
         ): selectedSetting === "Wallet Transactions" ? (
           <WalletList />
+        ): selectedSetting === "Report" ? (
+          <WalletReport />
         ) : selectedSetting ? (
           <p className="text-lg">{selectedSetting}</p>
         ) : (
