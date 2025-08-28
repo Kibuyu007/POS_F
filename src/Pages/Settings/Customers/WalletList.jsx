@@ -22,19 +22,19 @@ const WalletList = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 10;
 
-  useEffect(() => {
-    const fetchBills = async () => {
-      setLoad(true);
-      try {
-        const res = await axios.get(`${BASE_URL}/api/transactions/walletBill`);
-        setCustomers(Array.isArray(res.data.data) ? res.data.data : []);
-      } catch (error) {
-        console.error("Error fetching wallet bills:", error);
-      } finally {
-        setLoad(false);
-      }
-    };
+  const fetchBills = async () => {
+    setLoad(true);
+    try {
+      const res = await axios.get(`${BASE_URL}/api/transactions/walletBill`);
+      setCustomers(Array.isArray(res.data.data) ? res.data.data : []);
+    } catch (error) {
+      console.error("Error fetching wallet bills:", error);
+    } finally {
+      setLoad(false);
+    }
+  };
 
+  useEffect(() => {
     fetchBills();
   }, []);
 
@@ -46,6 +46,7 @@ const WalletList = () => {
   const closeModal = () => {
     setSelectedCustomer(null);
     setModalOpen(false);
+    fetchBills();
   };
 
   const filteredCustomers = customers.filter((customer) => {

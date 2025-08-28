@@ -14,8 +14,7 @@ const Wallet = ({ selectedBill, onClick, user }) => {
   const [withdrawAmount, setWithdrawAmount] = useState("");
   const [loading, setLoading] = useState(false);
   const [balance, setBalance] = useState(0);
-  const [openPay, setOpenPay] = useState(false);
-  const [paidAmount, setPaidAmount] = useState("");
+
 
   if (!selectedBill)
     return <p className="text-gray-500">No customer selected</p>;
@@ -25,15 +24,19 @@ const Wallet = ({ selectedBill, onClick, user }) => {
 
   // totals
   const { totalBills, debt } = useMemo(() => {
-    const total = (selectedBill?.bills || []).reduce(
-      (sum, b) => sum + (b?.totalAmount || 0),
-      0
-    );
+    const total = (selectedBill?.bills || []).reduce((sum, b) => {
+      // take totalAmount minus already paidAmount for each bill
+      const remaining = (b.totalAmount || 0) - (b.paidAmount || 0);
+      return sum + (remaining > 0 ? remaining : 0);
+    }, 0);
+
     return {
       totalBills: total,
-      debt: total > balance ? total - balance : 0, // ✅ use balance from DB
+      debt: total > balance ? total - balance : 0, // remaining debt beyond balance
     };
   }, [selectedBill, balance]);
+
+
 
   // Fetch balance from backend
   const fetchBalance = async () => {
@@ -92,120 +95,132 @@ const Wallet = ({ selectedBill, onClick, user }) => {
     }
   };
 
-const handlePayBill = async () => {
-  if (!customerId) return;
+  // Handle Pay Bill
+  const handlePayBill = async () => {
+    try {
+      if (balance <= 0) {
+        alert("Insufficient balance. Please deposit first.");
+        return;
+      }
 
-  try {
-    setLoading(true);
+      setLoading(true);
 
-    // Determine total debt
-    const totalBills = (selectedBill?.bills || []).reduce(
-      (sum, b) => sum + (b?.totalAmount || 0),
-      0
-    );
+      // call backend payBill
+      const res = await axios.post(`${BASE_URL}/api/customers/payBill`, {
+        customerId,
+        paidAmount: balance, // send current balance as the paying amount
+      });
 
-    let paidAmount = balance; // use current balance as amount to pay
-
-    if (paidAmount <= 0) {
-      alert("No balance available to pay.");
-      return;
+      if (res.data.success) {
+        alert("Payment successful");
+        fetchBalance(); // refresh balance
+      } else {
+        alert(res.data.message || "Payment failed");
+      }
+    } catch (err) {
+      console.error("Error paying bill:", err);
+      alert("Failed to process payment");
+    } finally {
+      setLoading(false);
     }
-
-    // Send payment request to backend
-    await axios.post(`${BASE_URL}/api/customers/payBill`, {
-      customerId,
-      paidAmount, // send the amount customer can pay
-    });
-
-    // Refresh balance and bills
-    await fetchBalance();
-    // Optionally, refresh selectedBill from parent or fetch updated bills
-
-    alert("Payment successful!");
-  } catch (err) {
-    console.error("Payment failed:", err);
-    alert("Payment failed. Check console.");
-  } finally {
-    setLoading(false);
-  }
-};
-
+  };
 
   // === PDF generation (left same) ===
   const generatePdf = () => {
-    const doc = new jsPDF({ unit: "pt", format: "a4" });
-    const marginX = 40;
-    const pageWidth = doc.internal.pageSize.getWidth();
-    let y = 48;
+  const doc = new jsPDF({ unit: "pt", format: "a4" });
+  const marginX = 40;
+  const pageWidth = doc.internal.pageSize.getWidth();
+  let y = 48;
+
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(18);
+  doc.text("Customer Wallet Summary", pageWidth / 2, y, { align: "center" });
+  y += 18;
+
+  doc.setFont("helvetica", "normal");
+  doc.setFontSize(10);
+  doc.setTextColor(100);
+  doc.text(`Generated: ${new Date().toLocaleString()}`, marginX, y);
+  y += 25;
+
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(14);
+  doc.setTextColor(33);
+  doc.text(`Customer: ${selectedBill.name}`, marginX, y);
+  y += 18;
+
+  doc.setFont("helvetica", "normal");
+  doc.setFontSize(12);
+  doc.setTextColor(80);
+  doc.text(`Phone: ${selectedBill.phone}`, marginX, y);
+  y += 30;
+
+  // ===== Add Current Amount, Debt, and Total Bills =====
+  const totalBills = (selectedBill.bills || []).reduce(
+    (sum, b) => sum + (b.totalAmount || 0),
+    0
+  );
+  const totalPaid = (selectedBill.bills || []).reduce(
+    (sum, b) => sum + (b.paidAmount || 0),
+    0
+  );
+  const debt = totalBills - totalPaid;
+  const currentAmount = selectedBill.currentAmount || 0; // assuming you have this in the object
+
+  doc.setFont("helvetica", "bold");
+  doc.text(`Current Amount: ${formatTZS(currentAmount)}`, marginX, y);
+  y += 16;
+  doc.text(`Debt: ${formatTZS(debt)}`, marginX, y);
+  y += 16;
+  doc.text(`Total Bills: ${formatTZS(totalBills)}`, marginX, y);
+  y += 30;
+
+  (selectedBill.bills || []).forEach((bill, idx) => {
+    if (idx > 0) {
+      doc.addPage();
+      y = 48;
+    }
 
     doc.setFont("helvetica", "bold");
-    doc.setFontSize(18);
-    doc.text("Customer Wallet Summary", pageWidth / 2, y, { align: "center" });
+    doc.setFontSize(13);
+    doc.text(
+      `Bill #${(bill?._id || "").slice(-5)}  •  ${formatDate(
+        bill?.createdAt
+      )}  •  ${bill?.status || ""}`,
+      marginX,
+      y
+    );
     y += 18;
 
-    doc.setFont("helvetica", "normal");
-    doc.setFontSize(10);
-    doc.setTextColor(100);
-    doc.text(`Generated: ${new Date().toLocaleString()}`, marginX, y);
-    y += 25;
+    const rows =
+      (bill?.items || []).map((it) => [
+        it?.name || "",
+        String(it?.quantity ?? 0),
+        formatTZS(it?.price || 0),
+        formatTZS((it?.price || 0) * (it?.quantity || 0)),
+      ]) || [];
 
-    doc.setFont("helvetica", "bold");
-    doc.setFontSize(14);
-    doc.setTextColor(33);
-    doc.text(`Customer: ${selectedBill.name}`, marginX, y);
-    y += 18;
-
-    doc.setFont("helvetica", "normal");
-    doc.setFontSize(12);
-    doc.setTextColor(80);
-    doc.text(`Phone: ${selectedBill.phone}`, marginX, y);
-    y += 30;
-
-    (selectedBill.bills || []).forEach((bill, idx) => {
-      if (idx > 0) {
-        doc.addPage();
-        y = 48;
-      }
-
-      doc.setFont("helvetica", "bold");
-      doc.setFontSize(13);
-      doc.text(
-        `Bill #${(bill?._id || "").slice(-5)}  •  ${formatDate(
-          bill?.createdAt
-        )}  •  ${bill?.status || ""}`,
-        marginX,
-        y
-      );
-      y += 18;
-
-      const rows =
-        (bill?.items || []).map((it) => [
-          it?.name || "",
-          String(it?.quantity ?? 0),
-          formatTZS(it?.price || 0),
-          formatTZS((it?.price || 0) * (it?.quantity || 0)),
-        ]) || [];
-
-      autoTable(doc, {
-        startY: y,
-        head: [["Item", "Qty", "Price", "Total"]],
-        body: rows,
-        theme: "grid",
-        styles: {
-          font: "helvetica",
-          fontSize: 10,
-          cellPadding: 6,
-          textColor: [0, 0, 0],
-        },
-        headStyles: { fillColor: [245, 245, 245] },
-        margin: { left: marginX, right: marginX },
-      });
-
-      y = doc.lastAutoTable.finalY + 20;
+    autoTable(doc, {
+      startY: y,
+      head: [["Item", "Qty", "Price", "Total"]],
+      body: rows,
+      theme: "grid",
+      styles: {
+        font: "helvetica",
+        fontSize: 10,
+        cellPadding: 6,
+        textColor: [0, 0, 0],
+      },
+      headStyles: { fillColor: [245, 245, 245] },
+      margin: { left: marginX, right: marginX },
     });
 
-    doc.output("dataurlnewwindow");
-  };
+    y = doc.lastAutoTable.finalY + 20;
+  });
+
+  doc.output("dataurlnewwindow");
+};
+
 
   return (
     <div className="font-sans text-gray-800">
@@ -349,7 +364,10 @@ const handlePayBill = async () => {
           >
             Deposit
           </button>
-          <button onClick={handlePayBill} className="bg-gray-300 hover:bg-green-200 text-black font-semibold px-6 py-3 rounded-full text-sm transition">
+          <button
+            onClick={handlePayBill}
+            className="bg-gray-300 hover:bg-green-200 text-black font-semibold px-6 py-3 rounded-full text-sm transition"
+          >
             Pay
           </button>
           <button
@@ -405,8 +423,6 @@ const handlePayBill = async () => {
           </div>
         </div>
       )}
-
-  
 
       {/* Withdraw Modal */}
       {openWithdraw && (
