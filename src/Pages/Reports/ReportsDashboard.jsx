@@ -12,7 +12,7 @@ const ReportsDashboard = () => {
   return (
     <section className="h-[90vh] flex flex-col md:flex-row gap-3 pt-24 px-4 overflow-hidden">
       {/* Left Section - Sidebar */}
-      <div className="w-1/5 bg-secondary rounded-xl p-6 shadow-md overflow-auto">
+      <div className="w-full md:w-1/5 bg-secondary rounded-xl p-6 shadow-md overflow-auto">
         <ReportList
           title="Sales Reports"
           reports={["Sales", "Madeni"]}
@@ -39,7 +39,7 @@ const ReportsDashboard = () => {
       </div>
 
       {/* Right Section - Display Selected Report */}
-      <div className="w-4/5 bg-secondary rounded-xl p-6 shadow-md text-white overflow-y-auto">
+      <div className="w-full md:w-4/5 bg-secondary rounded-xl p-6 shadow-md text-white overflow-y-auto">
         <h2 className="text-xl font-semibold mb-4">Selected Report:</h2>
         {selectedReport === "Sales" ? (
           <Mauzo />

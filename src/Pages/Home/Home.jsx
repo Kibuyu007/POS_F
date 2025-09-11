@@ -182,7 +182,7 @@ const Home = () => {
   return (
     <section className="h-[90vh] flex flex-col md:flex-row gap-3 pt-24 px-2 sm:px-4 md:px-6 lg:px-8 xl:px-12 overflow-hidden">
       {/* Right Section */}
-      <div className="flex-[3] bg-secondary rounded-xl p-4 sm:p-6 shadow-md overflow-auto min-h-[50vh]">
+      <div className="flex-1 md:flex-[3] sm:flex-[2] bg-secondary rounded-xl p-4 sm:p-6 shadow-md overflow-auto min-h-[50vh]">
         <ShiftDetails />
 
         {/* Filter Buttons */}
@@ -247,7 +247,7 @@ const Home = () => {
       </div>
 
       {/* Left Section */}
-      <div className="flex-[1] bg-secondary rounded-xl p-4 sm:p-6 shadow-md text-black overflow-y-auto max-h-[80vh] scrollbar-hide">
+      <div className="flex-1 md:flex-[1] bg-secondary rounded-xl p-4 sm:p-6 shadow-md text-black overflow-y-auto max-h-[80vh] scrollbar-hide">
         <MostSold />
       </div>
     </section>

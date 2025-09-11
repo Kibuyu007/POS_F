@@ -95,35 +95,52 @@ const Wallet = ({ selectedBill, onClick, user }) => {
     }
   };
 
-  // Handle Pay Bill
-  const handlePayBill = async () => {
-    try {
-      if (balance <= 0) {
-        alert("Insufficient balance. Please deposit first.");
-        return;
-      }
 
-      setLoading(true);
-
-      // call backend payBill
-      const res = await axios.post(`${BASE_URL}/api/customers/payBill`, {
-        customerId,
-        paidAmount: balance, // send current balance as the paying amount
-      });
-
-      if (res.data.success) {
-        alert("Payment successful");
-        fetchBalance(); // refresh balance
-      } else {
-        alert(res.data.message || "Payment failed");
-      }
-    } catch (err) {
-      console.error("Error paying bill:", err);
-      alert("Failed to process payment");
-    } finally {
-      setLoading(false);
+ // Handle Pay Bill
+const handlePayBill = async () => {
+  try {
+    if (balance <= 0) {
+      alert("Insufficient balance. Please deposit first.");
+      return;
     }
-  };
+
+    setLoading(true);
+
+    // call backend payBill
+    const res = await axios.post(`${BASE_URL}/api/customers/payBill`, {
+      customerId,
+      paidAmount: balance, // send current balance as the paying amount
+    });
+
+    if (res.data.success) {
+      alert("Payment successful");
+
+      // ✅ update bills on frontend (fix for your issue)
+      if (res.data.updatedBills) {
+        onClick(prev => ({
+          ...prev,
+          bills: res.data.updatedBills,
+        }));
+      }
+
+      // ✅ update balance directly instead of fetchBalance again
+      if (res.data.balance !== undefined) {
+        setBalance(res.data.balance);
+      } else {
+        // fallback if backend didn’t send balance
+        fetchBalance();
+      }
+    } else {
+      alert(res.data.message || "Payment failed");
+    }
+  } catch (err) {
+    console.error("Error paying bill:", err);
+    alert("Failed to process payment");
+  } finally {
+    setLoading(false);
+  }
+};
+
 
   // === PDF generation (left same) ===
   const generatePdf = () => {

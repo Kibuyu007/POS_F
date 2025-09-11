@@ -55,7 +55,7 @@ const MenuList = () => {
 
       
       {/* Right Section ################################################*/}
-      <div className="flex-[3] bg-secondary rounded-xl p-4 sm:p-6 shadow-md overflow-auto min-h-[50vh] md:min-h-[auto]">
+      <div className="flex-1 md:flex-[3] sm:flex-[2] bg-secondary rounded-xl p-4 sm:p-6 shadow-md overflow-auto min-h-[50vh] md:min-h-[auto]">
         {/* Display Table Number */}
         <div className="flex flex-col sm:flex-row items-center justify-between p-4 bg-secondary rounded-lg  w-full sm:w-auto gap-2 sm:gap-4">
           <FcSalesPerformance size={50} />
