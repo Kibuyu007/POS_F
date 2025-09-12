@@ -343,7 +343,7 @@ const Items = () => {
                       >
                         <div className="flex justify-center">
                           <button className="whitespace-nowrap bg-slate-200 text-black rounded-md shadow-md py-1 px-14 ">
-                            QRcode
+                            {item.barCode || "N/A"}
                           </button>
                         </div>
                       </td>

@@ -22,7 +22,7 @@ const AddItem = ({ showModal, setShowModal, onUserAdded }) => {
     name: "",
     price: 0,
     category: "",
-    qrCode: "",
+    barCode: "",
     itemQuantity: 0,
     manufactureDate: new Date(),
     expireDate: new Date(),
@@ -76,7 +76,7 @@ const AddItem = ({ showModal, setShowModal, onUserAdded }) => {
         name: "",
         price: "",
         category: "",
-        qrCode: "",
+        barCode: "",
         itemQuantity: "",
         manufactureDate: "",
         expireDate: "",
@@ -202,15 +202,15 @@ const AddItem = ({ showModal, setShowModal, onUserAdded }) => {
 
                     <div>
                       <label
-                        htmlFor="barcode"
+                        htmlFor="barCode"
                         className="block mb-2 text-sm font-medium text-gray-900 dark:text-white"
                       >
-                        QRCode
+                        BarCode
                       </label>
                       <input
                         type="text"
-                        name="barcode"
-                        value={regi.qrCode}
+                        name="barCode"
+                        value={regi.barCode}
                         onChange={handleChange}
                         className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-green-500 focus:border-green-500 block w-full p-2.5 dark:bg-gray-600 dark:border-gray-500 dark:placeholder-gray-400 dark:text-white"
                         placeholder="..."

@@ -12,20 +12,22 @@ import BASE_URL from "../../Utils/config"
 const MenuCard = ({ refreshTrigger }) => {
   const cartData = useSelector((state) => state.cart.cart);
   const zuiaAdd = useSelector((state) => state.cart.receiptPrinted);
+  const dispatch = useDispatch();
 
   const [categories, setCategories] = useState([]);
   const [selected, setSelected] = useState(null);
   const [items, setItems] = useState([]);
   const [itemCounts, setItemCounts] = useState({});
   const [isLoading, setIsLoading] = useState(true);
-  const dispatch = useDispatch();
   const [searchTerm, setSearchTerm] = useState("");
   const [searchQuery, setSearchQuery] = useState("");
+  const [barcode, setBarcode] = useState(""); // <-- capture scanner input
 
   const filteredCategories = categories.filter((cat) =>
     cat.name.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
+  // --- 🔹 Fetch categories on mount ---
   useEffect(() => {
     const fetchCategories = async () => {
       try {
@@ -64,10 +66,7 @@ const MenuCard = ({ refreshTrigger }) => {
         }
       } catch (error) {
         console.error("Error fetching items:", error);
-        toast.error("Failed to load items. Please try again.", {
-          position: "top-right",
-          autoClose: 4000,
-        });
+        toast.error("Failed to load items.");
       } finally {
         setIsLoading(false);
       }
@@ -76,50 +75,37 @@ const MenuCard = ({ refreshTrigger }) => {
     fetchCategories();
   }, [refreshTrigger]);
 
-  const fetchItems = useCallback(
-    async (categoryId) => {
-      try {
-        const { data } = await axios.get(
-          `${BASE_URL}/api/items/getAllItems?category=${categoryId}`
-        );
+  // --- 🔹 Fetch items ---
+  const fetchItems = useCallback(async (categoryId) => {
+    try {
+      const { data } = await axios.get(
+        `${BASE_URL}/api/items/getAllItems?category=${categoryId}`
+      );
 
-        if (data.success) {
-          setItems(data.data);
-          const initialItemCounts = {};
-          data.data.forEach((item) => {
-            initialItemCounts[item._id] = 1;
-          });
-          setItemCounts(initialItemCounts);
-        }
-      } catch (error) {
-        console.error("Error fetching items:", error);
-        toast.error("Failed to load items. Please try again.", {
-          position: "bottom-right",
-          style: {
-            borderRadius: "12px",
-            background: "#ffccbc",
-            color: "#212121",
-            fontSize: "18px",
-          },
+      if (data.success) {
+        setItems(data.data);
+        const initialItemCounts = {};
+        data.data.forEach((item) => {
+          initialItemCounts[item._id] = 1;
         });
-      } finally {
-        setIsLoading(false);
+        setItemCounts(initialItemCounts);
       }
-    },
-    [refreshTrigger]
-  );
+    } catch (error) {
+      console.error("Error fetching items:", error);
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
 
+  // --- 🔹 Search by name or barcode ---
   const searchItemsByCategoryAndName = async (categoryId, searchTerm) => {
     try {
-      const res = await axios.get(
-        `${BASE_URL}/api/items/searchInPos`,
-        {
-          params: {
-            category: categoryId,
-            search: searchTerm,
-          },
-        }
-      );
+      const res = await axios.get(`${BASE_URL}/api/items/searchInPos`, {
+        params: {
+          category: categoryId,
+          search: searchTerm,
+        },
+      });
 
       if (res.data.success) {
         setItems(res.data.data);
@@ -134,28 +120,47 @@ const MenuCard = ({ refreshTrigger }) => {
     }
   };
 
-  const formatPriceWithCommas = (price) => {
-    return new Intl.NumberFormat("en-US").format(price);
+  // --- 🔹 Handle barcode scanning ---
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if (e.key === "Enter" && barcode) {
+        handleBarcodeSearch(barcode);
+        setBarcode(""); // reset after search
+      } else {
+        // accumulate scanner digits
+        if (/^[0-9a-zA-Z]$/.test(e.key)) {
+          setBarcode((prev) => prev + e.key);
+        }
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [barcode]);
+
+  const handleBarcodeSearch = async (code) => {
+    try {
+      const res = await axios.get(`${BASE_URL}/api/items/searchInPos`, {
+        params: { search: code },
+      });
+
+      if (res.data.success && res.data.data.length > 0) {
+        const item = res.data.data[0]; // assuming barcode is unique
+        handleAddCart(item);
+        toast.success(`Scanned: ${item.name}`);
+      } else {
+        toast.error("No item found for this barcode");
+      }
+    } catch (error) {
+      console.error("Error scanning item:", error);
+      toast.error("Barcode search failed");
+    }
   };
 
-  const handleQuantityChange = (itemId, value) => {
-    setItemCounts((prev) => ({
-      ...prev,
-      [itemId]: Math.max(1, value),
-    }));
-  };
-
+  // --- 🔹 Add to cart ---
   const handleAddCart = (item) => {
     if (!item.price || item.price === 0) {
-      toast.error("Bidhaa haina Bei, weka bei ndo uendelee na Mauzo ", {
-        position: "bottom-right",
-        style: {
-          borderRadius: "18px",
-          background: "#ffccbc",
-          color: "#212121",
-          fontSize: "18px",
-        },
-      });
+      toast.error("Bidhaa haina Bei, weka bei ndo uendelee na Mauzo ");
       return;
     }
 
@@ -166,16 +171,7 @@ const MenuCard = ({ refreshTrigger }) => {
 
     if (totalIfAdded > item.itemQuantity) {
       toast.error(
-        `Stock ya  ( ${item.name} )  imeisha , kwa sasa ipo : ( ${item.itemQuantity} ) , Ongeza Stock ili undelee na mauzo.`,
-        {
-          position: "bottom-right",
-          style: {
-            borderRadius: "18px",
-            background: "#ffccbc",
-            color: "#212121",
-            fontSize: "18px",
-          },
-        }
+        `Stock ya (${item.name}) imeisha , kwa sasa ipo : (${item.itemQuantity})`
       );
       return;
     }
@@ -190,18 +186,7 @@ const MenuCard = ({ refreshTrigger }) => {
     };
 
     if (!zuiaAdd) {
-      toast.error(
-        "Oyaa, Malizia Ku Print Receipt ya Mauzo uliyoyafanya Kwanza .",
-        {
-          position: "bottom-right",
-          style: {
-            borderRadius: "12px",
-            background: "#ffccbc",
-            color: "#212121",
-            fontSize: "18px",
-          },
-        }
-      );
+      toast.error("Malizia kuprint receipt kwanza.");
       return;
     }
 
@@ -284,7 +269,7 @@ const MenuCard = ({ refreshTrigger }) => {
               <div>
                 <p className="font-semibold">Price</p>
                 <p className="text-gray-600 px-4 bg-gray-300 py-1 rounded-full">
-                  Tsh {formatPriceWithCommas(item.price)} /=
+                  Tsh {item.price.toLocaleString()} /=
                 </p>
               </div>
               <div className="text-right">

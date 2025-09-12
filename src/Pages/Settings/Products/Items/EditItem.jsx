@@ -21,7 +21,7 @@ const EditItem = ({ showModal, setShowModal, item, onItemUpdated }) => {
     price: 0,
     category: "",
     photo: "",
-    barcode: "",
+    barCode: "",
     itemQuantity: 0,
     reOrder: 0,
     manufactureDate: new Date(),
@@ -36,7 +36,7 @@ const EditItem = ({ showModal, setShowModal, item, onItemUpdated }) => {
         photo: item.photo,
         category: item.category,
         itemQuantity: item.itemQuantity,
-        barcode: item.barcode,
+        barCode: item.barCode,
         reOrder: item.reOrder,
         manufactureDate: new Date(item.manufactureDate),
         expireDate: new Date(item.expireDate),
@@ -85,7 +85,7 @@ const EditItem = ({ showModal, setShowModal, item, onItemUpdated }) => {
         price: 0,
         category: "",
         itemQuantity: 0,
-        barcode: "",
+        barCode: "",
         reOrder: 0,
         manufactureDate: new Date(),
         expireDate: new Date(),
@@ -205,15 +205,15 @@ const EditItem = ({ showModal, setShowModal, item, onItemUpdated }) => {
 
                     <div>
                       <label
-                        htmlFor="barcode"
+                        htmlFor="barCode"
                         className="block mb-2 text-sm font-medium text-gray-900 dark:text-white"
                       >
-                        QRCode
+                        BarCode
                       </label>
                       <input
                         type="text"
-                        name="barcode"
-                        value={editData.barcode}
+                        name="barCode"
+                        value={editData.barCode}
                         onChange={handleChange}
                         className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-600 dark:border-gray-500 dark:placeholder-gray-400 dark:text-white"
                         placeholder="..."
@@ -222,7 +222,7 @@ const EditItem = ({ showModal, setShowModal, item, onItemUpdated }) => {
 
                     <div>
                       <label
-                        htmlFor="barcode"
+                        htmlFor="manufactureDate"
                         className="block mb-2 text-sm font-medium text-gray-900 dark:text-white"
                       >
                         Manufacturing Date
@@ -241,7 +241,7 @@ const EditItem = ({ showModal, setShowModal, item, onItemUpdated }) => {
 
                     <div>
                       <label
-                        htmlFor="barcode"
+                        htmlFor="expireDate"
                         className="block mb-2 text-sm font-medium text-gray-900 dark:text-white"
                       >
                         Expiring Date
@@ -260,7 +260,7 @@ const EditItem = ({ showModal, setShowModal, item, onItemUpdated }) => {
 
                      <div>
                       <label
-                        htmlFor="barcode"
+                        htmlFor="reOrder"
                         className="block mb-2 text-sm font-medium text-gray-900 dark:text-white"
                       >
                         Re-Order Quantity
