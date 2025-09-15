@@ -5,8 +5,7 @@ import { fetchCategories } from "../../../../Redux/itemsCategories";
 import axios from "axios";
 
 //API
-import BASE_URL from "../../../../Utils/config"
-
+import BASE_URL from "../../../../Utils/config";
 
 const EditItem = ({ showModal, setShowModal, item, onItemUpdated }) => {
   const { category } = useSelector((state) => state.category);
@@ -36,7 +35,6 @@ const EditItem = ({ showModal, setShowModal, item, onItemUpdated }) => {
         photo: item.photo,
         category: item.category,
         itemQuantity: item.itemQuantity,
-        barCode: item.barCode,
         reOrder: item.reOrder,
         manufactureDate: new Date(item.manufactureDate),
         expireDate: new Date(item.expireDate),
@@ -76,7 +74,8 @@ const EditItem = ({ showModal, setShowModal, item, onItemUpdated }) => {
     try {
       const response = await axios.put(
         `${BASE_URL}/api/items/editItem/${item._id}`,
-        editData,{ withCredentials: true }
+        editData,
+        { withCredentials: true }
       );
       console.log(response);
       setShowModal(false);
@@ -205,23 +204,6 @@ const EditItem = ({ showModal, setShowModal, item, onItemUpdated }) => {
 
                     <div>
                       <label
-                        htmlFor="barCode"
-                        className="block mb-2 text-sm font-medium text-gray-900 dark:text-white"
-                      >
-                        BarCode
-                      </label>
-                      <input
-                        type="text"
-                        name="barCode"
-                        value={editData.barCode}
-                        onChange={handleChange}
-                        className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-600 dark:border-gray-500 dark:placeholder-gray-400 dark:text-white"
-                        placeholder="..."
-                      />
-                    </div>
-
-                    <div>
-                      <label
                         htmlFor="manufactureDate"
                         className="block mb-2 text-sm font-medium text-gray-900 dark:text-white"
                       >
@@ -258,7 +240,7 @@ const EditItem = ({ showModal, setShowModal, item, onItemUpdated }) => {
                       </span>
                     </div>
 
-                     <div>
+                    <div>
                       <label
                         htmlFor="reOrder"
                         className="block mb-2 text-sm font-medium text-gray-900 dark:text-white"

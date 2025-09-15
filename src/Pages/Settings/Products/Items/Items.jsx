@@ -7,6 +7,7 @@ import {
   searchItemsPending,
 } from "../../../../Redux/items"; // Assuming the itemsSlice is in the same directory
 
+
 //Pages
 import AddItem from "./AddItem";
 import EditItem from "./EditItem";
@@ -94,6 +95,33 @@ const Items = () => {
   const [showModalAdd, setShowModalAdd] = useState(false);
   const [showModalEdit, setShowModalEdit] = useState(false);
   const [modifiedItem, setModifiedItem] = useState(null);
+
+  // Print Barcode
+  const handlePrint = (item) => {
+    const win = window.open("", "", "height=400,width=600");
+    win.document.write(`
+    <html>
+      <head>
+        <title>Print Barcode</title>
+        <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.5/dist/JsBarcode.all.min.js"></script>
+      </head>
+      <body>
+        <div style="text-align:center;">
+          <h3>${item.name}</h3>
+          <svg id="barcode"></svg>
+        </div>
+        <script>
+          window.onload = function() {
+            JsBarcode("#barcode", "${item.barCode}", {width:2, height:60, displayValue:true});
+            window.print();
+            window.onafterprint = () => window.close();
+          }
+        </script>
+      </body>
+    </html>
+  `);
+    win.document.close();
+  };
 
   return (
     <div className="sm:px-6 w-full">
@@ -341,9 +369,13 @@ const Items = () => {
                             : "border-t border-gray"
                         } hover:bg-gray-100`}
                       >
-                        <div className="flex justify-center">
-                          <button className="whitespace-nowrap bg-slate-200 text-black rounded-md shadow-md py-1 px-14 ">
-                            {item.barCode || "N/A"}
+                        <div className="flex flex-col items-center gap-2">
+                          {/* Print button */}
+                          <button
+                            onClick={() => handlePrint(item)}
+                            className="whitespace-nowrap bg-slate-200 text-black rounded-md shadow-md py-1 px-4 hover:bg-slate-300"
+                          >
+                            Print Barcode
                           </button>
                         </div>
                       </td>
