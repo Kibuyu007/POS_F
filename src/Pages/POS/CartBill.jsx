@@ -24,6 +24,8 @@ const Cart = ({ triggerRefreshMenu }) => {
   const [showLoadingModal, setShowLoadingModal] = useState(false);
   const [useLoyal, setUseLoyal] = useState(false);
   const [loyalCustomerId, setLoyalCustomerId] = useState("");
+  const [useTradeDiscount, setUseTradeDiscount] = useState(false);
+  const [tradeDiscount, setTradeDiscount] = useState(0);
 
   useEffect(() => {
     dispatch(fetchAllCustomers()); // Fetch loyal customers from backend
@@ -60,11 +62,24 @@ const Cart = ({ triggerRefreshMenu }) => {
 
   const cartData = useSelector((state) => state.cart.cart);
   const total = useSelector(getTotalPrice);
-  const taxRate = 2.5;
+  const taxRate = 0;
   const tax = (total * taxRate) / 100;
   const finalTotal = total + tax;
 
   const handleTransaction = async (status) => {
+    if (cartData.length === 0) {
+      toast.error("Please add items to the cart before proceeding!", {
+        position: "bottom-right",
+        style: {
+          borderRadius: "12px",
+          background: "#e74c3c",
+          color: "#fff",
+          fontSize: "18px",
+        },
+      });
+      return; // STOP the transaction completely
+    }
+
     if (isProcessing) return;
     setIsProcessing(true);
     setShowLoadingModal(true);
@@ -80,6 +95,7 @@ const Cart = ({ triggerRefreshMenu }) => {
         customerDetails: useLoyal ? {} : customerDetails,
         loyalCustomer: useLoyal ? loyalCustomerId : null,
         status,
+        tradeDiscount: useTradeDiscount ? tradeDiscount : 0,
       };
 
       const response = await axios.post(
@@ -167,33 +183,27 @@ const Cart = ({ triggerRefreshMenu }) => {
       <div className="mt-6 space-y-6">
         {/* Customer Input Section */}
         <div className="bg-gradient-to-r from-blue-100 to-green-200 rounded-xl shadow-lg px-6 py-6">
-          <h2 className="text-xl font-semibold text-gray-800 mb-4">
-            Customer Info
-          </h2>
           {/* Toggle between normal or loyal customer */}
-          <div className="flex items-center space-x-3 mb-6">
+          <div className="flex items-center justify-between space-x-3 mb-6">
+            <h2 className="text-xl font-semibold text-gray-800">
+              Customer Info
+            </h2>
             <input
               id="loyal-customer-checkbox"
               type="checkbox"
               checked={useLoyal}
               onChange={handleLoyalToggle}
-              className="hidden" // Hides the default checkbox
+              className="hidden toggle-checkbox sr-only"
             />
+
             <label
               htmlFor="loyal-customer-checkbox"
-              className="relative flex items-center justify-center w-6 h-6 rounded-md border-2 border-gray-400 cursor-pointer transition-all duration-200"
+              className="toggle-label block w-12 h-6 rounded-full transition bg-gray-300 relative"
             >
-              <div
-                className={`w-3 h-3 rounded-full bg-green-500 transform scale-0 transition-transform duration-200 ${
-                  useLoyal ? "scale-100" : ""
-                }`}
-              ></div>
-            </label>
-            <label
-              htmlFor="loyal-customer-checkbox"
-              className="text-gray-800 font-medium cursor-pointer"
-            >
-              Use Loyal Customer
+              <span
+                className={`dot absolute left-1 top-1 w-4 h-4 bg-white rounded-full transition 
+      ${useLoyal ? "translate-x-6 bg-green-500" : ""}`}
+              />
             </label>
           </div>
 
@@ -251,6 +261,49 @@ const Cart = ({ triggerRefreshMenu }) => {
           )}
         </div>
 
+        {/* Trade Discount Section */}
+        <div className="bg-white rounded-xl shadow px-6 py-4 space-y-3 mt-4">
+          <label className="flex items-center justify-between p-4 border rounded-xl bg-gray-50 hover:bg-gray-100 transition cursor-pointer">
+            <div>
+              <p className="text-gray-900 font-semibold">Trade Discount</p>
+            </div>
+
+            {/* Toggle Switch */}
+            <input
+              type="checkbox"
+              checked={useTradeDiscount}
+              onChange={() => setUseTradeDiscount(!useTradeDiscount)}
+              className="toggle-checkbox sr-only"
+              id="tradeDiscountToggle"
+            />
+
+            <label
+              htmlFor="tradeDiscountToggle"
+              className="toggle-label block w-12 h-6 rounded-full transition bg-gray-300 relative"
+            >
+              <span
+                className={`dot absolute left-1 top-1 w-4 h-4 bg-white rounded-full transition 
+      ${useTradeDiscount ? "translate-x-6 bg-green-500" : ""}`}
+              />
+            </label>
+          </label>
+
+          {useTradeDiscount && (
+            <div className="mt-2">
+              <label className="block text-gray-700 font-semibold mb-1">
+                Discount Amount
+              </label>
+              <input
+                type="number"
+                value={tradeDiscount}
+                onChange={(e) => setTradeDiscount(Number(e.target.value))}
+                className="w-full px-4 py-2 rounded-lg border border-gray-300 focus:ring-green-400 focus:border-green-400"
+                placeholder="Enter discount amount"
+              />
+            </div>
+          )}
+        </div>
+
         {/* Error message */}
         {errorMsg && (
           <div className="text-red-600 font-semibold text-center">
@@ -262,15 +315,26 @@ const Cart = ({ triggerRefreshMenu }) => {
         <div className="bg-white rounded-xl shadow-[0px_10px_1px_rgba(221,_221,_221,_1),_0_10px_20px_rgba(204,_204,_204,_1)] px-6 py-4 space-y-2">
           <div className="flex justify-between text-gray-800 font-medium">
             <span>Items</span>
-            <span>{cartData.length}</span>
+            <span className="bg-green-400 py-1 px-4 rounded-full">
+              {cartData.length}
+            </span>
           </div>
-          <div className="flex justify-between text-gray-800 font-medium">
+
+          {/* Tax */}
+          {/* <div className="flex justify-between text-gray-800 font-medium">
             <span>Tax (2.5%)</span>
             <span>{tax}/=</span>
-          </div>
+          </div> */}
+
+          {useTradeDiscount && (
+            <div className="flex justify-between text-gray-800 font-medium">
+              <span>Trade Discount</span>
+              <span>{tradeDiscount?.toLocaleString()}/=</span>
+            </div>
+          )}
           <div className="flex justify-between text-lg font-bold text-black pt-2 border-t">
             <span>Total (Tsh)</span>
-            <span>{finalTotal}/=</span>
+            <span>{finalTotal?.toLocaleString()}/=</span>
           </div>
         </div>
 

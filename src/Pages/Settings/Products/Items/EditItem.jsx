@@ -6,6 +6,8 @@ import axios from "axios";
 
 //API
 import BASE_URL from "../../../../Utils/config";
+import toast from "react-hot-toast";
+import { editItem } from "../../../../../../back/Controlers/Items/items";
 
 const EditItem = ({ showModal, setShowModal, item, onItemUpdated }) => {
   const { category } = useSelector((state) => state.category);
@@ -23,6 +25,7 @@ const EditItem = ({ showModal, setShowModal, item, onItemUpdated }) => {
     barCode: "",
     itemQuantity: 0,
     reOrder: 0,
+    discount: 0,
     manufactureDate: new Date(),
     expireDate: new Date(),
   });
@@ -36,6 +39,7 @@ const EditItem = ({ showModal, setShowModal, item, onItemUpdated }) => {
         category: item.category,
         itemQuantity: item.itemQuantity,
         reOrder: item.reOrder,
+        discount: item.discount,
         manufactureDate: new Date(item.manufactureDate),
         expireDate: new Date(item.expireDate),
       });
@@ -49,6 +53,29 @@ const EditItem = ({ showModal, setShowModal, item, onItemUpdated }) => {
 
   const handleChange = (e) => {
     const { name, value } = e.target;
+
+    const numericValue = Number(value);
+
+    //When user is entering discount
+    // If user is typing discount, validate
+    if (name === "discount") {
+      const price = Number(editData.price);
+
+      // Prevent discount > price
+      if (numericValue > price) {
+        toast.error("Discount can't be Gretaer than Item Price", {
+          position: "middle-center",
+          style: {
+            borderRadius: "12px",
+            background: "#e74c3c",
+            color: "#fff",
+            fontSize: "18px",
+          },
+        });
+        return;
+      }
+    }
+
     setEditData({ ...editData, [name]: value });
   };
 
@@ -86,6 +113,7 @@ const EditItem = ({ showModal, setShowModal, item, onItemUpdated }) => {
         itemQuantity: 0,
         barCode: "",
         reOrder: 0,
+        discount: 0,
         manufactureDate: new Date(),
         expireDate: new Date(),
       });
@@ -253,6 +281,25 @@ const EditItem = ({ showModal, setShowModal, item, onItemUpdated }) => {
                         value={editData.reOrder}
                         onChange={handleChange}
                         className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-600 dark:border-gray-500 dark:placeholder-gray-400 dark:text-white"
+                        placeholder="..."
+                      />
+                    </div>
+
+                    <div>
+                      <label
+                        htmlFor="discount"
+                        className="block mb-2 text-sm font-medium text-gray-900 dark:text-white"
+                      >
+                        Discount Amount
+                      </label>
+                      <input
+                        type="number"
+                        name="discount"
+                        value={editData.discount}
+                        min="0"
+                        max={editData.price}
+                        onChange={handleChange}
+                        className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-green-500 focus:border-green-500 block w-full p-2.5 dark:bg-gray-600 dark:border-gray-500 dark:placeholder-gray-400 dark:text-white"
                         placeholder="..."
                       />
                     </div>

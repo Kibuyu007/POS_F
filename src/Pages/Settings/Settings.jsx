@@ -18,6 +18,7 @@ import { useSelector } from "react-redux";
 import CustomerManagement from "./Customers/CustomerManagement";
 import WalletList from "./Customers/WalletList";
 import WalletReport from "./Customers/WalletReport";
+import Expenses from "./Procurement/Expenses";
 
 const Settings = () => {
   const [selectedSetting, setSelectedSetting] = useState(null);
@@ -40,16 +41,18 @@ const Settings = () => {
         <SettingsList
           title="GRN"
           settings={[
+            // {
+            //   group: "PO GRN",
+            //   items: ["Process PO GRN", "Icomplete PO GRN", "Unpaid PO"],
+            // },
             {
-              group: "PO GRN",
-              items: ["Process PO GRN", "Icomplete PO GRN", "Unpaid PO"],
-            },
-            {
-              group: "Non-PO GRN",
+              // group: "Non-PO GRN",
+              group: "GRNS & Expenses",
               items: [
                 "Process Non-PO GRN",
                 "Unpaid Non-PO",
                 "Completed Non-PO GRN",
+                "Expenses",
               ],
             },
           ]}
@@ -110,6 +113,8 @@ const Settings = () => {
           <MadeniPo />
         ) : selectedSetting === "Unpaid Non-PO" ? (
           <MadeniNonPo />
+        ): selectedSetting === "Expenses" ? (
+          <Expenses />
         ) : selectedSetting === "All Customers" ? (
           <CustomerManagement />
         ) : selectedSetting === "Wallet Transactions" ? (

@@ -7,8 +7,8 @@ import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
 
 //API
-import BASE_URL from "../../../../Utils/config"
-
+import BASE_URL from "../../../../Utils/config";
+import toast from "react-hot-toast";
 
 const AddItem = ({ showModal, setShowModal, onUserAdded }) => {
   //Use selector from Redux
@@ -27,6 +27,7 @@ const AddItem = ({ showModal, setShowModal, onUserAdded }) => {
     manufactureDate: new Date(),
     expireDate: new Date(),
     reOrder: 0,
+    discount: 0,
   });
 
   const dispatch = useDispatch();
@@ -38,10 +39,30 @@ const AddItem = ({ showModal, setShowModal, onUserAdded }) => {
     }
   }, [dispatch, category.length]);
 
- 
-
   const handleChange = (e) => {
     const { name, value } = e.target;
+
+    // Convert string to number
+    const numericValue = Number(value);
+
+    // If user is typing discount, validate
+    if (name === "discount") {
+      const price = Number(regi.price);
+
+      // Prevent discount > price
+      if (numericValue > price) {
+        toast.error("Discount can't be Gretaer than Item Price", {
+          position: "middle-center",
+          style: {
+            borderRadius: "12px",
+            background: "#e74c3c",
+            color: "#fff",
+            fontSize: "18px",
+          },
+        });
+        return;
+      }
+    }
     setRegi({ ...regi, [name]: value });
   };
 
@@ -52,7 +73,6 @@ const AddItem = ({ showModal, setShowModal, onUserAdded }) => {
   const handleExpireDate = (date) => {
     setRegi({ ...regi, expireDate: date });
   };
-
 
   const handlePhotoChange = (e) => {
     const file = e.target.files[0];
@@ -65,10 +85,9 @@ const AddItem = ({ showModal, setShowModal, onUserAdded }) => {
   const handleAddItems = async (e) => {
     e.preventDefault();
     try {
-      const response = await axios.post(
-        `${BASE_URL}/api/items/addItem`,
-        regi,{ withCredentials: true }
-      );
+      const response = await axios.post(`${BASE_URL}/api/items/addItem`, regi, {
+        withCredentials: true,
+      });
       console.log(response);
       dispatch(additem(response?.data));
 
@@ -81,6 +100,7 @@ const AddItem = ({ showModal, setShowModal, onUserAdded }) => {
         manufactureDate: "",
         expireDate: "",
         reOrder: "",
+        discount: "",
       });
 
       setFile(null);
@@ -200,8 +220,6 @@ const AddItem = ({ showModal, setShowModal, onUserAdded }) => {
                       />
                     </div>
 
-                 
-
                     <div>
                       <label
                         htmlFor="barcode"
@@ -240,7 +258,7 @@ const AddItem = ({ showModal, setShowModal, onUserAdded }) => {
                       </span>
                     </div>
 
-                      <div>
+                    <div>
                       <label
                         htmlFor="barcode"
                         className="block mb-2 text-sm font-medium text-gray-900 dark:text-white"
@@ -251,6 +269,25 @@ const AddItem = ({ showModal, setShowModal, onUserAdded }) => {
                         type="number"
                         name="reOrder"
                         value={regi.reOrder}
+                        onChange={handleChange}
+                        className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-green-500 focus:border-green-500 block w-full p-2.5 dark:bg-gray-600 dark:border-gray-500 dark:placeholder-gray-400 dark:text-white"
+                        placeholder="..."
+                      />
+                    </div>
+
+                    <div>
+                      <label
+                        htmlFor="discount"
+                        className="block mb-2 text-sm font-medium text-gray-900 dark:text-white"
+                      >
+                        Discount Amount
+                      </label>
+                      <input
+                        type="number"
+                        name="discount"
+                        value={regi.discount}
+                        min="0"
+                        max={regi.price}
                         onChange={handleChange}
                         className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-green-500 focus:border-green-500 block w-full p-2.5 dark:bg-gray-600 dark:border-gray-500 dark:placeholder-gray-400 dark:text-white"
                         placeholder="..."
@@ -299,7 +336,6 @@ const AddItem = ({ showModal, setShowModal, onUserAdded }) => {
                     </div>
                   )}
                 </div>
-                
               </div>
             </div>
           </div>
