@@ -1,229 +1,453 @@
+import { useState, useEffect } from "react";
+import axios from "axios";
+import * as XLSX from "xlsx";
+import jsPDF from "jspdf";
+import autoTable from "jspdf-autotable";
 import { DatePicker, LocalizationProvider } from "@mui/x-date-pickers";
 import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs";
-import { useState } from "react";
+import dayjs from "dayjs";
+import { IoIosArrowBack, IoIosArrowForward } from "react-icons/io";
+import Loading from "../../../Components/Shared/Loading";
+
+import BASE_URL from "../../../Utils/config";
 
 const Expenses = () => {
   const [itemHold, setItemHold] = useState([]);
+  const [loading, setLoading] = useState(false);
+
+  // input states
+  const [input, setInput] = useState({
+    title: "",
+    amount: "",
+    details: "",
+    date: null,
+  });
+
+  // filters
+  const [filterCreatedBy, setFilterCreatedBy] = useState("");
+  const [fromDate, setFromDate] = useState(null);
+  const [toDate, setToDate] = useState(null);
+
+  // pagination
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 10;
+
+  // fetch expenses
+  const getExpenses = async () => {
+    try {
+      setLoading(true);
+      const res = await axios.get(`${BASE_URL}/api/manunuzi/matumiziYote`);
+      setItemHold(res.data);
+    } catch (error) {
+      console.log("Error fetching expenses:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    getExpenses();
+  }, []);
+
+  // add expense
+  const addExpense = async () => {
+    if (!input.title || !input.amount || !input.date)
+      return alert("Fill required fields");
+
+    try {
+      await axios.post(
+        `${BASE_URL}/api/manunuzi/matumizi`,
+        {
+          title: input.title,
+          amount: Number(input.amount),
+          details: input.details || "",
+          date: input.date,
+        },
+        { withCredentials: true }
+      );
+      getExpenses();
+      setInput({ title: "", amount: "", details: "", date: null });
+    } catch (error) {
+      console.log("Error adding expense:", error);
+    }
+  };
+
+  // generate unique creators for dropdown
+  const uniqueCreators = [
+    ...new Set(
+      itemHold.map((i) =>
+        i.createdBy
+          ? `${i.createdBy.firstName} ${i.createdBy.lastName}`
+          : "Unknown"
+      )
+    ),
+  ].sort();
+
+  // filtering
+  const filtered = itemHold.filter((exp) => {
+    const creatorFullName = exp.createdBy
+      ? `${exp.createdBy.firstName} ${exp.createdBy.lastName}`
+      : "Unknown";
+
+    const matchByName =
+      filterCreatedBy === "" || filterCreatedBy === creatorFullName;
+
+    const matchFromDate = fromDate
+      ? dayjs(exp.date).isAfter(fromDate.subtract(1, "day"))
+      : true;
+    const matchToDate = toDate
+      ? dayjs(exp.date).isBefore(toDate.add(1, "day"))
+      : true;
+
+    return matchByName && matchFromDate && matchToDate;
+  });
+
+  // pagination
+  const totalPages = Math.ceil(filtered.length / itemsPerPage);
+  const paginated = filtered.slice(
+    (currentPage - 1) * itemsPerPage,
+    currentPage * itemsPerPage
+  );
+
+  //Total of Expenses Amounts
+  const totalAmount = filtered.reduce(
+    (acc, exp) => acc + Number(exp.amount),
+    0
+  );
+
+  // Excel export
+  const exportExcel = () => {
+    const worksheet = XLSX.utils.json_to_sheet(
+      filtered.map((e) => ({
+        Title: e.title,
+        Amount: e.amount,
+        Details: e.details,
+        Date: dayjs(e.date).format("YYYY-MM-DD"),
+        "Created By": e.createdBy
+          ? `${e.createdBy.firstName} ${e.createdBy.lastName}`
+          : "-",
+      }))
+    );
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, "Expenses");
+    XLSX.writeFile(workbook, "Expenses_Report.xlsx");
+  };
+
+  // PDF export
+  const exportPDF = () => {
+    const pdf = new jsPDF();
+    pdf.text("Expenses Report", 14, 15);
+    autoTable(pdf, {
+      head: [["Title", "Amount", "Details", "Date", "Created By"]],
+      body: filtered.map((e) => [
+        e.title,
+        e.amount,
+        e.details,
+        dayjs(e.date).format("YYYY-MM-DD"),
+        e.createdBy ? `${e.createdBy.firstName} ${e.createdBy.lastName}` : "",
+      ]),
+    });
+    pdf.save("Expenses_Report.pdf");
+  };
 
   return (
-    <div>
-      <h2 className="text-lg md:text-xl lg:text-2xl font-bold text-gray-800">
-        Expenses
-      </h2>
+    <div className="p-5 text-black">
+      {/* Title */}
+      <h2 className="text-2xl font-bold text-gray-800">Expenses</h2>
 
-      {/* header */}
-      <div className="flex flex-row justify-between items-center px-5 mt-5">
-        <div className="flex items-center ">
-          <div>
-            <span className="px-4 py-2 bg-gray-200 text-gray-800 font-semibold rounded">
-              1
-            </span>
-          </div>
-        </div>
-      </div>
-
-      <div className="mx-auto  px-4 py-6 sm:px-6 lg:px-8 border rounded-lg shadow-md">
-        <div className="flex flex-wrap -mx-2">
-          <div className="w-full sm:w-1/3 p-2 ">
-            <label
-              htmlFor="input2"
-              className="block text-md font-bold text-black"
-            >
-              Title/Name
-            </label>
-            <input
-              type="text"
-              name="invoiceNumber"
-              className="bg-gray-100 rounded-[30px] px-1 sm:px-4 py-1 sm:py-2 max-w-[300px] border border-gray-400  p-2 w-full capitalize text-black"
-            />
-          </div>
-
-          <div className="w-full sm:w-1/3 p-2">
-            <label
-              htmlFor="input3"
-              className="block text-md font-bold text-black"
-            >
-              Amount
-            </label>
-            <input
-              type="Number"
-              name="deliveryPerson"
-              className="bg-gray-100 rounded-[30px] px-1 sm:px-4 py-1 sm:py-2 max-w-[300px] border border-gray-400  p-2 w-full capitalize text-black"
-            />
-          </div>
-
-          <div className="w-full sm:w-1/3 p-2">
-            <label
-              htmlFor="input3"
-              className="block text-md font-bold text-black"
-            >
-              Details
-            </label>
-            <textarea
-              type="text"
-              name="description"
-              className="bg-gray-100 rounded-[30px] px-1 sm:px-4 py-1 sm:py-2 max-w-[300px] border border-gray-400  p-2 w-full capitalize text-black"
-            />
-          </div>
-
-          <LocalizationProvider dateAdapter={AdapterDayjs}>
-            <div>
-              <label
-                htmlFor="receivedDate"
-                className="block mb-2 text-md font-bold text-black dark:text-white"
-              >
-                Received Date
-              </label>
-              <DatePicker
-                views={["year", "month", "day"]}
-                format="YYYY-MM-DD"
-                slotProps={{
-                  textField: {
-                    size: "small",
-                    fullWidth: true,
-                    className:
-                      "bg-gray-50 border border-gray-400 text-gray-900 text-sm rounded-[30px] focus:ring-blue-500 focus:border-blue-500 block dark:bg-gray-600 dark:border-gray-500 dark:placeholder-gray-400 dark:text-white",
-                  },
-                }}
-              />
-            </div>
-          </LocalizationProvider>
-
-          <div>
-            <button className="mt-6 px-6 py-2 bg-green-500 text-white rounded-full text-sm hover:bg-green-600">
-              Add Expense
-            </button>
-          </div>
-        </div>
-      </div>
-
-      <div className="p-6">
-        <div className="px-4 py-4 md:py-7">
-          <div className="flex items-center justify-between">
-            <p className="text-lg md:text-xl lg:text-2xl font-bold text-gray-800">
-              Expenses Report
-            </p>
-          </div>
-        </div>
-
-        {/* Filters */}
-
-        <div className="grid md:grid-cols-6 gap-2 mb-4 items-center">
+      {/* Add Expense */}
+      <div className="mt-5 p-6 bg-white shadow rounded-xl border">
+        <h3 className="text-lg font-bold text-gray-700 mb-3">
+          Add New Expense
+        </h3>
+        <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          <input
+            type="text"
+            placeholder="Title / Name"
+            value={input.title}
+            onChange={(e) => setInput({ ...input, title: e.target.value })}
+            className="border-2 border-gray-300 text-black bg-gray-100 px-2 py-1 w-full rounded-full focus:outline-none focus:ring-1 focus:ring-green-500"
+          />
+          <input
+            type="number"
+            placeholder="Amount"
+            value={input.amount}
+            onChange={(e) => setInput({ ...input, amount: e.target.value })}
+            className="border-2 border-gray-300 text-black bg-gray-100 px-2 py-1 w-full rounded-full focus:outline-none focus:ring-1 focus:ring-green-500"
+          />
+          <input
+            type="text"
+            placeholder="Details"
+            value={input.details}
+            onChange={(e) => setInput({ ...input, details: e.target.value })}
+            className="border-2 border-gray-300 text-black bg-gray-100 px-2 py-1 w-full rounded-full focus:outline-none focus:ring-1 focus:ring-green-500"
+          />
           <LocalizationProvider dateAdapter={AdapterDayjs}>
             <DatePicker
-              label="From Date"
+              label="Date"
+              value={input.date}
+              onChange={(newValue) => setInput({ ...input, date: newValue })}
+              maxDate={dayjs()}
               slotProps={{
                 textField: {
                   size: "small",
                   fullWidth: true,
-                  className:
-                    "bg-gray-50 border border-gray-400 text-sm rounded-full dark:bg-gray-700 dark:border-gray-600 dark:text-white",
+                  className: "bg-gray-50 border rounded-full",
                 },
               }}
+            />
+          </LocalizationProvider>
+        </div>
+        <button
+          onClick={addExpense}
+          className="mt-5 px-6 py-2 bg-green-500 text-white rounded-full hover:bg-green-600"
+        >
+          Add Expense
+        </button>
+      </div>
+
+      {/* Report Section */}
+      <div className="mt-10 bg-white p-6 shadow rounded-xl border">
+        <div className="flex justify-between items-center mb-4">
+          <h3 className="text-xl font-bold text-gray-700">Expenses Report</h3>
+          <div className="flex gap-3">
+            <button
+              onClick={exportExcel}
+              className="px-6 py-2 bg-green-200 text-green-900 rounded-full hover:bg-green-300"
+            >
+              Excel
+            </button>
+            <button
+              onClick={exportPDF}
+              className="px-6 py-2 bg-gray-300 text-gray-900 rounded-full hover:bg-gray-400"
+            >
+              PDF
+            </button>
+          </div>
+        </div>
+
+        {/* Filters */}
+        <div className="grid sm:grid-cols-2 lg:grid-cols-5 gap-3 mb-5">
+          <select
+            value={filterCreatedBy}
+            onChange={(e) => setFilterCreatedBy(e.target.value)}
+            className="px-4 py-2 bg-gray-50 border rounded-full text-sm"
+          >
+            <option value="">Created By (All)</option>
+            {uniqueCreators.map((user) => (
+              <option key={user} value={user}>
+                {user}
+              </option>
+            ))}
+          </select>
+
+          <LocalizationProvider dateAdapter={AdapterDayjs}>
+            <DatePicker
+              label="From Date"
+              value={fromDate}
+              onChange={(newValue) => setFromDate(newValue)}
+              slotProps={{
+                textField: {
+                  size: "small",
+                  fullWidth: true,
+                  className: "bg-gray-50 border rounded-full",
+                },
+              }}
+              maxDate={dayjs()}
             />
           </LocalizationProvider>
 
           <LocalizationProvider dateAdapter={AdapterDayjs}>
             <DatePicker
               label="To Date"
+              value={toDate}
+              onChange={(newValue) => setToDate(newValue)}
               slotProps={{
                 textField: {
                   size: "small",
                   fullWidth: true,
-                  className:
-                    "bg-gray-50 border border-gray-400 text-sm rounded-full dark:bg-gray-700 dark:border-gray-600 dark:text-white",
+                  className: "bg-gray-50 border rounded-full",
                 },
               }}
+              maxDate={dayjs()}
             />
           </LocalizationProvider>
-
-          {/* Empty div to take the 4th column space if needed */}
-          <div></div>
-
-          <div className="flex justify-end gap-4">
-            <button className="px-4 py-2 bg-green-400 text-black rounded-full text-sm hover:bg-gray-300 w-40">
-              Export Excel
-            </button>
-
-            <button className="px-4 py-2 bg-gray-400 text-black rounded-full text-sm hover:bg-green-100 w-40">
-              Export PDF
-            </button>
-          </div>
         </div>
 
+        <Loading load={loading} />
+
         {/* Table */}
-        <div className="overflow-auto shadow-md rounded-lg mt-4">
-          <table className="min-w-full text-sm text-left text-gray-700">
-            <thead className="bg-gray-200 text-gray-800 font-bold text-xs uppercase tracking-wide">
+        <div className="overflow-auto rounded-lg mt-4">
+          <table className="min-w-full text-sm">
+            <thead className="bg-gray-100 text-gray-700 font-semibold">
               <tr>
-                <th className="p-3">SN</th>
-                <th className="p-3">Name/Title</th>
-                <th className="p-3">Expenses Amount</th>
-                <th className="p-3">Details</th>
-                <th className="p-3">Date</th>
-                <th className="p-3">Added By</th>
+                <th className="border border-gray-300 px-4 py-2 text-left">
+                  SN
+                </th>
+                <th className="border border-gray-300 px-4 py-2 text-left">
+                  Title
+                </th>
+                <th className="border border-gray-300 px-4 py-2 text-center">
+                  Amount
+                </th>
+                <th className="border border-gray-300 px-4 py-2 text-left">
+                  Details
+                </th>
+                <th className="border border-gray-300 px-4 py-2 text-left">
+                  Date
+                </th>
+                <th className="border border-gray-300 px-4 py-2 text-left">
+                  Created By
+                </th>
               </tr>
             </thead>
-            <tr className="h-4" />
+            <tr className="h-3" />
             <tbody>
-              {itemHold.map((txn) => (
+              {paginated.map((exp, idx) => (
                 <>
-                  <tr key={txn._id} className="border-t hover:bg-gray-50">
-                    <td className="p-3">{txn.customerDetails.name}</td>
-                    <td className="py-2 px-3 font-normal text-base border-x shadow-md bg-green-200  hover:bg-gray-100  whitespace-nowrap overflow-hidden overflow-ellipsis max-w-[200px]">
-                      <div className="items-center text-center">
-                        <div className="ml-3">{txn.customerDetails.phone}</div>
-                      </div>
+                  <tr key={exp._id} className="border-t hover:bg-gray-50">
+                    <td className="pl-5 font-bold bg-gray-100">
+                      <p className="text-sm leading-none text-gray-600">
+                        {(currentPage - 1) * itemsPerPage + idx + 1}
+                      </p>
                     </td>
-
-                    <td className="p-3">
-                      <span
-                        className={`px-2 py-1 rounded-full text-xs font-semibold ${
-                          txn.status === "Paid"
-                            ? "bg-green-100 text-green-700"
-                            : "bg-yellow-100 text-yellow-700"
-                        }`}
-                      >
-                        {txn.status}
-                      </span>
+                    <td className="pl-5 font-bold bg-gray-200">
+                      <p className="text-sm leading-none text-gray-600">
+                        {exp.title}
+                      </p>
                     </td>
-
-                    <td className="py-2 px-3 font-normal text-base border-x shadow-md bg-gray-200  hover:bg-gray-100  whitespace-nowrap overflow-hidden overflow-ellipsis max-w-[200px]">
-                      <div className="items-center text-center">
-                        <div className="ml-3">
-                          {new Date(txn.createdAt).toLocaleString()}
-                        </div>
-                      </div>
+                    <td className="p-3 font-semibold text-green-700">
+                      <p className="text-sm leading-none text-green-700 text-center">
+                        {exp.amount.toLocaleString()}
+                      </p>
                     </td>
-
-                    <td className="py-1 px-2 font-normal text-sm border-x shadow-md bg-gray-100  hover:bg-gray-100  whitespace-nowrap overflow-hidden overflow-ellipsis max-w-[150px]">
-                      <div className="items-center text-center">
-                        <div className="ml-3">
-                          {txn.createdBy
-                            ? `${txn.createdBy.firstName} ${txn.createdBy.lastName} `
-                            : ""}
-                        </div>
-                      </div>
+                    <td className="pl-5 font-bold bg-gray-200">
+                      <p className="text-sm leading-none text-gray-600">
+                        {exp.details}
+                      </p>
+                    </td>
+                    <td className="pl-5 font-bold bg-gray-100">
+                      <p>{dayjs(exp.date).format("YYYY-MM-DD")}</p>
+                    </td>
+                    <td className="pl-5 font-bold bg-gray-200">
+                      <p className="text-sm leading-none text-gray-600">
+                        {exp.createdBy
+                          ? `${exp.createdBy.firstName} ${exp.createdBy.lastName}`
+                          : "-"}
+                      </p>
                     </td>
                   </tr>
                   <tr className="h-4" />
                 </>
               ))}
             </tbody>
-            <tfoot>
-              <tr className="bg-gradient-to-r from-green-50 to-green-100 text-sm font-semibold text-green-800 border-t border-green-200">
-                <td></td>
-                <td></td>
-                <td
-                  colSpan="5"
-                  className="text-right p-3 pr-6 uppercase tracking-wider"
-                >
-                  Total Paid:
+
+            <tfoot className="bg-gray-100 font-semibold text-gray-700">
+              <tr>
+                <td className="p-3" colSpan={2}>
+                  Total
                 </td>
+                <td className="p-4  text-green-900 font-bold text-center bg-gradient-to-r from-yellow-100 via-yellow-50 to-yellow-100 rounded-xl shadow-lg">
+                  {totalAmount.toLocaleString()}
+                </td>
+                <td className="p-3" colSpan={3}></td>
               </tr>
             </tfoot>
           </table>
         </div>
+
+        {/* Pagination */}
+        {totalPages > 1 && (
+          <div className="flex items-center justify-between border-t bg-white py-4 mt-2">
+            <p className="text-sm text-gray-700">
+              Showing{" "}
+              <span className="font-medium">
+                {(currentPage - 1) * itemsPerPage + 1}
+              </span>{" "}
+              to{" "}
+              <span className="font-medium">
+                {Math.min(currentPage * itemsPerPage, filtered.length)}
+              </span>{" "}
+              of <span className="font-medium">{filtered.length}</span> items
+            </p>
+            <nav className="isolate inline-flex -space-x-px rounded-md shadow-sm">
+              <button
+                onClick={() => setCurrentPage((p) => Math.max(p - 1, 1))}
+                disabled={currentPage === 1}
+                className={`inline-flex items-center px-2 py-2 ring-1 ring-gray-300 ${
+                  currentPage === 1 ? "opacity-50" : "hover:bg-gray-100"
+                }`}
+              >
+                <IoIosArrowBack className="size-5" />
+              </button>
+
+              {(() => {
+                const maxPages = 10;
+                const pages = [];
+
+                if (totalPages <= maxPages) {
+                  for (let i = 1; i <= totalPages; i++) pages.push(i);
+                } else {
+                  pages.push(1);
+                  let start, end;
+
+                  if (currentPage <= 6) {
+                    start = 2;
+                    end = 8;
+                    for (let i = start; i <= end; i++) pages.push(i);
+                    pages.push("...");
+                    pages.push(totalPages);
+                  } else if (currentPage >= totalPages - 5) {
+                    pages.push("...");
+                    start = totalPages - 7;
+                    for (let i = start; i <= totalPages; i++) pages.push(i);
+                  } else {
+                    pages.push("...");
+                    start = currentPage - 2;
+                    end = currentPage + 2;
+                    for (let i = start; i <= end; i++) pages.push(i);
+                    pages.push("...");
+                    pages.push(totalPages);
+                  }
+                }
+
+                return pages.map((p, i) =>
+                  p === "..." ? (
+                    <span key={i} className="px-4 py-2">
+                      ...
+                    </span>
+                  ) : (
+                    <button
+                      key={p}
+                      onClick={() => setCurrentPage(p)}
+                      className={`px-4 py-2 ring-1 ring-gray-300 ${
+                        currentPage === p
+                          ? "bg-green-500 text-white"
+                          : "hover:bg-gray-100"
+                      }`}
+                    >
+                      {p}
+                    </button>
+                  )
+                );
+              })()}
+
+              <button
+                onClick={() =>
+                  setCurrentPage((p) => Math.min(p + 1, totalPages))
+                }
+                disabled={currentPage === totalPages}
+                className={`inline-flex items-center px-2 py-2 ring-1 ring-gray-300 ${
+                  currentPage === totalPages
+                    ? "opacity-50"
+                    : "hover:bg-gray-100"
+                }`}
+              >
+                <IoIosArrowForward className="size-5" />
+              </button>
+            </nav>
+          </div>
+        )}
       </div>
     </div>
   );

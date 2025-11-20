@@ -31,7 +31,7 @@ const Settings = () => {
         <SettingsList
           title="Pre-Purchase"
           settings={[
-            { group: "Orders", items: ["Purchase Order", "Completed PO"] },
+            // { group: "Orders", items: ["Purchase Order", "Completed PO"] },
             { group: "Vendors", items: ["Suppliers"] },
           ]}
           selectedSetting={selectedSetting}

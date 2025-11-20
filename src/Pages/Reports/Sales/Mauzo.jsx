@@ -22,7 +22,7 @@ const Mauzo = () => {
   const [filteredTransactions, setFilteredTransactions] = useState([]);
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 10;
-  const [totals, setTotals] = useState({ paid: 0, bill: 0 });
+  const [totals, setTotals] = useState({ paid: 0, bill: 0 ,discount:0});
   const [statusFilter, setStatusFilter] = useState("All");
   const [startDate, setStartDate] = useState(null);
   const [endDate, setEndDate] = useState(null);
@@ -80,21 +80,34 @@ const Mauzo = () => {
     setCurrentPage(1);
   };
 
-  const calculateTotals = (data) => {
-    let paid = 0;
-    let bill = 0;
+const calculateTotals = (data) => {
+  let paid = 0;
+  let bill = 0;
+  let discount = 0;
 
-    data.forEach((txn) => {
-      if (txn.status === "Paid") {
-        paid += txn.paidAmount || txn.totalAmount;
-      } else if (txn.status === "Bill") {
-        bill += txn.totalAmount;
-        paid += txn.paidAmount || 0;
-      }
-    });
+  data.forEach((txn) => {
+    const paidAmount = Number(txn.paidAmount) || 0;
+    const totalAmount = Number(txn.totalAmount) || 0;
+    const tradeDiscount = Number(txn.tradeDiscount) || 0;
 
-    setTotals({ paid, bill });
-  };
+    // Total Paid
+    if (txn.status === "Paid") {
+      paid += paidAmount || totalAmount;
+    }
+
+    // Total Bills
+    if (txn.status === "Bill") {
+      bill += totalAmount;
+      paid += paidAmount;
+    }
+
+    // Always add discount if present
+    discount += tradeDiscount;
+  });
+
+  setTotals({ paid, bill, discount });
+};
+
 
   //Export Excel
   const exportToExcel = () => {
@@ -254,13 +267,14 @@ const Mauzo = () => {
         <table className="min-w-full text-sm text-left text-gray-700">
           <thead className="bg-gray-200 text-gray-800 font-bold text-xs uppercase tracking-wide">
             <tr>
-              <th className="p-3">Date</th>
+              <th className="p-3 text-center">Date</th>
               <th className="p-3">Customer</th>
-              <th className="p-3">Phone</th>
-              <th className="p-3">Items</th>
+              <th className="p-3 text-center">Phone</th>
+              <th className="p-3 text-center">Items</th>
               <th className="p-3">Status</th>
-              <th className="p-3">Total Amount</th>
-              <th className="p-3">Cashier</th>
+              <th className="p-3 text-center">Total Amount</th>
+              <th className="p-3 text-center">Discount</th>
+              <th className="p-3 text-center">Cashier</th>
               <th className="p-3">Billing Cashier</th>
             </tr>
           </thead>
@@ -356,6 +370,13 @@ const Mauzo = () => {
                       )}
                     </div>
                   </td>
+                  <td className="py-2 px-3 font-normal text-base border-x shadow-md bg-gray-200  hover:bg-gray-100  whitespace-nowrap overflow-hidden overflow-ellipsis max-w-[200px]">
+                    <div className="items-center text-center gap-2 font-bold bg-gray-100 rounded-full px-4 py-2 shadow-md">
+                      <div className="ml-3">
+                        {txn.tradeDiscount.toLocaleString()}
+                      </div>
+                    </div>
+                  </td>
                   <td className="py-1 px-2 font-normal text-sm border-x shadow-md bg-gray-100  hover:bg-gray-100  whitespace-nowrap overflow-hidden overflow-ellipsis max-w-[150px]">
                     <div className="items-center text-center">
                       <div className="ml-3">
@@ -383,6 +404,7 @@ const Mauzo = () => {
             <tr className="bg-gradient-to-r from-green-50 to-green-100 text-sm font-semibold text-green-800 border-t border-green-200">
               <td></td>
               <td></td>
+              <td></td>
               <td
                 colSpan="5"
                 className="text-right p-3 pr-6 uppercase tracking-wider"
@@ -396,6 +418,7 @@ const Mauzo = () => {
             <tr className="bg-gradient-to-r from-yellow-50 to-yellow-100 text-sm font-semibold text-yellow-800 border-t border-yellow-200">
               <td></td>
               <td></td>
+              <td></td>
               <td
                 colSpan="5"
                 className="text-right p-3 pr-6 uppercase tracking-wider"
@@ -404,6 +427,20 @@ const Mauzo = () => {
               </td>
               <td className="p-3 text-right text-lg font-bold text-yellow-600">
                 {totals.bill.toLocaleString()} Tsh
+              </td>
+            </tr>
+             <tr className="bg-gradient-to-r from-yellow-50 to-yellow-100 text-sm font-semibold text-yellow-800 border-t border-yellow-200">
+              <td></td>
+              <td></td>
+              <td></td>
+              <td
+                colSpan="5"
+                className="text-right p-3 pr-6 uppercase tracking-wider"
+              >
+                Total Discount:
+              </td>
+              <td className="p-3 text-right text-lg font-bold text-yellow-600">
+                {totals.discount.toLocaleString()} Tsh
               </td>
             </tr>
           </tfoot>
