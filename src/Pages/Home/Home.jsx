@@ -8,7 +8,7 @@ import { useEffect, useState } from "react";
 import axios from "axios";
 import dayjs from "dayjs";
 
-//API
+// API
 import BASE_URL from "../../Utils/config";
 import TableDash from "./TableDash";
 
@@ -17,6 +17,10 @@ const Home = () => {
   const [totalPaid, setTotalPaid] = useState(0);
   const [totalBills, setTotalBills] = useState(0);
   const [totalgrn, setTotalgrn] = useState(0);
+  const [totalExpenses, setTotalExpenses] = useState(0);
+  const [totalDiscount, setTotalDiscount] = useState(0);
+  const [totalBuyingPrice, setTotalBuyingPrice] = useState(0);
+  const [profit, setProfit] = useState(0);
   const [billed, setBilled] = useState([]);
   const [filter, setFilter] = useState("day");
   const [composedData, setComposedData] = useState([]);
@@ -39,13 +43,13 @@ const Home = () => {
     }
   };
 
+  // FETCH SALES TRANSACTIONS
   useEffect(() => {
     const fetchSales = async () => {
       try {
         const res = await axios.get(`${BASE_URL}/api/transactions/all`, {
           withCredentials: true,
         });
-
         const allSales = res.data.data;
         const startDate = getStartDate(filter);
 
@@ -53,46 +57,92 @@ const Home = () => {
           dayjs(tx.createdAt).isAfter(startDate)
         );
 
-        setTotalSales(
-          filteredSales.reduce((sum, tx) => sum + tx.totalAmount, 0)
+        // Total sales
+        const salesTotal = filteredSales.reduce(
+          (sum, tx) => sum + tx.totalAmount,
+          0
         );
+        setTotalSales(salesTotal);
 
+        // Paid total
         setTotalPaid(
           filteredSales
             .filter((tx) => tx.status === "Paid")
             .reduce((sum, tx) => sum + tx.totalAmount, 0)
         );
 
+        // Bills total
         setTotalBills(
           filteredSales
             .filter((tx) => tx.status === "Bill")
             .reduce((sum, tx) => sum + tx.totalAmount, 0)
         );
 
+        // Total discount
+        const discountTotal = filteredSales.reduce(
+          (sum, tx) => sum + (tx.tradeDiscount || 0),
+          0
+        );
+        setTotalDiscount(discountTotal);
+
+        // Billed transactions
         setBilled(filteredSales.filter((tx) => tx.status === "Bill"));
+
+        // Total buying price
+        const buyingTotal = filteredSales.reduce((sum, tx) => {
+          const txBuying = tx.items.reduce(
+            (s, item) => s + (item.quantity || 0) * (item.buyingPrice || 0),
+            0
+          );
+
+          return sum + txBuying;
+        }, 0);
+        setTotalBuyingPrice(buyingTotal);
+
+        // Profit = Sales - (Expenses + Discounts + BuyingPrice)
+        setProfit(salesTotal - (totalExpenses + discountTotal + buyingTotal));
       } catch (error) {
         console.error("Failed to fetch transactions", error);
       }
     };
 
     fetchSales();
+  }, [filter, totalExpenses]);
+
+  // FETCH EXPENSES
+  useEffect(() => {
+    const fetchExpenses = async () => {
+      try {
+        const res = await axios.get(`${BASE_URL}/api/manunuzi/matumiziYote`);
+        const all = res.data;
+        const startDate = getStartDate(filter);
+
+        const filtered = all.filter((exp) =>
+          dayjs(exp.createdAt).isAfter(startDate)
+        );
+        const total = filtered.reduce(
+          (sum, exp) => sum + (Number(exp.amount) || 0),
+          0
+        );
+        setTotalExpenses(total);
+      } catch (error) {
+        console.error("Failed to fetch expenses", error);
+      }
+    };
+    fetchExpenses();
   }, [filter]);
 
+  // FETCH GRN (MANUNUZI)
   useEffect(() => {
     const fetchGrn = async () => {
       try {
         const [resPo, resNonPo] = await Promise.all([
-          axios.get(`${BASE_URL}/api/grn/allGrnPo`, {
-            withCredentials: true,
-          }),
-          axios.get(`${BASE_URL}/api/grn/nonPo`, {
-            withCredentials: true,
-          }),
+          axios.get(`${BASE_URL}/api/grn/allGrnPo`, { withCredentials: true }),
+          axios.get(`${BASE_URL}/api/grn/nonPo`, { withCredentials: true }),
         ]);
 
         const poGrns = resPo.data.data || [];
         const nonPoGrns = resNonPo.data.data || [];
-
         const startDate = getStartDate(filter);
 
         const poTodayCost = poGrns
@@ -110,65 +160,43 @@ const Home = () => {
         console.error("Failed to fetch GRNs:", error);
       }
     };
-
     fetchGrn();
   }, [filter]);
 
+  // COMPOSED CHART DATA
   useEffect(() => {
     const fetchComposedData = async () => {
       try {
         const res = await axios.get(`${BASE_URL}/api/transactions/all`, {
           withCredentials: true,
         });
-
         const allSales = res.data.data;
-
-        // Get date range: last 3 months from today
         const threeMonthsAgo = dayjs().subtract(3, "month").startOf("month");
 
-        // Prepare structure for weekly data
-        // Example: Week 1, Week 2 ... Week 12 (3 months ≈ 12-13 weeks)
         const weeklyTotals = {};
-
         allSales.forEach((tx) => {
           const txDate = dayjs(tx.createdAt);
           if (txDate.isBefore(threeMonthsAgo)) return;
-
-          // Create a key like "2025-W32"
           const weekKey = `W${txDate.week()}`;
-
-          if (!weeklyTotals[weekKey]) {
+          if (!weeklyTotals[weekKey])
             weeklyTotals[weekKey] = {
               name: weekKey,
               sales: 0,
               paid: 0,
               bills: 0,
             };
-          }
-
           weeklyTotals[weekKey].sales += tx.totalAmount;
-
-          if (tx.status === "Paid") {
+          if (tx.status === "Paid")
             weeklyTotals[weekKey].paid += tx.totalAmount;
-          } else if (tx.status === "Bill") {
+          else if (tx.status === "Bill")
             weeklyTotals[weekKey].bills += tx.totalAmount;
-          }
         });
 
-        // Convert object → sorted array for chart
-        const sortedWeeklyData = Object.values(weeklyTotals).sort((a, b) => {
-          return (
-            dayjs(a.name.split("-W")[0]).week(a.name.split("-W")[1]) -
-            dayjs(b.name.split("-W")[0]).week(b.name.split("-W")[1])
-          );
-        });
-
-        setComposedData(sortedWeeklyData);
+        setComposedData(Object.values(weeklyTotals));
       } catch (error) {
         console.error("Failed to fetch composed chart data", error);
       }
     };
-
     fetchComposedData();
   }, [filter]);
 
@@ -192,8 +220,7 @@ const Home = () => {
               <button
                 key={option}
                 onClick={() => setFilter(option)}
-                className={`px-3 py-2 rounded-full text-sm font-semibold shadow-sm transition border
-                ${
+                className={`px-3 py-2 rounded-full text-sm font-semibold shadow-sm transition border ${
                   filter === option
                     ? "bg-green-500 text-white"
                     : "bg-white text-gray-700"
@@ -226,10 +253,34 @@ const Home = () => {
             footerNum={billsPercentage}
           />
           <CardOne
-            title="Manunuzi"
+            title="Purchases (GRN)"
             icon={<RiProgress2Fill />}
             number={`${totalgrn.toLocaleString()} : TSh`}
             footerNum={manunuziPercentage}
+          />
+          <CardOne
+            title="Expenses"
+            icon={<RiProgress2Fill />}
+            number={`${totalExpenses.toLocaleString()} : TSh`}
+            footerNum={0}
+          />
+          <CardOne
+            title="Discounts"
+            icon={<RiProgress2Fill />}
+            number={`${totalDiscount.toLocaleString()} : TSh`}
+            footerNum={0}
+          />
+          <CardOne
+            title="Total Buying Price"
+            icon={<BsCashCoin />}
+            number={`${totalBuyingPrice.toLocaleString()} : TSh`}
+            footerNum={0}
+          />
+          <CardOne
+            title="Profit"
+            icon={<BsCashCoin />}
+            number={`${profit.toLocaleString()} : TSh`}
+            footerNum={0}
           />
         </div>
 

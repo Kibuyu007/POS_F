@@ -296,9 +296,25 @@ const Cart = ({ triggerRefreshMenu }) => {
               <input
                 type="number"
                 value={tradeDiscount}
-                onChange={(e) => setTradeDiscount(Number(e.target.value))}
+                onChange={(e) => {
+                  const value = Number(e.target.value);
+                  const maxDiscount = finalTotal * 0.1; // 10%
+
+                  if (value > maxDiscount) {
+                    setTradeDiscount(maxDiscount);
+                    setErrorMsg(
+                      `Discount cannot exceed 10% (${maxDiscount.toLocaleString()} /=)`
+                    );
+                  } else if (value < 0) {
+                    setTradeDiscount(0);
+                    setErrorMsg("Discount cannot be negative.");
+                  } else {
+                    setTradeDiscount(value);
+                    setErrorMsg("");
+                  }
+                }}
                 className="w-full px-4 py-2 rounded-lg border border-gray-300 focus:ring-green-400 focus:border-green-400"
-                placeholder="Enter discount amount"
+                placeholder={`Max: ${(finalTotal * 0.1).toLocaleString()} /=`}
               />
             </div>
           )}

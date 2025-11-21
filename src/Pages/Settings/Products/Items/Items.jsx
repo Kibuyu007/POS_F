@@ -7,7 +7,6 @@ import {
   searchItemsPending,
 } from "../../../../Redux/items"; // Assuming the itemsSlice is in the same directory
 
-
 //Pages
 import AddItem from "./AddItem";
 import EditItem from "./EditItem";
@@ -251,7 +250,11 @@ const Items = () => {
                 </th>
 
                 <th className="px-5 py-3 border-b-2 border-gray-200 bg-gray-200 text-center text-xs font-bold text-black uppercase tracking-wider">
-                  Price
+                  Buying Price
+                </th>
+
+                <th className="px-5 py-3 border-b-2 border-gray-200 bg-gray-200 text-center text-xs font-bold text-black uppercase tracking-wider">
+                 Selling Price
                 </th>
 
                 <th className="px-5 py-3 border-b-2 border-gray-200 bg-gray-200 text-center text-xs font-bold text-black uppercase tracking-wider">
@@ -324,6 +327,21 @@ const Items = () => {
                             </p>
                           </div>
                         </div>
+                      </td>
+
+                      <td
+                        className={`py-2 px-3  text-base border-x text-center font-semibold ${
+                          index == 0
+                            ? "border-t border-gray"
+                            : index == items?.length
+                            ? "border-y border-gray"
+                            : "border-t border-gray"
+                        } hover:bg-gray-100`}
+                      >
+                        <span className="ml-2 mr-3 rounded-full text-black">
+                          {" "}
+                          {formatPriceWithCommas(item.buyingPrice)}
+                        </span>
                       </td>
 
                       <td

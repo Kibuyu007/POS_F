@@ -1,42 +1,21 @@
-const CardOne = ({ title, icon, footerNum, number }) => {
+const CardOne = ({ title, icon, number }) => {
   return (
-    <div className="bg-[#d6d6d6] py-5 px-5 rounded-lg w-full sm:w-[48%] md:w-[100%] lg:w-[100%] xl:w-[100%] shadow-md md:flex-col-3">
-      <div className="flex items-start justify-between">
-        <h1 className="text-black text-lg font-bold tracking-wide">{title}</h1>
-        <button
-          className={`${
-            title === "Sales Today"
-              ? "bg-black text-white"
-              : title === "Paid"
-              ? "bg-GreenText"
-              : title === "Bills"
-              ? "bg-yellow-300 text-gray-500"
-              : "bg-white"
-          } p-3 text-2xl rounded-full`}
-        >
+    <div className="bg-gradient-to-r from-green-100 via-green-100 to-gray-200 rounded-xl shadow-md p-6 hover:shadow-lg transition-shadow duration-300 w-full sm:w-[48%] md:w-full lg:w-full">
+      {/* Top section: title + icon */}
+      <div className="flex justify-between items-center">
+        <h1 className="text-gray-800 font-semibold text-lg">{title}</h1>
+        <div className="bg-white/20 p-3 rounded-lg text-xl text-gray-700 backdrop-blur-sm">
           {icon}
-        </button>
+        </div>
       </div>
 
-      <div>
-        <h1 className="text-gray-600 text-xl font-bold mt-5">{number}</h1>
-        <h1 className="text-black font-bold text-2xl">
-          <span
-            className={`px-1 py-1 rounded-full text-black
-      ${
-        title === "Sales Today"
-          ? "text-amber-800"
-          : title === "Paid"
-          ? "text-green-600"
-          : title === "Bills"
-          ? "text-yellow-600"
-          : "text-blue-600"
-      }`}
-          >
-            {footerNum}%
-          </span>
-        </h1>
+      {/* Main number */}
+      <div className="mt-6">
+        <h1 className="text-2xl font-bold text-gray-900">{number}</h1>
       </div>
+
+      {/* Decorative subtle gradient line */}
+      <div className="mt-4 h-1 w-16 rounded-full bg-gradient-to-r from-green-800 to-indigo-300 opacity-40"></div>
     </div>
   );
 };

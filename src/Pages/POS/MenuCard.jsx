@@ -5,9 +5,8 @@ import { addItems } from "../../Redux/cartSlice";
 import { FaSearch } from "react-icons/fa";
 import toast from "react-hot-toast";
 
-
 //API
-import BASE_URL from "../../Utils/config"
+import BASE_URL from "../../Utils/config";
 
 const MenuCard = ({ refreshTrigger }) => {
   const cartData = useSelector((state) => state.cart.cart);
@@ -255,38 +254,67 @@ const MenuCard = ({ refreshTrigger }) => {
 
       <hr className="border-[#2a2a2a] border-t-2 mt-4" />
 
+      {/* ITEM CARD */}
       <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6 py-6 w-full">
         {items.map((item) => (
           <div
             key={item._id}
-            className="bg-gradient-to-r from-blue-100 to-green-200 rounded-2xl shadow-lg p-6 flex flex-col justify-between transition-all hover:shadow-xl"
+            className="
+        bg-gradient-to-br from-green-50 via-green-50 to-gray-100
+        rounded-2xl shadow-sm hover:shadow-md
+        border border-gray-200
+        p-5 flex flex-col justify-between
+        transition-all hover:-translate-y-1 cursor-pointer
+      "
           >
-            <h2 className="text-2xl font-bold text-center text-gray-800 mb-4">
-              {item.name}
-            </h2>
+            {/* Header */}
+            <div className="flex justify-between items-center mb-3">
+              <h2 className="text-lg font-semibold text-gray-800">
+                {item.name}
+              </h2>
+              <span className="text-xs text-gray-500 uppercase">
+                {item.category?.name}
+              </span>
+            </div>
 
-            <div className="flex justify-between items-center text-base text-gray-700 mb-4">
-              <div>
-                <p className="font-semibold">Price</p>
-                <p className="text-gray-600 px-4 bg-gray-300 py-1 rounded-full">
-                  Tsh {item.price.toLocaleString()} /=
-                </p>
+            {/* Prices */}
+            <div className="flex justify-between items-center mb-3">
+              <div className="flex flex-col">
+                <span className="text-gray-500 text-xs">Selling</span>
+                <span className="font-semibold mt-1 px-3 py-1 rounded-lg bg-green-50 text-green-800">
+                  Tsh {item.price.toLocaleString()}
+                </span>
               </div>
-              <div className="text-right">
-                <p className="font-semibold">Stock</p>
-                <p
-                  className={`text-sm text-center font-medium ${
-                    item.itemQuantity === 0
-                      ? "text-black bg-red-500 rounded-full py-2 px-2"
-                      : "text-gray-600  bg-green-400 rounded-full py-1 px-4"
-                  }`}
-                >
-                  ({item.itemQuantity})
-                </p>
+              <div className="flex flex-col">
+                <span className="text-gray-500 text-xs">Buying</span>
+                <span className="font-medium text-gray-700 mt-1 px-3 py-1 rounded-lg bg-gray-50">
+                  Tsh {item.buyingPrice.toLocaleString()}
+                </span>
               </div>
             </div>
 
-            <div className="flex justify-center mb-4">
+            {/* Stock & Status */}
+            <div className="flex justify-between items-center mb-4">
+              <span
+                className={`text-sm font-medium px-3 py-1 rounded-full ${
+                  item.itemQuantity === 0
+                    ? "bg-red-100 text-red-800"
+                    : item.itemQuantity <= item.reOrder
+                    ? "bg-yellow-100 text-yellow-800"
+                    : "bg-green-100 text-green-800"
+                }`}
+              >
+                {item.itemQuantity.toLocaleString()} in stock
+              </span>
+              {item.status === "Expired" && (
+                <span className="text-xs bg-red-50 text-red-700 px-2 py-1 rounded-full">
+                  Expired
+                </span>
+              )}
+            </div>
+
+            {/* Quantity & Button */}
+            <div className="flex flex-col gap-3">
               <input
                 type="number"
                 min="1"
@@ -294,41 +322,15 @@ const MenuCard = ({ refreshTrigger }) => {
                 onChange={(e) =>
                   handleQuantityChange(item._id, parseInt(e.target.value))
                 }
-                className="w-20 text-center border border-gray-300 rounded-md py-2"
+                className="w-full text-center py-2 border border-gray-300 rounded-lg focus:ring-1 focus:ring-gray-400 focus:outline-none"
               />
+              <button
+                onClick={() => handleAddCart(item)}
+                className="w-full py-2 rounded-full bg-gray-200 hover:bg-gray-300 text-gray-800 font-semibold transition-all shadow-sm"
+              >
+                Weka kwenye List
+              </button>
             </div>
-
-            <div className="flex mb-4 justify-center gap-2">
-              {item.status === "Expired" && (
-                <>
-                  <span className="bg-red-50 px-3 text-center py-1 rounded-full">
-                    x
-                  </span>
-                  <span className="bg-red-100 px-3 text-center py-1 rounded-full">
-                    x
-                  </span>
-                  <span className="bg-red-200 px-3 text-center py-1 rounded-full">
-                    x
-                  </span>
-                  <span className="bg-red-300 px-3 text-center py-1 rounded-full">
-                    x
-                  </span>
-                  <span className="bg-red-400 px-3 text-center py-1 rounded-full">
-                    x
-                  </span>
-                  <span className="bg-red-500 px-3 text-center py-1 rounded-full">
-                    x
-                  </span>
-                </>
-              )}
-            </div>
-
-            <button
-              onClick={() => handleAddCart(item)}
-              className="w-full bg-gray-300 hover:bg-green-300 text-black py-2 rounded-full font-semibold text-base"
-            >
-              Weka kwenye List
-            </button>
           </div>
         ))}
       </div>

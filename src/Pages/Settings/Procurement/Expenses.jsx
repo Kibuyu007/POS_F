@@ -293,10 +293,10 @@ const Expenses = () => {
                 <th className="border border-gray-300 px-4 py-2 text-left">
                   Details
                 </th>
-                <th className="border border-gray-300 px-4 py-2 text-left">
+                <th className="border border-gray-300 px-4 py-2 text-center">
                   Date
                 </th>
-                <th className="border border-gray-300 px-4 py-2 text-left">
+                <th className="border border-gray-300 px-4 py-2 text-center">
                   Created By
                 </th>
               </tr>
@@ -326,11 +326,11 @@ const Expenses = () => {
                         {exp.details}
                       </p>
                     </td>
-                    <td className="pl-5 font-bold bg-gray-100">
-                      <p>{dayjs(exp.date).format("YYYY-MM-DD")}</p>
+                    <td className="pl-5 font-bold bg-gray-100 text-center">
+                      <p>{dayjs(exp.createdAt).format("YYYY-MM-DD")}</p>
                     </td>
                     <td className="pl-5 font-bold bg-gray-200">
-                      <p className="text-sm leading-none text-gray-600">
+                      <p className="text-sm leading-none text-gray-600 text-center">
                         {exp.createdBy
                           ? `${exp.createdBy.firstName} ${exp.createdBy.lastName}`
                           : "-"}
