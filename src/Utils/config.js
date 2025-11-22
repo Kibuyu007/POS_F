@@ -1,3 +1,3 @@
 // config.js
-const BASE_URL = "http://localhost:4004"; //"http:165.232.185.217:5005"; 
+const BASE_URL ="http:165.232.185.217:6006"; 
 export default BASE_URL;
