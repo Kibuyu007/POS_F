@@ -25,6 +25,9 @@ const Home = () => {
   const [filter, setFilter] = useState("day");
   const [composedData, setComposedData] = useState([]);
 
+  // NEW: loading state
+  const [loading, setLoading] = useState(true);
+
   const getStartDate = (filter) => {
     const now = dayjs();
     switch (filter) {
@@ -45,7 +48,9 @@ const Home = () => {
 
   // FETCH SALES TRANSACTIONS
   useEffect(() => {
-    const fetchSales = async () => {
+    const fetchData = async () => {
+      setLoading(true);
+
       try {
         const res = await axios.get(`${BASE_URL}/api/transactions/all`, {
           withCredentials: true,
@@ -57,61 +62,57 @@ const Home = () => {
           dayjs(tx.createdAt).isAfter(startDate)
         );
 
-        // Total sales
         const salesTotal = filteredSales.reduce(
           (sum, tx) => sum + tx.totalAmount,
           0
         );
         setTotalSales(salesTotal);
 
-        // Paid total
         setTotalPaid(
           filteredSales
             .filter((tx) => tx.status === "Paid")
             .reduce((sum, tx) => sum + tx.totalAmount, 0)
         );
 
-        // Bills total
         setTotalBills(
           filteredSales
             .filter((tx) => tx.status === "Bill")
             .reduce((sum, tx) => sum + tx.totalAmount, 0)
         );
 
-        // Total discount
         const discountTotal = filteredSales.reduce(
           (sum, tx) => sum + (tx.tradeDiscount || 0),
           0
         );
         setTotalDiscount(discountTotal);
 
-        // Billed transactions
         setBilled(filteredSales.filter((tx) => tx.status === "Bill"));
 
-        // Total buying price
         const buyingTotal = filteredSales.reduce((sum, tx) => {
           const txBuying = tx.items.reduce(
             (s, item) => s + (item.quantity || 0) * (item.buyingPrice || 0),
             0
           );
-
           return sum + txBuying;
         }, 0);
+
         setTotalBuyingPrice(buyingTotal);
 
-        // Profit = Sales - (Expenses + Discounts + BuyingPrice)
         setProfit(salesTotal - (totalExpenses + discountTotal + buyingTotal));
       } catch (error) {
         console.error("Failed to fetch transactions", error);
+      } finally {
+        setLoading(false);
       }
     };
 
-    fetchSales();
+    fetchData();
   }, [filter, totalExpenses]);
 
   // FETCH EXPENSES
   useEffect(() => {
     const fetchExpenses = async () => {
+      setLoading(true);
       try {
         const res = await axios.get(`${BASE_URL}/api/manunuzi/matumiziYote`);
         const all = res.data;
@@ -120,6 +121,7 @@ const Home = () => {
         const filtered = all.filter((exp) =>
           dayjs(exp.createdAt).isAfter(startDate)
         );
+
         const total = filtered.reduce(
           (sum, exp) => sum + (Number(exp.amount) || 0),
           0
@@ -127,14 +129,17 @@ const Home = () => {
         setTotalExpenses(total);
       } catch (error) {
         console.error("Failed to fetch expenses", error);
+      } finally {
+        setLoading(false);
       }
     };
     fetchExpenses();
   }, [filter]);
 
-  // FETCH GRN (MANUNUZI)
+  // FETCH GRN
   useEffect(() => {
     const fetchGrn = async () => {
+      setLoading(true);
       try {
         const [resPo, resNonPo] = await Promise.all([
           axios.get(`${BASE_URL}/api/grn/allGrnPo`, { withCredentials: true }),
@@ -158,6 +163,8 @@ const Home = () => {
         setTotalgrn(poTodayCost + nonPoTodayCost);
       } catch (error) {
         console.error("Failed to fetch GRNs:", error);
+      } finally {
+        setLoading(false);
       }
     };
     fetchGrn();
@@ -238,49 +245,49 @@ const Home = () => {
             title="Sales"
             icon={<BsCashCoin />}
             number={`${totalSales.toLocaleString()} : TSh`}
-            footerNum={100}
+            loading={loading}
           />
           <CardOne
             title="Paid"
             icon={<BsCashCoin />}
             number={`${totalPaid.toLocaleString()} : TSh`}
-            footerNum={paidPercentage}
+            loading={loading}
           />
           <CardOne
             title="Bills"
             icon={<RiProgress2Fill />}
             number={`${totalBills.toLocaleString()} : TSh`}
-            footerNum={billsPercentage}
+            loading={loading}
           />
           <CardOne
             title="Purchases (GRN)"
             icon={<RiProgress2Fill />}
             number={`${totalgrn.toLocaleString()} : TSh`}
-            footerNum={manunuziPercentage}
+            loading={loading}
           />
           <CardOne
             title="Expenses"
             icon={<RiProgress2Fill />}
             number={`${totalExpenses.toLocaleString()} : TSh`}
-            footerNum={0}
+            loading={loading}
           />
           <CardOne
             title="Discounts"
             icon={<RiProgress2Fill />}
             number={`${totalDiscount.toLocaleString()} : TSh`}
-            footerNum={0}
+            loading={loading}
           />
           <CardOne
             title="Total Buying Price"
             icon={<BsCashCoin />}
             number={`${totalBuyingPrice.toLocaleString()} : TSh`}
-            footerNum={0}
+            loading={loading}
           />
           <CardOne
             title="Profit"
             icon={<BsCashCoin />}
             number={`${profit.toLocaleString()} : TSh`}
-            footerNum={0}
+            loading={loading}
           />
         </div>
 
