@@ -7,7 +7,7 @@ import axios from "axios";
 //API
 import BASE_URL from "../../../../Utils/config";
 import toast from "react-hot-toast";
-import { editItem } from "../../../../../../back/Controlers/Items/items";
+
 
 const EditItem = ({ showModal, setShowModal, item, onItemUpdated }) => {
   const { category } = useSelector((state) => state.category);
