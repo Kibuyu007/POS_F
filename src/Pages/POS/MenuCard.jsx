@@ -20,13 +20,13 @@ const MenuCard = ({ refreshTrigger }) => {
   const [isLoading, setIsLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
   const [searchQuery, setSearchQuery] = useState("");
-  const [barcode, setBarcode] = useState(""); // <-- capture scanner input
+  const [barcode, setBarcode] = useState("");
 
   const filteredCategories = categories.filter((cat) =>
     cat.name.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  // --- 🔹 Fetch categories on mount ---
+  // Fetch categories on mount
   useEffect(() => {
     const fetchCategories = async () => {
       try {
@@ -74,7 +74,7 @@ const MenuCard = ({ refreshTrigger }) => {
     fetchCategories();
   }, [refreshTrigger]);
 
-  // --- 🔹 Fetch items ---
+  // Fetch items
   const fetchItems = useCallback(async (categoryId) => {
     try {
       const { data } = await axios.get(
@@ -96,7 +96,7 @@ const MenuCard = ({ refreshTrigger }) => {
     }
   }, []);
 
-  // --- 🔹 Search by name or barcode ---
+  // Search by name or barcode
   const searchItemsByCategoryAndName = async (categoryId, searchTerm) => {
     try {
       const res = await axios.get(`${BASE_URL}/api/items/searchInPos`, {
@@ -119,7 +119,7 @@ const MenuCard = ({ refreshTrigger }) => {
     }
   };
 
-  // --- 🔹 Handle barcode scanning ---
+  // Handle barcode scanning
   useEffect(() => {
     const handleKeyDown = (e) => {
       if (e.key === "Enter" && barcode) {
@@ -156,7 +156,18 @@ const MenuCard = ({ refreshTrigger }) => {
     }
   };
 
-  // --- 🔹 Add to cart ---
+  //  Handle quantity change
+  const handleQuantityChange = (itemId, value) => {
+    // Prevent NaN and negative numbers
+    const qty = value > 0 ? value : 1;
+
+    setItemCounts((prev) => ({
+      ...prev,
+      [itemId]: qty,
+    }));
+  };
+
+  //  Add to cart
   const handleAddCart = (item) => {
     if (!item.price || item.price === 0) {
       toast.error("Bidhaa haina Bei, weka bei ndo uendelee na Mauzo ");
@@ -324,6 +335,7 @@ const MenuCard = ({ refreshTrigger }) => {
                 }
                 className="w-full text-center py-2 border border-gray-300 rounded-lg focus:ring-1 focus:ring-gray-400 focus:outline-none"
               />
+
               <button
                 onClick={() => handleAddCart(item)}
                 className="w-full py-2 rounded-full bg-gray-200 hover:bg-gray-300 text-gray-800 font-semibold transition-all shadow-sm"
