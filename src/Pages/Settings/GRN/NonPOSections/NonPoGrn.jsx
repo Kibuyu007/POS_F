@@ -310,12 +310,17 @@ const NonPoGrn = () => {
               >
                 Received Date
               </label>
+
               <DatePicker
+                defaultValue={dayjs()} // Set default to TODAY
+                maxDate={dayjs()} // Prevent future dates
                 views={["year", "month", "day"]}
                 format="YYYY-MM-DD"
-                value={regi.receivingDate ? dayjs(regi.receivingDate) : null}
+                value={
+                  regi.receivingDate ? dayjs(regi.receivingDate) : dayjs() // If empty, also show today
+                }
                 onChange={(newValue) =>
-                  handleReceivingDate(newValue ? newValue.toDate() : null)
+                  handleReceivingDate(newValue ? newValue.toDate() : new Date())
                 }
                 slotProps={{
                   textField: {

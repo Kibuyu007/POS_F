@@ -81,7 +81,7 @@ const Section2 = ({ onAddItem }) => {
       };
 
       // Parse numbers safely
-      const units = parseInt(updatedForm.units) || 0;
+      const units = parseFloat(updatedForm.units) || 0;
       const itemsPerUnit = parseInt(updatedForm.itemsPerUnit) || 0;
       const foc = parseInt(updatedForm.foc) || 0;
       const rejected = parseInt(updatedForm.rejected) || 0;

@@ -230,6 +230,7 @@ const CompletedNonPO = () => {
                         "Buy Price",
                         "Total Cost",
                         "Sell Price",
+                        "Estimated Sales",
                         "Estimated Profit",
                         "Status",
                       ].map((header) => (
@@ -256,8 +257,9 @@ const CompletedNonPO = () => {
                         const paid = item.quantity || 0;
                         const totalQty = billed + paid;
                         const totalCost = totalQty * (item.buyingPrice || 0);
-                        const estimatedProfit =
+                        const estimatedSales =
                           totalQty * (item.sellingPrice || 0);
+                        const estimatedProfit = estimatedSales - totalCost || 0;
 
                         return (
                           <tr key={item._id} className="border-b ... font-bold">
@@ -268,6 +270,7 @@ const CompletedNonPO = () => {
                             <td>{item.buyingPrice?.toLocaleString() || 0}</td>
                             <td>{totalCost.toLocaleString()}</td>
                             <td>{item.sellingPrice?.toLocaleString() || 0}</td>
+                            <td>{estimatedSales.toLocaleString()}</td>
                             <td>{estimatedProfit.toLocaleString()}</td>
                             <td
                               className={`py-2 px-3 capitalize font-bold ${
