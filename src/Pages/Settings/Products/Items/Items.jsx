@@ -5,7 +5,7 @@ import {
   itemsPending,
   itemsError,
   searchItemsPending,
-} from "../../../../Redux/items"; // Assuming the itemsSlice is in the same directory
+} from "../../../../Redux/items";
 
 //Pages
 import AddItem from "./AddItem";
@@ -23,13 +23,7 @@ const Items = () => {
   const dispatch = useDispatch();
 
   // Redux State
-  const {
-    items = [],
-    currentPage = 1,
-    totalPages,
-    itemsPerPage = 6,
-    totalItems = 0,
-  } = useSelector((state) => state.items);
+  const { items = [] } = useSelector((state) => state.items);
   const { category } = useSelector((state) => state.category);
 
   const [showError, setShowError] = useState("");
@@ -37,13 +31,17 @@ const Items = () => {
   // Filter and Search State
   const [filterStatus, setFilterStatus] = useState("All");
   const [searchQuery, setSearchQuery] = useState("");
-  const [categoryFilter, setCategoryFilter] = useState("All"); // New category filter state
+  const [categoryFilter, setCategoryFilter] = useState("All");
 
-  // Fetch data with pagination and search
+  // Pagination State
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage] = useState(10); // You can change this number
+
+  // Fetch data
   const fetchData = async () => {
     try {
       dispatch(itemsPending());
-      let url = `${BASE_URL}/api/items/getAllItems?page=${currentPage}&limit=${itemsPerPage}&search=${searchQuery}`;
+      let url = `${BASE_URL}/api/items/getAllItems?search=${searchQuery}`;
 
       if (filterStatus !== "All") {
         url += `&status=${filterStatus.toLowerCase()}`;
@@ -59,6 +57,7 @@ const Items = () => {
       const data = await response.json();
       dispatch(itemsFetch(data));
       setShowError("");
+      setCurrentPage(1); // Reset to first page when filters change
     } catch (error) {
       console.error("Error fetching items:", error);
       setShowError(
@@ -70,22 +69,41 @@ const Items = () => {
 
   useEffect(() => {
     fetchData();
-  }, [currentPage, searchQuery, categoryFilter, filterStatus]);
+  }, [searchQuery, categoryFilter, filterStatus]);
 
-  // Handlers for Pagination
+  // Filter items based on status and category
+  const filteredItems = items.filter((item) => {
+    const isExpired = new Date(item.expireDate) < new Date();
+    return (
+      (categoryFilter === "All" || item.category === categoryFilter) &&
+      (filterStatus === "All" ||
+        (filterStatus === "Expired" && isExpired) ||
+        (filterStatus === "Active" && !isExpired))
+    );
+  });
+
+  // Pagination calculations
+  const indexOfLastItem = currentPage * itemsPerPage;
+  const indexOfFirstItem = indexOfLastItem - itemsPerPage;
+  const currentItems = filteredItems.slice(indexOfFirstItem, indexOfLastItem);
+  const totalPages = Math.ceil(filteredItems.length / itemsPerPage);
+  const totalItems = filteredItems.length;
+
+  // Next page
   const nextPage = () => {
     if (currentPage < totalPages) {
-      dispatch(itemsFetch({ ...items, currentPage: currentPage + 1 }));
+      setCurrentPage(currentPage + 1);
     }
   };
 
+  // Previous page
   const prevPage = () => {
     if (currentPage > 1) {
-      dispatch(itemsFetch({ ...items, currentPage: currentPage - 1 }));
+      setCurrentPage(currentPage - 1);
     }
   };
 
-  //formating Price
+  // Format price with commas
   const formatPriceWithCommas = (price) => {
     return new Intl.NumberFormat("en-US").format(price);
   };
@@ -146,7 +164,7 @@ const Items = () => {
               } hover:text-black hover:bg-indigo-100 border-gray-400`}
               onClick={() => {
                 setFilterStatus(status);
-                dispatch(itemsFetch({ ...items, currentPage: 1 }));
+                setCurrentPage(1);
               }}
             >
               {status}
@@ -159,10 +177,9 @@ const Items = () => {
             value={categoryFilter}
             onChange={(e) => {
               setCategoryFilter(e.target.value);
-              // Reset to first page when category filter changes
-              dispatch(itemsFetch({ ...items }));
+              setCurrentPage(1);
             }}
-            className="ml-4 px-6 py-3 border border-gray-400 rounded-full bg-gray-200/70  text-black"
+            className="ml-4 px-6 py-3 border border-gray-400 rounded-full bg-gray-200/70 text-black"
           >
             <option value="All">All Categories</option>
             {category.map((category) => (
@@ -184,14 +201,14 @@ const Items = () => {
             onChange={(e) => {
               setSearchQuery(e.target.value);
               dispatch(searchItemsPending());
-              dispatch(itemsFetch({ ...items, currentPage: 1 }));
+              setCurrentPage(1);
             }}
           />
         </div>
 
         <button
           onClick={() => setShowModalAdd(true)}
-          className="mr-10 focus:ring-2 focus:ring-offset-2  mt-4 sm:mt-0 inline-flex items-start justify-start px-6 py-3 bg-green-300 hover:bg-gray-200 focus:outline-none rounded"
+          className="mr-10 focus:ring-2 focus:ring-offset-2 mt-4 sm:mt-0 inline-flex items-start justify-start px-6 py-3 bg-green-300 hover:bg-gray-200 focus:outline-none rounded"
         >
           <p className="text-sm font-medium leading-none text-black">
             + Add Item
@@ -244,39 +261,30 @@ const Items = () => {
                 <th className="px-5 py-3 border-b-2 border-gray-200 bg-gray-200 text-center text-xs font-bold text-black uppercase tracking-wider">
                   SN
                 </th>
-
                 <th className="px-5 py-3 border-b-2 border-gray-200 bg-gray-200 text-center text-xs font-bold text-black uppercase tracking-wider">
                   Product
                 </th>
-
                 <th className="px-5 py-3 border-b-2 border-gray-200 bg-gray-200 text-center text-xs font-bold text-black uppercase tracking-wider">
                   Buying Price
                 </th>
-
                 <th className="px-5 py-3 border-b-2 border-gray-200 bg-gray-200 text-center text-xs font-bold text-black uppercase tracking-wider">
                  Selling Price
                 </th>
-
                 <th className="px-5 py-3 border-b-2 border-gray-200 bg-gray-200 text-center text-xs font-bold text-black uppercase tracking-wider">
                   Quantity
                 </th>
-
                 <th className="px-5 py-3 border-b-2 border-gray-200 bg-gray-200 text-center text-xs font-bold text-black uppercase tracking-wider">
                   Barcode
                 </th>
-
                 <th className="px-5 py-3 border-b-2 border-gray-200 bg-gray-200 text-center text-xs font-bold text-black uppercase tracking-wider">
                   Manf Date
                 </th>
-
                 <th className="px-5 py-3 border-b-2 border-gray-200 bg-gray-200 text-center text-xs font-bold text-black uppercase tracking-wider">
                   Exp Date
                 </th>
-
                 <th className="px-5 py-3 border-b-2 border-gray-200 bg-gray-200 text-center text-xs font-bold text-black uppercase tracking-wider">
                   Category
                 </th>
-
                 <th className="px-5 py-3 border-b-2 border-gray-200 bg-gray-200 text-center text-xs font-bold text-black uppercase tracking-wider">
                   Action
                 </th>
@@ -285,283 +293,268 @@ const Items = () => {
             <tr className="h-3" />
 
             <tbody>
-              {items
-                .filter((item) => {
-                  const isExpired = new Date(item.expireDate) < new Date();
-                  return (
-                    (categoryFilter === "All" ||
-                      item.category === categoryFilter) &&
-                    (filterStatus === "All" ||
-                      (filterStatus === "Expired" && isExpired) ||
-                      (filterStatus === "Active" && !isExpired))
-                  );
-                })
-                .map((item, index) => (
-                  <>
-                    <tr
-                      key={item._id}
-                      className="h-16 border-gray-500 shadow-md bg-gray-100"
+              {currentItems.map((item, index) => (
+                <>
+                  <tr
+                    key={item._id}
+                    className="h-16 border-gray-500 shadow-md bg-gray-100"
+                  >
+                    <td
+                      className={`pl-5 font-bold  ${
+                        item.status === "Expired" ? "bg-red-500" : ""
+                      }`}
                     >
-                      <td
-                        className={`pl-5 font-bold  ${
-                          item.status === "Expired" ? "bg-red-500" : ""
-                        }`}
-                      >
-                        <p className="text-sm leading-none text-gray-800">
-                          {index + 1 + (currentPage - 1) * itemsPerPage}
-                        </p>
-                      </td>
-                      <td
-                        className={`py-2 px-3 font-normal text-base border-x bg-gray-200 ${
-                          index == 0
-                            ? "border-t border-gray"
-                            : index == items?.length
-                            ? "border-y border-gray"
-                            : "border-t border-gray"
-                        } hover:bg-gray-100`}
-                      >
-                        <div className="flex items-center">
-                          <div className="ml-3">
-                            <p className="text-gray-900 whitespace-no-wrap  capitalize text-left">
-                              {item.name}
-                            </p>
-                          </div>
+                      <p className="text-sm leading-none text-gray-800">
+                        {indexOfFirstItem + index + 1}
+                      </p>
+                    </td>
+                    <td
+                      className={`py-2 px-3 font-normal text-base border-x bg-gray-200 ${
+                        index === 0
+                          ? "border-t border-gray"
+                          : index === currentItems.length - 1
+                          ? "border-y border-gray"
+                          : "border-t border-gray"
+                      } hover:bg-gray-100`}
+                    >
+                      <div className="flex items-center">
+                        <div className="ml-3">
+                          <p className="text-gray-900 whitespace-no-wrap capitalize text-left">
+                            {item.name}
+                          </p>
                         </div>
-                      </td>
+                      </div>
+                    </td>
 
-                      <td
-                        className={`py-2 px-3  text-base border-x text-center font-semibold ${
-                          index == 0
-                            ? "border-t border-gray"
-                            : index == items?.length
-                            ? "border-y border-gray"
-                            : "border-t border-gray"
-                        } hover:bg-gray-100`}
-                      >
-                        <span className="ml-2 mr-3 rounded-full text-black">
-                          {" "}
-                          {formatPriceWithCommas(item.buyingPrice)}
-                        </span>
-                      </td>
+                    <td
+                      className={`py-2 px-3 text-base border-x text-center font-semibold ${
+                        index === 0
+                          ? "border-t border-gray"
+                          : index === currentItems.length - 1
+                          ? "border-y border-gray"
+                          : "border-t border-gray"
+                      } hover:bg-gray-100`}
+                    >
+                      <span className="ml-2 mr-3 rounded-full text-black">
+                        {formatPriceWithCommas(item.buyingPrice)}
+                      </span>
+                    </td>
 
-                      <td
-                        className={`py-2 px-3  text-base border-x text-center font-semibold ${
-                          index == 0
-                            ? "border-t border-gray"
-                            : index == items?.length
-                            ? "border-y border-gray"
-                            : "border-t border-gray"
-                        } hover:bg-gray-100`}
-                      >
-                        <span className="ml-2 mr-3 rounded-full text-black">
-                          {" "}
-                          {formatPriceWithCommas(item.price)}
-                        </span>
-                      </td>
+                    <td
+                      className={`py-2 px-3 text-base border-x text-center font-semibold ${
+                        index === 0
+                          ? "border-t border-gray"
+                          : index === currentItems.length - 1
+                          ? "border-y border-gray"
+                          : "border-t border-gray"
+                      } hover:bg-gray-100`}
+                    >
+                      <span className="ml-2 mr-3 rounded-full text-black">
+                        {formatPriceWithCommas(item.price)}
+                      </span>
+                    </td>
 
-                      <td
-                        className={`py-2 px-3 font-normal text-base border-x text-center bg-gray-200 ${
-                          index == 0
-                            ? "border-t border-gray"
-                            : index == items?.length
-                            ? "border-y border-gray"
-                            : "border-t border-gray"
-                        } hover:bg-gray-100`}
+                    <td
+                      className={`py-2 px-3 font-normal text-base border-x text-center bg-gray-200 ${
+                        index === 0
+                          ? "border-t border-gray"
+                          : index === currentItems.length - 1
+                          ? "border-y border-gray"
+                          : "border-t border-gray"
+                      } hover:bg-gray-100`}
+                    >
+                      <span
+                        className={`ml-2 mr-3 rounded-full ${
+                          item.reOrderStatus === "Low"
+                            ? "bg-red-500 text-white"
+                            : "bg-blue-200"
+                        } px-2 py-0.5 text-blue-800`}
                       >
-                        <span
-                          className={`ml-2 mr-3 rounded-full ${
-                            item.reOrderStatus === "Low"
-                              ? "bg-red-500 text-white"
-                              : "bg-blue-200"
-                          }  px-2 py-0.5 text-blue-800`}
-                        >
-                          {formatPriceWithCommas(item.itemQuantity)}
-                        </span>
-                      </td>
-                      <td
-                        className={`py-2 px-3 font-normal text-base border-x ${
-                          index == 0
-                            ? "border-t border-gray"
-                            : index == items?.length
-                            ? "border-y border-gray"
-                            : "border-t border-gray"
-                        } hover:bg-gray-100`}
-                      >
-                        <div className="flex flex-col items-center gap-2">
-                          {/* Print button */}
-                          <button
-                            onClick={() => handlePrint(item)}
-                            className="whitespace-nowrap bg-slate-200 text-black rounded-md shadow-md py-1 px-4 hover:bg-slate-300"
-                          >
-                            Print Barcode
-                          </button>
-                        </div>
-                      </td>
-
-                      <td
-                        className={`py-2 px-3 font-normal text-base border-x text-center bg-green-200 shadow-md ${
-                          index == 0
-                            ? "border-t border-gray"
-                            : index == items?.length
-                            ? "border-y border-gray"
-                            : "border-t border-gray"
-                        } hover:bg-gray-100`}
-                      >
-                        <p className="text-gray-900 whitespace-no-wrap">
-                          {new Date(item.manufactureDate).toLocaleDateString()}
-                        </p>
-                      </td>
-
-                      <td
-                        className={`py-2 px-3 font-normal text-base border-x text-center bg-red-100 shadow-md ${
-                          index == 0
-                            ? "border-t border-gray"
-                            : index == items?.length
-                            ? "border-y border-gray"
-                            : "border-t border-gray"
-                        } hover:bg-gray-100`}
-                      >
-                        <p className="text-gray-900 whitespace-no-wrap">
-                          {new Date(item.expireDate).toLocaleDateString()}
-                        </p>
-                      </td>
-
-                      <td
-                        className={`py-2 px-3 font-normal text-base border-x text-center bg-gray-200 ${
-                          index == 0
-                            ? "border-t border-gray"
-                            : index == items?.length
-                            ? "border-y border-gray"
-                            : "border-t border-gray"
-                        } hover:bg-gray-100`}
-                      >
-                        <p className="text-gray-900 whitespace-no-wrap capitalize">
-                          {category.find((u) => u._id === item.category)?.name}
-                        </p>
-                      </td>
-                      <td className="pl-4 gap-2 font-bold">
+                        {formatPriceWithCommas(item.itemQuantity)}
+                      </span>
+                    </td>
+                    <td
+                      className={`py-2 px-3 font-normal text-base border-x ${
+                        index === 0
+                          ? "border-t border-gray"
+                          : index === currentItems.length - 1
+                          ? "border-y border-gray"
+                          : "border-t border-gray"
+                      } hover:bg-gray-100`}
+                    >
+                      <div className="flex flex-col items-center gap-2">
                         <button
-                          onClick={() => {
-                            setShowModalEdit(true);
-                            setModifiedItem(item);
-                          }}
-                          className="focus:ring-1 focus:ring-offset-2 focus:ring-blue-300 text-sm leading-none text-gray-600 py-3 px-5 bg-gray-100 rounded hover:bg-gray-200"
+                          onClick={() => handlePrint(item)}
+                          className="whitespace-nowrap bg-slate-200 text-black rounded-md shadow-md py-1 px-4 hover:bg-slate-300"
                         >
-                          <AiTwotoneEdit size={20} />
+                          Print Barcode
                         </button>
-                      </td>
-                    </tr>
-                    <tr className="h-4" />
-                  </>
-                ))}
+                      </div>
+                    </td>
+
+                    <td
+                      className={`py-2 px-3 font-normal text-base border-x text-center bg-green-200 shadow-md ${
+                        index === 0
+                          ? "border-t border-gray"
+                          : index === currentItems.length - 1
+                          ? "border-y border-gray"
+                          : "border-t border-gray"
+                      } hover:bg-gray-100`}
+                    >
+                      <p className="text-gray-900 whitespace-no-wrap">
+                        {new Date(item.manufactureDate).toLocaleDateString()}
+                      </p>
+                    </td>
+
+                    <td
+                      className={`py-2 px-3 font-normal text-base border-x text-center bg-red-100 shadow-md ${
+                        index === 0
+                          ? "border-t border-gray"
+                          : index === currentItems.length - 1
+                          ? "border-y border-gray"
+                          : "border-t border-gray"
+                      } hover:bg-gray-100`}
+                    >
+                      <p className="text-gray-900 whitespace-no-wrap">
+                        {new Date(item.expireDate).toLocaleDateString()}
+                      </p>
+                    </td>
+
+                    <td
+                      className={`py-2 px-3 font-normal text-base border-x text-center bg-gray-200 ${
+                        index === 0
+                          ? "border-t border-gray"
+                          : index === currentItems.length - 1
+                          ? "border-y border-gray"
+                          : "border-t border-gray"
+                      } hover:bg-gray-100`}
+                    >
+                      <p className="text-gray-900 whitespace-no-wrap capitalize">
+                        {category.find((u) => u._id === item.category)?.name}
+                      </p>
+                    </td>
+                    <td className="pl-4 gap-2 font-bold">
+                      <button
+                        onClick={() => {
+                          setShowModalEdit(true);
+                          setModifiedItem(item);
+                        }}
+                        className="focus:ring-1 focus:ring-offset-2 focus:ring-blue-300 text-sm leading-none text-gray-600 py-3 px-5 bg-gray-100 rounded hover:bg-gray-200"
+                      >
+                        <AiTwotoneEdit size={20} />
+                      </button>
+                    </td>
+                  </tr>
+                  <tr className="h-4" />
+                </>
+              ))}
             </tbody>
           </table>
 
           {/* Pagination */}
-          <div className="flex items-center justify-between border-t border-gray-200 bg-white py-3 sm:px-6">
-            <p className="text-sm text-gray-700">
-              Showing{" "}
-              <span className="font-medium">
-                {(currentPage - 1) * itemsPerPage + 1}
-              </span>{" "}
-              to{" "}
-              <span className="font-medium">
-                {Math.min(currentPage * itemsPerPage, totalItems)}
-              </span>{" "}
-              of <span className="font-medium">{totalItems}</span> results
-            </p>
+          {totalPages > 1 && (
+            <div className="flex items-center justify-between border-t border-gray-200 bg-white py-3 mt-2">
+              <p className="text-sm text-gray-700">
+                Showing{" "}
+                <span className="font-medium">
+                  {(currentPage - 1) * itemsPerPage + 1}
+                </span>{" "}
+                to{" "}
+                <span className="font-medium">
+                  {Math.min(currentPage * itemsPerPage, totalItems)}
+                </span>{" "}
+                of <span className="font-medium">{totalItems}</span> items
+              </p>
 
-            <nav
-              aria-label="Pagination"
-              className="isolate inline-flex -space-x-px rounded-md shadow-xs"
-            >
-              {/* Prev Button */}
-              <button
-                onClick={prevPage}
-                disabled={currentPage === 1}
-                className={`relative inline-flex items-center rounded-l-md px-2 py-2 text-gray-400 ring-1 ring-gray-300 ring-inset hover:bg-gray-50 focus:z-20 focus:outline-offset-0 ${
-                  currentPage === 1 ? "opacity-50 cursor-not-allowed" : ""
-                }`}
-              >
-                <IoIosArrowBack aria-hidden="true" className="size-5" />
-              </button>
+              <nav className="isolate inline-flex -space-x-px rounded-md shadow-sm">
+                {/* Prev Button */}
+                <button
+                  onClick={prevPage}
+                  disabled={currentPage === 1}
+                  className={`relative inline-flex items-center rounded-l-md px-2 py-2 text-gray-400 ring-1 ring-gray-300 hover:bg-gray-50 ${
+                    currentPage === 1 ? "opacity-50 cursor-not-allowed" : ""
+                  }`}
+                >
+                  <IoIosArrowBack className="size-5" />
+                </button>
 
-              {/* Page buttons with ellipsis */}
-              {(() => {
-                const maxPagesToShow = 10;
-                const pages = [];
+                {/* Page buttons with ellipsis */}
+                {(() => {
+                  const maxPagesToShow = 10;
+                  const pages = [];
 
-                if (totalPages <= maxPagesToShow) {
-                  for (let i = 1; i <= totalPages; i++) {
-                    pages.push(i);
-                  }
-                } else {
-                  pages.push(1); // always show first page
-
-                  let startPage, endPage;
-
-                  if (currentPage <= 6) {
-                    startPage = 2;
-                    endPage = 8;
-                    for (let i = startPage; i <= endPage; i++) pages.push(i);
-                    pages.push("ellipsis-right");
-                    pages.push(totalPages);
-                  } else if (currentPage >= totalPages - 5) {
-                    pages.push("ellipsis-left");
-                    startPage = totalPages - 7;
-                    for (let i = startPage; i < totalPages; i++) pages.push(i);
-                    pages.push(totalPages);
+                  if (totalPages <= maxPagesToShow) {
+                    for (let i = 1; i <= totalPages; i++) {
+                      pages.push(i);
+                    }
                   } else {
-                    pages.push("ellipsis-left");
-                    startPage = currentPage - 2;
-                    endPage = currentPage + 2;
-                    for (let i = startPage; i <= endPage; i++) pages.push(i);
-                    pages.push("ellipsis-right");
-                    pages.push(totalPages);
-                  }
-                }
+                    pages.push(1); // always show first page
 
-                return pages.map((page, idx) => {
-                  if (page === "ellipsis-left" || page === "ellipsis-right") {
+                    let startPage, endPage;
+
+                    if (currentPage <= 6) {
+                      startPage = 2;
+                      endPage = 8;
+                      for (let i = startPage; i <= endPage; i++) pages.push(i);
+                      pages.push("ellipsis-right");
+                      pages.push(totalPages);
+                    } else if (currentPage >= totalPages - 5) {
+                      pages.push("ellipsis-left");
+                      startPage = totalPages - 7;
+                      for (let i = startPage; i < totalPages; i++) pages.push(i);
+                      pages.push(totalPages);
+                    } else {
+                      pages.push("ellipsis-left");
+                      startPage = currentPage - 2;
+                      endPage = currentPage + 2;
+                      for (let i = startPage; i <= endPage; i++) pages.push(i);
+                      pages.push("ellipsis-right");
+                      pages.push(totalPages);
+                    }
+                  }
+
+                  return pages.map((page, idx) => {
+                    if (page === "ellipsis-left" || page === "ellipsis-right") {
+                      return (
+                        <span
+                          key={`ellipsis-${idx}`}
+                          className="relative inline-flex items-center px-4 py-2 text-sm text-gray-700 select-none"
+                        >
+                          ...
+                        </span>
+                      );
+                    }
                     return (
-                      <span
-                        key={`ellipsis-${idx}`}
-                        className="relative inline-flex items-center px-4 py-2 text-sm text-gray-700 select-none"
+                      <button
+                        key={page}
+                        onClick={() => setCurrentPage(page)}
+                        className={`relative inline-flex items-center px-4 py-2 text-sm font-semibold ring-1 ring-gray-300 hover:bg-gray-50 ${
+                          currentPage === page
+                            ? "bg-green-500 text-white"
+                            : "text-gray-900"
+                        }`}
                       >
-                        ...
-                      </span>
+                        {page}
+                      </button>
                     );
-                  }
-                  return (
-                    <button
-                      key={page}
-                      onClick={() =>
-                        dispatch(itemsFetch({ ...items, currentPage: page }))
-                      }
-                      className={`relative inline-flex items-center px-4 py-2 text-sm font-semibold text-gray-900 ring-1 ring-gray-300 ring-inset hover:bg-gray-50 focus:z-20 focus:outline-offset-0 ${
-                        currentPage === page ? "bg-green-500/80 text-white" : ""
-                      }`}
-                    >
-                      {page}
-                    </button>
-                  );
-                });
-              })()}
+                  });
+                })()}
 
-              {/* Next Button */}
-              <button
-                onClick={nextPage}
-                disabled={currentPage === totalPages}
-                className={`relative inline-flex items-center rounded-r-md px-2 py-2 text-gray-400 ring-1 ring-gray-300 ring-inset hover:bg-gray-50 focus:z-20 focus:outline-offset-0 ${
-                  currentPage === totalPages
-                    ? "opacity-50 cursor-not-allowed"
-                    : ""
-                }`}
-              >
-                <IoIosArrowForward aria-hidden="true" className="size-5" />
-              </button>
-            </nav>
-          </div>
+                {/* Next Button */}
+                <button
+                  onClick={nextPage}
+                  disabled={currentPage === totalPages}
+                  className={`relative inline-flex items-center rounded-r-md px-2 py-2 text-gray-400 ring-1 ring-gray-300 hover:bg-gray-50 ${
+                    currentPage === totalPages
+                      ? "opacity-50 cursor-not-allowed"
+                      : ""
+                  }`}
+                >
+                  <IoIosArrowForward className="size-5" />
+                </button>
+              </nav>
+            </div>
+          )}
         </div>
       </div>
 

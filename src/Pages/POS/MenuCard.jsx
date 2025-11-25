@@ -29,38 +29,24 @@ const MenuCard = ({ refreshTrigger }) => {
   // Fetch categories on mount
   useEffect(() => {
     const fetchCategories = async () => {
+      setIsLoading(true);
       try {
         const { data } = await axios.get(
           `${BASE_URL}/api/itemsCategories/getItemCategories`
         );
 
         if (data.success) {
-          const categoriesWithItemCount = await Promise.all(
-            data.data.map(async (category) => {
-              const itemCount = await axios.get(
-                `${BASE_URL}/api/items/getAllItems?category=${category._id}`
-              );
-              return {
-                ...category,
-                itemCount: itemCount.data.success
-                  ? itemCount.data.totalItems
-                  : 0,
-              };
-            })
-          );
+          // First, set categories without item count
+          setCategories(data.data);
 
-          setCategories(categoriesWithItemCount);
-
-          const activeCategory = categoriesWithItemCount.find(
-            (cat) => cat._id === selected?._id
-          );
-
-          if (activeCategory) {
-            setSelected(activeCategory);
-            fetchItems(activeCategory._id);
-          } else if (categoriesWithItemCount.length > 0) {
-            setSelected(categoriesWithItemCount[0]);
-            fetchItems(categoriesWithItemCount[0]._id);
+          // Fetch items for the first category to initialize
+          if (data.data.length > 0) {
+            const firstCategory = data.data[0];
+            setSelected(firstCategory);
+            await fetchItems(firstCategory._id);
+            
+            // Now update categories with item counts from the fetched items
+            updateCategoryItemCounts(data.data);
           }
         }
       } catch (error) {
@@ -74,8 +60,39 @@ const MenuCard = ({ refreshTrigger }) => {
     fetchCategories();
   }, [refreshTrigger]);
 
-  // Fetch items
+  // Update category item counts based on fetched items
+  const updateCategoryItemCounts = async (categoriesList) => {
+    try {
+      const categoriesWithCounts = await Promise.all(
+        categoriesList.map(async (category) => {
+          try {
+            const itemsResponse = await axios.get(
+              `${BASE_URL}/api/items/getAllItems?category=${category._id}`
+            );
+            
+            return {
+              ...category,
+              itemCount: itemsResponse.data.success ? itemsResponse.data.data.length : 0
+            };
+          } catch (error) {
+            console.error(`Error fetching items for category ${category.name}:`, error);
+            return {
+              ...category,
+              itemCount: 0
+            };
+          }
+        })
+      );
+
+      setCategories(categoriesWithCounts);
+    } catch (error) {
+      console.error("Error updating category counts:", error);
+    }
+  };
+
+  // Fetch items and update category count
   const fetchItems = useCallback(async (categoryId) => {
+    setIsLoading(true);
     try {
       const { data } = await axios.get(
         `${BASE_URL}/api/items/getAllItems?category=${categoryId}`
@@ -88,6 +105,13 @@ const MenuCard = ({ refreshTrigger }) => {
           initialItemCounts[item._id] = 1;
         });
         setItemCounts(initialItemCounts);
+
+        // Update the selected category's item count
+        setCategories(prev => prev.map(cat => 
+          cat._id === categoryId 
+            ? { ...cat, itemCount: data.data.length }
+            : cat
+        ));
       }
     } catch (error) {
       console.error("Error fetching items:", error);
@@ -98,6 +122,7 @@ const MenuCard = ({ refreshTrigger }) => {
 
   // Search by name or barcode
   const searchItemsByCategoryAndName = async (categoryId, searchTerm) => {
+    setIsLoading(true);
     try {
       const res = await axios.get(`${BASE_URL}/api/items/searchInPos`, {
         params: {
@@ -108,14 +133,21 @@ const MenuCard = ({ refreshTrigger }) => {
 
       if (res.data.success) {
         setItems(res.data.data);
-        const initialItemCounts = {};
-        res.data.data.forEach((item) => {
-          initialItemCounts[item._id] = 1;
-        });
-        setItemCounts(initialItemCounts);
+        const initial = {};
+        res.data.data.forEach((item) => (initial[item._id] = 1));
+        setItemCounts(initial);
+
+        // Update category count with search results
+        setCategories(prev => prev.map(cat => 
+          cat._id === categoryId 
+            ? { ...cat, itemCount: res.data.data.length }
+            : cat
+        ));
       }
     } catch (error) {
       console.error("Error searching items:", error);
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -138,6 +170,7 @@ const MenuCard = ({ refreshTrigger }) => {
   }, [barcode]);
 
   const handleBarcodeSearch = async (code) => {
+    setIsLoading(true);
     try {
       const res = await axios.get(`${BASE_URL}/api/items/searchInPos`, {
         params: { search: code },
@@ -153,12 +186,13 @@ const MenuCard = ({ refreshTrigger }) => {
     } catch (error) {
       console.error("Error scanning item:", error);
       toast.error("Barcode search failed");
+    } finally {
+      setIsLoading(false);
     }
   };
 
-  //  Handle quantity change
+  // Handle quantity change
   const handleQuantityChange = (itemId, value) => {
-    // Prevent NaN and negative numbers
     const qty = value > 0 ? value : 1;
 
     setItemCounts((prev) => ({
@@ -167,7 +201,7 @@ const MenuCard = ({ refreshTrigger }) => {
     }));
   };
 
-  //  Add to cart
+  // Add to cart
   const handleAddCart = (item) => {
     if (!item.price || item.price === 0) {
       toast.error("Bidhaa haina Bei, weka bei ndo uendelee na Mauzo ");
@@ -210,7 +244,9 @@ const MenuCard = ({ refreshTrigger }) => {
           <div className="animate-spin rounded-full h-32 w-32 border-t-4 border-green-500 border-solid"></div>
         </div>
       )}
+
       <div className="flex justify-between items-center mb-4">
+        {/* Search Items */}
         <div className="hidden sm:flex items-center bg-gray-100 rounded-[30px] px-3 sm:px-4 py-1 sm:py-2 w-full max-w-[300px] border border-gray-400">
           <FaSearch className="w-4 h-4 sm:w-5 sm:h-5 mr-2 text-black" />
           <input
@@ -220,7 +256,9 @@ const MenuCard = ({ refreshTrigger }) => {
             onChange={(e) => {
               const value = e.target.value;
               setSearchQuery(value);
+
               if (selected?._id) {
+                setIsLoading(true);
                 searchItemsByCategoryAndName(selected._id, value);
               }
             }}
@@ -228,6 +266,7 @@ const MenuCard = ({ refreshTrigger }) => {
           />
         </div>
 
+        {/* Search Category */}
         <div className="hidden sm:flex items-center bg-gray-100 rounded-[30px] px-3 sm:px-4 py-1 sm:py-2 w-full max-w-[300px] border border-gray-400">
           <FaSearch className="w-4 h-4 sm:w-5 sm:h-5 mr-2 text-black" />
           <input
@@ -235,16 +274,22 @@ const MenuCard = ({ refreshTrigger }) => {
             placeholder="Search category..."
             className="bg-transparent outline-none px-2 py-1 w-full text-black"
             value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
+            onChange={(e) => {
+              setSearchTerm(e.target.value);
+              setIsLoading(true);
+              setTimeout(() => setIsLoading(false), 300); // small UX delay
+            }}
           />
         </div>
       </div>
 
+      {/* Categories */}
       <div className="flex flex-wrap gap-2 max-h-[30vh] overflow-y-auto scrollbar-hide">
         {filteredCategories.map((category) => (
           <button
             key={category._id}
             onClick={() => {
+              setIsLoading(true);
               setSelected(category);
               fetchItems(category._id);
             }}
@@ -265,18 +310,18 @@ const MenuCard = ({ refreshTrigger }) => {
 
       <hr className="border-[#2a2a2a] border-t-2 mt-4" />
 
-      {/* ITEM CARD */}
+      {/* ITEM CARD GRID */}
       <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6 py-6 w-full">
         {items.map((item) => (
           <div
             key={item._id}
             className="
-        bg-gradient-to-br from-green-50 via-green-50 to-gray-100
-        rounded-2xl shadow-sm hover:shadow-md
-        border border-gray-200
-        p-5 flex flex-col justify-between
-        transition-all hover:-translate-y-1 cursor-pointer
-      "
+              bg-gradient-to-br from-green-50 via-green-50 to-gray-100
+              rounded-2xl shadow-sm hover:shadow-md
+              border border-gray-200
+              p-5 flex flex-col justify-between
+              transition-all hover:-translate-y-1 cursor-pointer
+            "
           >
             {/* Header */}
             <div className="flex justify-between items-center mb-3">
@@ -304,7 +349,7 @@ const MenuCard = ({ refreshTrigger }) => {
               </div>
             </div>
 
-            {/* Stock & Status */}
+            {/* Stock Indicator */}
             <div className="flex justify-between items-center mb-4">
               <span
                 className={`text-sm font-medium px-3 py-1 rounded-full ${
@@ -324,7 +369,7 @@ const MenuCard = ({ refreshTrigger }) => {
               )}
             </div>
 
-            {/* Quantity & Button */}
+            {/* Qty + Button */}
             <div className="flex flex-col gap-3">
               <input
                 type="number"
