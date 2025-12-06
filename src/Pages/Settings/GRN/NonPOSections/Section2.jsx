@@ -14,7 +14,7 @@ const Section2 = ({ onAddItem }) => {
   const { items } = useSelector((state) => state.items);
   const dispatch = useDispatch();
 
-  const [selectedItem, setSelectedItem] = useState(null); // Single selected item
+  const [selectedItem, setSelectedItem] = useState(null);
   const [showError, setShowError] = useState("");
   const [finishAdd, setFinishAdd] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
@@ -30,9 +30,7 @@ const Section2 = ({ onAddItem }) => {
   }, [dispatch]);
 
   // Initialize form data with default values
-  // First day of current month
   const firstDayOfMonth = dayjs().startOf("month").format("YYYY-MM-DD");
-  // Last day of current month
   const lastDayOfMonth = dayjs().endOf("month").format("YYYY-MM-DD");
 
   const [formData, setFormData] = useState({
@@ -89,9 +87,9 @@ const Section2 = ({ onAddItem }) => {
 
       // Compute and clamp quantity
       const rawQuantity = units * itemsPerUnit + foc - rejected;
-      const quantityMath = Math.max(0, rawQuantity); // kusiwe kuna neg mzee
+      const quantityMath = Math.max(0, rawQuantity);
 
-      //hii itakuwa thamani ya mzigo bila nyiongeza
+      // Total cost calculation
       const totalCostRaw = buyingPrice * (units * itemsPerUnit);
 
       return {
@@ -192,478 +190,695 @@ const Section2 = ({ onAddItem }) => {
   };
 
   return (
-    <section className="flex flex-col md:flex-row gap-3 overflow-hidden mt-8 shadow-[0px_0px_0px_1px_rgba(0,0,0,0.06),0px_1px_1px_-0.5px_rgba(0,0,0,0.06),0px_3px_3px_-1.5px_rgba(0,0,0,0.06),_0px_6px_6px_-3px_rgba(0,0,0,0.06),0px_12px_12px_-6px_rgba(0,0,0,0.06),0px_24px_24px_-12px_rgba(0,0,0,0.06)]">
-      {/* Right Section: Products Table */}
-      <div className="flex-[1] bg-secondary p-4 sm:p-6 border rounded-lg shadow-[0px_0px_0px_1px_rgba(0,0,0,0.06),0px_1px_1px_-0.5px_rgba(0,0,0,0.06),0px_3px_3px_-1.5px_rgba(0,0,0,0.06),_0px_6px_6px_-3px_rgba(0,0,0,0.06),0px_12px_12px_-6px_rgba(0,0,0,0.06),0px_24px_24px_-12px_rgba(0,0,0,0.06)] overflow-auto min-h-[50vh] md:min-h-[auto]">
-        <div>
-          <div className="font-bold text-xl text-black">Products</div>
-
-          {/* Search Input */}
-          <div className="flex items-center p-2 rounded-md">
-            <div className="hidden sm:flex items-center bg-gray-100 rounded-[30px] px-3 sm:px-4 py-1 sm:py-2 w-full max-w-[300px] border border-gray-400">
-              <FaSearch className="w-4 h-4 sm:w-5 sm:h-5 mr-2 text-black" />
-              <input
-                type="text"
-                placeholder="Search Item..."
-                className="bg-transparent outline-none px-2 py-1 w-full text-black"
-                value={searchQuery}
-                onChange={(e) => {
-                  setSearchQuery(e.target.value);
-                  dispatch(searchItemsEveryWhere(e.target.value));
-                }}
-              />
+    <section className="flex flex-col lg:flex-row gap-6 min-h-[800px]">
+      {/* Products Table Section */}
+      <div className="lg:w-1/2 flex flex-col bg-white rounded-lg border border-gray-300 shadow-sm h-full">
+        {/* Table Header */}
+        <div className="px-6 py-4 border-b border-gray-300 bg-gradient-to-r from-green-50 to-gray-100">
+          <div className="flex items-center justify-between">
+            <div>
+              <h2 className="text-lg font-bold text-gray-900">
+                Available Products
+              </h2>
+              <p className="text-gray-700 text-sm font-medium">
+                Select items to add to GRN
+              </p>
+            </div>
+            <div className="flex items-center">
+              <div className="px-3 py-1 bg-green-300 rounded-lg mr-3">
+                <span className="text-gray-900 font-semibold text-sm">
+                  Step 1
+                </span>
+              </div>
+              <div className="text-sm text-gray-700 font-medium">
+                {items?.length || 0} items
+              </div>
             </div>
           </div>
+        </div>
 
-          <div className="max-h-[400px] overflow-y-auto mt-4  rounded-lg">
-            <table className="min-w-full leading-normal mt-6  rounded-lg p-4">
-              <thead>
-                <tr>
-                  <th className="px-5 py-3 border-b-2 border-gray-200 bg-gray-200 text-center text-xs font-bold text-gray-900 uppercase tracking-wider">
-                    (S/N)
-                  </th>
-                  <th className="px-5 py-3 border-b-2 border-gray-200 bg-gray-200 text-center text-xs font-bold text-gray-900 uppercase tracking-wider">
-                    Product Name
-                  </th>
-                  <th className="px-5 py-3 border-b-2 border-gray-200 bg-gray-200 text-center text-xs font-bold text-gray-900 uppercase tracking-wider">
-                    Balance
-                  </th>
-                  <th className="px-5 py-3 border-b-2 border-gray-200 bg-gray-200 text-center text-xs font-bold text-gray-900 uppercase tracking-wider">
-                    Select
-                  </th>
-                </tr>
-                <tr className="h-4" />
-              </thead>
-              <tbody className="overflow-auto text-black">
-                {items?.map((item, index) => (
-                  <>
-                    <tr
-                      key={item._id}
-                      className="h-16 border-gray-500 shadow-md bg-gray-100"
-                    >
-                      <td className="py-2 px-3 font-normal text-base border-x border-t border-gray text-center">
-                        {index + 1}
-                      </td>
-                      <td className="py-2 px-3 font-normal text-base border-x border-t border-gray capitalize">
-                        {item.name}
-                      </td>
-                      <td className="py-2 px-3 font-normal text-base border-x border-t border-gray text-center">
-                        {item.itemQuantity}
-                      </td>
-                      <td className="py-2 px-3 font-normal text-base border-x border-t border-gray text-center">
-                        <button
-                          onClick={() => handleItemSelection(item)}
-                          className="cursor-pointer"
-                        >
-                          <TiArrowRightThick />
-                        </button>
+        {/* Search Bar */}
+        <div className="px-6 py-4 border-b border-gray-300 bg-gray-50">
+          <div className="relative">
+            <div className="absolute inset-y-0 left-3 flex items-center pointer-events-none">
+              <FaSearch className="text-gray-500" />
+            </div>
+            <input
+              type="text"
+              placeholder="Search products by name..."
+              className="w-full pl-10 pr-4 py-3 border border-gray-300 bg-white rounded-lg focus:ring-2 focus:ring-green-300 focus:border-green-300 text-gray-900 font-medium shadow-sm"
+              value={searchQuery}
+              onChange={(e) => {
+                setSearchQuery(e.target.value);
+                dispatch(searchItemsEveryWhere(e.target.value));
+              }}
+            />
+          </div>
+        </div>
+
+        {/* Products Table Container */}
+        <div className="flex-1 overflow-hidden p-6">
+          <div className="h-[83vh] border border-gray-300 rounded-lg bg-gray-50 overflow-hidden flex flex-col">
+            <div className="overflow-y-auto flex-1">
+              <table className="min-w-full">
+                <thead className="sticky top-0 z-10">
+                  <tr className="bg-gray-200">
+                    <th className="px-4 py-3 border-b-2 border-gray-300 text-left text-xs font-bold text-gray-900 uppercase tracking-wider">
+                      #
+                    </th>
+                    <th className="px-4 py-3 border-b-2 border-gray-300 text-left text-xs font-bold text-gray-900 uppercase tracking-wider">
+                      Product Name
+                    </th>
+                    <th className="px-4 py-3 border-b-2 border-gray-300 text-left text-xs font-bold text-gray-900 uppercase tracking-wider">
+                      Stock
+                    </th>
+                    <th className="px-4 py-3 border-b-2 border-gray-300 text-left text-xs font-bold text-gray-900 uppercase tracking-wider">
+                      Select
+                    </th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-300">
+                  {items?.length === 0 ? (
+                    <tr>
+                      <td
+                        colSpan="4"
+                        className="px-4 py-8 text-center text-gray-600"
+                      >
+                        <div className="flex flex-col items-center justify-center py-12">
+                          <div className="w-16 h-16 bg-gray-200 rounded-full flex items-center justify-center mb-4">
+                            <FaSearch className="text-2xl text-gray-500" />
+                          </div>
+                          <p className="text-gray-700 font-medium">
+                            No products found
+                          </p>
+                          <p className="text-gray-500 text-sm mt-1">
+                            Try a different search term
+                          </p>
+                        </div>
                       </td>
                     </tr>
-                    <tr className="h-4" />
-                  </>
-                ))}
-              </tbody>
-            </table>
+                  ) : (
+                    items?.map((item, index) => (
+                      <tr
+                        key={item._id}
+                        className={`hover:bg-gray-100 transition-colors ${
+                          selectedItem?._id === item._id
+                            ? "bg-green-100 border-l-4 border-l-green-300"
+                            : "bg-gray-50"
+                        }`}
+                      >
+                        <td className="px-4 py-3 text-gray-900 font-semibold border-r border-gray-300">
+                          <div className="flex items-center justify-center w-6 h-6 bg-gray-200 rounded-full mx-auto">
+                            {index + 1}
+                          </div>
+                        </td>
+                        <td className="px-4 py-3 text-gray-900 font-medium border-r border-gray-300 capitalize">
+                          <div className="flex items-center">
+                            <div
+                              className={`w-2 h-2 rounded-full mr-3 ${
+                                selectedItem?._id === item._id
+                                  ? "bg-green-400"
+                                  : "bg-gray-400"
+                              }`}
+                            ></div>
+                            {item.name}
+                          </div>
+                        </td>
+                        <td className="px-4 py-3 border-r border-gray-300">
+                          <div className="flex items-center">
+                            <span className="text-gray-900 font-bold text-lg mr-2">
+                              {item.itemQuantity}
+                            </span>
+                            <span className="text-xs text-gray-600 font-medium">
+                              units
+                            </span>
+                          </div>
+                        </td>
+                        <td className="px-4 py-3">
+                          <button
+                            onClick={() => handleItemSelection(item)}
+                            className={`w-full py-2 rounded-lg transition-all ${
+                              selectedItem?._id === item._id
+                                ? "bg-green-300 text-gray-900 border border-green-400 shadow-sm"
+                                : "bg-gray-200 hover:bg-gray-300 text-gray-700 border border-gray-300 hover:border-gray-400"
+                            }`}
+                          >
+                            <TiArrowRightThick className="inline-block mr-2" />
+                            <span className="text-sm font-medium">
+                              {selectedItem?._id === item._id
+                                ? "Selected"
+                                : "Select"}
+                            </span>
+                          </button>
+                        </td>
+                      </tr>
+                    ))
+                  )}
+                </tbody>
+              </table>
+            </div>
+
+            {/* Table Footer */}
+            <div className="px-4 py-3 border-t border-gray-300 bg-gray-100">
+              <div className="flex items-center justify-between">
+                <div className="text-sm text-gray-700 font-medium">
+                  Showing {items?.length || 0} products
+                </div>
+                <div className="text-sm text-gray-700 font-medium">
+                  {selectedItem ? "1 item selected" : "No selection"}
+                </div>
+              </div>
+            </div>
           </div>
 
           {/* Error Message */}
           {showError && (
-            <p className="text-red-500 text-sm mb-2 ml-6">{showError}</p>
-          )}
-        </div>
-      </div>
-
-      {/* Left Section: Selected Item Details */}
-      <div className="flex-[2] bg-secondary p-4 sm:p-6 border rounded-md shadow-[0px_0px_0px_1px_rgba(0,0,0,0.06),0px_1px_1px_-0.5px_rgba(0,0,0,0.06),0px_3px_3px_-1.5px_rgba(0,0,0,0.06),_0px_6px_6px_-3px_rgba(0,0,0,0.06),0px_12px_12px_-6px_rgba(0,0,0,0.06),0px_24px_24px_-12px_rgba(0,0,0,0.06)] text-black w-full md:w-auto overflow-y-auto max-h-[60vh] md:max-h-[100vh] scrollbar-hide ">
-        <div className="flex justify-between items-center px-5 mt-5">
-          <div className="font-bold text-xl text-gray-800">
-            Purchase Details
-          </div>
-          <span className="px-4 py-2 bg-gray-200 text-gray-800 font-semibold rounded">
-            {selectedItem ? 1 : 0}
-          </span>
-        </div>
-
-        <div className="p-6 ">
-          {selectedItem && (
-            <div className="border p-4 rounded mb-4 shadow-md bg-gray-100">
-              <h3 className="font-semibold mb-2 text-lg">
-                {selectedItem.name}
-              </h3>
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                {/* All your input fields with controlled values */}
-
-                <div>
-                  <label
-                    htmlFor="Buying Price"
-                    className="block mb-2 text-sm font-medium text-gray-900 dark:text-white"
-                  >
-                    Buying Price
-                  </label>
-                  <input
-                    type="number"
-                    name="buyingPrice"
-                    value={formData.buyingPrice}
-                    onChange={handleChange}
-                    className={`bg-gray-50 border text-gray-900 text-sm rounded-[30px] focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 
-                    dark:bg-gray-600 dark:placeholder-gray-400 dark:text-white
-                         ${
-                           Number(formData.buyingPrice) >
-                           Number(selectedItem.price)
-                             ? "border-red-500 dark:border-red-400"
-                             : "border-gray-400 dark:border-gray-500"
-                         }`}
-                  />
-                  {/* Warning Text */}
-                  {Number(formData.buyingPrice) >
-                    Number(selectedItem.price) && (
-                    <p className="mt-1 text-xs text-red-500 dark:text-red-400">
-                      Bei ya manunuzi ni kubwa kuliko bei ya kuuzia kwa sasa.{" "}
-                      <span className="text-black">
-                        {" "}
-                        (Tsh: {selectedItem.price.toLocaleString()})
-                      </span>
-                    </p>
-                  )}
+            <div className="mt-4 p-3 bg-red-50 border border-red-300 rounded-lg">
+              <div className="flex items-center">
+                <div className="w-5 h-5 bg-red-500 rounded-full flex items-center justify-center mr-3">
+                  <span className="text-white text-sm font-bold">!</span>
                 </div>
-
-                <div>
-                  <label
-                    htmlFor="units"
-                    className="block mb-2 text-sm font-medium text-gray-900 dark:text-white"
-                  >
-                    Units
-                  </label>
-                  <input
-                    type="number"
-                    name="units"
-                    value={formData.units}
-                    onChange={handleChange}
-                    className="bg-gray-50 border border-gray-400 text-gray-900 text-sm rounded-[30px]  focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-600 dark:border-gray-500 dark:placeholder-gray-400 dark:text-white"
-                  />
-                </div>
-
-                <div>
-                  <label
-                    htmlFor="itemsPerUnit"
-                    className="block mb-2 text-sm font-medium text-gray-900 dark:text-white"
-                  >
-                    Items Per Unit
-                  </label>
-                  <input
-                    type="number"
-                    name="itemsPerUnit"
-                    value={formData.itemsPerUnit}
-                    onChange={handleChange}
-                    className="bg-gray-50 border border-gray-400 text-gray-900 text-sm rounded-[30px]  focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-600 dark:border-gray-500 dark:placeholder-gray-400 dark:text-white"
-                  />
-                </div>
-
-                <div>
-                  <label
-                    htmlFor="rejected"
-                    className="block mb-2 text-sm font-medium text-gray-900 dark:text-white"
-                  >
-                    Declined
-                  </label>
-                  <input
-                    type="number"
-                    name="rejected"
-                    value={formData.rejected}
-                    onChange={handleChange}
-                    className="bg-gray-50 border border-gray-400 text-gray-900 text-sm rounded-[30px]  focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-600 dark:border-gray-500 dark:placeholder-gray-400 dark:text-white"
-                  />
-                </div>
-
-                <div>
-                  <label
-                    htmlFor="foc"
-                    className="block mb-2 text-sm font-medium text-gray-900 dark:text-white"
-                  >
-                    Offer
-                  </label>
-                  <input
-                    type="number"
-                    name="foc"
-                    value={formData.foc}
-                    onChange={handleChange}
-                    className="bg-gray-50 border border-gray-400 text-gray-900 text-sm rounded-[30px]  focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-600 dark:border-gray-500 dark:placeholder-gray-400 dark:text-white"
-                  />
-                </div>
-
-                <div>
-                  <label
-                    htmlFor="itemsPerUnit"
-                    className="block mb-2 text-sm font-medium text-gray-900 dark:text-white"
-                  >
-                    Unpaid Quantity (Deni)
-                  </label>
-                  <input
-                    type="number"
-                    name="billedAmount"
-                    value={formData.billedAmount}
-                    onChange={handleChange}
-                    className="bg-gray-50 border border-gray-400 text-gray-900 text-sm rounded-[30px]  focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-600 dark:border-gray-500 dark:placeholder-gray-400 dark:text-white"
-                  />
-                </div>
-
-                <div>
-                  <label
-                    htmlFor="quantity"
-                    className="block mb-2 text-sm font-medium text-gray-900 dark:text-white"
-                  >
-                    Paid Quantity (Iliyolipwa)
-                  </label>
-                  <input
-                    type="number"
-                    name="quantity"
-                    value={formData.quantity}
-                    readOnly
-                    onChange={handleChange}
-                    className="bg-gray-50 border border-gray-400 text-gray-900 text-sm rounded-[30px]  focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-600 dark:border-gray-500 dark:placeholder-gray-400 dark:text-white"
-                  />
-                </div>
-
-                <LocalizationProvider dateAdapter={AdapterDayjs}>
-                  <div>
-                    <label
-                      htmlFor="manufactureDate"
-                      className="block mb-2 text-sm font-medium text-gray-900 dark:text-white"
-                    >
-                      Manufacture Date
-                    </label>
-                    <DatePicker
-                      views={["year", "month", "day"]}
-                      format="YYYY-MM-DD"
-                      value={
-                        formData.manufactureDate
-                          ? dayjs(formData.manufactureDate)
-                          : null
-                      }
-                      onChange={(newValue) => {
-                        handleChange({
-                          target: {
-                            name: "manufactureDate",
-                            value: newValue
-                              ? newValue.format("YYYY-MM-DD")
-                              : "",
-                          },
-                        });
-                        setErrorDate((prev) => ({
-                          ...prev,
-                          manufactureDate: false,
-                        }));
-                      }}
-                      slotProps={{
-                        textField: {
-                          size: "small",
-                          fullWidth: true,
-                          error: errorDate.manufactureDate,
-                          helperText:
-                            errorDate.manufactureDate &&
-                            "Manufacture Date cannot be in the future",
-                          className:
-                            "bg-gray-50 border border-gray-400 text-gray-900 text-sm rounded-[30px] focus:ring-blue-500 focus:border-blue-500 block dark:bg-gray-600 dark:border-gray-500 dark:placeholder-gray-400 dark:text-white",
-                        },
-                      }}
-                    />
-                  </div>
-                </LocalizationProvider>
-
-                <LocalizationProvider dateAdapter={AdapterDayjs}>
-                  <div>
-                    <label
-                      htmlFor="expiryDate"
-                      className="block mb-2 text-sm font-medium text-gray-900 dark:text-white"
-                    >
-                      Expiry Date
-                    </label>
-                    <DatePicker
-                      views={["year", "month", "day"]}
-                      format="YYYY-MM-DD"
-                      value={
-                        formData.expiryDate ? dayjs(formData.expiryDate) : null
-                      }
-                      onChange={(newValue) => {
-                        handleChange({
-                          target: {
-                            name: "expiryDate",
-                            value: newValue
-                              ? newValue.format("YYYY-MM-DD")
-                              : "",
-                          },
-                        });
-                        setErrorDate((prev) => ({
-                          ...prev,
-                          expiryDate: false,
-                        }));
-                      }}
-                      slotProps={{
-                        textField: {
-                          size: "small",
-                          fullWidth: true,
-                          error: errorDate.expiryDate,
-                          helperText:
-                            errorDate.expiryDate &&
-                            "Expiry Date must be after Manufacture Date",
-                          className:
-                            "bg-gray-50 border border-gray-400 text-gray-900 text-sm rounded-[30px] focus:ring-blue-500 focus:border-blue-500 block dark:bg-gray-600 dark:border-gray-500 dark:placeholder-gray-400 dark:text-white",
-                        },
-                      }}
-                    />
-                  </div>
-                </LocalizationProvider>
-
-                <LocalizationProvider dateAdapter={AdapterDayjs}>
-                  <div>
-                    <label
-                      htmlFor="receivedDate"
-                      className="block mb-2 text-sm font-medium text-gray-900 dark:text-white"
-                    >
-                      Received Date
-                    </label>
-                    <DatePicker
-                      views={["year", "month", "day"]}
-                      format="YYYY-MM-DD"
-                      value={
-                        formData.receivedDate
-                          ? dayjs(formData.receivedDate)
-                          : null
-                      }
-                      onChange={(newValue) => {
-                        handleChange({
-                          target: {
-                            name: "receivedDate",
-                            value: newValue
-                              ? newValue.format("YYYY-MM-DD")
-                              : "",
-                          },
-                        });
-                        setErrorDate((prev) => ({
-                          ...prev,
-                          receivedDate: false,
-                        }));
-                      }}
-                      slotProps={{
-                        textField: {
-                          size: "small",
-                          fullWidth: true,
-                          error: errorDate.receivedDate,
-                          helperText:
-                            errorDate.receivedDate &&
-                            "Received Date must be between Manufacture and Expiry Date",
-                          className:
-                            "bg-gray-50 border border-gray-400 text-gray-900 text-sm rounded-[30px] focus:ring-blue-500 focus:border-blue-500 block dark:bg-gray-600 dark:border-gray-500 dark:placeholder-gray-400 dark:text-white",
-                        },
-                      }}
-                    />
-                  </div>
-                </LocalizationProvider>
-
-                <div>
-                  <label
-                    htmlFor="batchNumber"
-                    className="block mb-2 text-sm font-medium text-gray-900 dark:text-white"
-                  >
-                    Batch Number
-                  </label>
-                  <input
-                    type="text"
-                    name="batchNumber"
-                    value={formData.batchNumber}
-                    onChange={handleChange}
-                    className="bg-gray-50 border border-gray-400 text-gray-900 text-sm rounded-[30px]  focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-600 dark:border-gray-500 dark:placeholder-gray-400 dark:text-white"
-                  />
-                </div>
-
-                <div>
-                  <label
-                    htmlFor="comments"
-                    className="block mb-2 text-sm font-medium text-gray-900 dark:text-white"
-                  >
-                    Comments
-                  </label>
-                  <input
-                    type="text"
-                    name="comments"
-                    value={formData.comments}
-                    onChange={handleChange}
-                    className="bg-gray-50 border border-gray-400 text-gray-900 text-sm rounded-[30px]  focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-600 dark:border-gray-500 dark:placeholder-gray-400 dark:text-white"
-                  />
-                </div>
-
-                <div>
-                  <label className="block mb-2 text-sm font-medium text-gray-900 dark:text-white">
-                    Total Cost
-                  </label>
-                  <input
-                    type="text"
-                    name="totalCost"
-                    value={formData.totalCost}
-                    readOnly
-                    className="bg-gray-100 border border-gray-400 text-gray-900 text-sm rounded-[30px]  block w-full p-2.5 dark:bg-gray-700 dark:border-gray-500 dark:text-white"
-                  />
-                </div>
-                <div>
-                  <label
-                    htmlFor="sellingPrice"
-                    className="block mb-2 text-sm font-medium text-gray-900 dark:text-white"
-                  >
-                    Selling Price
-                  </label>
-                  <input
-                    type="number"
-                    name="sellingPrice"
-                    value={formData.sellingPrice || selectedItem.price}
-                    onChange={handleChange}
-                    className={`bg-gray-50 border text-gray-900 text-sm rounded-[30px] focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 
-                   dark:bg-gray-600 dark:placeholder-gray-400 dark:text-white
-                   ${
-                     Number(formData.buyingPrice) >
-                     Number(formData.sellingPrice || selectedItem.price)
-                       ? "border-red-500 dark:border-red-400"
-                       : "border-gray-400 dark:border-gray-500"
-                   }`}
-                  />
-
-                  {/* Warning Text */}
-                  {Number(formData.buyingPrice) >
-                    Number(formData.sellingPrice || selectedItem.price) && (
-                    <p className="mt-1 text-xs text-red-500 dark:text-red-400">
-                      Bei ya kuuzia ni ndogo kuliko bei ya manunuzi kwa sasa.{" "}
-                      <span className="text-black">
-                        (Tsh: {Number(formData.buyingPrice).toLocaleString()})
-                      </span>
-                    </p>
-                  )}
-                </div>
-
-                {/* Continue with other inputs similarly */}
+                <p className="text-red-700 font-medium text-sm">{showError}</p>
               </div>
             </div>
           )}
         </div>
+      </div>
 
-        <div className="mt-8 flex gap-10 justify-between">
-          <button
-            onClick={handleAdd}
-            disabled={!selectedItem || !formData.quantity}
-            className={`px-6 py-2 rounded-md w-full transition ${
-              !selectedItem || !formData.quantity || !formData.buyingPrice
-                ? "bg-gray-300 text-gray-600 cursor-not-allowed"
-                : "bg-green-300 text-black hover:bg-green-400"
-            }`}
-          >
-            Add
-          </button>
-          <button
-            onClick={handleCancel}
-            disabled={!selectedItem}
-            className="bg-gray-300 text-black px-4 py-2 rounded disabled:opacity-50 w-full"
-          >
-            Cancel
-          </button>
+      {/* Item Details Section */}
+      <div className="lg:w-1/2 flex flex-col bg-white rounded-lg border border-gray-300 shadow-sm h-full">
+        {/* Section Header */}
+        <div className="px-6 py-4 border-b border-gray-300 bg-gradient-to-r from-green-50 to-gray-100">
+          <div className="flex items-center justify-between">
+            <div>
+              <h2 className="text-lg font-bold text-gray-900">Item Details</h2>
+              <p className="text-gray-700 text-sm font-medium">
+                {selectedItem
+                  ? "Enter purchase details"
+                  : "Select an item first"}
+              </p>
+            </div>
+            <div className="flex items-center space-x-3">
+              <div className="px-3 py-1 bg-green-300 rounded-lg">
+                <span className="text-gray-900 font-semibold text-sm">
+                  Step 2
+                </span>
+              </div>
+              {selectedItem && (
+                <div className="px-3 py-1 bg-gray-200 rounded-lg">
+                  <span className="text-gray-900 font-semibold text-sm">
+                    Editing
+                  </span>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+
+        {/* Main Content Area */}
+        <div className="flex-1 overflow-hidden p-6">
+          {selectedItem ? (
+            <div className="h-full flex flex-col">
+              {/* Selected Item Header */}
+              <div className="mb-6 p-4 bg-gradient-to-r from-green-50 to-gray-100 border border-gray-300 rounded-lg">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h3 className="text-lg font-bold text-gray-900 mb-2 capitalize">
+                      {selectedItem.name}
+                    </h3>
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="flex items-center">
+                        <span className="text-sm text-gray-700 font-medium mr-2">
+                          Current Stock:
+                        </span>
+                        <span className="text-gray-900 font-bold text-lg">
+                          {selectedItem.itemQuantity}
+                        </span>
+                      </div>
+                      <div className="flex items-center">
+                        <span className="text-sm text-gray-700 font-medium mr-2">
+                          Current Price:
+                        </span>
+                        <span className="text-gray-900 font-bold text-lg">
+                          Tsh {selectedItem.price?.toLocaleString()}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                  <div
+                    className={`w-4 h-4 rounded-full ${
+                      formData.buyingPrice ? "bg-green-400" : "bg-gray-300"
+                    }`}
+                  ></div>
+                </div>
+              </div>
+
+              {/* Form Content */}
+              <div className="flex-1 overflow-y-auto pr-2">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {/* Buying Price */}
+                  <div>
+                    <label className="block text-sm font-semibold text-gray-900 mb-2">
+                      Buying Price *
+                    </label>
+                    <div className="relative">
+                      <input
+                        type="number"
+                        name="buyingPrice"
+                        value={formData.buyingPrice}
+                        onChange={handleChange}
+                        className={`w-full pl-4 pr-12 py-3 border ${
+                          Number(formData.buyingPrice) >
+                          Number(selectedItem.price)
+                            ? "border-red-400 bg-red-50"
+                            : "border-gray-300 bg-gray-100"
+                        } rounded-lg focus:ring-2 focus:ring-green-300 focus:border-green-300 text-gray-900 font-medium`}
+                        placeholder="0.00"
+                      />
+                      <div className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-700 font-bold">
+                        Tsh
+                      </div>
+                    </div>
+                    {Number(formData.buyingPrice) >
+                      Number(selectedItem.price) && (
+                      <div className="mt-2 p-2 bg-red-50 border border-red-200 rounded">
+                        <p className="text-xs text-red-700 font-medium">
+                          ⚠️ Buying price exceeds current selling price
+                        </p>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Selling Price */}
+                  <div>
+                    <label className="block text-sm font-semibold text-gray-900 mb-2">
+                      Selling Price
+                    </label>
+                    <div className="relative">
+                      <input
+                        type="number"
+                        name="sellingPrice"
+                        value={formData.sellingPrice || selectedItem.price}
+                        onChange={handleChange}
+                        className={`w-full pl-4 pr-12 py-3 border ${
+                          Number(formData.buyingPrice) >
+                          Number(formData.sellingPrice || selectedItem.price)
+                            ? "border-red-400 bg-red-50"
+                            : "border-gray-300 bg-gray-100"
+                        } rounded-lg focus:ring-2 focus:ring-green-300 focus:border-green-300 text-gray-900 font-medium`}
+                      />
+                      <div className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-700 font-bold">
+                        Tsh
+                      </div>
+                    </div>
+                    {Number(formData.buyingPrice) >
+                      Number(formData.sellingPrice || selectedItem.price) && (
+                      <div className="mt-2 p-2 bg-red-50 border border-red-200 rounded">
+                        <p className="text-xs text-red-700 font-medium">
+                          ⚠️ Selling price is lower than buying price
+                        </p>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Units & Items Per Unit */}
+                  <div>
+                    <label className="block text-sm font-semibold text-gray-900 mb-2">
+                      Units
+                    </label>
+                    <input
+                      type="number"
+                      name="units"
+                      value={formData.units}
+                      onChange={handleChange}
+                      min="1"
+                      className="w-full px-4 py-3 border border-gray-300 bg-gray-100 rounded-lg focus:ring-2 focus:ring-green-300 focus:border-green-300 text-gray-900 font-medium"
+                      placeholder="Number of units"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-semibold text-gray-900 mb-2">
+                      Items Per Unit
+                    </label>
+                    <input
+                      type="number"
+                      name="itemsPerUnit"
+                      value={formData.itemsPerUnit}
+                      onChange={handleChange}
+                      min="1"
+                      className="w-full px-4 py-3 border border-gray-300 bg-gray-100 rounded-lg focus:ring-2 focus:ring-green-300 focus:border-green-300 text-gray-900 font-medium"
+                      placeholder="Items per unit"
+                    />
+                  </div>
+
+                  {/* FOC & Rejected */}
+                  <div>
+                    <label className="block text-sm font-semibold text-gray-900 mb-2">
+                      Free Items (FOC)
+                    </label>
+                    <input
+                      type="number"
+                      name="foc"
+                      value={formData.foc}
+                      onChange={handleChange}
+                      min="0"
+                      className="w-full px-4 py-3 border border-gray-300 bg-gray-100 rounded-lg focus:ring-2 focus:ring-green-300 focus:border-green-300 text-gray-900 font-medium"
+                      placeholder="Free items quantity"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-semibold text-gray-900 mb-2">
+                      Rejected Items
+                    </label>
+                    <input
+                      type="number"
+                      name="rejected"
+                      value={formData.rejected}
+                      onChange={handleChange}
+                      min="0"
+                      className="w-full px-4 py-3 border border-gray-300 bg-gray-100 rounded-lg focus:ring-2 focus:ring-green-300 focus:border-green-300 text-gray-900 font-medium"
+                      placeholder="Rejected quantity"
+                    />
+                  </div>
+
+                  {/* Billed Amount & Calculated Quantity */}
+                  <div>
+                    <label className="block text-sm font-semibold text-gray-900 mb-2">
+                      Unpaid Quantity
+                    </label>
+                    <input
+                      type="number"
+                      name="billedAmount"
+                      value={formData.billedAmount}
+                      onChange={handleChange}
+                      min="0"
+                      className="w-full px-4 py-3 border border-gray-300 bg-gray-100 rounded-lg focus:ring-2 focus:ring-green-300 focus:border-green-300 text-gray-900 font-medium"
+                      placeholder="Unpaid items quantity"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-semibold text-gray-900 mb-2">
+                      Paid Quantity (Auto)
+                    </label>
+                    <div className="relative">
+                      <input
+                        type="number"
+                        name="quantity"
+                        value={formData.quantity}
+                        readOnly
+                        className="w-full px-4 py-3 border border-gray-300 bg-gray-200 rounded-lg text-gray-900 font-bold"
+                      />
+                      <div className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-900 font-bold">
+                        units
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Dates Section */}
+                  <div className="md:col-span-2 border-t border-gray-300 pt-4 mt-2">
+                    <h4 className="text-md font-bold text-gray-900 mb-4">
+                      📅 Date Information
+                    </h4>
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                      {/* Manufacture Date */}
+                      <div>
+                        <label className="block text-sm font-semibold text-gray-900 mb-2">
+                          Manufacture Date
+                        </label>
+                        <LocalizationProvider dateAdapter={AdapterDayjs}>
+                          <DatePicker
+                            value={
+                              formData.manufactureDate
+                                ? dayjs(formData.manufactureDate)
+                                : null
+                            }
+                            onChange={(newValue) => {
+                              handleChange({
+                                target: {
+                                  name: "manufactureDate",
+                                  value: newValue
+                                    ? newValue.format("YYYY-MM-DD")
+                                    : "",
+                                },
+                              });
+                              setErrorDate((prev) => ({
+                                ...prev,
+                                manufactureDate: false,
+                              }));
+                            }}
+                            format="DD/MM/YYYY"
+                            slotProps={{
+                              textField: {
+                                fullWidth: true,
+                                size: "small",
+                                error: errorDate.manufactureDate,
+                                helperText:
+                                  errorDate.manufactureDate && "Invalid date",
+                              },
+                            }}
+                            sx={{
+                              "& .MuiOutlinedInput-root": {
+                                borderRadius: "0.5rem",
+                                backgroundColor: "#f9fafb",
+                                "&:hover .MuiOutlinedInput-notchedOutline": {
+                                  borderColor: "#86efac",
+                                },
+                                "&.Mui-focused .MuiOutlinedInput-notchedOutline":
+                                  {
+                                    borderColor: "#86efac",
+                                    borderWidth: "2px",
+                                  },
+                              },
+                              "& .MuiInputBase-input": {
+                                color: "#1f2937",
+                                fontWeight: "500",
+                              },
+                            }}
+                          />
+                        </LocalizationProvider>
+                      </div>
+
+                      {/* Expiry Date */}
+                      <div>
+                        <label className="block text-sm font-semibold text-gray-900 mb-2">
+                          Expiry Date
+                        </label>
+                        <LocalizationProvider dateAdapter={AdapterDayjs}>
+                          <DatePicker
+                            value={
+                              formData.expiryDate
+                                ? dayjs(formData.expiryDate)
+                                : null
+                            }
+                            onChange={(newValue) => {
+                              handleChange({
+                                target: {
+                                  name: "expiryDate",
+                                  value: newValue
+                                    ? newValue.format("YYYY-MM-DD")
+                                    : "",
+                                },
+                              });
+                              setErrorDate((prev) => ({
+                                ...prev,
+                                expiryDate: false,
+                              }));
+                            }}
+                            format="DD/MM/YYYY"
+                            slotProps={{
+                              textField: {
+                                fullWidth: true,
+                                size: "small",
+                                error: errorDate.expiryDate,
+                                helperText:
+                                  errorDate.expiryDate &&
+                                  "Must be after manufacture",
+                              },
+                            }}
+                            sx={{
+                              "& .MuiOutlinedInput-root": {
+                                borderRadius: "0.5rem",
+                                backgroundColor: "#f9fafb",
+                                "&:hover .MuiOutlinedInput-notchedOutline": {
+                                  borderColor: "#86efac",
+                                },
+                              },
+                            }}
+                          />
+                        </LocalizationProvider>
+                      </div>
+
+                      {/* Received Date */}
+                      <div>
+                        <label className="block text-sm font-semibold text-gray-900 mb-2">
+                          Received Date
+                        </label>
+                        <LocalizationProvider dateAdapter={AdapterDayjs}>
+                          <DatePicker
+                            value={
+                              formData.receivedDate
+                                ? dayjs(formData.receivedDate)
+                                : null
+                            }
+                            onChange={(newValue) => {
+                              handleChange({
+                                target: {
+                                  name: "receivedDate",
+                                  value: newValue
+                                    ? newValue.format("YYYY-MM-DD")
+                                    : "",
+                                },
+                              });
+                              setErrorDate((prev) => ({
+                                ...prev,
+                                receivedDate: false,
+                              }));
+                            }}
+                            format="DD/MM/YYYY"
+                            slotProps={{
+                              textField: {
+                                fullWidth: true,
+                                size: "small",
+                                error: errorDate.receivedDate,
+                                helperText:
+                                  errorDate.receivedDate && "Invalid range",
+                              },
+                            }}
+                            sx={{
+                              "& .MuiOutlinedInput-root": {
+                                borderRadius: "0.5rem",
+                                backgroundColor: "#f9fafb",
+                                "&:hover .MuiOutlinedInput-notchedOutline": {
+                                  borderColor: "#86efac",
+                                },
+                              },
+                            }}
+                          />
+                        </LocalizationProvider>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Additional Information */}
+                  <div className="md:col-span-2 border-t border-gray-300 pt-4 mt-2">
+                    <h4 className="text-md font-bold text-gray-900 mb-4">
+                      📝 Additional Information
+                    </h4>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      {/* Batch Number */}
+                      <div>
+                        <label className="block text-sm font-semibold text-gray-900 mb-2">
+                          Batch Number
+                        </label>
+                        <input
+                          type="text"
+                          name="batchNumber"
+                          value={formData.batchNumber}
+                          onChange={handleChange}
+                          className="w-full px-4 py-3 border border-gray-300 bg-gray-100 rounded-lg focus:ring-2 focus:ring-green-300 focus:border-green-300 text-gray-900 font-medium"
+                          placeholder="Enter batch number"
+                          required
+                        />
+                      </div>
+
+                      {/* Total Cost */}
+                      <div>
+                        <label className="block text-sm font-semibold text-gray-900 mb-2">
+                          Total Cost (Auto)
+                        </label>
+                        <div className="relative">
+                          <input
+                            type="text"
+                            name="totalCost"
+                            value={
+                              formData.totalCost
+                                ? `Tsh ${Number(
+                                    formData.totalCost
+                                  ).toLocaleString()}`
+                                : ""
+                            }
+                            readOnly
+                            className="w-full pl-4 pr-4 py-3 border border-gray-300 bg-gray-200 rounded-lg text-gray-900 font-bold"
+                          />
+                          {formData.totalCost && (
+                            <div className="absolute right-3 top-1/2 transform -translate-y-1/2 text-green-600 font-bold">
+                              ✔
+                            </div>
+                          )}
+                        </div>
+                      </div>
+
+                      {/* Comments */}
+                      <div className="md:col-span-2">
+                        <label className="block text-sm font-semibold text-gray-900 mb-2">
+                          Comments
+                        </label>
+                        <textarea
+                          name="comments"
+                          value={formData.comments}
+                          onChange={handleChange}
+                          rows={3}
+                          className="w-full px-4 py-3 border border-gray-300 bg-gray-100 rounded-lg focus:ring-2 focus:ring-green-300 focus:border-green-300 text-gray-900 font-medium resize-none"
+                          placeholder="Add any comments or notes about this item..."
+                        />
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Action Buttons */}
+              <div className="mt-8 pt-6 border-t border-gray-300">
+                <div className="flex flex-col sm:flex-row gap-4">
+                  <button
+                    onClick={handleAdd}
+                    disabled={
+                      !selectedItem ||
+                      !formData.quantity ||
+                      !formData.buyingPrice
+                    }
+                    className={`flex-1 py-3 px-6 rounded-lg font-bold text-lg transition-all ${
+                      !selectedItem ||
+                      !formData.quantity ||
+                      !formData.buyingPrice
+                        ? "bg-gray-300 text-gray-600 cursor-not-allowed"
+                        : "bg-green-300 text-gray-900 hover:bg-green-400 hover:shadow-md transform hover:-translate-y-0.5"
+                    }`}
+                  >
+                    ✓ Add Item to List
+                  </button>
+                  <button
+                    onClick={handleCancel}
+                    className="flex-1 py-3 px-6 border border-gray-300 text-gray-900 font-bold rounded-lg hover:bg-gray-100 transition-colors"
+                  >
+                    ✗ Cancel Selection
+                  </button>
+                </div>
+              </div>
+            </div>
+          ) : (
+            /* Empty State */
+            <div className="h-full flex flex-col items-center justify-center p-12">
+              <div className="w-24 h-24 mx-auto mb-6 bg-gradient-to-r from-gray-200 to-gray-300 rounded-full flex items-center justify-center shadow-inner">
+                <TiArrowRightThick className="text-4xl text-gray-600" />
+              </div>
+              <h3 className="text-xl font-bold text-gray-900 mb-3">
+                No Item Selected
+              </h3>
+              <p className="text-gray-600 font-medium text-center mb-8 max-w-md">
+                Select an item from the products table on the left to enter
+                purchase details
+              </p>
+              <div className="flex items-center space-x-3">
+                <div className="w-3 h-3 bg-gray-400 rounded-full"></div>
+                <div className="w-3 h-3 bg-gray-300 rounded-full"></div>
+                <div className="w-3 h-3 bg-gray-300 rounded-full"></div>
+              </div>
+            </div>
+          )}
         </div>
       </div>
     </section>

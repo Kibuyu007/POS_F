@@ -19,6 +19,7 @@ import CustomerManagement from "./Customers/CustomerManagement";
 import WalletList from "./Customers/WalletList";
 import WalletReport from "./Customers/WalletReport";
 import Expenses from "./Procurement/Expenses";
+import Debts from "./Debts/Debts";
 
 const Settings = () => {
   const [selectedSetting, setSelectedSetting] = useState(null);
@@ -32,7 +33,7 @@ const Settings = () => {
           title="Pre-Purchase"
           settings={[
             // { group: "Orders", items: ["Purchase Order", "Completed PO"] },
-            { group: "Vendors", items: ["Suppliers"] },
+            { group: "Vendors", items: ["Suppliers", "Madeni Binafsi"] },
           ]}
           selectedSetting={selectedSetting}
           handleSelect={setSelectedSetting}
@@ -113,12 +114,14 @@ const Settings = () => {
           <MadeniPo />
         ) : selectedSetting === "Unpaid Non-PO" ? (
           <MadeniNonPo />
-        ): selectedSetting === "Expenses" ? (
+        ) : selectedSetting === "Expenses" ? (
           <Expenses />
         ) : selectedSetting === "All Customers" ? (
           <CustomerManagement />
         ) : selectedSetting === "Wallet Transactions" ? (
           <WalletList />
+        ) : selectedSetting === "Madeni Binafsi" ? (
+          <Debts />
         ) : selectedSetting === "Report" ? (
           <WalletReport />
         ) : selectedSetting ? (

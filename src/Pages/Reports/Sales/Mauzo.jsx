@@ -16,6 +16,7 @@ import Loading from "../../../Components/Shared/Loading";
 
 //API
 import BASE_URL from "../../../Utils/config";
+import toast from "react-hot-toast";
 
 const Mauzo = () => {
   const [transactions, setTransactions] = useState([]);
@@ -33,20 +34,31 @@ const Mauzo = () => {
     fetchTransactions();
   }, []);
 
-  const fetchTransactions = async () => {
-    setLoad(true);
-    try {
-      const res = await axios.get(`${BASE_URL}/api/transactions/all`);
-      if (res.data.success) {
-        setTransactions(res.data.data);
-        setFilteredTransactions(res.data.data);
-        calculateTotals(res.data.data);
-        setLoad(false);
-      }
-    } catch (err) {
-      console.error("Failed to load transactions:", err);
+ const fetchTransactions = async () => {
+  setLoad(true);
+  try {
+    const res = await axios.get(`${BASE_URL}/api/transactions/all`);
+
+    if (res.data.success) {
+      setTransactions(res.data.data);
+      setFilteredTransactions(res.data.data);
+      calculateTotals(res.data.data);
     }
-  };
+
+  } catch (err) {
+    console.error("Failed to load transactions:", err);
+
+    const message =
+      err.response?.data?.message ||
+      err.message ||
+      "Failed to load transactions";
+
+    toast.error(message);
+  } finally {
+    setLoad(false);  // ALWAYS stop loading
+  }
+};
+
 
   useEffect(() => {
     filterData();
