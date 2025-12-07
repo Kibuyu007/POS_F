@@ -2,15 +2,14 @@ import axios from "axios";
 import { addCategory } from "../../../../Redux/itemsCategories";
 import { useDispatch } from "react-redux";
 import { useState } from "react";
-
-//API
-import BASE_URL from "../../../../Utils/config"
-
+import { FiFolder, FiFileText, FiX, FiCheck, FiTag } from "react-icons/fi";
+import BASE_URL from "../../../../Utils/config";
+import toast from "react-hot-toast";
 
 const AddCategory = ({ showModal, setShowModal, onCategoryAdded }) => {
   const dispatch = useDispatch();
-
   const [showError, setShowError] = useState("");
+  const [loading, setLoading] = useState(false);
 
   const [regi, setRegi] = useState({
     name: "",
@@ -20,121 +19,229 @@ const AddCategory = ({ showModal, setShowModal, onCategoryAdded }) => {
   const handleChange = (e) => {
     const { name, value } = e.target;
     setRegi({ ...regi, [name]: value });
+    if (showError) setShowError("");
   };
 
   const handleAddItemCategory = async (e) => {
     e.preventDefault();
+    
+    // Validation
+    if (!regi.name.trim()) {
+      setShowError("Category name is required");
+      return;
+    }
+    
+    if (regi.name.trim().length < 2) {
+      setShowError("Category name must be at least 2 characters");
+      return;
+    }
+
+    setLoading(true);
     try {
       const response = await axios.post(
         `${BASE_URL}/api/itemsCategories/addItemCategories`,
-        regi,{ withCredentials: true }
+        regi,
+        { withCredentials: true }
       );
-      console.log(response);
+      
       dispatch(addCategory(response?.data));
-
+      toast.success("Category added successfully!");
+      
       setRegi({
         name: "",
         description: "",
       });
-      onCategoryAdded();
+      setShowError("");
+      
+      setTimeout(() => {
+        setShowModal(false);
+        onCategoryAdded();
+      }, 1500);
     } catch (error) {
-      // Extract the correct error message from backend
       if (error.response && error.response.data) {
         setShowError(
           error.response.data.error ||
-            "An error occurred. Please Contact System Adminstrator."
+            "Failed to add category. Please try again."
         );
       } else {
-        setShowError("");
+        setShowError("An error occurred. Please contact System Administrator.");
       }
-
-      console.error("Login failed", error);
+      console.error("Add category failed", error);
+    } finally {
+      setLoading(false);
     }
+  };
+
+  const handleReset = () => {
+    setRegi({
+      name: "",
+      description: "",
+    });
+    setShowError("");
   };
 
   return (
     <>
       {showModal ? (
         <>
-          <div className="flex justify-center items-center overflow-x-hidden overflow-y-auto fixed inset-0 z-50 outline-none focus:outline-none bg-indigo-600 bg-opacity-10 ">
-            <div className="w-full md:w-1/2 lg:w-1/3">
-              <div className="border-0 rounded-lg shadow-lg relative flex flex-col w-full bg-white outline-none focus:outline-none">
-                <div className="flex items-start justify-between p-5 border-b border-solid border-gray-300 rounded-t ">
-                  <h3 className="text-3xl font=semibold">Add Item</h3>
+          <div className="flex justify-center items-center overflow-x-hidden overflow-y-auto fixed inset-0 z-50 outline-none focus:outline-none bg-gray-900 bg-opacity-20">
+            <div className="w-full md:w-2/3 lg:w-1/2">
+              <div className="border border-gray-300 rounded-2xl shadow-lg relative flex flex-col w-full bg-white outline-none focus:outline-none">
+                {/* Header */}
+                <div className="flex items-start justify-between p-5 bg-green-300 border-b border-gray-400 rounded-t-2xl">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-full bg-black/5 flex items-center justify-center">
+                      <FiFolder className="w-5 h-5 text-black" />
+                    </div>
+                    <div>
+                      <h3 className="text-2xl font-bold text-black">+ Add Category</h3>
+                      <p className="text-black/70 text-sm mt-1">Create a new item category</p>
+                    </div>
+                  </div>
                   <button
-                    className="bg-transparent border-0 text-black float-right"
+                    className="p-2 hover:bg-black/5 rounded-full transition-colors"
                     onClick={() => setShowModal(false)}
                   >
-                    <span className="text-red-700 opacity-7 h-6 w-6 text-xl blockpy-0 rounded-lg bg-grey py-3 px-7">
-                      x
-                    </span>
+                    <FiX className="w-5 h-5 text-black" />
                   </button>
                 </div>
 
+                {/* Main Form Content */}
                 <div className="relative p-6 flex-auto">
                   <form onSubmit={handleAddItemCategory} className="space-y-6">
+                    {/* Category Name */}
                     <div>
-                      <label
-                        htmlFor="name"
-                        className="block mb-2 text-sm font-medium text-gray-900 dark:text-white"
-                      >
-                        Name Of the Category
-                      </label>
-                      <input
-                        type="text"
-                        name="name"
-                        value={regi.name}
-                        onChange={handleChange}
-                        className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-600 dark:border-gray-500 dark:placeholder-gray-400 dark:text-white"
-                        placeholder="Category Name"
-                      />
+                      <div className="mb-2">
+                        <label className="block text-sm font-bold text-gray-900">
+                          Category Name
+                        </label>
+                      </div>
+                      <div className="relative">
+                        <div className="absolute inset-y-0 left-3 flex items-center">
+                          <FiTag className="w-4 h-4 text-gray-500" />
+                        </div>
+                        <input
+                          type="text"
+                          name="name"
+                          value={regi.name}
+                          onChange={handleChange}
+                          className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-full bg-white text-black focus:outline-none focus:border-green-300"
+                          placeholder="Enter category name"
+                          disabled={loading}
+                          autoFocus
+                        />
+                      </div>
                     </div>
 
+                    {/* Description */}
                     <div>
-                      <label
-                        htmlFor="Description"
-                        className="block mb-2 text-sm font-medium text-gray-900 dark:text-white"
-                      >
-                        Description of Item
-                      </label>
-                      <textarea
-                        type="text"
-                        name="description"
-                        value={regi.description}
-                        required
-                        onChange={handleChange}
-                        className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-600 dark:border-gray-500 dark:placeholder-gray-400 dark:text-white"
-                        placeholder="..."
-                      />
+                      <div className="mb-2">
+                        <label className="block text-sm font-bold text-gray-900">
+                          Description (Optional)
+                        </label>
+                      </div>
+                      <div className="relative">
+                        <div className="absolute top-3 left-3">
+                          <FiFileText className="w-4 h-4 text-gray-500" />
+                        </div>
+                        <textarea
+                          name="description"
+                          value={regi.description}
+                          onChange={handleChange}
+                          rows="3"
+                          className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-xl bg-white text-black focus:outline-none focus:border-green-300 resize-none"
+                          placeholder="Enter category description"
+                          disabled={loading}
+                        />
+                      </div>
                     </div>
 
-                    <button
-                      type="submit"
-                      className="col-span-2 bg-green-300 py-2 rounded-md hover:bg-gray-300 text-black w-full"
-                    >
-                      Submit
-                    </button>
+                    {/* Validation Summary */}
+                    <div className="bg-gray-100 rounded-xl p-4 border border-gray-300">
+                      <p className="text-sm font-bold text-black mb-3">Validation Status</p>
+                      <div className="space-y-2">
+                        <div className={`flex items-center gap-3 ${regi.name ? "text-green-700" : "text-gray-600"}`}>
+                          <div className={`w-3 h-3 rounded-full ${regi.name ? "bg-green-300" : "bg-gray-400"}`} />
+                          <span className="text-sm">Category name {regi.name ? "✓" : "(required)"}</span>
+                        </div>
+                        <div className={`flex items-center gap-3 ${regi.description ? "text-green-700" : "text-gray-600"}`}>
+                          <div className={`w-3 h-3 rounded-full ${regi.description ? "bg-green-300" : "bg-gray-400"}`} />
+                          <span className="text-sm">Description {regi.description ? "✓" : "(optional)"}</span>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Error Message */}
+                    {showError && (
+                      <div>
+                        <div className="bg-red-50 border border-red-200 text-red-600 rounded-xl p-4">
+                          <span className="font-bold">Error: </span> {showError}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Submit Button */}
+                    <div>
+                      <button
+                        type="submit"
+                        disabled={loading || !regi.name}
+                        className={`w-full py-3 font-bold rounded-full flex items-center justify-center gap-2 ${
+                          loading || !regi.name
+                            ? "bg-gray-300 text-gray-500 cursor-not-allowed"
+                            : "bg-green-300 hover:bg-green-400 text-black"
+                        }`}
+                      >
+                        {loading ? (
+                          <>
+                            <svg
+                              className="animate-spin h-5 w-5 text-black"
+                              xmlns="http://www.w3.org/2000/svg"
+                              fill="none"
+                              viewBox="0 0 24 24"
+                            >
+                              <circle
+                                className="opacity-25"
+                                cx="12"
+                                cy="12"
+                                r="10"
+                                stroke="currentColor"
+                                strokeWidth="4"
+                              ></circle>
+                              <path
+                                className="opacity-75"
+                                fill="currentColor"
+                                d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                              ></path>
+                            </svg>
+                            <span>Creating...</span>
+                          </>
+                        ) : (
+                          <>
+                            <FiCheck className="w-5 h-5" />
+                            <span>Add Category</span>
+                          </>
+                        )}
+                      </button>
+                    </div>
                   </form>
                 </div>
 
-                <div className="flex items-center justify-center p-4 border-t">
+                {/* Footer */}
+                <div className="flex items-center justify-between p-5 border-t border-gray-300">
                   <button
-                    className="text-red-500 font-bold uppercase px-6 py-2 rounded-lg"
+                    type="button"
+                    onClick={handleReset}
+                    className="px-4 py-2 bg-gray-200 hover:bg-gray-300 text-black font-bold rounded-full transition-colors text-sm"
+                    disabled={loading}
+                  >
+                    Reset
+                  </button>
+                  <button
+                    className="px-4 py-2 bg-gray-200 hover:bg-gray-300 text-black font-bold rounded-full transition-colors text-sm"
                     onClick={() => setShowModal(false)}
                   >
                     Close
                   </button>
-                </div>
-
-                <div className="flex items-center justify-center p-4 border-t">
-                  {showError && (
-                    <div
-                      className="mt-2 bg-red-100/70 border border-red-200 text-sm text-red-800 rounded-lg p-4 dark:bg-red-800/10 dark:border-red-900 dark:text-red-500"
-                      role="alert"
-                    >
-                      <span className="font-bold">Error: </span> {showError}
-                    </div>
-                  )}
                 </div>
               </div>
             </div>

@@ -1,13 +1,8 @@
 import { useState } from "react";
 import axios from "axios";
 import BASE_URL from "../../../Utils/config";
-import {
-  FiUser,
-  FiPhone,
-  FiX,
-  FiCheck,
-  FiAlertCircle,
-} from "react-icons/fi";
+import toast from "react-hot-toast";
+import { FiUser, FiPhone, FiCheck, FiX, FiCreditCard } from "react-icons/fi";
 
 const AddDebt = ({ close }) => {
   const [formData, setFormData] = useState({
@@ -18,7 +13,6 @@ const AddDebt = ({ close }) => {
 
   const [errors, setErrors] = useState({});
   const [loading, setLoading] = useState(false);
-  const [success, setSuccess] = useState(false);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -79,16 +73,13 @@ const AddDebt = ({ close }) => {
         totalAmount: parseFloat(formData.totalAmount),
       });
 
-      setSuccess(true);
+      toast.success("Debt record created successfully!");
       setTimeout(() => {
-        setSuccess(false);
         close();
       }, 1500);
     } catch (err) {
       console.error("Error adding debt:", err);
-      alert(
-        err.response?.data?.message || "Failed to add debt. Please try again."
-      );
+      toast.error(err.response?.data?.message || "Failed to add debt. Please try again.");
     } finally {
       setLoading(false);
     }
@@ -104,85 +95,60 @@ const AddDebt = ({ close }) => {
   };
 
   return (
-    <div className="fixed inset-0 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm z-50 overflow-y-auto">
-      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-5xl my-8">
-        {/* Header */}
-        <div className="bg-gradient-to-r from-green-500 to-emerald-600 px-10 py-7">
-          <div className="flex justify-between items-center">
-            <div className="flex items-center gap-4">
-              <div className="p-3 bg-white/20 rounded-xl"></div>
-              <div>
-                <h2 className="text-2xl font-bold text-white">
-                  Create New Debt Record
-                </h2>
-                <p className="text-green-100">
-                  Add a new customer debt to the system
-                </p>
-              </div>
-            </div>
-            <button
-              onClick={close}
-              className="p-2 hover:bg-white/20 rounded-lg transition-colors"
-              disabled={loading}
-            >
-              <FiX className="text-2xl text-white" />
-            </button>
-          </div>
-        </div>
-
-        {/* Success Message */}
-        {success && (
-          <div className="bg-gradient-to-r from-green-100 to-emerald-100 border-b border-green-200">
-            <div className="px-10 py-5 flex items-center gap-4">
-              <div className="p-3 bg-green-500 rounded-full">
-                <FiCheck className="text-2xl text-white" />
-              </div>
-              <div>
-                <p className="font-bold text-green-800 text-lg">
-                  Debt Record Created Successfully!
-                </p>
-                <p className="text-green-600">
-                  The debt has been added to the system and will appear in the
-                  list.
-                </p>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* Main Content */}
-        <div className="p-10">
-          <form onSubmit={handleSubmit}>
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-              {/* Left Column */}
-              <div className="space-y-6">
-                {/* Customer Name */}
+    <>
+      <div className="flex justify-center items-center overflow-x-hidden overflow-y-auto fixed inset-0 z-50 outline-none focus:outline-none bg-gray-900 bg-opacity-20">
+        <div className="w-full md:w-2/3 lg:w-1/2">
+          <div className="border border-gray-300 rounded-2xl shadow-lg relative flex flex-col w-full bg-white outline-none focus:outline-none">
+            {/* Header - Clean and simple */}
+            <div className="flex items-start justify-between p-5 bg-green-400 border-b border-gray-400 rounded-t-2xl">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-full bg-black/5 flex items-center justify-center">
+                  <FiCreditCard className="w-5 h-5 text-black" />
+                </div>
                 <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-3 flex items-center gap-2">
-                    <FiUser className="text-gray-500" />
-                    Customer Name
-                    <span className="text-red-500 ml-1">*</span>
-                  </label>
+                  <h3 className="text-2xl font-bold text-black">+ Add New Debt</h3>
+                  <p className="text-black/70 text-sm mt-1">Enter customer details and debt amount</p>
+                </div>
+              </div>
+              <button
+                onClick={close}
+                className="p-2 hover:bg-black/5 rounded-full transition-colors"
+              >
+                <FiX className="w-5 h-5 text-black" />
+              </button>
+            </div>
+
+            {/* Main Form Content */}
+            <div className="relative p-6 flex-auto">
+              <form onSubmit={handleSubmit} className="grid grid-cols-2 gap-4">
+                {/* Customer Name - Full width */}
+                <div className="col-span-2">
+                  <div className="mb-2">
+                    <label className="block text-sm font-bold text-gray-900">
+                      Customer Name
+                    </label>
+                  </div>
                   <div className="relative">
+                    <div className="absolute inset-y-0 left-3 flex items-center">
+                      <FiUser className="w-4 h-4 text-gray-500" />
+                    </div>
                     <input
                       type="text"
                       name="customerName"
                       value={formData.customerName}
                       onChange={handleChange}
-                      className={`w-full px-4 py-3.5 pl-12 rounded-xl border-2 ${
+                      className={`w-full pl-10 pr-4 py-3 border ${
                         errors.customerName
-                          ? "border-red-300 bg-red-50 focus:border-red-500 focus:ring-2 focus:ring-red-200"
-                          : "border-gray-200 bg-gray-50 focus:border-green-500 focus:ring-2 focus:ring-green-200"
-                      } transition-all duration-200 text-gray-900`}
+                          ? "border-red-300"
+                          : "border-gray-300"
+                      } rounded-full bg-white text-black focus:outline-none focus:border-green-300`}
                       placeholder="Enter customer's full name"
-                      disabled={loading || success}
+                      disabled={loading}
                       autoFocus
                     />
-                    <FiUser className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400" />
                   </div>
                   {errors.customerName && (
-                    <div className="mt-2 flex items-center gap-2 text-sm text-red-600">
-                      <FiAlertCircle />
+                    <div className="mt-2 text-sm text-red-600">
                       {errors.customerName}
                     </div>
                   )}
@@ -190,44 +156,43 @@ const AddDebt = ({ close }) => {
 
                 {/* Phone Number */}
                 <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-3 flex items-center gap-2">
-                    <FiPhone className="text-gray-500" />
-                    Phone Number
-                    <span className="text-red-500 ml-1">*</span>
-                  </label>
+                  <div className="mb-2">
+                    <label className="block text-sm font-bold text-gray-900">
+                      Phone Number
+                    </label>
+                  </div>
                   <div className="relative">
+                    <div className="absolute inset-y-0 left-3 flex items-center">
+                      <FiPhone className="w-4 h-4 text-gray-500" />
+                    </div>
                     <input
                       type="tel"
                       name="phone"
                       value={formData.phone}
                       onChange={handleChange}
-                      className={`w-full px-4 py-3.5 pl-12 rounded-xl border-2 ${
+                      className={`w-full pl-10 pr-4 py-3 border ${
                         errors.phone
-                          ? "border-red-300 bg-red-50 focus:border-red-500 focus:ring-2 focus:ring-red-200"
-                          : "border-gray-200 bg-gray-50 focus:border-green-500 focus:ring-2 focus:ring-green-200"
-                      } transition-all duration-200 text-gray-900`}
-                      placeholder="e.g., 0712 345 678 or +255712345678"
-                      disabled={loading || success}
+                          ? "border-red-300"
+                          : "border-gray-300"
+                      } rounded-full bg-white text-black focus:outline-none focus:border-green-300`}
+                      placeholder="0712 345 678"
+                      disabled={loading}
                     />
-                    <FiPhone className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400" />
                   </div>
                   {errors.phone && (
-                    <div className="mt-2 flex items-center gap-2 text-sm text-red-600">
-                      <FiAlertCircle />
+                    <div className="mt-2 text-sm text-red-600">
                       {errors.phone}
                     </div>
                   )}
                 </div>
-              </div>
 
-              {/* Right Column */}
-              <div className="space-y-6">
                 {/* Total Amount */}
                 <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-3 flex items-center gap-2">
-                    Total Amount (Tsh)
-                    <span className="text-red-500 ml-1">*</span>
-                  </label>
+                  <div className="mb-2">
+                    <label className="block text-sm font-bold text-gray-900">
+                      Total Amount
+                    </label>
+                  </div>
                   <div className="relative">
                     <input
                       type="number"
@@ -236,28 +201,29 @@ const AddDebt = ({ close }) => {
                       onChange={handleChange}
                       min="100"
                       step="100"
-                      className={`w-full px-4 py-3.5 pl-12 rounded-xl border-2 ${
+                      className={`w-full px-4 py-3 border ${
                         errors.totalAmount
-                          ? "border-red-300 bg-red-50 focus:border-red-500 focus:ring-2 focus:ring-red-200"
-                          : "border-gray-200 bg-gray-50 focus:border-green-500 focus:ring-2 focus:ring-green-200"
-                      } transition-all duration-200 text-gray-900`}
-                      placeholder="Enter amount"
-                      disabled={loading || success}
+                          ? "border-red-300"
+                          : "border-gray-300"
+                      } rounded-full bg-white text-black focus:outline-none focus:border-green-300`}
+                      placeholder="0.00"
+                      disabled={loading}
                     />
-
-                    <div className="absolute right-4 top-1/2 transform -translate-y-1/2 text-gray-600 font-medium">
+                    <div className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-700 font-bold text-sm">
                       Tsh
                     </div>
                   </div>
                   {errors.totalAmount && (
-                    <div className="mt-2 flex items-center gap-2 text-sm text-red-600">
-                      <FiAlertCircle />
+                    <div className="mt-2 text-sm text-red-600">
                       {errors.totalAmount}
                     </div>
                   )}
+                </div>
 
-                  {/* Quick Amount Buttons */}
-                  <div className="flex gap-2 mt-3">
+                {/* Quick Amount Buttons - Full width */}
+                <div className="col-span-2">
+                  <p className="text-sm font-medium text-gray-700 mb-2">Quick Amount (Tsh)</p>
+                  <div className="flex flex-wrap gap-2">
                     <button
                       type="button"
                       onClick={() =>
@@ -266,8 +232,8 @@ const AddDebt = ({ close }) => {
                           totalAmount: "10000",
                         }))
                       }
-                      className="text-xs px-3 py-1.5 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg transition-colors"
-                      disabled={loading || success}
+                      className="px-4 py-2 bg-gray-100 hover:bg-gray-200 text-black font-medium rounded-full transition-colors text-sm"
+                      disabled={loading}
                     >
                       10,000
                     </button>
@@ -279,8 +245,8 @@ const AddDebt = ({ close }) => {
                           totalAmount: "50000",
                         }))
                       }
-                      className="text-xs px-3 py-1.5 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg transition-colors"
-                      disabled={loading || success}
+                      className="px-4 py-2 bg-gray-100 hover:bg-gray-200 text-black font-medium rounded-full transition-colors text-sm"
+                      disabled={loading}
                     >
                       50,000
                     </button>
@@ -292,8 +258,8 @@ const AddDebt = ({ close }) => {
                           totalAmount: "100000",
                         }))
                       }
-                      className="text-xs px-3 py-1.5 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg transition-colors"
-                      disabled={loading || success}
+                      className="px-4 py-2 bg-gray-100 hover:bg-gray-200 text-black font-medium rounded-full transition-colors text-sm"
+                      disabled={loading}
                     >
                       100,000
                     </button>
@@ -305,151 +271,113 @@ const AddDebt = ({ close }) => {
                           totalAmount: "500000",
                         }))
                       }
-                      className="text-xs px-3 py-1.5 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg transition-colors"
-                      disabled={loading || success}
+                      className="px-4 py-2 bg-gray-100 hover:bg-gray-200 text-black font-medium rounded-full transition-colors text-sm"
+                      disabled={loading}
                     >
                       500,000
                     </button>
                   </div>
                 </div>
 
-                {/* Validation Summary */}
-                <div className="bg-gradient-to-br from-gray-50 to-gray-100 rounded-xl p-4 border border-gray-200">
-                  <p className="text-sm font-medium text-gray-700 mb-2">
-                    Validation Summary
-                  </p>
+                {/* Validation Summary - Clean and simple */}
+                <div className="col-span-2 bg-gray-100 rounded-xl p-4 border border-gray-300">
+                  <p className="text-sm font-bold text-black mb-3">Validation Status</p>
                   <div className="space-y-2">
-                    <div
-                      className={`flex items-center gap-2 text-sm ${
-                        formData.customerName
-                          ? "text-green-600"
-                          : "text-gray-400"
-                      }`}
-                    >
-                      <div
-                        className={`w-2 h-2 rounded-full ${
-                          formData.customerName ? "bg-green-500" : "bg-gray-300"
-                        }`}
-                      />
-                      Customer name{" "}
-                      {formData.customerName ? "provided" : "required"}
+                    <div className={`flex items-center gap-3 ${formData.customerName ? "text-green-700" : "text-gray-600"}`}>
+                      <div className={`w-3 h-3 rounded-full ${formData.customerName ? "bg-green-300" : "bg-gray-400"}`} />
+                      <span className="text-sm">Customer name {formData.customerName ? "✓" : "(required)"}</span>
                     </div>
-                    <div
-                      className={`flex items-center gap-2 text-sm ${
-                        formData.phone ? "text-green-600" : "text-gray-400"
-                      }`}
-                    >
-                      <div
-                        className={`w-2 h-2 rounded-full ${
-                          formData.phone ? "bg-green-500" : "bg-gray-300"
-                        }`}
-                      />
-                      Phone number {formData.phone ? "provided" : "required"}
+                    <div className={`flex items-center gap-3 ${formData.phone ? "text-green-700" : "text-gray-600"}`}>
+                      <div className={`w-3 h-3 rounded-full ${formData.phone ? "bg-green-300" : "bg-gray-400"}`} />
+                      <span className="text-sm">Phone number {formData.phone ? "✓" : "(required)"}</span>
                     </div>
-                    <div
-                      className={`flex items-center gap-2 text-sm ${
-                        formData.totalAmount
-                          ? "text-green-600"
-                          : "text-gray-400"
-                      }`}
-                    >
-                      <div
-                        className={`w-2 h-2 rounded-full ${
-                          formData.totalAmount ? "bg-green-500" : "bg-gray-300"
-                        }`}
-                      />
-                      Amount {formData.totalAmount ? "specified" : "required"}
+                    <div className={`flex items-center gap-3 ${formData.totalAmount ? "text-green-700" : "text-gray-600"}`}>
+                      <div className={`w-3 h-3 rounded-full ${formData.totalAmount ? "bg-green-300" : "bg-gray-400"}`} />
+                      <span className="text-sm">Total amount {formData.totalAmount ? "✓" : "(required)"}</span>
                     </div>
                   </div>
                 </div>
-              </div>
+
+                {/* Submit Button - Full width */}
+                <div className="col-span-2">
+                  <button
+                    type="submit"
+                    disabled={
+                      loading ||
+                      !formData.customerName ||
+                      !formData.phone ||
+                      !formData.totalAmount
+                    }
+                    className={`w-full py-3 font-bold rounded-full flex items-center justify-center gap-2 ${
+                      loading ||
+                      !formData.customerName ||
+                      !formData.phone ||
+                      !formData.totalAmount
+                        ? "bg-gray-300 text-gray-500 cursor-not-allowed"
+                        : "bg-green-300 hover:bg-green-400 text-black"
+                    }`}
+                  >
+                    {loading ? (
+                      <>
+                        <svg
+                          className="animate-spin h-5 w-5 text-black"
+                          xmlns="http://www.w3.org/2000/svg"
+                          fill="none"
+                          viewBox="0 0 24 24"
+                        >
+                          <circle
+                            className="opacity-25"
+                            cx="12"
+                            cy="12"
+                            r="10"
+                            stroke="currentColor"
+                            strokeWidth="4"
+                          ></circle>
+                          <path
+                            className="opacity-75"
+                            fill="currentColor"
+                            d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                          ></path>
+                        </svg>
+                        <span>Processing...</span>
+                      </>
+                    ) : (
+                      <>
+                        <FiCheck className="w-5 h-5" />
+                        <span>Create Debt Record</span>
+                      </>
+                    )}
+                  </button>
+                </div>
+              </form>
             </div>
 
-            {/* Action Buttons */}
-            <div className="mt-10 pt-8 border-t border-gray-200">
-              <div className="flex flex-col sm:flex-row gap-4 justify-end">
-                <button
-                  type="button"
-                  onClick={close}
-                  className="px-6 py-3.5 border-2 border-gray-300 text-gray-700 font-semibold rounded-xl hover:bg-gray-50 hover:border-gray-400 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-                  disabled={loading}
-                >
-                  Cancel
-                </button>
-                <button
-                  type="button"
-                  onClick={handleReset}
-                  className="px-6 py-3.5 border-2 border-gray-300 text-gray-700 font-semibold rounded-xl hover:bg-gray-50 hover:border-gray-400 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-                  disabled={
-                    loading ||
-                    success ||
-                    (!formData.customerName &&
-                      !formData.phone &&
-                      !formData.totalAmount)
-                  }
-                >
-                  Reset
-                </button>
-                <button
-                  type="submit"
-                  disabled={
-                    loading ||
-                    success ||
-                    !formData.customerName ||
-                    !formData.phone ||
-                    !formData.totalAmount
-                  }
-                  className={`px-6 py-3.5 font-semibold rounded-xl transition-all duration-300 flex items-center justify-center gap-3 min-w-[180px] ${
-                    loading ||
-                    success ||
-                    !formData.customerName ||
-                    !formData.phone ||
-                    !formData.totalAmount
-                      ? "bg-gray-200 text-gray-500 cursor-not-allowed"
-                      : "bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white shadow-lg hover:shadow-xl hover:-translate-y-0.5"
-                  }`}
-                >
-                  {loading ? (
-                    <>
-                      <svg
-                        className="animate-spin h-5 w-5 text-white"
-                        xmlns="http://www.w3.org/2000/svg"
-                        fill="none"
-                        viewBox="0 0 24 24"
-                      >
-                        <circle
-                          className="opacity-25"
-                          cx="12"
-                          cy="12"
-                          r="10"
-                          stroke="currentColor"
-                          strokeWidth="4"
-                        ></circle>
-                        <path
-                          className="opacity-75"
-                          fill="currentColor"
-                          d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                        ></path>
-                      </svg>
-                      <span>Processing...</span>
-                    </>
-                  ) : success ? (
-                    <>
-                      <FiCheck className="text-xl" />
-                      <span>Success!</span>
-                    </>
-                  ) : (
-                    <>
-                      <span>Create Debt Record</span>
-                    </>
-                  )}
-                </button>
-              </div>
+            {/* Footer - Simple */}
+            <div className="flex items-center justify-between p-5 border-t border-gray-300">
+              <button
+                type="button"
+                onClick={handleReset}
+                className="px-4 py-2 bg-gray-200 hover:bg-gray-300 text-black font-bold rounded-full transition-colors text-sm"
+                disabled={
+                  loading ||
+                  (!formData.customerName &&
+                    !formData.phone &&
+                    !formData.totalAmount)
+                }
+              >
+                Reset
+              </button>
+              <button
+                className="px-4 py-2 bg-gray-200 hover:bg-gray-300 text-black font-bold rounded-full transition-colors text-sm"
+                onClick={close}
+              >
+                Close
+              </button>
             </div>
-          </form>
+          </div>
         </div>
       </div>
-    </div>
+    </>
   );
 };
 

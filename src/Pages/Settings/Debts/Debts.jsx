@@ -36,12 +36,10 @@ const Debts = () => {
       setDebts(res.data);
     } catch (error) {
       console.error("Error fetching debts:", error);
-
       const message =
         error.response?.data?.message ||
         error.message ||
-        "Failed to load transactions";
-
+        "Failed to load debts";
       toast.error(message);
     } finally {
       setLoad(false);
@@ -52,33 +50,32 @@ const Debts = () => {
     const id = debt._id;
     const amount = parseFloat(deductions[id] || 0);
 
-    if (!amount || amount <= 0) return alert("Enter valid amount");
-    if (amount > debt.remainingAmount)
-      return alert("Amount exceeds remaining balance");
+    if (!amount || amount <= 0) {
+      toast.error("Please enter a valid amount");
+      return;
+    }
+    if (amount > debt.remainingAmount) {
+      toast.error("Amount exceeds remaining balance");
+      return;
+    }
 
     try {
       const res = await axios.post(`${BASE_URL}/api/debts/payDebt/${id}`, {
         amount,
       });
-
-      toast.success(res.data.message || "Payment updated");
+      toast.success(res.data.message || "Payment successful");
       setDeductions((prev) => ({ ...prev, [id]: "" }));
       fetchDebts();
     } catch (err) {
       console.error("Error paying:", err);
-
       const message =
-        err.response?.data?.message ||
-        err.message ||
-        "Failed to load transactions";
-
+        err.response?.data?.message || err.message || "Payment failed";
       toast.error(message);
     }
   };
 
   const filteredData = debts.filter((d) => {
     if (!d.createdAt) return false;
-
     const date = dayjs(d.createdAt);
     const matchStart = startDate
       ? date.isSameOrAfter(dayjs(startDate), "day")
@@ -91,11 +88,9 @@ const Debts = () => {
           .toLowerCase()
           .includes(customerFilter.toLowerCase())
       : true;
-
     return matchStart && matchEnd && matchCustomer;
   });
 
-  // Calculate stats
   const totalDebt = filteredData.reduce(
     (sum, d) => sum + (d.totalAmount || 0),
     0
@@ -117,118 +112,179 @@ const Debts = () => {
   );
 
   return (
-    <div className="p-4">
+    <div className="p-5 bg-gray-50 min-h-screen">
       {/* Header */}
-      <div className="flex justify-between items-center mb-6">
+      <div className="flex flex-col md:flex-row md:items-center justify-between mb-8">
         <div>
-          <h2 className="text-2xl font-bold text-gray-800">Debts</h2>
-          <p className="text-gray-600 text-sm mt-1">
-            Track and manage customer debts
+          <h1 className="text-3xl font-bold text-black mb-2">
+            Debts Management
+          </h1>
+          <p className="text-gray-600">
+            Track and manage all customer debts in one place
           </p>
         </div>
         <button
           onClick={() => setOpenAdd(true)}
-          className="bg-green-300 hover:bg-green-400 text-black font-medium px-5 py-2 rounded-full transition-colors"
+          className="mt-4 md:mt-0 px-6 py-3 bg-green-300 hover:bg-green-400 text-black font-bold rounded-full shadow-md hover:shadow-lg transition-all duration-200"
         >
-          Add Debt
+          + Add New Debt
         </button>
       </div>
 
-      {/* Stats - Compact single line */}
-      <div className="flex items-center gap-3 mb-4 text-sm">
-        <div className="flex items-center gap-1">
-          <span className="text-gray-500">Total:</span>
-          <span className="font-medium">Tsh {totalDebt.toLocaleString()}</span>
-        </div>
-        <div className="h-3 w-px bg-gray-300"></div>
-        <div className="flex items-center gap-1">
-          <span className="text-gray-500">Pending:</span>
-          <span className="font-medium text-red-600">
-            Tsh {totalRemaining.toLocaleString()}
-          </span>
-        </div>
-        <div className="h-3 w-px bg-gray-300"></div>
-        <div className="flex items-center gap-1">
-          <span className="text-gray-500">Paid:</span>
-          <span className="font-medium text-green-600">
-            Tsh {totalPaid.toLocaleString()}
-          </span>
-        </div>
-        <div className="h-3 w-px bg-gray-300"></div>
-        <div className="flex items-center gap-1">
-          <span className="text-gray-500">Status:</span>
-          <span className="text-red-600 text-xs">{pendingDebts} pending</span>
-          <span className="text-gray-300 mx-0.5">•</span>
-          <span className="text-green-600 text-xs">{paidDebts} paid</span>
+      {/* Stats Section - Horizontal Bar */}
+      <div className="mb-8">
+        <div className="flex flex-col sm:flex-row items-center justify-between bg-white border border-gray-200 rounded-full p-5 shadow-sm">
+          <div className="flex items-center gap-2 mb-4 sm:mb-0">
+            <div className="text-center px-4">
+              <p className="text-xs text-gray-500 font-medium">Total</p>
+              <p className="text-lg font-bold text-black">
+                Tsh {totalDebt.toLocaleString()}
+              </p>
+            </div>
+
+            <div className="h-10 w-px bg-gray-300"></div>
+
+            <div className="text-center px-4">
+              <p className="text-xs text-gray-500 font-medium">Pending</p>
+              <p className="text-lg font-bold text-red-600">
+                Tsh {totalRemaining.toLocaleString()}
+              </p>
+            </div>
+
+            <div className="h-10 w-px bg-gray-300"></div>
+
+            <div className="text-center px-4">
+              <p className="text-xs text-gray-500 font-medium">Paid</p>
+              <p className="text-lg font-bold text-green-600">
+                Tsh {totalPaid.toLocaleString()}
+              </p>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-4">
+            <div className="flex items-center gap-2">
+              <div className="w-3 h-3 bg-red-500 rounded-full"></div>
+              <span className="text-sm font-medium text-gray-700">
+                Pending:{" "}
+              </span>
+              <span className="font-bold text-black">{pendingDebts}</span>
+            </div>
+
+            <div className="h-4 w-px bg-gray-300"></div>
+
+            <div className="flex items-center gap-2">
+              <div className="w-3 h-3 bg-green-500 rounded-full"></div>
+              <span className="text-sm font-medium text-gray-700">Paid: </span>
+              <span className="font-bold text-black">{paidDebts}</span>
+            </div>
+          </div>
         </div>
       </div>
 
       {/* Filters Section */}
-      <div className="mb-6">
-        <div className="flex flex-col md:flex-row md:items-center gap-4">
-          <div className="flex-1 grid grid-cols-1 md:grid-cols-3 gap-4">
-            <input
-              type="text"
-              placeholder="Search by Customer"
-              value={customerFilter}
-              onChange={(e) => setCustomerFilter(e.target.value)}
-              className="px-4 py-2.5 rounded-full border border-gray-300 bg-white text-sm focus:border-green-500 focus:outline-none"
-            />
-
-            <LocalizationProvider dateAdapter={AdapterDayjs}>
-              <DatePicker
-                label="From Date"
-                value={startDate}
-                onChange={(v) => setStartDate(v)}
-                slotProps={{
-                  textField: {
-                    size: "small",
-                    fullWidth: true,
-                    className:
-                      "bg-white border border-gray-300 text-sm rounded-full",
-                  },
-                }}
+      <div className="mb-8 rounded-2xl p-5 shadow-md">
+        <div className="flex flex-col lg:flex-row lg:items-end gap-5">
+          {/* Search Input */}
+          <div className="flex-1">
+            <label className="block text-sm font-bold text-gray-700 mb-2">
+              Search Customer
+            </label>
+            <div className="relative">
+              <div className="absolute inset-y-0 left-3 flex items-center">
+                <svg
+                  className="w-5 h-5 text-gray-400"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+                  />
+                </svg>
+              </div>
+              <input
+                type="text"
+                placeholder="Name or phone number..."
+                value={customerFilter}
+                onChange={(e) => setCustomerFilter(e.target.value)}
+                className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-full bg-white text-black focus:border-green-300 focus:outline-none focus:ring-1 focus:ring-green-200"
               />
-            </LocalizationProvider>
-
-            <LocalizationProvider dateAdapter={AdapterDayjs}>
-              <DatePicker
-                label="To Date"
-                value={endDate}
-                onChange={(v) => setEndDate(v)}
-                slotProps={{
-                  textField: {
-                    size: "small",
-                    fullWidth: true,
-                    className:
-                      "bg-white border border-gray-300 text-sm rounded-full",
-                  },
-                }}
-              />
-            </LocalizationProvider>
+            </div>
           </div>
 
-          <button
-            onClick={() => {
-              setCustomerFilter("");
-              setStartDate(null);
-              setEndDate(null);
-            }}
-            className="px-4 py-2.5 rounded-full border border-gray-300 text-gray-700 text-sm hover:bg-gray-50 transition-colors"
-          >
-            Clear Filters
-          </button>
+          {/* Date Range */}
+          <div className="flex-1">
+            <label className="block text-sm font-bold text-gray-700 mb-2">
+              Date Range
+            </label>
+            <div className="flex gap-3">
+              <LocalizationProvider dateAdapter={AdapterDayjs}>
+                <DatePicker
+                  label="From"
+                  value={startDate}
+                  onChange={setStartDate}
+                  slotProps={{
+                    textField: {
+                      size: "small",
+                      sx: {
+                        "& .MuiOutlinedInput-root": {
+                          borderRadius: "9999px",
+                        },
+                      },
+                      className: "w-full bg-white",
+                    },
+                  }}
+                />
+              </LocalizationProvider>
+
+              <LocalizationProvider dateAdapter={AdapterDayjs}>
+                <DatePicker
+                  label="To"
+                  value={endDate}
+                  onChange={setEndDate}
+                  slotProps={{
+                    textField: {
+                      size: "small",
+                      sx: {
+                        "& .MuiOutlinedInput-root": {
+                          borderRadius: "9999px",
+                        },
+                      },
+                      className: "w-full bg-white",
+                    },
+                  }}
+                />
+              </LocalizationProvider>
+            </div>
+          </div>
+
+          {/* Clear Button */}
+          <div className="flex gap-3 lg:items-end">
+            <button
+              onClick={() => {
+                setCustomerFilter("");
+                setStartDate(null);
+                setEndDate(null);
+              }}
+              className="px-5 py-3 bg-gray-200 hover:bg-gray-300 text-black font-bold rounded-full transition-colors whitespace-nowrap"
+            >
+              Clear Filters
+            </button>
+          </div>
         </div>
       </div>
 
       {/* Loading */}
       <Loading load={load} />
 
-      {/* Table - Original size */}
-      <div className="overflow-x-auto rounded-lg mt-6">
+      {/* Table with Colored Columns */}
+      <div className="overflow-x-auto rounded-xl">
         <table className="min-w-full">
-          <thead className="bg-gray-100">
-            <tr>
+          <thead>
+            <tr className="bg-gray-200">
               {[
                 "SN",
                 "Date",
@@ -241,7 +297,7 @@ const Debts = () => {
               ].map((h) => (
                 <th
                   key={h}
-                  className="px-5 py-3 bg-gray-200 text-center text-xs font-bold uppercase text-black"
+                  className="px-6 py-4 text-center text-sm font-bold text-black uppercase tracking-wider border-b-2 border-gray-400"
                 >
                   {h}
                 </th>
@@ -254,115 +310,129 @@ const Debts = () => {
           <tbody>
             {currentList.length === 0 ? (
               <tr>
-                <td colSpan={8} className="text-center py-8 text-gray-500">
-                  No debts found
+                <td colSpan={8} className="text-center py-12">
+                  <div className="space-y-3">
+                    <div className="text-4xl">📋</div>
+                    <p className="text-xl font-bold text-black">
+                      No debts found
+                    </p>
+                    <p className="text-gray-600">
+                      Try adjusting your search filters
+                    </p>
+                  </div>
                 </td>
               </tr>
             ) : (
               currentList.map((d, idx) => (
                 <>
-                <tr
-                  key={d._id}
-                  className="text-center text-gray-800 hover:bg-gray-50 transition-colors"
-                >
-                  <td className="py-2 px-3 font-normal text-base border-x shadow-md bg-gray-100  hover:bg-gray-100  whitespace-nowrap overflow-hidden overflow-ellipsis max-w-[200px]">
-                    <span className="bg-green-300 rounded-full px-3 py-1">
-                      {(currentPage - 1) * itemsPerPage + idx + 1}
-                    </span>
-                  </td>
+                  <tr
+                    key={d._id}
+                    className="hover:bg-gray-50 transition-colors shadow-md"
+                  >
+                    {/* SN Column - Green 300 */}
+                    <td className="py-4 px-3 text-center  border-r border-gray-300 bg-gray-200">
+                      <span className="inline-flex items-center justify-center w-10 h-10  bg-green-300 text-black font-bold rounded-full shadow">
+                        {(currentPage - 1) * itemsPerPage + idx + 1}
+                      </span>
+                    </td>
 
-                  <td className="py-2 px-3 font-normal text-base border-x shadow-md bg-gray-200  hover:bg-gray-100  whitespace-nowrap overflow-hidden overflow-ellipsis max-w-[200px]">
-                    <div className="items-center text-center">
-                      <div className="ml-3">
+                    {/* Date Column - Gray 200 */}
+                    <td className="py-4 px-3 text-center bg-gray-100 border-r border-gray-200">
+                      <span className="font-bold text-black">
                         {d.createdAt
                           ? dayjs(d.createdAt).format("DD/MM/YYYY")
-                          : "N/A"}
-                      </div>
-                    </div>
-                  </td>
+                          : "—"}
+                      </span>
+                    </td>
 
-                  <td className="py-2 px-3 font-normal text-base border-x shadow-md bg-green-200  hover:bg-gray-100  whitespace-nowrap overflow-hidden overflow-ellipsis max-w-[200px]">
-                    <div className="items-center text-center">
-                      <div className="ml-3">{d.customerName || "N/A"}</div>
-                    </div>
-                  </td>
+                    {/* Customer Column - Green 200 */}
+                    <td className="py-4 px-3 text-center bg-green-200 border-r border-gray-200">
+                      <span className="font-bold text-black">
+                        {d.customerName || "—"}
+                      </span>
+                    </td>
 
-                  <td className="py-2 px-3 font-normal text-base border-x shadow-md bg-gray-200  hover:bg-gray-100  whitespace-nowrap overflow-hidden overflow-ellipsis max-w-[200px]">
-                    <div className="items-center text-center">
-                      <div className="ml-3">{d.phone || "N/A"}</div>
-                    </div>
-                  </td>
+                    {/* Phone Column - Gray 200 */}
+                    <td className="py-4 px-3 text-center bg-gray-200 border-r border-gray-200">
+                      <span className="font-bold text-black">
+                        {d.phone || "—"}
+                      </span>
+                    </td>
 
-                  <td className="py-2 px-3 font-normal text-base border-x shadow-md bg-yellow-100  hover:bg-gray-100  whitespace-nowrap overflow-hidden overflow-ellipsis max-w-[200px]">
-                    <div className="items-center text-center">
-                      <div className="ml-3">
+                    {/* Total Column - Yellow 100 */}
+                    <td className="py-4 px-3 text-center bg-yellow-100 border-r border-gray-200">
+                      <span className="font-bold text-black">
                         Tsh {(d.totalAmount || 0).toLocaleString()}
-                      </div>
-                    </div>
-                  </td>
+                      </span>
+                    </td>
 
-                  <td className="py-2 px-3 font-normal text-base border-x shadow-md bg-gray-100  hover:bg-gray-100  whitespace-nowrap overflow-hidden overflow-ellipsis max-w-[200px]">
-                    <div className="items-center text-center">
-                      <div className="ml-3">
-                        <span
-                          className={`font-semibold bg-gray-300 px-5 py-1 rounded-full shadow-md ${
-                            d.remainingAmount > 0
-                              ? "text-red-500"
-                              : "text-green-700"
+                    {/* Remaining Column - Gray 100 */}
+                    <td className="py-4 px-3 text-center bg-gray-100 border-r border-gray-200">
+                      <span
+                        className={`inline-block px-4 py-2 font-bold rounded-full ${
+                          d.remainingAmount > 0
+                            ? "bg-red-100 text-red-700"
+                            : "bg-green-300 text-green-900"
+                        }`}
+                      >
+                        Tsh {(d.remainingAmount || 0).toLocaleString()}
+                      </span>
+                    </td>
+
+                    {/* Deduct Column - Green 200 */}
+                    <td className="py-4 px-3 text-center bg-green-200 border-r border-gray-200">
+                      <div className="flex justify-center">
+                        <div className="relative">
+                          <span className="absolute left-3 top-2.5 text-gray-600 font-medium">
+                            Tsh
+                          </span>
+                          <input
+                            type="number"
+                            value={deductions[d._id] || ""}
+                            onChange={(e) =>
+                              setDeductions({
+                                ...deductions,
+                                [d._id]: e.target.value,
+                              })
+                            }
+                            className="w-48 pl-12 pr-4 py-2.5 border border-gray-300 rounded-full bg-white text-black font-medium focus:border-green-300 focus:outline-none"
+                            placeholder="0.00"
+                            max={d.remainingAmount}
+                            min="0"
+                          />
+                        </div>
+                      </div>
+                    </td>
+
+                    {/* Action Column - Gray 100 */}
+                    <td className="py-4 px-3 text-center bg-gray-100">
+                      {d.remainingAmount > 0 ? (
+                        <button
+                          onClick={() => handlePay(d)}
+                          disabled={
+                            !deductions[d._id] ||
+                            parseFloat(deductions[d._id]) <= 0
+                          }
+                          className={`px-6 py-2.5 font-bold rounded-full transition-all ${
+                            deductions[d._id] &&
+                            parseFloat(deductions[d._id]) > 0
+                              ? "bg-yellow-100 hover:bg-yellow-200 text-black shadow hover:shadow-md"
+                              : "bg-gray-300 text-gray-500 cursor-not-allowed"
                           }`}
                         >
-                          Tsh {(d.remainingAmount || 0).toLocaleString()}
+                          Pay Now
+                        </button>
+                      ) : (
+                        <span className="inline-flex items-center px-6 py-2.5 bg-green-300 text-black font-bold rounded-full shadow">
+                          Fully Paid
                         </span>
-                      </div>
-                    </div>
-                  </td>
-
-                  <td className="py-2 px-3 font-normal text-base border-x shadow-md bg-green-200  hover:bg-gray-100  whitespace-nowrap overflow-hidden overflow-ellipsis max-w-[200px]">
-                    <div className="items-center text-center">
-                      <div className="ml-3">
-                        <input
-                          type="number"
-                          value={deductions[d._id] || ""}
-                          onChange={(e) =>
-                            setDeductions({
-                              ...deductions,
-                              [d._id]: e.target.value,
-                            })
-                          }
-                          className="w-32 px-3 py-2 rounded-full border border-gray-300 bg-white text-sm text-center focus:border-green-500 focus:outline-none"
-                          placeholder="Tsh"
-                          max={d.remainingAmount}
-                          min="0"
-                        />
-                      </div>
-                    </div>
-                  </td>
-
-                  <td className="py-2 px-3 font-normal text-base border-x shadow-md bg-gray-200  hover:bg-gray-100  whitespace-nowrap overflow-hidden overflow-ellipsis max-w-[200px]">
-                    <div className="items-center text-center">
-                      <div className="ml-3">
-                        {d.status === "pending" && d.remainingAmount > 0 ? (
-                          <button
-                            onClick={() => handlePay(d)}
-                            disabled={
-                              !deductions[d._id] ||
-                              parseFloat(deductions[d._id]) <= 0
-                            }
-                            className="bg-yellow-400 hover:bg-green-500 text-black px-6 py-2 rounded-full text-sm disabled:opacity-50 transition-colors"
-                          >
-                            Pay
-                          </button>
-                        ) : (
-                          <span className="text-black font-medium bg-green-300 px-4 py-1 rounded-full shadow-md">
-                            Paid
-                            
-                          </span>
-                        )}
-                      </div>
-                    </div>
-                  </td>
-                </tr>
-                <tr className="h-4"/>
+                      )}
+                    </td>
+                  </tr>
+                  {/* Spacing row between rows */}
+                  <tr className="h-3">
+                    <td colSpan={8} className="p-0"></td>
+                  </tr>
                 </>
               ))
             )}
@@ -370,7 +440,75 @@ const Debts = () => {
         </table>
       </div>
 
-      {/* Modals */}
+      {/* Pagination */}
+      <div className="flex flex-col sm:flex-row items-center justify-between gap-4 mt-8 pt-6 border-t border-gray-300">
+        <div className="text-sm text-gray-700">
+          <span className="font-bold text-black">
+            Showing {(currentPage - 1) * itemsPerPage + 1} to{" "}
+            {Math.min(currentPage * itemsPerPage, totalItems)}
+          </span>{" "}
+          of <span className="font-bold text-black">{totalItems}</span> debts
+        </div>
+
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => currentPage > 1 && setCurrentPage(currentPage - 1)}
+            disabled={currentPage === 1}
+            className="p-2.5 bg-gray-200 hover:bg-gray-300 text-black font-bold rounded-full disabled:opacity-40 disabled:cursor-not-allowed transition-all"
+          >
+            <IoIosArrowBack className="w-5 h-5" />
+          </button>
+
+          <div className="flex items-center gap-1">
+            {[...Array(totalPages)].map((_, i) => {
+              const pageNum = i + 1;
+              const isCurrent = currentPage === pageNum;
+              const showPage =
+                pageNum === 1 ||
+                pageNum === totalPages ||
+                (pageNum >= currentPage - 1 && pageNum <= currentPage + 1);
+
+              if (showPage) {
+                return (
+                  <button
+                    key={i}
+                    onClick={() => setCurrentPage(pageNum)}
+                    className={`w-10 h-10 font-bold rounded-full transition-all ${
+                      isCurrent
+                        ? "bg-green-300 text-black shadow"
+                        : "text-gray-700 hover:bg-gray-200"
+                    }`}
+                  >
+                    {pageNum}
+                  </button>
+                );
+              } else if (
+                (pageNum === currentPage - 2 || pageNum === currentPage + 2) &&
+                totalPages > 5
+              ) {
+                return (
+                  <span key={i} className="px-3 text-gray-500 font-bold">
+                    ...
+                  </span>
+                );
+              }
+              return null;
+            })}
+          </div>
+
+          <button
+            onClick={() =>
+              currentPage < totalPages && setCurrentPage(currentPage + 1)
+            }
+            disabled={currentPage === totalPages}
+            className="p-2.5 bg-gray-200 hover:bg-gray-300 text-black font-bold rounded-full disabled:opacity-40 disabled:cursor-not-allowed transition-all"
+          >
+            <IoIosArrowForward className="w-5 h-5" />
+          </button>
+        </div>
+      </div>
+
+      {/* Add Debt Modal */}
       {openAdd && (
         <AddDebt
           close={() => {
@@ -379,76 +517,6 @@ const Debts = () => {
           }}
         />
       )}
-
-      {/* Pagination */}
-      <div className="flex items-center justify-between border-t py-4 mt-6">
-        <p className="text-sm text-gray-700">
-          Showing{" "}
-          <span className="font-medium">
-            {(currentPage - 1) * itemsPerPage + 1}
-          </span>{" "}
-          to{" "}
-          <span className="font-medium">
-            {Math.min(currentPage * itemsPerPage, totalItems)}
-          </span>{" "}
-          of <span className="font-medium">{totalItems}</span> items
-        </p>
-
-        <nav className="isolate inline-flex -space-x-px rounded-md shadow-sm">
-          <button
-            onClick={() => currentPage > 1 && setCurrentPage(currentPage - 1)}
-            disabled={currentPage === 1}
-            className="px-3 py-2 border border-gray-300 rounded-l-full disabled:opacity-50 hover:bg-gray-50"
-          >
-            <IoIosArrowBack className="size-5" />
-          </button>
-
-          {[...Array(totalPages)].map((_, i) => {
-            const pageNum = i + 1;
-            const isCurrent = currentPage === pageNum;
-            const showPage =
-              pageNum === 1 ||
-              pageNum === totalPages ||
-              (pageNum >= currentPage - 1 && pageNum <= currentPage + 1);
-
-            if (showPage) {
-              return (
-                <button
-                  key={i}
-                  onClick={() => setCurrentPage(pageNum)}
-                  className={`px-4 py-2 border-y border-gray-300 ${
-                    isCurrent
-                      ? "bg-green-500 text-white font-medium"
-                      : "text-gray-700 hover:bg-gray-50"
-                  }`}
-                >
-                  {pageNum}
-                </button>
-              );
-            } else if (
-              (pageNum === currentPage - 2 || pageNum === currentPage + 2) &&
-              totalPages > 5
-            ) {
-              return (
-                <span key={i} className="px-3 py-2 text-gray-500">
-                  ...
-                </span>
-              );
-            }
-            return null;
-          })}
-
-          <button
-            onClick={() =>
-              currentPage < totalPages && setCurrentPage(currentPage + 1)
-            }
-            disabled={currentPage === totalPages}
-            className="px-3 py-2 border border-gray-300 rounded-r-full disabled:opacity-50 hover:bg-gray-50"
-          >
-            <IoIosArrowForward className="size-5" />
-          </button>
-        </nav>
-      </div>
     </div>
   );
 };
