@@ -21,7 +21,7 @@ const ReportsDashboard = () => {
         />
         <ReportList
           title="Manunuzi"
-          reports={["Report ya Madeni PO", "Report ya Madeni Non PO"]}
+          reports={[ "Report ya Madeni Non PO"]}
           selectedReport={selectedReport}
           handleSelect={setSelectedReport}
         />

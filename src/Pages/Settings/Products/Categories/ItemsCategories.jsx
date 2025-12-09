@@ -1,352 +1,367 @@
-// React Imports
 import { useEffect, useState } from "react";
-
-// Pages Imports
 import AddCategory from "./AddCategory";
 import EditCategory from "./EditCategory";
-
-// Icons Imports
-import { FaSearch } from "react-icons/fa";
-import { IoIosArrowBack, IoIosArrowForward } from "react-icons/io";
+import { 
+  FaSearch, 
+  FaTags,
+  FaFilter,
+  FaInfoCircle
+} from "react-icons/fa";
+import { 
+  IoIosArrowBack, 
+  IoIosArrowForward,
+  IoMdAdd,
+  IoMdRefresh
+} from "react-icons/io";
+import { AiTwotoneEdit } from "react-icons/ai";
 import { useDispatch, useSelector } from "react-redux";
 import { categoriesFetch } from "../../../../Redux/itemsCategories";
-import { AiTwotoneEdit } from "react-icons/ai";
-
-//API
 import BASE_URL from "../../../../Utils/config";
+import toast from "react-hot-toast";
 
 const ItemsCategories = () => {
-  // Redux State
-  const {
-    category = [],
-    currentPage = 1,
-    totalPages,
-    itemsPerPage = 6,
-    totalItems = 0,
-  } = useSelector((state) => state.category);
+  const { category = [] } = useSelector((state) => state.category);
   const dispatch = useDispatch();
 
-  // const [filterStatus, setFilterStatus] = useState("All");
   const [showError, setShowError] = useState("");
   const [searchQuery, setSearchQuery] = useState("");
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 10;
 
-  // Fetch data with pagination and search
+  // Filtered categories based on search
+  const filteredCategories = category.filter((c) =>
+    c.name.toLowerCase().includes(searchQuery.toLowerCase())
+  );
+
+  const totalItems = filteredCategories.length;
+  const totalPages = Math.ceil(totalItems / itemsPerPage);
+
+  const currentItems = filteredCategories.slice(
+    (currentPage - 1) * itemsPerPage,
+    currentPage * itemsPerPage
+  );
+
   const fetchData = async () => {
     try {
-      const response = await fetch(
-        `${BASE_URL}/api/itemsCategories/getItemCategories?page=${currentPage}&limit=${itemsPerPage}&search=${searchQuery}`
-      );
-
-      if (!response.ok) {
-        throw new Error("Failed to fetch categories");
-      }
-
+      const response = await fetch(`${BASE_URL}/api/itemsCategories/getItemCategories`);
+      if (!response.ok) throw new Error("Failed to fetch categories");
       const data = await response.json();
-      dispatch(categoriesFetch(data));
+      dispatch(categoriesFetch({ data: data.data }));
       setShowError("");
+      toast.success("Categories loaded successfully!");
     } catch (error) {
       console.error("Error fetching categories:", error);
-      setShowError(
-        "An error occurred. Please contact the system administrator."
-      );
+      setShowError("An error occurred. Please contact the system administrator.");
+      toast.error("Failed to load categories");
     }
   };
 
   useEffect(() => {
     fetchData();
-  }, [currentPage, searchQuery]); // Removed `category` to prevent unnecessary re-fetching
+  }, []);
 
-  // Pagination Handlers
-  const nextPage = () => {
-    if (currentPage < totalPages) {
-      dispatch(categoriesFetch({ currentPage: currentPage + 1 }));
-    }
-  };
+  // Pagination handlers
+  const nextPage = () => setCurrentPage((prev) => Math.min(prev + 1, totalPages));
+  const prevPage = () => setCurrentPage((prev) => Math.max(prev - 1, 1));
 
-  const prevPage = () => {
-    if (currentPage > 1) {
-      dispatch(categoriesFetch({ currentPage: currentPage - 1 }));
-    }
-  };
-
-  // Modal States
+  // Modal states
   const [showModalAdd, setShowModalAdd] = useState(false);
   const [showModalEdit, setShowModalEdit] = useState(false);
   const [modifiedCategory, setModifiedCategory] = useState(null);
 
+  // Calculate stats
+  const totalCategories = category.length;
+  // const categoriesWithItems = 0; // You might want to calculate this if you have item counts
+  const categoriesWithDesc = category.filter(c => c.description && c.description.trim() !== "").length;
+
+  const clearSearch = () => {
+    setSearchQuery("");
+    setCurrentPage(1);
+  };
+
   return (
-    <div className="sm:px-6 w-full">
-      {/* Title */}
-      <div className="px-4 md:px-10 py-4 md:py-7">
-        <div className="flex items-center justify-between">
-          <p className="text-lg md:text-xl lg:text-2xl font-bold text-gray-800">
+    <div className="p-5 bg-gray-50 min-h-screen">
+      {/* Header */}
+      <div className="flex flex-col md:flex-row md:items-center justify-between mb-6">
+        <div>
+          <h1 className="text-2xl font-bold text-black mb-1">
             Item Categories
+          </h1>
+          <p className="text-gray-600 text-sm">
+            Manage and organize item categories
           </p>
         </div>
-      </div>
-
-      {/* Filter & Search */}
-      <div className="sm:flex items-center justify-between ml-9">
-        {/* <div className="flex items-center">
-          {["All", "Active", "Inactive"].map((status) => (
-            <button
-              key={status}
-              className={`rounded-full py-2 px-8 mx-2 ${
-                filterStatus === status
-                  ? "bg-green-300 text-black"
-                  : "bg-gray-200 text-gray-600"
-              } hover:text-black hover:bg-indigo-100 border-gray-400`}
-              onClick={() => {
-                setFilterStatus(status);
-                dispatch(categoriesFetch({ currentPage: 1 })); // Reset pagination when changing status filter
-              }}
-            >
-              {status}
-            </button>
-          ))}
-        </div> */}
-
-        {/* Search Bar */}
-        <div className="hidden sm:flex items-center bg-gray-100 rounded-[30px] px-3 sm:px-4 py-1 sm:py-2 w-full max-w-[300px] border border-gray-400">
-          <FaSearch className="w-4 h-4 sm:w-5 sm:h-5 mr-2 text-black" />
-          <input
-            type="text"
-            placeholder="Search"
-            className="bg-transparent outline-none px-2 py-1 w-full text-black"
-            value={searchQuery}
-            onChange={(e) => {
-              setSearchQuery(e.target.value);
-              dispatch(categoriesFetch({ currentPage: 1 })); // Reset pagination when searching
-            }}
-          />
-        </div>
-
         <button
-          onClick={() => setShowModalAdd(true)}
-          className="mr-10 focus:ring-2 focus:ring-offset-2 mt-4 sm:mt-0 inline-flex items-start justify-start px-6 py-3 bg-green-300 hover:bg-gray-200 focus:outline-none rounded"
+          onClick={fetchData}
+          className="mt-3 md:mt-0 px-4 py-2 bg-green-300 hover:bg-green-400 text-black font-bold rounded-full shadow hover:shadow-md transition-all duration-200 flex items-center gap-2 text-sm"
         >
-          <p className="text-sm font-medium leading-none text-black">
-            + Add Category
-          </p>
+          <IoMdRefresh className="w-4 h-4" />
+          <span>Refresh</span>
         </button>
       </div>
 
+      {/* Compact Stats */}
+      <div className="mb-6">
+        <div className="flex flex-col sm:flex-row items-center justify-between bg-white border border-gray-200 rounded-full p-4 shadow-sm">
+          <div className="flex items-center gap-3 mb-3 sm:mb-0">
+            <div className="text-center px-3">
+              <p className="text-xs text-gray-500 font-medium">Total Categories</p>
+              <p className="text-base font-bold text-black">
+                {totalCategories}
+              </p>
+            </div>
+
+            <div className="h-6 w-px bg-gray-300"></div>
+
+            <div className="text-center px-3">
+              <p className="text-xs text-gray-500 font-medium">Filtered</p>
+              <p className="text-base font-bold text-black">
+                {filteredCategories.length}
+              </p>
+            </div>
+
+            <div className="h-6 w-px bg-gray-300"></div>
+
+            <div className="text-center px-3">
+              <p className="text-xs text-gray-500 font-medium">With Description</p>
+              <p className="text-base font-bold text-green-600">
+                {categoriesWithDesc}
+              </p>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => setShowModalAdd(true)}
+              className="px-4 py-2 bg-green-300 hover:bg-green-400 text-black font-bold rounded-full shadow hover:shadow-md transition-all duration-200 flex items-center gap-2 text-sm"
+            >
+              <IoMdAdd className="w-4 h-4" />
+              <span>Add Category</span>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      {/* Filter & Search - Compact & Clean */}
+      <div className="mb-6 rounded-xl p-4 shadow bg-white">
+        <div className="flex items-center gap-3 mb-4">
+          <FaFilter className="w-4 h-4 text-green-600" />
+          <h3 className="text-sm font-bold text-black">Search Categories</h3>
+        </div>
+
+        <div className="flex flex-col md:flex-row gap-3">
+          <div className="flex-1">
+            <div className="relative">
+              <div className="absolute inset-y-0 left-3 flex items-center">
+                <FaSearch className="w-4 h-4 text-gray-500" />
+              </div>
+              <input
+                type="text"
+                placeholder="Search category name..."
+                className="w-full pl-10 pr-3 py-2.5 text-sm border border-gray-300 rounded-full bg-white text-black focus:border-green-300 focus:outline-none focus:ring-1 focus:ring-green-200"
+                value={searchQuery}
+                onChange={(e) => {
+                  setSearchQuery(e.target.value);
+                  setCurrentPage(1);
+                }}
+              />
+              {searchQuery && (
+                <button
+                  onClick={clearSearch}
+                  className="absolute inset-y-0 right-3 flex items-center text-gray-500 hover:text-gray-700"
+                >
+                  <span className="text-xl leading-none">×</span>
+                </button>
+              )}
+            </div>
+          </div>
+        </div>
+      </div>
+
       {/* Table Container */}
-      <div className="bg-white py-4 md:py-7 px-4 md:px-8 xl:px-10">
+      <div className="rounded-xl shadow bg-white overflow-hidden">
+        {/* Error Message */}
         {showError && (
-          <div className="mt-2 bg-red-100/70 border border-red-200 text-sm text-red-800 rounded-lg p-4">
-            <span className="font-bold">Error: </span> {showError}
+          <div className="m-4 p-3 bg-red-100 border border-red-300 rounded-lg">
+            <div className="flex items-center gap-2 text-red-800">
+              <FaInfoCircle className="w-4 h-4" />
+              <span className="text-sm font-medium">{showError}</span>
+            </div>
           </div>
         )}
 
-        <div className="mt-7 overflow-x-auto">
-          <table className="w-full whitespace-nowrap">
-            <thead className="bg-gray-200 text-black">
-              <tr>
-                <th className="px-5 py-3 border-b-2 border-gray-200 bg-gray-200 text-center text-xs font-bold text-black uppercase tracking-wider">
-                  Index
-                </th>
-
-                <th className="px-5 py-3 border-b-2 border-gray-200 bg-gray-200 text-center text-xs font-bold text-black uppercase tracking-wider">
-                  Category Name
-                </th>
-
-                <th className="px-5 py-3 border-b-2 border-gray-200 bg-gray-200 text-center text-xs font-bold text-black uppercase tracking-wider">
-                  Description
-                </th>
-
-                <th className="px-5 py-3 border-b-2 border-gray-200 bg-gray-200 text-center text-xs font-bold text-black uppercase tracking-wider">
-                  Action
-                </th>
+        {/* Table */}
+        <div className="overflow-x-auto">
+          <table className="min-w-full">
+            <thead>
+              <tr className="bg-gray-200">
+                {["#", "Category Name", "Description", "Action"].map((header, idx) => (
+                  <th
+                    key={idx}
+                    className="px-4 py-3 text-center text-xs font-bold text-black uppercase border-r border-gray-300"
+                  >
+                    {header}
+                  </th>
+                ))}
               </tr>
             </thead>
-
+            
             <tr className="h-3" />
 
             <tbody>
-              {category.map((catego, index) => (
-                <>
-                  <tr
-                    key={catego._id}
-                    className="h-16 border-gray-500 shadow-md bg-gray-100 "
-                  >
-                    <td className="pl-5 font-bold hover:bg-green-300/30">
-                      <p className="text-sm leading-none text-gray-800">
-                        {index + 1 + (currentPage - 1) * itemsPerPage}
+              {currentItems.length === 0 ? (
+                <tr>
+                  <td colSpan={4} className="text-center py-12">
+                    <div className="space-y-3">
+                      <div className="text-4xl">🏷️</div>
+                      <p className="text-lg font-bold text-black">
+                        No categories found
                       </p>
-                    </td>
-                    <td
-                      className={`py-2 px-3 bg-gray-200 shadow-md text-base border-x text-center font-semibold ${
-                        index == 0
-                          ? "border-t border-gray"
-                          : index == category?.length
-                          ? "border-y border-gray"
-                          : "border-t border-gray"
-                      } hover:bg-gray-100`}
-                    >
-                      <div className="flex items-center">
-                        <div className="ml-3">
-                          <p className="text-gray-900 whitespace-no-wrap  capitalize text-left">
-                            {catego.name}
-                          </p>
-                        </div>
-                      </div>
-                    </td>
-                    <td
-                      className={`py-2 px-3  text-base border-x text-center font-semibold ${
-                        index == 0
-                          ? "border-t border-gray"
-                          : index == category?.length
-                          ? "border-y border-gray"
-                          : "border-t border-gray"
-                      } hover:bg-gray-100`}
-                    >
-                      <div className="flex items-center">
-                        <div className="ml-3">
-                          <p className="text-gray-900 whitespace-no-wrap  capitalize text-left">
-                            {catego.description}
-                          </p>
-                        </div>
-                      </div>
-                    </td>
-
-                    <td className="pl-4 gap-2 font-bold">
+                      <p className="text-gray-600 text-sm">
+                        {searchQuery ? "Try a different search term" : "Start by adding your first category"}
+                      </p>
                       <button
-                        onClick={() => {
-                          setShowModalEdit(true);
-                          setModifiedCategory(catego);
-                        }}
-                        className="focus:ring-1 focus:ring-offset-2 focus:ring-blue-300 text-sm leading-none text-gray-600 py-3 px-5 bg-gray-100 rounded hover:bg-gray-200"
+                        onClick={() => setShowModalAdd(true)}
+                        className="mt-2 px-4 py-2 bg-green-300 hover:bg-green-400 text-black font-bold rounded-full transition-colors text-sm"
                       >
-                        <AiTwotoneEdit size={20} />
+                        Add First Category
                       </button>
-                    </td>
-                  </tr>
+                    </div>
+                  </td>
+                </tr>
+              ) : (
+                currentItems.map((catego, index) => (
+                  <>
+                    <tr key={catego._id} className="hover:bg-gray-50 transition-colors">
+                      {/* # Column - Green 300 */}
+                      <td className="py-3 px-3 text-center border-r border-gray-300 bg-gray-200">
+                        <span className="inline-flex items-center justify-center w-8 h-8 bg-green-300 text-black font-bold rounded-full text-xs">
+                          {(currentPage - 1) * itemsPerPage + index + 1}
+                        </span>
+                      </td>
 
-                  <tr className="h-4" />
-                </>
-              ))}
+                      {/* Category Name Column - Gray 200 */}
+                      <td className="py-3 px-3 text-center bg-gray-100 border-r border-gray-200">
+                        <div className="flex items-center justify-center gap-2">
+                          <FaTags className="w-4 h-4 text-green-600" />
+                          <span className="font-bold text-black text-sm">
+                            {catego.name}
+                          </span>
+                        </div>
+                      </td>
+
+                      {/* Description Column - Green 200 */}
+                      <td className="py-3 px-3 text-center bg-green-200 border-r border-gray-200">
+                        <span className="font-bold text-black text-sm">
+                          {catego.description || (
+                            <span className="text-gray-500 italic">No description</span>
+                          )}
+                        </span>
+                      </td>
+
+                      {/* Action Column - Gray 200 */}
+                      <td className="py-3 px-3 text-center bg-gray-200">
+                        <button
+                          onClick={() => {
+                            setShowModalEdit(true);
+                            setModifiedCategory(catego);
+                          }}
+                          className="p-2 bg-green-300 hover:bg-green-400 text-black rounded-full transition-colors"
+                        >
+                          <AiTwotoneEdit className="w-4 h-4" />
+                        </button>
+                      </td>
+                    </tr>
+                    <tr className="h-3">
+                      <td colSpan={4} className="p-0"></td>
+                    </tr>
+                  </>
+                ))
+              )}
             </tbody>
           </table>
+        </div>
 
-          {/* Pagination */}
-          <div className="flex items-center justify-between border-t border-gray-200 bg-white py-3 sm:px-6">
-            <p className="text-sm text-gray-700">
-              Showing{" "}
-              <span className="font-medium">
-                {(currentPage - 1) * itemsPerPage + 1}
-              </span>{" "}
-              to{" "}
-              <span className="font-medium">
+        {/* Compact Pagination */}
+        {totalPages > 1 && (
+          <div className="flex flex-col sm:flex-row items-center justify-between gap-3 p-4 border-t border-gray-300 bg-gray-50">
+            <div className="text-xs text-gray-700">
+              <span className="font-bold text-black">
+                Showing {(currentPage - 1) * itemsPerPage + 1} to{" "}
                 {Math.min(currentPage * itemsPerPage, totalItems)}
               </span>{" "}
-              of <span className="font-medium">{totalItems}</span> results
-            </p>
+              of <span className="font-bold text-black">{totalItems}</span> categories
+            </div>
 
-            <nav
-              aria-label="Pagination"
-              className="isolate inline-flex -space-x-px rounded-md shadow-xs"
-            >
-              {/* Prev Button */}
+            <div className="flex items-center gap-1">
               <button
                 onClick={prevPage}
                 disabled={currentPage === 1}
-                className={`relative inline-flex items-center rounded-l-md px-2 py-2 text-gray-400 ring-1 ring-gray-300 ring-inset hover:bg-gray-50 focus:z-20 focus:outline-offset-0 ${
-                  currentPage === 1 ? "opacity-50 cursor-not-allowed" : ""
-                }`}
+                className="p-2 bg-gray-200 hover:bg-gray-300 text-black font-bold rounded-full disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
               >
-                <IoIosArrowBack aria-hidden="true" className="size-5" />
+                <IoIosArrowBack className="w-4 h-4" />
               </button>
 
-              {/* Page buttons with ellipsis */}
-              {(() => {
-                const maxPagesToShow = 10;
-                const pages = [];
+              <div className="flex items-center gap-1">
+                {[...Array(totalPages)].map((_, i) => {
+                  const pageNum = i + 1;
+                  const isCurrent = currentPage === pageNum;
+                  const showPage =
+                    pageNum === 1 ||
+                    pageNum === totalPages ||
+                    (pageNum >= currentPage - 1 && pageNum <= currentPage + 1);
 
-                if (totalPages <= maxPagesToShow) {
-                  for (let i = 1; i <= totalPages; i++) {
-                    pages.push(i);
-                  }
-                } else {
-                  pages.push(1); // always show first page
-
-                  let startPage, endPage;
-
-                  if (currentPage <= 6) {
-                    startPage = 2;
-                    endPage = 8;
-                    for (let i = startPage; i <= endPage; i++) pages.push(i);
-                    pages.push("ellipsis-right");
-                    pages.push(totalPages);
-                  } else if (currentPage >= totalPages - 5) {
-                    pages.push("ellipsis-left");
-                    startPage = totalPages - 7;
-                    for (let i = startPage; i < totalPages; i++) pages.push(i);
-                    pages.push(totalPages);
-                  } else {
-                    pages.push("ellipsis-left");
-                    startPage = currentPage - 2;
-                    endPage = currentPage + 2;
-                    for (let i = startPage; i <= endPage; i++) pages.push(i);
-                    pages.push("ellipsis-right");
-                    pages.push(totalPages);
-                  }
-                }
-
-                return pages.map((page, idx) => {
-                  if (page === "ellipsis-left" || page === "ellipsis-right") {
+                  if (showPage) {
                     return (
-                      <span
-                        key={`ellipsis-${idx}`}
-                        className="relative inline-flex items-center px-4 py-2 text-sm text-gray-700 select-none"
+                      <button
+                        key={i}
+                        onClick={() => setCurrentPage(pageNum)}
+                        className={`w-8 h-8 text-xs font-bold rounded-full transition-colors ${
+                          isCurrent
+                            ? "bg-green-300 text-black shadow"
+                            : "text-gray-700 hover:bg-gray-200"
+                        }`}
                       >
+                        {pageNum}
+                      </button>
+                    );
+                  } else if (
+                    (pageNum === currentPage - 2 || pageNum === currentPage + 2) &&
+                    totalPages > 5
+                  ) {
+                    return (
+                      <span key={i} className="px-2 text-gray-500 font-bold text-xs">
                         ...
                       </span>
                     );
                   }
-                  return (
-                    <button
-                      key={page}
-                      onClick={() =>
-                        dispatch(itemsFetch({ ...items, currentPage: page }))
-                      }
-                      className={`relative inline-flex items-center px-4 py-2 text-sm font-semibold text-gray-900 ring-1 ring-gray-300 ring-inset hover:bg-gray-50 focus:z-20 focus:outline-offset-0 ${
-                        currentPage === page ? "bg-green-500/80 text-white" : ""
-                      }`}
-                    >
-                      {page}
-                    </button>
-                  );
-                });
-              })()}
+                  return null;
+                })}
+              </div>
 
-              {/* Next Button */}
               <button
                 onClick={nextPage}
                 disabled={currentPage === totalPages}
-                className={`relative inline-flex items-center rounded-r-md px-2 py-2 text-gray-400 ring-1 ring-gray-300 ring-inset hover:bg-gray-50 focus:z-20 focus:outline-offset-0 ${
-                  currentPage === totalPages
-                    ? "opacity-50 cursor-not-allowed"
-                    : ""
-                }`}
+                className="p-2 bg-gray-200 hover:bg-gray-300 text-black font-bold rounded-full disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
               >
-                <IoIosArrowForward aria-hidden="true" className="size-5" />
+                <IoIosArrowForward className="w-4 h-4" />
               </button>
-            </nav>
+            </div>
           </div>
-        </div>
+        )}
       </div>
 
-      <AddCategory
-        showModal={showModalAdd}
-        setShowModal={setShowModalAdd}
-        onCategoryAdded={fetchData}
+      {/* Modals */}
+      <AddCategory 
+        showModal={showModalAdd} 
+        setShowModal={setShowModalAdd} 
+        onCategoryAdded={fetchData} 
       />
-      <EditCategory
-        showModal={showModalEdit}
-        setShowModal={setShowModalEdit}
-        onCategoryUpdated={fetchData}
-        catego={modifiedCategory}
+      <EditCategory 
+        showModal={showModalEdit} 
+        setShowModal={setShowModalEdit} 
+        onCategoryUpdated={fetchData} 
+        catego={modifiedCategory} 
       />
     </div>
   );

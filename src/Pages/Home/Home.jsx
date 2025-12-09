@@ -305,7 +305,7 @@ const Home = () => {
       </div>
 
       {/* Left Section */}
-      <div className="flex-1 md:flex-[1] bg-secondary rounded-xl p-4 sm:p-6 shadow-md text-black overflow-y-auto max-h-[80vh] scrollbar-hide">
+      <div className="flex-1 md:flex-[1] bg-secondary rounded-xl p-4 sm:p-6 shadow-md text-black overflow-y-auto max-h-[90vh] scrollbar-hide">
         <MostSold />
       </div>
     </section>

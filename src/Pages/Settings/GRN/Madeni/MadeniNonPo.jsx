@@ -94,45 +94,47 @@ const MadeniNonPo = () => {
   );
 
   // Helper function for inline payment
-  const handleInlinePay = async (item) => {
-    const itemKey = `${item.grnId}_${item.itemId}`;
-    const amount = parseFloat(deductions[itemKey] || 0);
-    
-    if (!amount || amount <= 0) {
-      toast.error("Please enter a valid amount");
-      return;
-    }
+const handlePay = async (item) => {
+  const itemKey = `${item.grnId}_${item.itemId}`;
+  const amount = parseFloat(deductions[itemKey] || 0);
 
-    if (amount > item.remainingBalance) {
-      toast.error("Amount exceeds remaining balance");
-      return;
-    }
+  if (!amount || amount <= 0) {
+    toast.error("Please enter a valid amount");
+    return;
+  }
 
-    setLoad(true);
-    try {
-      const res = await axios.post(
-        `${BASE_URL}/api/grn/makePartialPayment`,
-        {
-          reportId: item.reportId,
-          paymentAmount: amount,
-          paymentMethod: "cash",
-          notes: "Inline payment"
-        },
-        { withCredentials: true }
-      );
+  if (amount > item.remainingBalance) {
+    toast.error("Amount exceeds remaining balance");
+    return;
+  }
 
-      if (res.data.success) {
-        toast.success(res.data.message || "Payment recorded successfully!");
-        setDeductions(prev => ({ ...prev, [itemKey]: "" }));
-        fetchNonPoTransactions();
-      }
-    } catch (err) {
-      console.error(err);
-      toast.error(err.response?.data?.message || "Failed to process payment.");
-    } finally {
-      setLoad(false);
+  setLoad(true);
+  try {
+    const res = await axios.post(
+      `${BASE_URL}/api/grn/payNonPoBills`,
+      {
+        grnId: item.grnId,
+        itemId: item.itemId,
+        paymentAmount: amount
+      },
+      { withCredentials: true }
+    );
+
+    if (res.data.success) {
+      toast.success(res.data.message || "Payment recorded successfully!");
+      // Clear the input for this item
+      setDeductions((prev) => ({ ...prev, [itemKey]: "" }));
+      // Refresh the list to reflect updated paidAmount & remainingBalance
+      fetchNonPoTransactions();
     }
-  };
+  } catch (err) {
+    console.error(err);
+    toast.error(err.response?.data?.message || "Failed to process payment.");
+  } finally {
+    setLoad(false);
+  }
+};
+
 
   return (
     <div className="p-5 bg-gray-50 min-h-screen">
@@ -445,7 +447,7 @@ const MadeniNonPo = () => {
                         {!isFullyPaid ? (
                           <div className="flex flex-col gap-2">
                             <button
-                              onClick={() => handleInlinePay(item)}
+                              onClick={() => handlePay(item)}
                               disabled={
                                 !deductions[itemKey] ||
                                 parseFloat(deductions[itemKey]) <= 0

@@ -1,16 +1,9 @@
 import { createSlice } from "@reduxjs/toolkit";
 import axios from "axios";
-
-//API
-import BASE_URL from "../Utils/config"
-
+import BASE_URL from "../Utils/config";
 
 const initialState = {
   category: [],
-  currentPage: 1,
-  totalPages: 0,
-  itemsPerPage: 0,
-  totalItems: 0,
   error: null,
   loading: false,
   status: null,
@@ -28,10 +21,6 @@ const categorySlice = createSlice({
     categoriesFetch: (state, action) => {
       state.status = "Categories fetched successfully";
       state.category = action.payload.data;
-      state.currentPage = action.payload.currentPage;
-      state.totalPages = action.payload.totalPages;
-      state.itemsPerPage = action.payload.itemsPerPage;
-      state.totalItems = action.payload.totalItems;
       state.error = null;
       state.loading = false;
     },
@@ -69,10 +58,6 @@ const categorySlice = createSlice({
     searchCategoriesSuccess: (state, action) => {
       state.status = "Categories search successful";
       state.category = action.payload.data;
-      state.currentPage = action.payload.currentPage;
-      state.totalPages = action.payload.totalPages;
-      state.itemsPerPage = action.payload.itemsPerPage;
-      state.totalItems = action.payload.totalItems;
       state.loading = false;
       state.error = null;
     },
@@ -85,10 +70,6 @@ const categorySlice = createSlice({
 
     clearSearchCategories: (state, action) => {
       state.category = action.payload.data;
-      state.currentPage = action.payload.currentPage;
-      state.totalPages = action.payload.totalPages;
-      state.itemsPerPage = action.payload.itemsPerPage;
-      state.totalItems = action.payload.totalItems;
       state.loading = false;
       state.error = null;
     },
@@ -110,8 +91,6 @@ export const {
 
 export default categorySlice.reducer;
 
-
-
 // Fetch Categories
 export const fetchCategories = () => async (dispatch) => {
   dispatch(categoriesPending());
@@ -124,10 +103,6 @@ export const fetchCategories = () => async (dispatch) => {
     dispatch(
       categoriesFetch({
         data: response.data.data,
-        currentPage: response.data.currentPage,
-        totalPages: response.data.totalPages,
-        itemsPerPage: response.data.itemsPerPage,
-        totalItems: response.data.totalItems,
       })
     );
   } catch (error) {

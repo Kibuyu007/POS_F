@@ -1,15 +1,18 @@
 import axios from "axios";
 import { useState, useEffect } from "react";
 import { IoIosArrowBack, IoIosArrowForward } from "react-icons/io";
-
+import {
+  FiSearch,
+  FiRefreshCw,
+  FiPackage,
+  FiChevronDown,
+  FiChevronUp,
+} from "react-icons/fi";
 import { DatePicker } from "@mui/x-date-pickers/DatePicker";
 import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs";
 import { LocalizationProvider } from "@mui/x-date-pickers";
 import dayjs from "dayjs";
-
 import Loading from "../../../../Components/Shared/Loading";
-
-//API
 import BASE_URL from "../../../../Utils/config";
 import toast from "react-hot-toast";
 
@@ -17,16 +20,14 @@ const CompletedNonPO = () => {
   const [grns, setGrns] = useState([]);
   const [filteredGrns, setFilteredGrns] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
-
   const [filterSupplier, setFilterSupplier] = useState("");
   const [filterFrom, setFilterFrom] = useState(null);
   const [filterTo, setFilterTo] = useState(null);
   const [filterStatus, setFilterStatus] = useState("");
   const [load, setLoad] = useState(false);
-
-  const itemsPerPage = 3;
+  const [expandedGrn, setExpandedGrn] = useState(null);
   const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 10;
 
   useEffect(() => {
     const fetchCompletedNonPoGrns = async () => {
@@ -35,27 +36,17 @@ const CompletedNonPO = () => {
         const res = await axios.get(`${BASE_URL}/api/grn/nonPo`);
         if (res.data.success) {
           setGrns(res.data.data);
-          setLoad(false);
         } else {
-          setError(res.data.message || "Unknown error");
+          toast.error(res.data.message || "Failed to fetch data");
         }
       } catch (err) {
-        toast.error(error.data.message || "Tatizo katika kuhifadhi manunuzi.", {
-          position: "bottom-right",
-          style: {
-            borderRadius: "12px",
-            background: "#dd2c00",
-            color: "#212121",
-            fontSize: "26px",
-          },
-        });
+        toast.error(err.response?.data?.message || "Failed to load GRN data");
         console.error("Error fetching completed GRNs:", err);
-        setError("Failed to fetch completed GRNs");
       } finally {
         setLoading(false);
+        setLoad(false);
       }
     };
-
     fetchCompletedNonPoGrns();
   }, []);
 
@@ -98,304 +89,611 @@ const CompletedNonPO = () => {
   const nextPage = () =>
     currentPage < totalPages && setCurrentPage(currentPage + 1);
 
+  const toggleExpand = (grnId) => {
+    setExpandedGrn(expandedGrn === grnId ? null : grnId);
+  };
+
+  const clearFilters = () => {
+    setFilterSupplier("");
+    setFilterFrom(null);
+    setFilterTo(null);
+    setFilterStatus("");
+  };
+
+  const refreshData = async () => {
+    setLoad(true);
+    try {
+      const res = await axios.get(`${BASE_URL}/api/grn/nonPo`);
+      if (res.data.success) {
+        setGrns(res.data.data);
+        toast.success("Data refreshed successfully!");
+      }
+    } catch (err) {
+      toast.error("Failed to refresh data");
+    } finally {
+      setLoad(false);
+    }
+  };
+
   return (
-    <div className="p-4">
-      <div className="px-4 py-4 md:py-7">
-        <div className="flex items-center justify-between">
-          <p className="text-lg md:text-xl lg:text-2xl font-bold text-gray-800">
-            COMPLETE GRN NON PO
+    <div className="p-5 bg-gray-50 min-h-screen">
+      {/* Header */}
+      <div className="flex flex-col md:flex-row md:items-center justify-between mb-6">
+        <div>
+          <h1 className="text-2xl font-bold text-black mb-1">
+            COMPLETED NON-PO GRNs
+          </h1>
+          <p className="text-gray-600 text-sm">
+            View all completed Non-Purchase Order GRN records
           </p>
-          <p className="text-sm md:text-base lg:text-lg text-gray-800 bg-green-200 px-4 py-2 rounded-full shadow-lg">
-            Total Non PO: {totalItems}
-          </p>
+        </div>
+        <button
+          onClick={refreshData}
+          className="mt-3 md:mt-0 px-4 py-2 bg-green-300 hover:bg-green-400 text-black font-bold rounded-full shadow hover:shadow-md transition-all duration-200 flex items-center gap-2 text-sm"
+        >
+          <FiRefreshCw className={`w-4 h-4 ${load ? "animate-spin" : ""}`} />
+          <span>Refresh</span>
+        </button>
+      </div>
+
+      {/* Compact Stats */}
+      <div className="mb-6">
+        <div className="flex flex-col sm:flex-row items-center justify-between bg-white border border-gray-200 rounded-full p-4 shadow-sm">
+          <div className="flex items-center gap-3 mb-3 sm:mb-0">
+            <div className="text-center px-3">
+              <p className="text-xs text-gray-500 font-medium">Total GRNs</p>
+              <p className="text-base font-bold text-black">{totalItems}</p>
+            </div>
+
+            <div className="h-6 w-px bg-gray-300"></div>
+
+            <div className="text-center px-3">
+              <p className="text-xs text-gray-500 font-medium">Total Items</p>
+              <p className="text-base font-bold text-black">
+                {filteredGrns.reduce(
+                  (sum, grn) => sum + (grn.items?.length || 0),
+                  0
+                )}
+              </p>
+            </div>
+
+            <div className="h-6 w-px bg-gray-300"></div>
+
+            <div className="text-center px-3">
+              <p className="text-xs text-gray-500 font-medium">Billed Items</p>
+              <p className="text-base font-bold text-black">
+                {filteredGrns.reduce(
+                  (sum, grn) =>
+                    sum +
+                    grn.items.reduce(
+                      (itemSum, item) => itemSum + (item.billedAmount || 0),
+                      0
+                    ),
+                  0
+                )}
+              </p>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-4">
+            <div className="flex items-center gap-2">
+              <div className="w-2 h-2 bg-yellow-500 rounded-full"></div>
+              <span className="text-xs font-medium text-gray-700">
+                Billed:{" "}
+              </span>
+              <span className="font-bold text-black text-sm">
+                {filteredGrns.reduce(
+                  (sum, grn) =>
+                    sum +
+                    grn.items.filter((item) => item.status === "Billed").length,
+                  0
+                )}
+              </span>
+            </div>
+
+            <div className="h-4 w-px bg-gray-300"></div>
+
+            <div className="flex items-center gap-2">
+              <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+              <span className="text-xs font-medium text-gray-700">
+                Completed:{" "}
+              </span>
+              <span className="font-bold text-black text-sm">
+                {filteredGrns.reduce(
+                  (sum, grn) =>
+                    sum +
+                    grn.items.filter((item) => item.status === "Completed")
+                      .length,
+                  0
+                )}
+              </span>
+            </div>
+          </div>
         </div>
       </div>
 
-      <div className="grid md:grid-cols-4 gap-3 mb-4">
-        <input
-          type="text"
-          placeholder="Search Supplier..."
-          className="border-2 border-gray-300 text-black bg-gray-100 px-2 py-1 w-full rounded-full focus:outline-none focus:ring-1 focus:ring-green-500"
-          value={filterSupplier}
-          onChange={(e) => setFilterSupplier(e.target.value)}
-        />
+      {/* Compact Filters */}
+      <div className="mb-6 rounded-xl p-4 shadow bg-white">
+        <div className="flex flex-col md:flex-row md:items-end gap-4">
+          {/* Search Input */}
+          <div className="flex-1">
+            <label className="block text-xs font-bold text-gray-700 mb-1">
+              Search Supplier
+            </label>
+            <div className="relative">
+              <div className="absolute inset-y-0 left-3 flex items-center">
+                <FiSearch className="w-4 h-4 text-gray-400" />
+              </div>
+              <input
+                type="text"
+                placeholder="Supplier name..."
+                value={filterSupplier}
+                onChange={(e) => setFilterSupplier(e.target.value)}
+                className="w-full pl-9 pr-3 py-2 text-sm border border-gray-300 rounded-full bg-white text-black focus:border-green-300 focus:outline-none focus:ring-1 focus:ring-green-200"
+              />
+            </div>
+          </div>
 
-        <LocalizationProvider dateAdapter={AdapterDayjs}>
-          <DatePicker
-            label="From Date"
-            value={filterFrom}
-            onChange={(newVal) => setFilterFrom(newVal)}
-            slotProps={{
-              textField: {
-                size: "small",
-                fullWidth: true,
-                className:
-                  "bg-gray-50 border border-gray-400 text-sm rounded-full dark:bg-gray-600 dark:border-gray-500 dark:text-white",
-              },
-            }}
-          />
-        </LocalizationProvider>
+          {/* Date Range */}
+          <div className="flex-1">
+            <label className="block text-xs font-bold text-gray-700 mb-1">
+              Date Range
+            </label>
+            <div className="flex gap-2">
+              <LocalizationProvider dateAdapter={AdapterDayjs}>
+                <DatePicker
+                  label="From"
+                  value={filterFrom}
+                  onChange={setFilterFrom}
+                  slotProps={{
+                    textField: {
+                      size: "small",
+                      sx: {
+                        "& .MuiOutlinedInput-root": {
+                          borderRadius: "9999px",
+                          fontSize: "14px",
+                        },
+                      },
+                      className: "w-full bg-white text-sm",
+                    },
+                  }}
+                />
+              </LocalizationProvider>
 
-        <LocalizationProvider dateAdapter={AdapterDayjs}>
-          <DatePicker
-            label="To Date"
-            value={filterTo}
-            onChange={(newVal) => setFilterTo(newVal)}
-            slotProps={{
-              textField: {
-                size: "small",
-                fullWidth: true,
-                className:
-                  "bg-gray-50 border border-gray-400 text-sm rounded-full dark:bg-gray-600 dark:border-gray-500 dark:text-white",
-              },
-            }}
-          />
-        </LocalizationProvider>
+              <LocalizationProvider dateAdapter={AdapterDayjs}>
+                <DatePicker
+                  label="To"
+                  value={filterTo}
+                  onChange={setFilterTo}
+                  slotProps={{
+                    textField: {
+                      size: "small",
+                      sx: {
+                        "& .MuiOutlinedInput-root": {
+                          borderRadius: "9999px",
+                          fontSize: "14px",
+                        },
+                      },
+                      className: "w-full bg-white text-sm",
+                    },
+                  }}
+                />
+              </LocalizationProvider>
+            </div>
+          </div>
 
-        <select
-          value={filterStatus}
-          onChange={(e) => setFilterStatus(e.target.value)}
-          className="w-full rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 shadow-sm    focus:border-green-500 focus:ring focus:ring-gray-100 focus:ring-opacity-50 transition  duration-200 ease-in-out cursor-pointer "
-        >
-          <option value="">All Status</option>
-          <option value="Billed">Billed</option>
-          <option value="Completed">Completed</option>
-        </select>
+          {/* Status Filter */}
+          <div className="flex-1">
+            <label className="block text-xs font-bold text-gray-700 mb-1">
+              Status
+            </label>
+            <select
+              value={filterStatus}
+              onChange={(e) => setFilterStatus(e.target.value)}
+              className="w-full px-3 py-2 text-sm border border-gray-300 rounded-full bg-white text-black focus:border-green-300 focus:outline-none focus:ring-1 focus:ring-green-200"
+            >
+              <option value="">All Status</option>
+              <option value="Billed">Billed</option>
+              <option value="Completed">Completed</option>
+            </select>
+          </div>
+
+          {/* Clear Button */}
+          <div className="flex gap-2">
+            <button
+              onClick={clearFilters}
+              className="px-4 py-2 bg-gray-200 hover:bg-gray-300 text-black font-bold rounded-full transition-colors whitespace-nowrap text-sm"
+            >
+              Clear Filters
+            </button>
+          </div>
+        </div>
       </div>
-      <Loading load={load} />
-      {loading && <p>Loading...</p>}
-      {error && <p className="text-red-500">{error}</p>}
 
-      {!loading && !error && (
-        <div className="space-y-8 text-gray-900 dark:text-gray-100">
+      <Loading load={load} />
+
+      {/* Compact GRN Cards */}
+      {!loading && (
+        <div className="space-y-3">
           {paginatedGrns.map((grn) => (
             <div
               key={grn._id}
-              className="bg-white dark:bg-neutral-900 rounded-xl shadow-lg p-6 mb-8 border border-gray-300 dark:border-gray-700"
+              className="bg-white rounded-lg shadow border border-gray-200 overflow-hidden hover:shadow-md transition-shadow"
             >
-              {/* Info row - horizontal, responsive */}
-              <div className="flex flex-wrap justify-between gap-6 text-gray-700 dark:text-gray-400 text-sm font-semibold bg-gray-100 dark:bg-neutral-800 p-5 rounded-lg shadow-inner">
-                {[
-                  { label: "Supplier", value: grn.supplierName?.supplierName },
-                  { label: "Invoice #", value: grn.invoiceNumber },
-                  { label: "LPO #", value: grn.lpoNumber },
-                  { label: "Delivery Person", value: grn.deliveryPerson },
-                  { label: "Delivery Number", value: grn.deliveryNumber },
-                  {
-                    label: "Receiving Date",
-                    value: new Date(grn.receivingDate).toLocaleDateString(),
-                  },
-                  {
-                    label: "Description",
-                    value: grn.description,
-                    isDescription: true,
-                  },
-                ].map(({ label, value, isDescription }, idx) => (
-                  <div
-                    key={idx}
-                    className={`flex flex-col min-w-[140px] max-w-xs ${
-                      isDescription ? "flex-grow" : ""
-                    }`}
-                  >
-                    <span className="text-green-600 uppercase tracking-wide text-xs mb-1">
-                      {label}
-                    </span>
-                    <span
-                      className={`mt-1 ${
-                        isDescription
-                          ? "text-gray-900 dark:text-gray-100 font-semibold truncate"
-                          : "text-gray-800 dark:text-gray-200"
-                      }`}
-                      title={isDescription ? value : ""}
-                    >
-                      {value || "-"}
-                    </span>
+              {/* Compact Header */}
+              <div
+                className="group relative p-2 cursor-pointer transition-all duration-300 overflow-hidden"
+                onClick={() => toggleExpand(grn._id)}
+              >
+                {/* Compact Gradient Background */}
+                <div className="absolute inset-0 bg-gradient-to-r from-green-200  to-green-300 group-hover:from-gray-100 group-hover:via-yellow-100 group-hover:to-green-200 transition-all duration-300">
+                  {/* Subtle Shimmer */}
+                  <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent opacity-0 group-hover:opacity-50 group-hover:translate-x-full transition-all duration-700"></div>
+                </div>
+
+                {/* Glass Border */}
+                <div className="absolute inset-0 border border-white/40 rounded-lg"></div>
+
+                {/* Content */}
+                <div className="relative z-10">
+                  <div className="flex items-center justify-between">
+                    {/* Left Section - More Compact */}
+                    <div className="flex items-center gap-2">
+                      {/* Compact Icon */}
+                      <div className="relative">
+                        {/* Outer Glow */}
+                        <div className="absolute -inset-0.5 bg-gradient-to-r from-gray-400 via-yellow-300 to-green-400 rounded-full opacity-60 blur-sm"></div>
+                        {/* Icon Container */}
+                        <div className="relative w-8 h-8 flex items-center justify-center bg-gradient-to-br from-white to-gray-50 rounded-full border border-white/80">
+                          <FiPackage className="w-4 h-4 bg-gradient-to-r from-gray-700 via-yellow-600 to-green-700 bg-clip-text text-transparent" />
+                        </div>
+                      </div>
+
+                      {/* Compact Text Content */}
+                      <div className="min-w-0">
+                        {/* Supplier Name - Single Line */}
+                        <h4 className="font-bold text-gray-900 text-sm truncate max-w-[180px]">
+                          {grn.supplierName?.supplierName || "Unknown Supplier"}
+                          <span className="block w-0 group-hover:w-full h-0.5 bg-gradient-to-r from-yellow-400 to-green-500 rounded-full transition-all duration-300 mt-0.5"></span>
+                        </h4>
+
+                        {/* Compact Badges - Inline */}
+                        <div className="flex items-center gap-1.5 mt-1">
+                          {/* Invoice Badge */}
+                          <span className="text-xs px-2 py-0.5 bg-gradient-to-r from-gray-100 to-gray-200 text-gray-800 rounded-full border border-gray-300/50 truncate max-w-[80px]">
+                            📋 {grn.invoiceNumber || "N/A"}
+                          </span>
+
+                          {/* LPO Badge */}
+                          <span className="text-xs px-2 py-0.5 bg-gradient-to-r from-yellow-50 to-yellow-100 text-yellow-900 rounded-full border border-yellow-300/50 truncate max-w-[80px]">
+                            📄 {grn.lpoNumber || "N/A"}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Right Section - Compact */}
+                    <div className="flex items-center gap-2">
+                      {/* Compact Date Badge */}
+                      <span className="text-xs px-2 py-0.5 bg-gradient-to-r from-green-50 to-green-100 text-green-900 rounded-full border border-green-300/50 whitespace-nowrap">
+                        {dayjs(grn.receivingDate).format("DD/MM/YY")}
+                      </span>
+
+                      {/* Compact Items Counter */}
+                      <div className="relative">
+                        <div className="flex items-center gap-1 px-2 py-1 bg-gradient-to-br from-white to-gray-50 rounded-lg border border-gray-300/40 shadow-sm">
+                          <span className="text-xs font-medium text-gray-600">
+                            Items:
+                          </span>
+                          <span className="text-sm font-bold bg-gradient-to-r from-green-600 to-green-700 bg-clip-text text-transparent">
+                            {grn.items?.length || 0}
+                          </span>
+                        </div>
+                        {/* Tiny Glow Dot */}
+                        <div className="absolute -top-0.5 -right-0.5 w-1.5 h-1.5 bg-gradient-to-r from-yellow-400 to-green-400 rounded-full animate-pulse"></div>
+                      </div>
+
+                      {/* Compact Expand Button */}
+                      <button className="relative w-7 h-7 flex items-center justify-center bg-gradient-to-br from-white to-gray-50 rounded-full border border-gray-300 shadow-sm hover:shadow transition-all duration-200">
+                        {expandedGrn === grn._id ? (
+                          <FiChevronUp className="w-3 h-3 text-gray-700" />
+                        ) : (
+                          <FiChevronDown className="w-3 h-3 text-gray-700" />
+                        )}
+                      </button>
+                    </div>
                   </div>
-                ))}
+
+                  {/* Compact Status Indicator - Only show if needed */}
+                  {expandedGrn !== grn._id && grn.items?.length > 0 && (
+                    <div className="mt-1.5 pt-1.5 border-t border-gray-200/20">
+                      <div className="flex items-center justify-between text-xs">
+                        <div className="flex items-center gap-1.5">
+                          <div className="flex items-center gap-1">
+                            <div className="w-1.5 h-1.5 bg-gradient-to-r from-yellow-400 to-yellow-500 rounded-full"></div>
+                            <span className="text-gray-600">
+                              Billed:{" "}
+                              {
+                                grn.items.filter(
+                                  (item) => item.status === "Billed"
+                                ).length
+                              }
+                            </span>
+                          </div>
+                          <div className="flex items-center gap-1">
+                            <div className="w-1.5 h-1.5 bg-gradient-to-r from-green-400 to-green-500 rounded-full"></div>
+                            <span className="text-gray-600">
+                              Complete:{" "}
+                              {
+                                grn.items.filter(
+                                  (item) => item.status === "Completed"
+                                ).length
+                              }
+                            </span>
+                          </div>
+                        </div>
+                        <div className="w-16 h-1.5 bg-gradient-to-r from-gray-200 to-gray-300 rounded-full overflow-hidden">
+                          <div
+                            className="h-full bg-gradient-to-r from-yellow-400 to-green-500 rounded-full"
+                            style={{
+                              width: `${
+                                (grn.items.filter(
+                                  (item) => item.status === "Completed"
+                                ).length /
+                                  grn.items.length) *
+                                100
+                              }%`,
+                            }}
+                          ></div>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                {/* Corner Accents - Smaller */}
+                <div className="absolute top-0 right-0 w-4 h-4 bg-gradient-to-br from-gray-300/10 to-transparent rounded-bl-full"></div>
+                <div className="absolute bottom-0 left-0 w-4 h-4 bg-gradient-to-tr from-green-300/10 to-transparent rounded-tr-full"></div>
               </div>
 
-              {/* Items Table */}
-              <h4 className="mt-8 mb-4 text-gray-900 dark:text-gray-100 font-semibold border-b border-gray-300 dark:border-gray-700 pb-2 tracking-wide text-lg">
-                Items
-              </h4>
-              <div className="overflow-x-auto rounded-lg border border-gray-200 dark:border-gray-700 shadow-sm bg-green-100 dark:bg-neutral-800">
-                <table className="w-full text-center text-gray-700 dark:text-gray-300 text-sm">
-                  <thead className="bg-green-100 dark:bg-neutral-800">
-                    <tr>
-                      {[
-                        "Item",
-                        "Billed Qty",
-                        "Paid Qty",
-                        "Total Purchased Qty",
-                        "Buy Price",
-                        "Total Cost",
-                        "Sell Price",
-                        "Estimated Sales",
-                        "Estimated Profit",
-                        "Status",
-                      ].map((header) => (
-                        <th
-                          key={header}
-                          className="py-3 px-4 uppercase font-semibold tracking-wide text-gray-600 dark:text-gray-400"
-                        >
-                          {header}
-                        </th>
-                      ))}
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {grn.items
-                      .filter((item) => {
-                        if (!filterStatus) return true;
-                        return (
-                          item.status.toLowerCase() ===
-                          filterStatus.toLowerCase()
-                        );
-                      })
-                      .map((item) => {
-                        const billed = item.billedAmount || 0;
-                        const paid = item.quantity || 0;
-                        const totalQty = billed + paid;
-                        const totalCost = totalQty * (item.buyingPrice || 0);
-                        const estimatedSales =
-                          totalQty * (item.sellingPrice || 0);
-                        const estimatedProfit = estimatedSales - totalCost || 0;
+              {/* Expanded Details - Only shows when clicked */}
+              {expandedGrn === grn._id && (
+                <div className="p-3 border-t border-gray-200">
+                  {/* Additional Info */}
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-2 mb-4">
+                    <div className="bg-gray-100 rounded p-2">
+                      <p className="text-xs text-gray-500 font-medium">
+                        Delivery Person
+                      </p>
+                      <p className="text-sm font-bold text-black">
+                        {grn.deliveryPerson || "-"}
+                      </p>
+                    </div>
+                    <div className="bg-gray-200 rounded p-2">
+                      <p className="text-xs text-gray-500 font-medium">
+                        Delivery Number
+                      </p>
+                      <p className="text-sm font-bold text-black">
+                        {grn.deliveryNumber || "-"}
+                      </p>
+                    </div>
+                    <div className="bg-gray-100 rounded p-2">
+                      <p className="text-xs text-gray-500 font-medium">
+                        Description
+                      </p>
+                      <p className="text-sm font-bold text-black truncate">
+                        {grn.description || "-"}
+                      </p>
+                    </div>
+                    <div className="bg-gray-200 rounded p-2">
+                      <p className="text-xs text-gray-500 font-medium">
+                        Created
+                      </p>
+                      <p className="text-sm font-bold text-black">
+                        {dayjs(grn.createdAt).format("DD/MM/YY HH:mm")}
+                      </p>
+                    </div>
+                  </div>
 
-                        return (
-                          <tr key={item._id} className="border-b ... font-bold">
-                            <td>{item.name?.name || "-"}</td>
-                            <td>{billed}</td>
-                            <td>{paid}</td>
-                            <td>{totalQty}</td>
-                            <td>{item.buyingPrice?.toLocaleString() || 0}</td>
-                            <td>{totalCost.toLocaleString()}</td>
-                            <td>{item.sellingPrice?.toLocaleString() || 0}</td>
-                            <td>{estimatedSales.toLocaleString()}</td>
-                            <td>{estimatedProfit.toLocaleString()}</td>
-                            <td
-                              className={`py-2 px-3 capitalize font-bold ${
-                                item.status === "Billed"
-                                  ? "bg-yellow-300 text-yellow-900 font-semibold"
-                                  : item.status === "Completed"
-                                  ? "bg-green-300 text-green-900 font-semibold"
-                                  : ""
-                              }`}
+                  {/* Compact Items Table */}
+                  <div className="overflow-x-auto rounded-lg border border-gray-200">
+                    <table className="min-w-full text-sm">
+                      <thead>
+                        <tr className="bg-gray-200">
+                          {[
+                            "Item",
+                            "Billed",
+                            "Paid",
+                            "Total",
+                            "Buy Price",
+                            "Total Cost",
+                            "Sell Price",
+                            "Estimated Sales",
+                            "Estimated Profit",
+                            "Status",
+                          ].map((header, idx) => (
+                            <th
+                              key={idx}
+                              className="px-3 py-2 text-center text-xs font-bold text-black uppercase border-r border-gray-300"
                             >
-                              {item.status}
-                            </td>
-                          </tr>
-                        );
-                      })}
-                  </tbody>
-                </table>
-              </div>
+                              {header}
+                            </th>
+                          ))}
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {grn.items.map((item) => {
+                          const billed = item.billedAmount || 0;
+                          const paid = item.quantity || 0;
+                          const totalQty = billed + paid;
+                          const totalCost = totalQty * (item.buyingPrice || 0);
+                          const estimatedSales =
+                            totalQty * (item.sellingPrice || 0);
+                          const estimatedProfit = estimatedSales - totalCost;
+
+                          return (
+                            <tr
+                              key={item._id}
+                              className="border-t border-gray-100"
+                            >
+                              <td className="px-3 py-2 text-center bg-gray-100 border-r border-gray-200">
+                                <span className="font-bold text-black text-xs">
+                                  {item.name?.name || "-"}
+                                </span>
+                              </td>
+                              <td className="px-3 py-2 text-center bg-yellow-100 border-r border-gray-200">
+                                <span className="font-bold text-black text-xs">
+                                  {billed}
+                                </span>
+                              </td>
+                              <td className="px-3 py-2 text-center bg-green-200 border-r border-gray-200">
+                                <span className="font-bold text-black text-xs">
+                                  {paid}
+                                </span>
+                              </td>
+                              <td className="px-3 py-2 text-center bg-blue-100 border-r border-gray-200">
+                                <span className="font-bold text-black text-xs">
+                                  {totalQty}
+                                </span>
+                              </td>
+                              <td className="px-3 py-2 text-center bg-yellow-100 border-r border-gray-200">
+                                <span className="font-bold text-black text-xs">
+                                  {(item.buyingPrice || 0).toLocaleString()}
+                                </span>
+                              </td>
+                              <td className="px-3 py-2 text-center bg-red-100 border-r border-gray-200">
+                                <span className="font-bold text-black text-xs">
+                                  {totalCost.toLocaleString()}
+                                </span>
+                              </td>
+                              <td className="px-3 py-2 text-center bg-green-100 border-r border-gray-200">
+                                <span className="font-bold text-black text-xs">
+                                  {(item.sellingPrice || 0).toLocaleString()}
+                                </span>
+                              </td>
+                              <td className="px-3 py-2 text-center bg-green-100 border-r border-gray-200">
+                                <span className="font-bold text-black text-xs">
+                                  {(estimatedSales || 0).toLocaleString()}
+                                </span>
+                              </td>
+                              <td className="px-3 py-2 text-center bg-green-100 border-r border-gray-200">
+                                <span className="font-bold text-black text-xs">
+                                  {(estimatedProfit || 0).toLocaleString()}
+                                </span>
+                              </td>
+
+                              <td className="px-3 py-2 text-center">
+                                <span
+                                  className={`inline-flex items-center justify-center px-2 py-1 rounded-full text-xs font-bold ${
+                                    item.status === "Billed"
+                                      ? "bg-yellow-300 text-yellow-900"
+                                      : "bg-green-300 text-green-900"
+                                  }`}
+                                >
+                                  {item.status}
+                                </span>
+                              </td>
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              )}
             </div>
           ))}
         </div>
       )}
 
-      {/* Pagination */}
+      {/* Compact Pagination */}
       {totalPages > 1 && (
-        <div className="flex items-center justify-between border-t border-gray-200 bg-white py-3 mt-2">
-          <p className="text-sm text-gray-700">
-            Showing{" "}
-            <span className="font-medium">
-              {(currentPage - 1) * itemsPerPage + 1}
-            </span>{" "}
-            to{" "}
-            <span className="font-medium">
+        <div className="flex flex-col sm:flex-row items-center justify-between gap-3 mt-6 pt-4 border-t border-gray-300">
+          <div className="text-xs text-gray-700">
+            <span className="font-bold text-black">
+              Showing {(currentPage - 1) * itemsPerPage + 1} to{" "}
               {Math.min(currentPage * itemsPerPage, totalItems)}
             </span>{" "}
-            of <span className="font-medium">{totalItems}</span> items
-          </p>
+            of <span className="font-bold text-black">{totalItems}</span> GRNs
+          </div>
 
-          <nav className="isolate inline-flex -space-x-px rounded-md shadow-sm">
-            {/* Prev Button */}
+          <div className="flex items-center gap-1">
             <button
               onClick={prevPage}
               disabled={currentPage === 1}
-              className={`relative inline-flex items-center rounded-l-md px-2 py-2 text-gray-400 ring-1 ring-gray-300 hover:bg-gray-50 ${
-                currentPage === 1 ? "opacity-50 cursor-not-allowed" : ""
-              }`}
+              className="p-2 bg-gray-200 hover:bg-gray-300 text-black font-bold rounded-full disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
             >
-              <IoIosArrowBack className="size-5" />
+              <IoIosArrowBack className="w-4 h-4" />
             </button>
 
-            {/* Page buttons with ellipsis */}
-            {(() => {
-              const maxPagesToShow = 10;
-              const pages = [];
+            <div className="flex items-center gap-1">
+              {[...Array(totalPages)].map((_, i) => {
+                const pageNum = i + 1;
+                const isCurrent = currentPage === pageNum;
+                const showPage =
+                  pageNum === 1 ||
+                  pageNum === totalPages ||
+                  (pageNum >= currentPage - 1 && pageNum <= currentPage + 1);
 
-              if (totalPages <= maxPagesToShow) {
-                for (let i = 1; i <= totalPages; i++) {
-                  pages.push(i);
-                }
-              } else {
-                pages.push(1); // always show first page
-
-                let startPage, endPage;
-
-                if (currentPage <= 6) {
-                  startPage = 2;
-                  endPage = 8;
-                  for (let i = startPage; i <= endPage; i++) pages.push(i);
-                  pages.push("ellipsis-right");
-                  pages.push(totalPages);
-                } else if (currentPage >= totalPages - 5) {
-                  pages.push("ellipsis-left");
-                  startPage = totalPages - 7;
-                  for (let i = startPage; i < totalPages; i++) pages.push(i);
-                  pages.push(totalPages);
-                } else {
-                  pages.push("ellipsis-left");
-                  startPage = currentPage - 2;
-                  endPage = currentPage + 2;
-                  for (let i = startPage; i <= endPage; i++) pages.push(i);
-                  pages.push("ellipsis-right");
-                  pages.push(totalPages);
-                }
-              }
-
-              return pages.map((page, idx) => {
-                if (page === "ellipsis-left" || page === "ellipsis-right") {
+                if (showPage) {
+                  return (
+                    <button
+                      key={i}
+                      onClick={() => setCurrentPage(pageNum)}
+                      className={`w-8 h-8 text-xs font-bold rounded-full transition-colors ${
+                        isCurrent
+                          ? "bg-green-300 text-black shadow"
+                          : "text-gray-700 hover:bg-gray-200"
+                      }`}
+                    >
+                      {pageNum}
+                    </button>
+                  );
+                } else if (
+                  (pageNum === currentPage - 2 ||
+                    pageNum === currentPage + 2) &&
+                  totalPages > 5
+                ) {
                   return (
                     <span
-                      key={`ellipsis-${idx}`}
-                      className="relative inline-flex items-center px-4 py-2 text-sm text-gray-700 select-none"
+                      key={i}
+                      className="px-2 text-gray-500 font-bold text-xs"
                     >
                       ...
                     </span>
                   );
                 }
-                return (
-                  <button
-                    key={page}
-                    onClick={() => setCurrentPage(page)}
-                    className={`relative inline-flex items-center px-4 py-2 text-sm font-semibold ring-1 ring-gray-300 hover:bg-gray-50 ${
-                      currentPage === page
-                        ? "bg-green-500 text-white"
-                        : "text-gray-900"
-                    }`}
-                  >
-                    {page}
-                  </button>
-                );
-              });
-            })()}
+                return null;
+              })}
+            </div>
 
-            {/* Next Button */}
             <button
               onClick={nextPage}
               disabled={currentPage === totalPages}
-              className={`relative inline-flex items-center rounded-r-md px-2 py-2 text-gray-400 ring-1 ring-gray-300 hover:bg-gray-50 ${
-                currentPage === totalPages
-                  ? "opacity-50 cursor-not-allowed"
-                  : ""
-              }`}
+              className="p-2 bg-gray-200 hover:bg-gray-300 text-black font-bold rounded-full disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
             >
-              <IoIosArrowForward className="size-5" />
+              <IoIosArrowForward className="w-4 h-4" />
             </button>
-          </nav>
+          </div>
+        </div>
+      )}
+
+      {/* Empty State */}
+      {!loading && filteredGrns.length === 0 && (
+        <div className="text-center py-12">
+          <div className="inline-flex items-center justify-center w-16 h-16 bg-gray-200 rounded-full mb-4">
+            <FiPackage className="w-8 h-8 text-gray-500" />
+          </div>
+          <h3 className="text-lg font-bold text-black mb-2">No GRNs Found</h3>
+          <p className="text-gray-600 text-sm mb-4">
+            Try adjusting your search filters
+          </p>
+          <button
+            onClick={clearFilters}
+            className="px-4 py-2 bg-green-300 hover:bg-green-400 text-black font-bold rounded-full transition-colors text-sm"
+          >
+            Clear All Filters
+          </button>
         </div>
       )}
     </div>
