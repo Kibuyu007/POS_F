@@ -2,18 +2,17 @@ import { useEffect, useState, useCallback } from "react";
 import axios from "axios";
 import { useDispatch, useSelector } from "react-redux";
 import { addItems } from "../../Redux/cartSlice";
-import { 
-  FaSearch, 
-  FaPlus, 
-  FaMinus, 
-  FaBarcode, 
+import {
+  FaSearch,
+  FaPlus,
+  FaMinus,
+  FaBarcode,
   FaBox,
   FaShoppingCart,
   FaTag,
-  FaWarehouse
+  FaWarehouse,
 } from "react-icons/fa";
 import { MdCategory, MdInventory, MdLocalOffer } from "react-icons/md";
-import { RiArrowUpDownLine } from "react-icons/ri";
 import toast from "react-hot-toast";
 
 // API
@@ -75,16 +74,21 @@ const MenuCard = ({ refreshTrigger }) => {
             const itemsResponse = await axios.get(
               `${BASE_URL}/api/items/getAllItems?category=${category._id}`
             );
-            
+
             return {
               ...category,
-              itemCount: itemsResponse.data.success ? itemsResponse.data.data.length : 0
+              itemCount: itemsResponse.data.success
+                ? itemsResponse.data.data.length
+                : 0,
             };
           } catch (error) {
-            console.error(`Error fetching items for category ${category.name}:`, error);
+            console.error(
+              `Error fetching items for category ${category.name}:`,
+              error
+            );
             return {
               ...category,
-              itemCount: 0
+              itemCount: 0,
             };
           }
         })
@@ -111,11 +115,13 @@ const MenuCard = ({ refreshTrigger }) => {
         });
         setItemCounts(initialItemCounts);
 
-        setCategories(prev => prev.map(cat => 
-          cat._id === categoryId 
-            ? { ...cat, itemCount: data.data.length }
-            : cat
-        ));
+        setCategories((prev) =>
+          prev.map((cat) =>
+            cat._id === categoryId
+              ? { ...cat, itemCount: data.data.length }
+              : cat
+          )
+        );
       }
     } catch (error) {
       console.error("Error fetching items:", error);
@@ -140,11 +146,13 @@ const MenuCard = ({ refreshTrigger }) => {
         res.data.data.forEach((item) => (initial[item._id] = 1));
         setItemCounts(initial);
 
-        setCategories(prev => prev.map(cat => 
-          cat._id === categoryId 
-            ? { ...cat, itemCount: res.data.data.length }
-            : cat
-        ));
+        setCategories((prev) =>
+          prev.map((cat) =>
+            cat._id === categoryId
+              ? { ...cat, itemCount: res.data.data.length }
+              : cat
+          )
+        );
       }
     } catch (error) {
       console.error("Error searching items:", error);
@@ -246,7 +254,9 @@ const MenuCard = ({ refreshTrigger }) => {
               <FaShoppingCart className="text-emerald-600 text-xl" />
             </div>
           </div>
-          <p className="mt-4 text-gray-600 font-medium">Loading menu items...</p>
+          <p className="mt-4 text-gray-600 font-medium">
+            Loading menu items...
+          </p>
         </div>
       ) : (
         <div className="space-y-6">
@@ -310,7 +320,9 @@ const MenuCard = ({ refreshTrigger }) => {
                 <MdCategory className="text-emerald-600" />
                 Categories
               </h3>
-              <span className="text-sm text-gray-500">{filteredCategories.length} available</span>
+              <span className="text-sm text-gray-500">
+                {filteredCategories.length} available
+              </span>
             </div>
             <div className="flex flex-wrap gap-2 max-h-[120px] overflow-y-auto scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100 p-1">
               {filteredCategories.map((category) => (
@@ -330,11 +342,13 @@ const MenuCard = ({ refreshTrigger }) => {
                 >
                   <MdCategory className="text-sm" />
                   <span>{category.name}</span>
-                  <span className={`px-1.5 py-0.5 rounded-full text-xs ${
-                    selected?._id === category._id
-                      ? "bg-white/20 text-white"
-                      : "bg-gray-200 text-gray-700"
-                  }`}>
+                  <span
+                    className={`px-1.5 py-0.5 rounded-full text-xs ${
+                      selected?._id === category._id
+                        ? "bg-white/20 text-white"
+                        : "bg-gray-200 text-gray-700"
+                    }`}
+                  >
                     {category.itemCount || 0}
                   </span>
                 </button>
@@ -388,18 +402,20 @@ const MenuCard = ({ refreshTrigger }) => {
                         </span>
                       </div>
                     </div>
-                    
+
                     <div className="flex items-center gap-2 mb-3">
                       <div className="flex items-center gap-1 text-xs text-gray-600">
                         <FaWarehouse className="text-gray-400" />
                         <span>Stock: </span>
-                        <span className={`font-bold ${
-                          item.itemQuantity === 0
-                            ? "text-red-600"
-                            : item.itemQuantity <= item.reOrder
-                            ? "text-yellow-600"
-                            : "text-green-600"
-                        }`}>
+                        <span
+                          className={`font-bold ${
+                            item.itemQuantity === 0
+                              ? "text-red-600"
+                              : item.itemQuantity <= item.reOrder
+                              ? "text-yellow-600"
+                              : "text-green-600"
+                          }`}
+                        >
                           {item.itemQuantity.toLocaleString()}
                         </span>
                       </div>
@@ -433,15 +449,17 @@ const MenuCard = ({ refreshTrigger }) => {
                         </div>
                       </div>
                     </div>
-                    
+
                     {/* Profit Indicator */}
                     <div className="flex items-center justify-between text-xs text-gray-500">
                       <span>Profit Margin:</span>
-                      <span className={`font-bold ${
-                        item.price - item.buyingPrice > 0 
-                          ? "text-green-600" 
-                          : "text-red-600"
-                      }`}>
+                      <span
+                        className={`font-bold ${
+                          item.price - item.buyingPrice > 0
+                            ? "text-green-600"
+                            : "text-red-600"
+                        }`}
+                      >
                         Tsh {(item.price - item.buyingPrice).toLocaleString()}
                       </span>
                     </div>
@@ -450,20 +468,44 @@ const MenuCard = ({ refreshTrigger }) => {
                   {/* Quantity Controls */}
                   <div className="space-y-3">
                     <div className="flex items-center justify-between bg-gray-50 rounded-lg p-1">
+                      {/* Minus Button */}
                       <button
-                        onClick={() => handleQuantityChange(item._id, (itemCounts[item._id] || 1) - 1)}
+                        onClick={() =>
+                          handleQuantityChange(
+                            item._id,
+                            (itemCounts[item._id] || 1) - 1
+                          )
+                        }
                         className="p-2 rounded-lg hover:bg-gray-200 transition-colors"
                       >
                         <FaMinus className="text-gray-600" />
                       </button>
+
+                      {/* INPUT FOR QUANTITY */}
                       <div className="flex flex-col items-center">
-                        <span className="text-lg font-bold text-gray-800">
-                          {itemCounts[item._id] || 1}
-                        </span>
+                        <input
+                          type="number"
+                          min="1"
+                          className="w-16 text-center text-lg font-bold text-gray-800 border rounded-md"
+                          value={itemCounts[item._id] || 1}
+                          onChange={(e) =>
+                            handleQuantityChange(
+                              item._id,
+                              Number(e.target.value)
+                            )
+                          }
+                        />
                         <span className="text-xs text-gray-500">Quantity</span>
                       </div>
+
+                      {/* Plus Button */}
                       <button
-                        onClick={() => handleQuantityChange(item._id, (itemCounts[item._id] || 1) + 1)}
+                        onClick={() =>
+                          handleQuantityChange(
+                            item._id,
+                            (itemCounts[item._id] || 1) + 1
+                          )
+                        }
                         className="p-2 rounded-lg hover:bg-gray-200 transition-colors"
                       >
                         <FaPlus className="text-gray-600" />
@@ -473,20 +515,15 @@ const MenuCard = ({ refreshTrigger }) => {
                     {/* Add to Cart Button */}
                     <button
                       onClick={() => handleAddCart(item)}
-                      className="
-                        w-full py-3 rounde bg-gradient-to-r from-blue-100 to-green-200 
-                        hover:from-grey-600 hover:to-green-500
-                        text-black font-semibold 
-                        transition-all duration-300 
-                        shadow-md hover:shadow-lg
-                        flex items-center justify-center gap-2
-                        group/btn
-                      "
+                      className="w-full py-3 rounde bg-gradient-to-r from-blue-100 to-green-200 hover:from-grey-600 hover:to-green-500text-black font-semibold transition-all duration-300 shadow-md hover:shadow-lg flex items-center justify-center gap-2 group/btn"
                     >
                       <FaShoppingCart className="group-hover/btn:scale-110 transition-transform" />
                       <span>Add to Cart</span>
                       <span className="text-xs bg-white/20 px-2 py-0.5 rounded">
-                        Tsh {((itemCounts[item._id] || 1) * item.price).toLocaleString()}
+                        Tsh{" "}
+                        {(
+                          (itemCounts[item._id] || 1) * item.price
+                        ).toLocaleString()}
                       </span>
                     </button>
                   </div>
@@ -499,7 +536,9 @@ const MenuCard = ({ refreshTrigger }) => {
                 <div className="w-20 h-20 bg-gradient-to-br from-gray-100 to-gray-200 rounded-full flex items-center justify-center mb-4">
                   <FaBox className="text-gray-400 text-2xl" />
                 </div>
-                <h4 className="font-semibold text-gray-700 text-lg mb-2">No Items Found</h4>
+                <h4 className="font-semibold text-gray-700 text-lg mb-2">
+                  No Items Found
+                </h4>
                 <p className="text-gray-500 text-sm max-w-sm">
                   Try changing your search or select a different category
                 </p>
