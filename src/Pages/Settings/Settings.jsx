@@ -68,12 +68,12 @@ const Settings = () => {
           handleSelect={setSelectedSetting}
         />
 
-        {/* <SettingsList
+        <SettingsList
           title="Customer Management"
-          settings={["All Customers", "Wallet Transactions", "Report"]}
+          settings={["All Customers"]}
           selectedSetting={selectedSetting}
           handleSelect={setSelectedSetting}
-        /> */}
+        />
 
         {user?.roles?.canAccessUserManagement && (
           <SettingsList
