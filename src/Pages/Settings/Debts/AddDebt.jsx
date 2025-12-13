@@ -2,17 +2,24 @@ import { useState } from "react";
 import axios from "axios";
 import BASE_URL from "../../../Utils/config";
 import toast from "react-hot-toast";
-import { FiUser, FiPhone, FiCheck, FiX, FiCreditCard } from "react-icons/fi";
+import { FiUser, FiPhone, FiCheck, FiX, FiCreditCard, FiDollarSign } from "react-icons/fi";
 
 const AddDebt = ({ close }) => {
   const [formData, setFormData] = useState({
     customerName: "",
     phone: "",
     totalAmount: "",
+    debtStatus: "Asset" // Default value
   });
 
   const [errors, setErrors] = useState({});
   const [loading, setLoading] = useState(false);
+
+  // Define available debt status options
+  const debtStatusOptions = [
+    { value: "Asset", label: "Asset", color: "bg-red-100 text-red-800" },
+    { value: "Liability", label: "Liability", color: "bg-yellow-100 text-yellow-800" },
+  ];
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -56,6 +63,10 @@ const AddDebt = ({ close }) => {
       newErrors.totalAmount = "Minimum amount is 100 Tsh";
     }
 
+    if (!formData.debtStatus) {
+      newErrors.debtStatus = "Debt status is required";
+    }
+
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
@@ -71,6 +82,7 @@ const AddDebt = ({ close }) => {
         customerName: formData.customerName.trim(),
         phone: formData.phone.trim(),
         totalAmount: parseFloat(formData.totalAmount),
+        debtStatus: formData.debtStatus,
       });
 
       toast.success("Debt record created successfully!");
@@ -90,8 +102,22 @@ const AddDebt = ({ close }) => {
       customerName: "",
       phone: "",
       totalAmount: "",
+      debtStatus: "Asset",
     });
     setErrors({});
+  };
+
+  const handleStatusSelect = (status) => {
+    setFormData((prev) => ({
+      ...prev,
+      debtStatus: status,
+    }));
+    if (errors.debtStatus) {
+      setErrors((prev) => ({
+        ...prev,
+        debtStatus: "",
+      }));
+    }
   };
 
   return (
@@ -107,7 +133,7 @@ const AddDebt = ({ close }) => {
                 </div>
                 <div>
                   <h3 className="text-2xl font-bold text-black">+ Add New Debt</h3>
-                  <p className="text-black/70 text-sm mt-1">Enter customer details and debt amount</p>
+                  <p className="text-black/70 text-sm mt-1">Enter customer details and debt information</p>
                 </div>
               </div>
               <button
@@ -220,6 +246,69 @@ const AddDebt = ({ close }) => {
                   )}
                 </div>
 
+                {/* Debt Status */}
+                <div>
+                  <div className="mb-2">
+                    <label className="block text-sm font-bold text-gray-900">
+                      Debt Status
+                    </label>
+                  </div>
+                  <div className="relative">
+                    <div className="absolute inset-y-0 left-3 flex items-center">
+                      <FiDollarSign className="w-4 h-4 text-gray-500" />
+                    </div>
+                    <select
+                      name="debtStatus"
+                      value={formData.debtStatus}
+                      onChange={handleChange}
+                      className={`w-full pl-10 pr-4 py-3 border ${
+                        errors.debtStatus
+                          ? "border-red-300"
+                          : "border-gray-300"
+                      } rounded-full bg-white text-black focus:outline-none focus:border-green-300 appearance-none`}
+                      disabled={loading}
+                    >
+                      {debtStatusOptions.map((option) => (
+                        <option key={option.value} value={option.value}>
+                          {option.label}
+                        </option>
+                      ))}
+                    </select>
+                    <div className="absolute inset-y-0 right-3 flex items-center pointer-events-none">
+                      <svg className="w-4 h-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                      </svg>
+                    </div>
+                  </div>
+                  {errors.debtStatus && (
+                    <div className="mt-2 text-sm text-red-600">
+                      {errors.debtStatus}
+                    </div>
+                  )}
+                </div>
+
+                {/* Status Selection Buttons */}
+                <div className="col-span-2">
+                  <p className="text-sm font-medium text-gray-700 mb-2">Quick Status Selection</p>
+                  <div className="flex flex-wrap gap-2">
+                    {debtStatusOptions.map((option) => (
+                      <button
+                        key={option.value}
+                        type="button"
+                        onClick={() => handleStatusSelect(option.value)}
+                        className={`px-4 py-2 font-medium rounded-full transition-all ${
+                          formData.debtStatus === option.value
+                            ? `${option.color} ring-2 ring-offset-1 ring-opacity-50`
+                            : "bg-gray-100 hover:bg-gray-200 text-gray-700"
+                        }`}
+                        disabled={loading}
+                      >
+                        {option.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
                 {/* Quick Amount Buttons - Full width */}
                 <div className="col-span-2">
                   <p className="text-sm font-medium text-gray-700 mb-2">Quick Amount (Tsh)</p>
@@ -295,6 +384,21 @@ const AddDebt = ({ close }) => {
                       <div className={`w-3 h-3 rounded-full ${formData.totalAmount ? "bg-green-300" : "bg-gray-400"}`} />
                       <span className="text-sm">Total amount {formData.totalAmount ? "✓" : "(required)"}</span>
                     </div>
+                    <div className={`flex items-center gap-3 ${formData.debtStatus ? "text-green-700" : "text-gray-600"}`}>
+                      <div className={`w-3 h-3 rounded-full ${formData.debtStatus ? "bg-green-300" : "bg-gray-400"}`} />
+                      <span className="text-sm">
+                        Debt status:{" "}
+                        <span className={`px-2 py-1 ml-2 rounded-full text-xs font-bold ${
+                          formData.debtStatus === "Asset" 
+                            ? "bg-red-100 text-red-800"
+                            : formData.debtStatus === "Liability"
+                            ? "bg-yellow-100 text-yellow-800"
+                            : "bg-gray-100 text-gray-800"
+                        }`}>
+                          {formData.debtStatus || "(required)"}
+                        </span>
+                      </span>
+                    </div>
                   </div>
                 </div>
 
@@ -306,13 +410,15 @@ const AddDebt = ({ close }) => {
                       loading ||
                       !formData.customerName ||
                       !formData.phone ||
-                      !formData.totalAmount
+                      !formData.totalAmount ||
+                      !formData.debtStatus
                     }
                     className={`w-full py-3 font-bold rounded-full flex items-center justify-center gap-2 ${
                       loading ||
                       !formData.customerName ||
                       !formData.phone ||
-                      !formData.totalAmount
+                      !formData.totalAmount ||
+                      !formData.debtStatus
                         ? "bg-gray-300 text-gray-500 cursor-not-allowed"
                         : "bg-green-300 hover:bg-green-400 text-black"
                     }`}
