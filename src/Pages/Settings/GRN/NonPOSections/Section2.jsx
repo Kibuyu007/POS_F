@@ -3,7 +3,6 @@ import { FaSearch } from "react-icons/fa";
 import { useDispatch, useSelector } from "react-redux";
 import { TiArrowRightThick } from "react-icons/ti";
 import { fetchProducts, searchItemsEveryWhere } from "../../../../Redux/items";
-
 import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs";
 import { LocalizationProvider } from "@mui/x-date-pickers/LocalizationProvider";
 import { DatePicker } from "@mui/x-date-pickers/DatePicker";
@@ -37,14 +36,14 @@ const Section2 = ({ onAddItem }) => {
     buyingPrice: "",
     units: 1,
     itemsPerUnit: 1,
-    quantity: "",
-    rejected: "",
-    billedAmount: "",
-    foc: "",
+    quantity: 1, // Initialize with 1 since units=1 and itemsPerUnit=1
+    rejected: 0,
+    billedAmount: 0,
+    foc: 0,
     batchNumber: "",
     manufactureDate: firstDayOfMonth,
     expiryDate: lastDayOfMonth,
-    receivedDate: new Date().toISOString().split("T")[0],
+    receivedDate: dayjs().format("YYYY-MM-DD"),
     comments: "",
     totalCost: "",
     sellingPrice: "",
@@ -65,17 +64,23 @@ const Section2 = ({ onAddItem }) => {
     setSelectedItem(itemToAdd);
     setShowError("");
     setFinishAdd(true);
+    
+    // Pre-fill selling price with current item price
+    setFormData(prev => ({
+      ...prev,
+      sellingPrice: itemToAdd.price || "",
+      quantity: prev.units * prev.itemsPerUnit // Recalculate with defaults
+    }));
   };
 
   const handleChange = (e) => {
     const { name, value } = e.target;
 
     setFormData((prev) => {
-      const updatedValue = value;
-
+      // Update the changed field
       const updatedForm = {
         ...prev,
-        [name]: updatedValue,
+        [name]: value,
       };
 
       // Parse numbers safely
@@ -83,20 +88,26 @@ const Section2 = ({ onAddItem }) => {
       const itemsPerUnit = parseInt(updatedForm.itemsPerUnit) || 0;
       const foc = parseInt(updatedForm.foc) || 0;
       const rejected = parseInt(updatedForm.rejected) || 0;
+      const billedAmount = parseFloat(updatedForm.billedAmount) || 0;
       const buyingPrice = parseFloat(updatedForm.buyingPrice) || 0;
 
-      // Compute and clamp quantity
-      const rawQuantity = units * itemsPerUnit + foc - rejected;
-      const quantityMath = Math.max(0, rawQuantity);
-
-      // Total cost calculation
-      const totalCostRaw = buyingPrice * (units * itemsPerUnit);
+      // Calculate total items received
+      const totalItemsReceived = (units * itemsPerUnit) + foc;
+      
+      // Calculate net items after rejection
+      const netItems = totalItemsReceived - rejected;
+      
+      // Calculate paid quantity (items actually paid for)
+      const paidQuantity = Math.max(0, netItems - billedAmount);
+      
+      // Calculate total cost (buying price × total purchased items, excluding free items)
+      const totalPurchasedItems = units * itemsPerUnit;
+      const totalCost = buyingPrice * totalPurchasedItems;
 
       return {
         ...updatedForm,
-        quantity: rawQuantity,
-        totalCost: totalCostRaw,
-        rawQuantity: quantityMath,
+        quantity: paidQuantity,
+        totalCost: totalCost,
       };
     });
 
@@ -108,15 +119,17 @@ const Section2 = ({ onAddItem }) => {
     if (!selectedItem) return;
 
     const newErrors = {
-      manufactureDate: !formData.manufactureDate,
-      expiryDate: !formData.expiryDate,
-      receivedDate: !formData.receivedDate,
+      manufactureDate: false,
+      expiryDate: false,
+      receivedDate: false,
     };
 
-    const today = new Date().toISOString().split("T")[0];
+    const today = dayjs().format("YYYY-MM-DD");
 
+    // Validate dates
     if (formData.manufactureDate && formData.manufactureDate > today) {
       newErrors.manufactureDate = true;
+      setShowError("Manufacture date cannot be in the future.");
     }
 
     if (
@@ -125,20 +138,40 @@ const Section2 = ({ onAddItem }) => {
       formData.expiryDate < formData.manufactureDate
     ) {
       newErrors.expiryDate = true;
+      setShowError("Expiry date must be after manufacture date.");
     }
 
     if (
       formData.receivedDate &&
-      (formData.receivedDate < formData.manufactureDate ||
-        formData.receivedDate > formData.expiryDate)
+      formData.manufactureDate &&
+      formData.receivedDate < formData.manufactureDate
     ) {
       newErrors.receivedDate = true;
+      setShowError("Received date must be on or after manufacture date.");
+    }
+
+    if (
+      formData.expiryDate &&
+      formData.receivedDate &&
+      formData.receivedDate > formData.expiryDate
+    ) {
+      newErrors.receivedDate = true;
+      setShowError("Received date cannot be after expiry date.");
     }
 
     setErrorDate(newErrors);
 
     // Stop if any error is true
     if (Object.values(newErrors).some((val) => val)) return;
+
+    // Validate that billed amount doesn't exceed available quantity
+    const totalItems = (formData.units * formData.itemsPerUnit) + formData.foc;
+    const netItems = totalItems - formData.rejected;
+    
+    if (formData.billedAmount > netItems) {
+      setShowError("Billed Items cannot exceed available items");
+      return;
+    }
 
     const fullItemData = {
       _id: uuidv4(),
@@ -158,27 +191,36 @@ const Section2 = ({ onAddItem }) => {
       comments: formData.comments,
       totalCost: formData.totalCost,
       sellingPrice: formData.sellingPrice || selectedItem.price,
+      units: formData.units,
+      itemsPerUnit: formData.itemsPerUnit,
     };
+    
     onAddItem(fullItemData);
 
     // Reset states for next selection
     setFinishAdd(false);
     setSelectedItem(null);
+    setShowError("");
     setFormData({
       buyingPrice: "",
-      units: "",
-      itemsPerUnit: "",
-      balance: "",
-      rejected: "",
-      foc: "",
-      billedAmount: "",
+      units: 1,
+      itemsPerUnit: 1,
+      quantity: 1,
+      rejected: 0,
+      billedAmount: 0,
+      foc: 0,
       batchNumber: "",
-      manufactureDate: "",
-      expiryDate: "",
-      receivedDate: new Date().toISOString().split("T")[0],
+      manufactureDate: firstDayOfMonth,
+      expiryDate: lastDayOfMonth,
+      receivedDate: dayjs().format("YYYY-MM-DD"),
       comments: "",
       totalCost: "",
       sellingPrice: "",
+    });
+    setErrorDate({
+      manufactureDate: false,
+      expiryDate: false,
+      receivedDate: false,
     });
   };
 
@@ -187,7 +229,35 @@ const Section2 = ({ onAddItem }) => {
     setSelectedItem(null);
     setFinishAdd(false);
     setShowError("");
+    setFormData({
+      buyingPrice: "",
+      units: 1,
+      itemsPerUnit: 1,
+      quantity: 1,
+      rejected: 0,
+      billedAmount: 0,
+      foc: 0,
+      batchNumber: "",
+      manufactureDate: firstDayOfMonth,
+      expiryDate: lastDayOfMonth,
+      receivedDate: dayjs().format("YYYY-MM-DD"),
+      comments: "",
+      totalCost: "",
+      sellingPrice: "",
+    });
+    setErrorDate({
+      manufactureDate: false,
+      expiryDate: false,
+      receivedDate: false,
+    });
   };
+
+  const hasItems = (Number(formData.quantity) > 0) || (Number(formData.billedAmount) > 0);
+  const canAddItem = selectedItem && formData.buyingPrice && hasItems && !showError;
+
+  // Calculate for display purposes
+  const totalItemsReceived = (formData.units * formData.itemsPerUnit) + (Number(formData.foc) || 0);
+  const netItemsAfterRejection = totalItemsReceived - (Number(formData.rejected) || 0);
 
   return (
     <section className="flex flex-col lg:flex-row gap-6 min-h-[800px]">
@@ -435,6 +505,29 @@ const Section2 = ({ onAddItem }) => {
 
               {/* Form Content */}
               <div className="flex-1 overflow-y-auto pr-2">
+                {/* Summary Section */}
+                <div className="mb-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                  <h4 className="text-md font-bold text-gray-900 mb-3">📊 Quantity Summary</h4>
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+                    <div>
+                      <p className="text-gray-600">Total Items:</p>
+                      <p className="font-bold text-gray-900">{totalItemsReceived}</p>
+                    </div>
+                    <div>
+                      <p className="text-gray-600">After Rejection:</p>
+                      <p className="font-bold text-gray-900">{netItemsAfterRejection}</p>
+                    </div>
+                    <div>
+                      <p className="text-gray-600">Billed (Unpaid):</p>
+                      <p className="font-bold text-gray-900">{formData.billedAmount || 0}</p>
+                    </div>
+                    <div>
+                      <p className="text-gray-600">Paid Quantity:</p>
+                      <p className="font-bold text-green-700">{formData.quantity || 0}</p>
+                    </div>
+                  </div>
+                </div>
+
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   {/* Buying Price */}
                   <div>
@@ -454,6 +547,9 @@ const Section2 = ({ onAddItem }) => {
                             : "border-gray-300 bg-gray-100"
                         } rounded-lg focus:ring-2 focus:ring-green-300 focus:border-green-300 text-gray-900 font-medium`}
                         placeholder="0.00"
+                        min="0"
+                        step="0.01"
+                        required
                       />
                       <div className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-700 font-bold">
                         Tsh
@@ -486,6 +582,8 @@ const Section2 = ({ onAddItem }) => {
                             ? "border-red-400 bg-red-50"
                             : "border-gray-300 bg-gray-100"
                         } rounded-lg focus:ring-2 focus:ring-green-300 focus:border-green-300 text-gray-900 font-medium`}
+                        min="0"
+                        step="0.01"
                       />
                       <div className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-700 font-bold">
                         Tsh
@@ -511,7 +609,7 @@ const Section2 = ({ onAddItem }) => {
                       name="units"
                       value={formData.units}
                       onChange={handleChange}
-                      min="1"
+                      min="0"
                       className="w-full px-4 py-3 border border-gray-300 bg-gray-100 rounded-lg focus:ring-2 focus:ring-green-300 focus:border-green-300 text-gray-900 font-medium"
                       placeholder="Number of units"
                     />
@@ -558,15 +656,21 @@ const Section2 = ({ onAddItem }) => {
                       value={formData.rejected}
                       onChange={handleChange}
                       min="0"
+                      max={totalItemsReceived}
                       className="w-full px-4 py-3 border border-gray-300 bg-gray-100 rounded-lg focus:ring-2 focus:ring-green-300 focus:border-green-300 text-gray-900 font-medium"
                       placeholder="Rejected quantity"
                     />
+                    {formData.rejected > totalItemsReceived && (
+                      <p className="text-xs text-red-600 mt-1">
+                        Cannot reject more than total items received ({totalItemsReceived})
+                      </p>
+                    )}
                   </div>
 
                   {/* Billed Amount & Calculated Quantity */}
                   <div>
                     <label className="block text-sm font-semibold text-gray-900 mb-2">
-                      Unpaid Quantity
+                      Billed Amount (Unpaid)
                     </label>
                     <input
                       type="number"
@@ -574,9 +678,15 @@ const Section2 = ({ onAddItem }) => {
                       value={formData.billedAmount}
                       onChange={handleChange}
                       min="0"
+                      max={netItemsAfterRejection}
                       className="w-full px-4 py-3 border border-gray-300 bg-gray-100 rounded-lg focus:ring-2 focus:ring-green-300 focus:border-green-300 text-gray-900 font-medium"
                       placeholder="Unpaid items quantity"
                     />
+                    {formData.billedAmount > netItemsAfterRejection && (
+                      <p className="text-xs text-red-600 mt-1">
+                        Cannot bill more than available items after rejection ({netItemsAfterRejection})
+                      </p>
+                    )}
                   </div>
 
                   <div>
@@ -595,6 +705,9 @@ const Section2 = ({ onAddItem }) => {
                         units
                       </div>
                     </div>
+                    <p className="text-xs text-gray-600 mt-1">
+                      Calculated: (Units × Items/Unit + FOC - Rejected - Billed)
+                    </p>
                   </div>
 
                   {/* Dates Section */}
@@ -771,7 +884,7 @@ const Section2 = ({ onAddItem }) => {
                       {/* Batch Number */}
                       <div>
                         <label className="block text-sm font-semibold text-gray-900 mb-2">
-                          Batch Number
+                          Batch Number *
                         </label>
                         <input
                           type="text"
@@ -809,6 +922,9 @@ const Section2 = ({ onAddItem }) => {
                             </div>
                           )}
                         </div>
+                        <p className="text-xs text-gray-600 mt-1">
+                          Buying Price × (Units × Items/Unit)
+                        </p>
                       </div>
 
                       {/* Comments */}
@@ -835,15 +951,9 @@ const Section2 = ({ onAddItem }) => {
                 <div className="flex flex-col sm:flex-row gap-4">
                   <button
                     onClick={handleAdd}
-                    disabled={
-                      !selectedItem ||
-                      !formData.quantity ||
-                      !formData.buyingPrice
-                    }
+                    disabled={!canAddItem}
                     className={`flex-1 py-3 px-6 rounded-lg font-bold text-lg transition-all ${
-                      !selectedItem ||
-                      !formData.quantity ||
-                      !formData.buyingPrice
+                      !canAddItem
                         ? "bg-gray-300 text-gray-600 cursor-not-allowed"
                         : "bg-green-300 text-gray-900 hover:bg-green-400 hover:shadow-md transform hover:-translate-y-0.5"
                     }`}
@@ -857,6 +967,11 @@ const Section2 = ({ onAddItem }) => {
                     ✗ Cancel Selection
                   </button>
                 </div>
+                {!canAddItem && selectedItem && (
+                  <p className="text-sm text-red-600 mt-2 text-center">
+                    Please fill all required fields (Buying Price and at least some quantity or billed amount)
+                  </p>
+                )}
               </div>
             </div>
           ) : (

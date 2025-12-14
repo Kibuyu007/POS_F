@@ -18,7 +18,6 @@ const MadeniNonPo = () => {
   const [endDate, setEndDate] = useState(null);
   const [currentPage, setCurrentPage] = useState(1);
 
-  
   const itemsPerPage = 10;
 
   useEffect(() => {
@@ -39,9 +38,11 @@ const MadeniNonPo = () => {
           ...item,
           reportId: item._id || item.reportId,
           paidAmount: item.paidAmount || 0,
-          remainingBalance: item.remainingBalance || 
-                          (item.billedTotalCost || 0) - (item.paidAmount || 0),
-          isFullyPaid: item.isFullyPaid || (item.paidAmount >= item.billedTotalCost)
+          remainingBalance:
+            item.remainingBalance ||
+            (item.billedTotalCost || 0) - (item.paidAmount || 0),
+          isFullyPaid:
+            item.isFullyPaid || item.paidAmount >= item.billedTotalCost,
         }));
         setNonPoData(itemsWithBalance);
       }
@@ -52,7 +53,6 @@ const MadeniNonPo = () => {
       setLoad(false);
     }
   };
-  
 
   // FILTER LOGIC
   const filteredData = nonPoData.filter((txn) => {
@@ -82,8 +82,12 @@ const MadeniNonPo = () => {
     0
   );
   const totalPaid = totalDebt - totalRemaining;
-  const paidItems = filteredData.filter((d) => d.remainingBalance <= 0 || d.isFullyPaid).length;
-  const pendingItems = filteredData.filter((d) => d.remainingBalance > 0 && !d.isFullyPaid).length;
+  const paidItems = filteredData.filter(
+    (d) => d.remainingBalance <= 0 || d.isFullyPaid
+  ).length;
+  const pendingItems = filteredData.filter(
+    (d) => d.remainingBalance > 0 && !d.isFullyPaid
+  ).length;
 
   const totalPages = Math.ceil(filteredData.length / itemsPerPage);
   const totalItems = filteredData.length;
@@ -94,47 +98,55 @@ const MadeniNonPo = () => {
   );
 
   // Helper function for inline payment
-const handlePay = async (item) => {
-  const itemKey = `${item.grnId}_${item.itemId}`;
-  const amount = parseFloat(deductions[itemKey] || 0);
+  const handlePay = async (item) => {
+    const itemKey = `${item.grnId}_${item.itemId}`;
+    const amount = parseFloat(deductions[itemKey] || 0);
 
-  if (!amount || amount <= 0) {
-    toast.error("Please enter a valid amount");
-    return;
-  }
-
-  if (amount > item.remainingBalance) {
-    toast.error("Amount exceeds remaining balance");
-    return;
-  }
-
-  setLoad(true);
-  try {
-    const res = await axios.post(
-      `${BASE_URL}/api/grn/payNonPoBills`,
-      {
-        grnId: item.grnId,
-        itemId: item.itemId,
-        paymentAmount: amount
-      },
-      { withCredentials: true }
-    );
-
-    if (res.data.success) {
-      toast.success(res.data.message || "Payment recorded successfully!");
-      // Clear the input for this item
-      setDeductions((prev) => ({ ...prev, [itemKey]: "" }));
-      // Refresh the list to reflect updated paidAmount & remainingBalance
-      fetchNonPoTransactions();
+    if (!amount || amount <= 0) {
+      toast.error("Please enter a valid amount");
+      return;
     }
-  } catch (err) {
-    console.error(err);
-    toast.error(err.response?.data?.message || "Failed to process payment.");
-  } finally {
-    setLoad(false);
-  }
-};
 
+    if (amount > item.remainingBalance) {
+      toast.error("Amount exceeds remaining balance");
+      return;
+    }
+
+    setLoad(true);
+    try {
+      const res = await axios.post(
+        `${BASE_URL}/api/grn/payNonPoBills`,
+        {
+          grnId: item.grnId,
+          itemId: item.itemId,
+          paymentAmount: amount,
+        },
+        { withCredentials: true }
+      );
+
+      if (res.data.success) {
+        toast.success(res.data.message || "Payment recorded successfully!");
+        // Clear the input for this item
+        setDeductions((prev) => ({ ...prev, [itemKey]: "" }));
+        // Refresh the list to reflect updated paidAmount & remainingBalance
+        fetchNonPoTransactions();
+      }
+    } catch (err) {
+      console.error(err);
+      toast.error(err.response?.data?.message || "Failed to process payment.");
+    } finally {
+      setLoad(false);
+    }
+  };
+
+  const formatNumber = (value) => {
+    if (!value) return "";
+    return value.replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+  };
+
+  const unformatNumber = (value) => {
+    return value.replace(/,/g, "");
+  };
 
   return (
     <div className="p-5 bg-gray-50 min-h-screen">
@@ -315,9 +327,10 @@ const handlePay = async (item) => {
                 "Date",
                 "Supplier",
                 "Item",
+                "Quantity",
                 "Total Cost",
                 "Paid",
-                "Balance",
+                "Remaining Balance",
                 "Deduct",
                 "Action",
               ].map((h) => (
@@ -351,8 +364,9 @@ const handlePay = async (item) => {
             ) : (
               currentList.map((item, idx) => {
                 const itemKey = `${item.grnId}_${item.itemId}`;
-                const isFullyPaid = item.remainingBalance <= 0 || item.isFullyPaid;
-                
+                const isFullyPaid =
+                  item.remainingBalance <= 0 || item.isFullyPaid;
+
                 return (
                   <>
                     <tr
@@ -389,17 +403,24 @@ const handlePay = async (item) => {
                         </span>
                       </td>
 
+                      {/* Quantity Column - Gray 100 */}
+                      <td className="py-4 px-3 text-center bg-gray-100 border-r border-gray-200">
+                        <span className="font-bold text-black">
+                          {item.billedAmount.toLocaleString() || 0}
+                        </span>
+                      </td>
+
                       {/* Total Cost Column - Yellow 100 */}
                       <td className="py-4 px-3 text-center bg-yellow-100 border-r border-gray-200">
                         <span className="font-bold text-black">
-                          Tsh {(item.billedTotalCost || 0).toLocaleString()}
+                          {(item.billedTotalCost || 0).toLocaleString()}
                         </span>
                       </td>
 
                       {/* Paid Column - Gray 100 */}
                       <td className="py-4 px-3 text-center bg-gray-100 border-r border-gray-200">
                         <span className="font-bold text-green-700">
-                          Tsh {(item.paidAmount || 0).toLocaleString()}
+                          {(item.paidAmount || 0).toLocaleString()}
                         </span>
                       </td>
 
@@ -412,7 +433,7 @@ const handlePay = async (item) => {
                               : "bg-green-300 text-green-900"
                           }`}
                         >
-                          Tsh {(item.remainingBalance || 0).toLocaleString()}
+                          {(item.remainingBalance || 0).toLocaleString()}
                         </span>
                       </td>
 
@@ -424,18 +445,22 @@ const handlePay = async (item) => {
                               Tsh
                             </span>
                             <input
-                              type="number"
-                              value={deductions[itemKey] || ""}
-                              onChange={(e) =>
+                              type="text"
+                              value={formatNumber(
+                                deductions[itemKey]?.toString() || ""
+                              )}
+                              onChange={(e) => {
+                                const rawValue = unformatNumber(e.target.value);
+
+                                if (!/^\d*\.?\d*$/.test(rawValue)) return;
+
                                 setDeductions({
                                   ...deductions,
-                                  [itemKey]: e.target.value,
-                                })
-                              }
+                                  [itemKey]: rawValue,
+                                });
+                              }}
                               className="w-48 pl-12 pr-4 py-2.5 border border-gray-300 rounded-full bg-white text-black font-medium focus:border-green-300 focus:outline-none"
                               placeholder="0.00"
-                              max={item.remainingBalance}
-                              min="0"
                               disabled={isFullyPaid}
                             />
                           </div>
@@ -461,7 +486,6 @@ const handlePay = async (item) => {
                             >
                               Pay Now
                             </button>
-                         
                           </div>
                         ) : (
                           <span className="inline-flex items-center px-6 py-2.5 bg-green-300 text-black font-bold rounded-full shadow">
@@ -549,8 +573,6 @@ const handlePay = async (item) => {
           </button>
         </div>
       </div>
-
-    
     </div>
   );
 };

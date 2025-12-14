@@ -327,7 +327,7 @@ const Header = () => {
                               <div
                                 key={item._id}
                                 onClick={() => {
-                                  navigate(`/items/${item._id}`);
+                                  navigate("/Settings");
                                   setNotifyOpen(false);
                                 }}
                                 className="group bg-gradient-to-r from-white to-gray-50 hover:from-red-50/30 hover:to-green-50/30 rounded-xl border border-gray-200 hover:border-red-200 cursor-pointer transition-all duration-300 hover:shadow-lg active:scale-[0.98] p-4"
