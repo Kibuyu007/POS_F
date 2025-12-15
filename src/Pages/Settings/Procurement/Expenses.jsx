@@ -6,18 +6,14 @@ import autoTable from "jspdf-autotable";
 import { DatePicker, LocalizationProvider } from "@mui/x-date-pickers";
 import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs";
 import dayjs from "dayjs";
-import { 
-  IoIosArrowBack, 
+import {
+  IoIosArrowBack,
   IoIosArrowForward,
   IoMdAdd,
   IoMdDownload,
-  IoMdRefresh
+  IoMdRefresh,
 } from "react-icons/io";
-import { 
-  FiDollarSign, 
-  FiFilter,
-  FiUser
-} from "react-icons/fi";
+import { FiDollarSign, FiFilter, FiUser, FiEdit2 } from "react-icons/fi";
 import Loading from "../../../Components/Shared/Loading";
 import BASE_URL from "../../../Utils/config";
 import toast from "react-hot-toast";
@@ -33,6 +29,17 @@ const Expenses = () => {
     details: "",
     date: null,
   });
+
+  // edit modal states
+  const [editModalOpen, setEditModalOpen] = useState(false);
+  const [editingExpense, setEditingExpense] = useState(null);
+  const [editForm, setEditForm] = useState({
+    title: "",
+    amount: "",
+    details: "",
+    date: null,
+  });
+  const [editLoading, setEditLoading] = useState(false);
 
   // filters
   const [filterCreatedBy, setFilterCreatedBy] = useState("");
@@ -85,7 +92,65 @@ const Expenses = () => {
       setInput({ title: "", amount: "", details: "", date: null });
     } catch (error) {
       console.log("Error adding expense:", error);
-      toast.error("Failed to add expense");
+       const message =
+        error.response?.data?.message || error.message || "Failed to add expense";
+      toast.error(message);
+    }
+  };
+
+  // open edit modal
+  const openEditModal = (expense) => {
+    setEditingExpense(expense);
+    setEditForm({
+      title: expense.title,
+      amount: expense.amount.toString(),
+      details: expense.details || "",
+      date: dayjs(expense.date),
+    });
+    setEditModalOpen(true);
+  };
+
+  // close edit modal
+  const closeEditModal = () => {
+    setEditModalOpen(false);
+    setEditingExpense(null);
+    setEditForm({
+      title: "",
+      amount: "",
+      details: "",
+      date: null,
+    });
+  };
+
+  // update expense
+  const updateExpense = async () => {
+    if (!editForm.title || !editForm.amount || !editForm.date) {
+      toast.error("Please fill all required fields");
+      return;
+    }
+
+    try {
+      setEditLoading(true);
+      await axios.put(
+        `${BASE_URL}/api/manunuzi/updateMatumizi/${editingExpense._id}`,
+        {
+          title: editForm.title,
+          amount: Number(editForm.amount),
+          details: editForm.details || "",
+          date: editForm.date,
+        },
+        { withCredentials: true }
+      );
+      toast.success("Expense updated successfully!");
+      getExpenses();
+      closeEditModal();
+    } catch (error) {
+      console.log("Error updating expense:", error);
+      const message =
+        error.response?.data?.message || error.message || "Failed to update status";
+      toast.error(message);
+    } finally {
+      setEditLoading(false);
     }
   };
 
@@ -151,7 +216,10 @@ const Expenses = () => {
       );
       const workbook = XLSX.utils.book_new();
       XLSX.utils.book_append_sheet(workbook, worksheet, "Expenses");
-      XLSX.writeFile(workbook, `Expenses_Report_${dayjs().format('YYYYMMDD')}.xlsx`);
+      XLSX.writeFile(
+        workbook,
+        `Expenses_Report_${dayjs().format("YYYYMMDD")}.xlsx`
+      );
       toast.success("Excel report downloaded!");
     } catch (error) {
       toast.error("Failed to export Excel file");
@@ -165,22 +233,25 @@ const Expenses = () => {
       pdf.setFontSize(16);
       pdf.text("Expenses Report", 14, 15);
       pdf.setFontSize(10);
-      pdf.text(`Generated on: ${dayjs().format('YYYY-MM-DD HH:mm')}`, 14, 22);
+      pdf.text(`Generated on: ${dayjs().format("YYYY-MM-DD HH:mm")}`, 14, 22);
       pdf.text(`Total Expenses: ${totalAmount.toLocaleString()}`, 14, 29);
-      
+
       autoTable(pdf, {
         startY: 35,
-        head: [["Title", "Amount", "Details", "Date", "Created By"]],
+        head: [["Title", "Amount", "Details", "Date", "Created By", "Actions"]],
         body: filtered.map((e) => [
           e.title,
           e.amount.toLocaleString(),
           e.details || "-",
           dayjs(e.date).format("YYYY-MM-DD"),
-          e.createdBy ? `${e.createdBy.firstName} ${e.createdBy.lastName}` : "-",
+          e.createdBy
+            ? `${e.createdBy.firstName} ${e.createdBy.lastName}`
+            : "-",
+          "Edit/Delete",
         ]),
         headStyles: { fillColor: [34, 197, 94], textColor: 255 },
       });
-      pdf.save(`Expenses_Report_${dayjs().format('YYYYMMDD')}.pdf`);
+      pdf.save(`Expenses_Report_${dayjs().format("YYYYMMDD")}.pdf`);
       toast.success("PDF report downloaded!");
     } catch (error) {
       toast.error("Failed to export PDF file");
@@ -195,8 +266,229 @@ const Expenses = () => {
     toast.success("Filters cleared!");
   };
 
+  // Edit Expense Modal Component - UPDATED DESIGN
+  const EditExpenseModal = () => (
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+      <div className="bg-white rounded-2xl w-full max-w-4xl shadow-2xl">
+        {/* Modal Header */}
+        <div className="bg-green-300 px-8 py-6 border-b border-green-200 rounded-t-2xl">
+          <div className="flex justify-between items-center">
+            <h2 className="text-2xl font-bold text-green-800">
+              <span className="mr-3">✏️</span> Edit Expense
+            </h2>
+            <button
+              onClick={closeEditModal}
+              className="text-green-800 hover:text-green-900 text-2xl font-bold"
+            >
+              ×
+            </button>
+          </div>
+          <p className="text-green-700 mt-2">
+            Update expense information below
+          </p>
+        </div>
+
+        {/* Modal Body */}
+        <div className="p-8">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+            {/* Left Column */}
+            <div className="space-y-6">
+              <div>
+                <label
+                  className="block text-gray-700 font-medium mb-2"
+                  htmlFor="editTitle"
+                >
+                  Title <span className="text-red-500">*</span>
+                </label>
+                <input
+                  type="text"
+                  id="editTitle"
+                  value={editForm.title}
+                  onChange={(e) =>
+                    setEditForm({ ...editForm, title: e.target.value })
+                  }
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-300 focus:border-transparent transition duration-200 text-black"
+                  placeholder="Enter expense title"
+                />
+              </div>
+
+              <div>
+                <label
+                  className="block text-gray-700 font-medium mb-2"
+                  htmlFor="editDetails"
+                >
+                  Details
+                </label>
+                <textarea
+                  id="editDetails"
+                  value={editForm.details}
+                  onChange={(e) =>
+                    setEditForm({ ...editForm, details: e.target.value })
+                  }
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-300 focus:border-transparent transition duration-200 resize-none text-black"
+                  placeholder="Additional details (optional)"
+                  rows="4"
+                />
+              </div>
+            </div>
+
+            {/* Right Column */}
+            <div className="space-y-6">
+              <div>
+                <label
+                  className="block text-gray-700 font-medium mb-2"
+                  htmlFor="editAmount"
+                >
+                  Amount <span className="text-red-500">*</span>
+                </label>
+                <div className="relative">
+                  <span className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-500">
+                    Tsh
+                  </span>
+                  <input
+                    type="number"
+                    id="editAmount"
+                    value={editForm.amount}
+                    onChange={(e) =>
+                      setEditForm({
+                        ...editForm,
+                        amount: e.target.value,
+                      })
+                    }
+                    className="w-full pl-12 pr-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-300 focus:border-transparent transition duration-200 text-black"
+                    placeholder="0.00"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label
+                  className="block text-gray-700 font-medium mb-2"
+                  htmlFor="editDate"
+                >
+                  Date <span className="text-red-500">*</span>
+                </label>
+                <LocalizationProvider dateAdapter={AdapterDayjs}>
+                  <DatePicker
+                    value={editForm.date}
+                    onChange={(newValue) =>
+                      setEditForm({ ...editForm, date: newValue })
+                    }
+                    maxDate={dayjs()}
+                    slotProps={{
+                      textField: {
+                        fullWidth: true,
+                        sx: {
+                          "& .MuiOutlinedInput-root": {
+                            borderRadius: "12px",
+                            fontSize: "14px",
+                            padding: "8px 14px",
+                          },
+                        },
+                        className: "bg-white",
+                      },
+                    }}
+                  />
+                </LocalizationProvider>
+              </div>
+
+              {/* Current Data Preview */}
+              <div className="bg-gray-50 p-4 rounded-lg">
+                <h4 className="text-sm font-medium text-gray-700 mb-2">
+                  Current Data
+                </h4>
+                <div className="space-y-2">
+                  <p className="text-xs text-gray-600">
+                    <span className="font-medium">Original Amount:</span> Tsh{" "}
+                    {editingExpense?.amount?.toLocaleString()}
+                  </p>
+                  <p className="text-xs text-gray-600">
+                    <span className="font-medium">Original Date:</span>{" "}
+                    {dayjs(editingExpense?.date).format("DD/MM/YYYY")}
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Additional Info Section */}
+          <div className="bg-gray-50 p-6 rounded-xl mb-6">
+            <h3 className="text-lg font-semibold text-gray-800 mb-4">
+              Additional Information
+            </h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="flex items-center space-x-3">
+                <div className="w-8 h-8 bg-green-100 rounded-lg flex items-center justify-center">
+                  <FiUser className="w-4 h-4 text-green-600" />
+                </div>
+                <div>
+                  <p className="text-xs text-gray-500">Created By</p>
+                  <p className="text-sm font-medium text-gray-800">
+                    {editingExpense?.createdBy
+                      ? `${editingExpense.createdBy.firstName} ${editingExpense.createdBy.lastName}`
+                      : "Unknown"}
+                  </p>
+                </div>
+              </div>
+              <div className="flex items-center space-x-3">
+                <div className="w-8 h-8 bg-green-100 rounded-lg flex items-center justify-center">
+                  <FiDollarSign className="w-4 h-4 text-green-600" />
+                </div>
+                <div>
+                  <p className="text-xs text-gray-500">Original Amount</p>
+                  <p className="text-sm font-medium text-gray-800">
+                    Tsh {editingExpense?.amount?.toLocaleString()}
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Modal Footer */}
+        <div className="bg-gray-50 px-8 py-6 border-t border-gray-200 rounded-b-2xl">
+          <div className="flex justify-between items-center">
+            <div className="text-gray-600 text-sm">
+              <span className="font-medium">Note:</span> Changes will be applied
+              immediately
+            </div>
+            <div className="flex space-x-4">
+              <button
+                onClick={closeEditModal}
+                className="px-6 py-3 border border-gray-300 text-gray-700 font-medium rounded-lg hover:bg-gray-100 transition duration-200"
+                disabled={editLoading}
+              >
+                Cancel
+              </button>
+              <button
+                onClick={updateExpense}
+                disabled={editLoading}
+                className="px-6 py-3 bg-green-300 text-green-800 font-medium rounded-lg hover:bg-green-400 transition duration-200 shadow-md disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+              >
+                {editLoading ? (
+                  <>
+                    <div className="w-4 h-4 border-2 border-green-800 border-t-transparent rounded-full animate-spin"></div>
+                    Updating...
+                  </>
+                ) : (
+                  <>
+                    <FiEdit2 className="w-4 h-4" />
+                    Update Expense
+                  </>
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+
   return (
     <div className="p-5 bg-gray-50 min-h-screen">
+      {/* Edit Expense Modal */}
+      {editModalOpen && <EditExpenseModal />}
+
       {/* Header */}
       <div className="flex flex-col md:flex-row md:items-center justify-between mb-6">
         <div>
@@ -218,10 +510,12 @@ const Expenses = () => {
 
       {/* Compact Stats */}
       <div className="mb-6">
-        <div className="flex flex-col sm:flex-row items-center justify-between bg-white border border-gray-200 rounded-full p-4 shadow-sm">
+        <div className="flex flex-col sm:flex-row items-center justify-between text-black bg-white border border-gray-200 rounded-full p-4 shadow-sm">
           <div className="flex items-center gap-3 mb-3 sm:mb-0">
             <div className="text-center px-3">
-              <p className="text-xs text-gray-500 font-medium">Total Expenses</p>
+              <p className="text-xs text-gray-500 font-medium">
+                Total Expenses
+              </p>
               <p className="text-base font-bold text-black">
                 Tsh {totalAmount.toLocaleString()}
               </p>
@@ -249,9 +543,7 @@ const Expenses = () => {
           <div className="flex items-center gap-4">
             <div className="flex items-center gap-2">
               <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-              <span className="text-xs font-medium text-gray-700">
-                Users:{" "}
-              </span>
+              <span className="text-xs font-medium text-gray-700">Users: </span>
               <span className="font-bold text-black text-sm">
                 {uniqueCreators.length}
               </span>
@@ -268,7 +560,7 @@ const Expenses = () => {
           </div>
           <h3 className="text-lg font-bold text-black">Add New Expense</h3>
         </div>
-        
+
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3 mb-4">
           <div>
             <label className="block text-xs font-bold text-gray-700 mb-1">
@@ -288,7 +580,9 @@ const Expenses = () => {
               Amount
             </label>
             <div className="relative">
-              <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500 text-sm">Tsh</span>
+              <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500 text-sm">
+                Tsh
+              </span>
               <input
                 type="number"
                 placeholder="0.00"
@@ -328,7 +622,7 @@ const Expenses = () => {
                     sx: {
                       "& .MuiOutlinedInput-root": {
                         borderRadius: "9999px",
-                        fontSize: '14px'
+                        fontSize: "14px",
                       },
                     },
                     className: "bg-white text-sm",
@@ -386,7 +680,7 @@ const Expenses = () => {
             <FiFilter className="w-4 h-4 text-green-600" />
             <h4 className="text-sm font-bold text-black">Filters</h4>
           </div>
-          
+
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3">
             <div>
               <label className="block text-xs font-bold text-gray-700 mb-1">
@@ -427,7 +721,7 @@ const Expenses = () => {
                       sx: {
                         "& .MuiOutlinedInput-root": {
                           borderRadius: "9999px",
-                          fontSize: '14px'
+                          fontSize: "14px",
                         },
                       },
                       className: "bg-white text-sm",
@@ -453,7 +747,7 @@ const Expenses = () => {
                       sx: {
                         "& .MuiOutlinedInput-root": {
                           borderRadius: "9999px",
-                          fontSize: '14px'
+                          fontSize: "14px",
                         },
                       },
                       className: "bg-white text-sm",
@@ -483,8 +777,12 @@ const Expenses = () => {
               <div className="inline-flex items-center justify-center w-16 h-16 bg-gray-200 rounded-full mb-4">
                 <FiDollarSign className="w-8 h-8 text-gray-500" />
               </div>
-              <h3 className="text-lg font-bold text-black mb-2">No Expenses Found</h3>
-              <p className="text-gray-600 text-sm mb-4">Try adjusting your filters or add new expenses</p>
+              <h3 className="text-lg font-bold text-black mb-2">
+                No Expenses Found
+              </h3>
+              <p className="text-gray-600 text-sm mb-4">
+                Try adjusting your filters or add new expenses
+              </p>
             </div>
           ) : (
             <>
@@ -493,7 +791,15 @@ const Expenses = () => {
                 <table className="min-w-full">
                   <thead>
                     <tr className="bg-gray-200">
-                      {["SN", "Title", "Amount", "Details", "Date", "Created By"].map((header, idx) => (
+                      {[
+                        "SN",
+                        "Title",
+                        "Amount",
+                        "Details",
+                        "Date",
+                        "Created By",
+                        "Actions",
+                      ].map((header, idx) => (
                         <th
                           key={idx}
                           className="px-4 py-3 text-center text-xs font-bold text-black uppercase border-r border-gray-300"
@@ -503,59 +809,75 @@ const Expenses = () => {
                       ))}
                     </tr>
                   </thead>
-                  
+
                   <tr className="h-3" />
 
                   <tbody>
                     {paginated.map((exp, idx) => (
                       <>
-                        <tr key={exp._id} className="hover:bg-gray-50 transition-colors">
-                          {/* SN Column - Green 300 */}
+                        <tr
+                          key={exp._id}
+                          className="hover:bg-gray-50 transition-colors"
+                        >
+                          {/* SN Column */}
                           <td className="py-3 px-2 text-center border-r border-gray-300 bg-gray-200">
                             <span className="inline-flex items-center justify-center w-8 h-8 bg-green-300 text-black font-bold rounded-full text-xs">
                               {(currentPage - 1) * itemsPerPage + idx + 1}
                             </span>
                           </td>
 
-                          {/* Title Column - Gray 200 */}
+                          {/* Title Column */}
                           <td className="py-3 px-2 text-center bg-gray-100 border-r border-gray-200">
                             <span className="font-bold text-black text-sm">
                               {exp.title}
                             </span>
                           </td>
 
-                          {/* Amount Column - Yellow 100 */}
+                          {/* Amount Column */}
                           <td className="py-3 px-2 text-center bg-yellow-100 border-r border-gray-200">
                             <span className="font-bold text-green-700 text-sm">
                               Tsh {exp.amount.toLocaleString()}
                             </span>
                           </td>
 
-                          {/* Details Column - Gray 200 */}
+                          {/* Details Column */}
                           <td className="py-3 px-2 text-center bg-gray-200 border-r border-gray-200">
                             <span className="font-bold text-black text-sm">
                               {exp.details || "-"}
                             </span>
                           </td>
 
-                          {/* Date Column - Green 200 */}
+                          {/* Date Column */}
                           <td className="py-3 px-2 text-center bg-green-200 border-r border-gray-200">
                             <span className="font-bold text-black text-sm">
                               {dayjs(exp.date).format("DD/MM/YYYY")}
                             </span>
                           </td>
 
-                          {/* Created By Column - Gray 100 */}
-                          <td className="py-3 px-2 text-center bg-gray-100">
+                          {/* Created By Column */}
+                          <td className="py-3 px-2 text-center bg-gray-100 border-r border-gray-200">
                             <span className="font-bold text-black text-sm">
                               {exp.createdBy
                                 ? `${exp.createdBy.firstName} ${exp.createdBy.lastName}`
                                 : "-"}
                             </span>
                           </td>
+
+                          {/* Actions Column */}
+                          <td className="py-3 px-2 text-center bg-gray-50">
+                            <div className="flex items-center justify-center gap-2">
+                              <button
+                                onClick={() => openEditModal(exp)}
+                                className="p-2 bg-green-100 hover:bg-green-200 text-green-700 rounded-full transition-colors"
+                                title="Edit"
+                              >
+                                <FiEdit2 className="w-4 h-4" />
+                              </button>
+                            </div>
+                          </td>
                         </tr>
                         <tr className="h-3">
-                          <td colSpan={6} className="p-0"></td>
+                          <td colSpan={7} className="p-0"></td>
                         </tr>
                       </>
                     ))}
@@ -565,7 +887,9 @@ const Expenses = () => {
                   <tfoot>
                     <tr className="bg-gray-200 border-t border-gray-300">
                       <td colSpan={2} className="py-3 px-4 text-right">
-                        <span className="text-sm font-bold text-black">Total:</span>
+                        <span className="text-sm font-bold text-black">
+                          Total:
+                        </span>
                       </td>
                       <td className="py-3 px-2 text-center">
                         <div className="inline-flex items-center px-3 py-1 bg-green-300 rounded-full">
@@ -574,7 +898,7 @@ const Expenses = () => {
                           </span>
                         </div>
                       </td>
-                      <td colSpan={3}></td>
+                      <td colSpan={4}></td>
                     </tr>
                   </tfoot>
                 </table>
@@ -587,12 +911,18 @@ const Expenses = () => {
                     Showing {(currentPage - 1) * itemsPerPage + 1} to{" "}
                     {Math.min(currentPage * itemsPerPage, filtered.length)}
                   </span>{" "}
-                  of <span className="font-bold text-black">{filtered.length}</span> expenses
+                  of{" "}
+                  <span className="font-bold text-black">
+                    {filtered.length}
+                  </span>{" "}
+                  expenses
                 </div>
 
                 <div className="flex items-center gap-1">
                   <button
-                    onClick={() => currentPage > 1 && setCurrentPage(currentPage - 1)}
+                    onClick={() =>
+                      currentPage > 1 && setCurrentPage(currentPage - 1)
+                    }
                     disabled={currentPage === 1}
                     className="p-2 bg-gray-200 hover:bg-gray-300 text-black font-bold rounded-full disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
                   >
@@ -606,7 +936,8 @@ const Expenses = () => {
                       const showPage =
                         pageNum === 1 ||
                         pageNum === totalPages ||
-                        (pageNum >= currentPage - 1 && pageNum <= currentPage + 1);
+                        (pageNum >= currentPage - 1 &&
+                          pageNum <= currentPage + 1);
 
                       if (showPage) {
                         return (
@@ -623,11 +954,15 @@ const Expenses = () => {
                           </button>
                         );
                       } else if (
-                        (pageNum === currentPage - 2 || pageNum === currentPage + 2) &&
+                        (pageNum === currentPage - 2 ||
+                          pageNum === currentPage + 2) &&
                         totalPages > 5
                       ) {
                         return (
-                          <span key={i} className="px-2 text-gray-500 font-bold text-xs">
+                          <span
+                            key={i}
+                            className="px-2 text-gray-500 font-bold text-xs"
+                          >
                             ...
                           </span>
                         );
@@ -638,7 +973,8 @@ const Expenses = () => {
 
                   <button
                     onClick={() =>
-                      currentPage < totalPages && setCurrentPage(currentPage + 1)
+                      currentPage < totalPages &&
+                      setCurrentPage(currentPage + 1)
                     }
                     disabled={currentPage === totalPages}
                     className="p-2 bg-gray-200 hover:bg-gray-300 text-black font-bold rounded-full disabled:opacity-40 disabled:cursor-not-allowed transition-colors"

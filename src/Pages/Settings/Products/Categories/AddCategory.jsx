@@ -7,9 +7,11 @@ import BASE_URL from "../../../../Utils/config";
 import toast from "react-hot-toast";
 
 const AddCategory = ({ showModal, setShowModal, onCategoryAdded }) => {
+  
   const dispatch = useDispatch();
   const [showError, setShowError] = useState("");
   const [loading, setLoading] = useState(false);
+
 
   const [regi, setRegi] = useState({
     name: "",

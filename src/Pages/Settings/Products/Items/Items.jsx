@@ -13,20 +13,14 @@ import EditItem from "./EditItem";
 
 //Icons
 import { AiTwotoneEdit } from "react-icons/ai";
-import { 
-  FaSearch, 
-  FaPrint,
-} from "react-icons/fa";
-import { 
-  IoIosArrowBack, 
+import { FaSearch, FaPrint, FaInfoCircle } from "react-icons/fa";
+import {
+  IoIosArrowBack,
   IoIosArrowForward,
   IoMdAdd,
-  IoMdRefresh
+  IoMdRefresh,
 } from "react-icons/io";
-import { 
-
-  FiAlertCircle
-} from "react-icons/fi";
+import { FiAlertCircle } from "react-icons/fi";
 
 //API
 import BASE_URL from "../../../../Utils/config";
@@ -38,6 +32,7 @@ const Items = () => {
   // Redux State
   const { items = [] } = useSelector((state) => state.items);
   const { category } = useSelector((state) => state.category);
+  const user = useSelector((state) => state.user.user);
 
   const [showError, setShowError] = useState("");
 
@@ -91,16 +86,24 @@ const Items = () => {
     fetchData();
   }, [searchQuery, categoryFilter, filterStatus]);
 
+  // Check if user has add permission
+  const canAddItem = user?.roles?.canAddItems === true;
+
+  // Check if user has edit permission
+  const canEditItem = user?.roles?.canEditItems === true;
+
   // Filter items based on status and category
   const filteredItems = items.filter((item) => {
     const isExpired = new Date(item.expireDate) < new Date();
     const expiresSoon = () => {
       const expireDate = new Date(item.expireDate);
       const today = new Date();
-      const daysUntilExpiry = Math.ceil((expireDate - today) / (1000 * 60 * 60 * 24));
+      const daysUntilExpiry = Math.ceil(
+        (expireDate - today) / (1000 * 60 * 60 * 24)
+      );
       return daysUntilExpiry <= 30 && daysUntilExpiry > 0;
     };
-    
+
     if (filterStatus === "All") return true;
     if (filterStatus === "Expired") return isExpired;
     if (filterStatus === "Expires Soon") return expiresSoon();
@@ -131,10 +134,20 @@ const Items = () => {
   };
 
   // Calculate statistics
-  const totalValue = filteredItems.reduce((sum, item) => sum + (item.buyingPrice * item.itemQuantity), 0);
-  const totalItemsCount = filteredItems.reduce((sum, item) => sum + item.itemQuantity, 0);
-  const lowStockItems = filteredItems.filter(item => item.reOrderStatus === "Low").length;
-  const expiredItems = filteredItems.filter(item => new Date(item.expireDate) < new Date()).length;
+  const totalValue = filteredItems.reduce(
+    (sum, item) => sum + item.buyingPrice * item.itemQuantity,
+    0
+  );
+  const totalItemsCount = filteredItems.reduce(
+    (sum, item) => sum + item.itemQuantity,
+    0
+  );
+  const lowStockItems = filteredItems.filter(
+    (item) => item.reOrderStatus === "Low"
+  ).length;
+  const expiredItems = filteredItems.filter(
+    (item) => new Date(item.expireDate) < new Date()
+  ).length;
 
   // Print Barcode
   const handlePrint = (item) => {
@@ -218,18 +231,22 @@ const Items = () => {
           <div className="flex items-center gap-4">
             <div className="flex items-center gap-2">
               <div className="w-2 h-2 bg-red-500 rounded-full"></div>
-              <span className="text-xs font-medium text-gray-700">
-                Low:{" "}
+              <span className="text-xs font-medium text-gray-700">Low: </span>
+              <span className="font-bold text-black text-sm">
+                {lowStockItems}
               </span>
-              <span className="font-bold text-black text-sm">{lowStockItems}</span>
             </div>
 
             <div className="h-4 w-px bg-gray-300"></div>
 
             <div className="flex items-center gap-2">
               <div className="w-2 h-2 bg-yellow-500 rounded-full"></div>
-              <span className="text-xs font-medium text-gray-700">Expired: </span>
-              <span className="font-bold text-black text-sm">{expiredItems}</span>
+              <span className="text-xs font-medium text-gray-700">
+                Expired:{" "}
+              </span>
+              <span className="font-bold text-black text-sm">
+                {expiredItems}
+              </span>
             </div>
           </div>
         </div>
@@ -242,22 +259,24 @@ const Items = () => {
           <div className="md:col-span-2">
             <div className="flex overflow-x-auto pb-2 -mx-2 px-2">
               <div className="flex gap-2">
-                {["All", "Active", "Low Stock", "Expires Soon", "Expired"].map((status) => (
-                  <button
-                    key={status}
-                    className={`px-4 py-2.5 text-sm font-bold rounded-full transition-all duration-200 whitespace-nowrap flex-shrink-0 ${
-                      filterStatus === status
-                        ? "bg-green-300 text-black shadow-lg ring-2 ring-green-400 ring-offset-1"
-                        : "bg-gray-100 text-gray-700 hover:bg-gray-200 hover:shadow"
-                    }`}
-                    onClick={() => {
-                      setFilterStatus(status);
-                      setCurrentPage(1);
-                    }}
-                  >
-                    {status}
-                  </button>
-                ))}
+                {["All", "Active", "Low Stock", "Expires Soon", "Expired"].map(
+                  (status) => (
+                    <button
+                      key={status}
+                      className={`px-4 py-2.5 text-sm font-bold rounded-full transition-all duration-200 whitespace-nowrap flex-shrink-0 ${
+                        filterStatus === status
+                          ? "bg-green-300 text-black shadow-lg ring-2 ring-green-400 ring-offset-1"
+                          : "bg-gray-100 text-gray-700 hover:bg-gray-200 hover:shadow"
+                      }`}
+                      onClick={() => {
+                        setFilterStatus(status);
+                        setCurrentPage(1);
+                      }}
+                    >
+                      {status}
+                    </button>
+                  )
+                )}
               </div>
             </div>
           </div>
@@ -303,16 +322,42 @@ const Items = () => {
             </select>
           </div>
 
-          {/* Add Item Button */}
-          <div className="flex justify-end">
-            <button
-              onClick={() => setShowModalAdd(true)}
-              className="w-full md:w-auto px-5 py-2.5 bg-green-300 hover:bg-green-400 text-black font-bold rounded-full shadow hover:shadow-md transition-all duration-200 flex items-center justify-center gap-2 text-sm"
-            >
-              <IoMdAdd className="w-4 h-4" />
-              <span>Add Item</span>
-            </button>
-          </div>
+          {/* Add Item Button with Permission Check */}
+          {canAddItem ? (
+            <div className="flex items-center justify-end">
+              <button
+                onClick={() => setShowModalAdd(true)}
+                className="px-4 py-2 bg-green-300 hover:bg-green-400 text-black font-bold rounded-full shadow hover:shadow-md transition-all duration-200 flex items-center gap-2 text-sm"
+              >
+                <IoMdAdd className="w-4 h-4" />
+                <span>Add Item</span>
+              </button>
+            </div>
+          ) : (
+            <div className="flex items-center justify-end gap-2">
+              <button
+                disabled
+                className="px-4 py-2 bg-gray-300 text-gray-500 font-bold rounded-full shadow flex items-center gap-2 text-sm cursor-not-allowed"
+                title="You don't have permission to add items"
+              >
+                <IoMdAdd className="w-4 h-4" />
+                <span>Add Item</span>
+              </button>
+              <div className="relative group">
+                <div className="text-gray-500">
+                  <FaInfoCircle className="w-5 h-5" />
+                </div>
+                <div className="absolute right-0 top-full mt-2 w-64 p-3 bg-gray-800 text-white text-sm rounded-lg shadow-xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-10">
+                  <div className="absolute -top-1 right-3 w-3 h-3 bg-gray-800 transform rotate-45"></div>
+                  <p className="font-semibold">Permission Required</p>
+                  <p className="mt-1 text-gray-300">
+                    You need the <span className="font-bold">Add Items</span> permission
+                    to create new inventory items.
+                  </p>
+                </div>
+              </div>
+            </div>
+          )}
         </div>
       </div>
 
@@ -333,7 +378,18 @@ const Items = () => {
           <table className="min-w-full">
             <thead>
               <tr className="bg-gray-200">
-                {["SN", "Product", "Buy Price", "Sell Price", "Quantity", "Barcode", "Manf Date", "Exp Date", "Category", "Action"].map((header, idx) => (
+                {[
+                  "SN",
+                  "Product",
+                  "Buy Price",
+                  "Sell Price",
+                  "Quantity",
+                  "Barcode",
+                  "Manf Date",
+                  "Exp Date",
+                  "Category",
+                  "Action",
+                ].map((header, idx) => (
                   <th
                     key={idx}
                     className="px-3 py-3 text-center text-xs font-bold text-black uppercase border-r border-gray-300"
@@ -343,7 +399,7 @@ const Items = () => {
                 ))}
               </tr>
             </thead>
-            
+
             <tr className="h-3" />
 
             <tbody>
@@ -358,6 +414,21 @@ const Items = () => {
                       <p className="text-gray-600 text-sm">
                         Try adjusting your search filters
                       </p>
+                      {canAddItem && !searchQuery && filterStatus === "All" && categoryFilter === "All" && (
+                        <button
+                          onClick={() => setShowModalAdd(true)}
+                          className="mt-2 px-4 py-2 bg-green-300 hover:bg-green-400 text-black font-bold rounded-full transition-colors text-sm"
+                        >
+                          Add First Item
+                        </button>
+                      )}
+                      {!canAddItem && !searchQuery && filterStatus === "All" && categoryFilter === "All" && (
+                        <div className="mt-3 p-3 bg-amber-50 border border-amber-200 rounded-lg">
+                          <p className="text-sm text-amber-800 font-medium">
+                            <span className="font-bold">Permission Required:</span> You need Add Items permission to create new inventory items.
+                          </p>
+                        </div>
+                      )}
                     </div>
                   </td>
                 </tr>
@@ -366,12 +437,18 @@ const Items = () => {
                   const isExpired = new Date(item.expireDate) < new Date();
                   const expireDate = new Date(item.expireDate);
                   const today = new Date();
-                  const daysUntilExpiry = Math.ceil((expireDate - today) / (1000 * 60 * 60 * 24));
-                  const expiresSoon = daysUntilExpiry <= 30 && daysUntilExpiry > 0;
+                  const daysUntilExpiry = Math.ceil(
+                    (expireDate - today) / (1000 * 60 * 60 * 24)
+                  );
+                  const expiresSoon =
+                    daysUntilExpiry <= 30 && daysUntilExpiry > 0;
 
                   return (
                     <>
-                      <tr key={item._id} className="hover:bg-gray-50 transition-colors">
+                      <tr
+                        key={item._id}
+                        className="hover:bg-gray-50 transition-colors"
+                      >
                         {/* SN Column - Green 300 */}
                         <td className="py-3 px-2 text-center border-r border-gray-300 bg-gray-200">
                           <span className="inline-flex items-center justify-center w-8 h-8 bg-green-300 text-black font-bold rounded-full text-xs">
@@ -402,13 +479,15 @@ const Items = () => {
 
                         {/* Quantity Column - Color coded */}
                         <td className="py-3 px-2 text-center border-r border-gray-200">
-                          <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-bold ${
-                            item.reOrderStatus === "Low"
-                              ? "bg-red-100 text-red-700"
-                              : item.reOrderStatus === "Normal"
-                              ? "bg-green-100 text-green-700"
-                              : "bg-blue-100 text-blue-700"
-                          }`}>
+                          <span
+                            className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-bold ${
+                              item.reOrderStatus === "Low"
+                                ? "bg-red-100 text-red-700"
+                                : item.reOrderStatus === "Normal"
+                                ? "bg-green-100 text-green-700"
+                                : "bg-blue-100 text-blue-700"
+                            }`}
+                          >
                             {item.itemQuantity.toLocaleString()}
                           </span>
                         </td>
@@ -427,20 +506,26 @@ const Items = () => {
                         {/* Manufacture Date Column - Green 200 */}
                         <td className="py-3 px-2 text-center bg-green-200 border-r border-gray-200">
                           <span className="font-bold text-black text-sm">
-                            {new Date(item.manufactureDate).toLocaleDateString('en-GB')}
+                            {new Date(item.manufactureDate).toLocaleDateString(
+                              "en-GB"
+                            )}
                           </span>
                         </td>
 
                         {/* Expiry Date Column - Color coded */}
                         <td className="py-3 px-2 text-center border-r border-gray-200">
-                          <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-bold ${
-                            isExpired
-                              ? "bg-red-100 text-red-700"
-                              : expiresSoon
-                              ? "bg-yellow-100 text-yellow-700"
-                              : "bg-green-100 text-green-700"
-                          }`}>
-                            {new Date(item.expireDate).toLocaleDateString('en-GB')}
+                          <span
+                            className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-bold ${
+                              isExpired
+                                ? "bg-red-100 text-red-700"
+                                : expiresSoon
+                                ? "bg-yellow-100 text-yellow-700"
+                                : "bg-green-100 text-green-700"
+                            }`}
+                          >
+                            {new Date(item.expireDate).toLocaleDateString(
+                              "en-GB"
+                            )}
                             {isExpired && " (Expired)"}
                             {expiresSoon && " (Soon)"}
                           </span>
@@ -449,21 +534,42 @@ const Items = () => {
                         {/* Category Column - Gray 100 */}
                         <td className="py-3 px-2 text-center bg-gray-100 border-r border-gray-200">
                           <span className="font-bold text-black text-sm">
-                            {category.find((u) => u._id === item.category)?.name || "-"}
+                            {category.find((u) => u._id === item.category)
+                              ?.name || "-"}
                           </span>
                         </td>
 
                         {/* Action Column - Gray 200 */}
                         <td className="py-3 px-2 text-center bg-gray-200">
-                          <button
-                            onClick={() => {
-                              setShowModalEdit(true);
-                              setModifiedItem(item);
-                            }}
-                            className="p-2 bg-green-300 hover:bg-green-400 text-black rounded-full transition-colors"
-                          >
-                            <AiTwotoneEdit className="w-4 h-4" />
-                          </button>
+                          {canEditItem ? (
+                            <button
+                              onClick={() => {
+                                setShowModalEdit(true);
+                                setModifiedItem(item);
+                              }}
+                              className="p-2 bg-green-300 hover:bg-green-400 text-black rounded-full transition-colors"
+                              title="Edit Item"
+                            >
+                              <AiTwotoneEdit className="w-4 h-4" />
+                            </button>
+                          ) : (
+                            <div className="relative group inline-block">
+                              <button
+                                disabled
+                                className="p-2 bg-gray-300 text-gray-500 rounded-full cursor-not-allowed"
+                                title="You don't have permission to edit items"
+                              >
+                                <AiTwotoneEdit className="w-4 h-4" />
+                              </button>
+                              <div className="absolute right-0 top-full mt-2 w-64 p-3 bg-gray-800 text-white text-sm rounded-lg shadow-xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-10">
+                                <div className="absolute -top-1 right-3 w-3 h-3 bg-gray-800 transform rotate-45"></div>
+                                <p className="font-semibold">Permission Required</p>
+                                <p className="mt-1 text-gray-300">
+                                  You need the <span className="font-bold">Edit Items</span> permission to modify existing inventory items.
+                                </p>
+                              </div>
+                            </div>
+                          )}
                         </td>
                       </tr>
                       <tr className="h-3">
@@ -485,7 +591,8 @@ const Items = () => {
                 Showing {(currentPage - 1) * itemsPerPage + 1} to{" "}
                 {Math.min(currentPage * itemsPerPage, totalItems)}
               </span>{" "}
-              of <span className="font-bold text-black">{totalItems}</span> items
+              of <span className="font-bold text-black">{totalItems}</span>{" "}
+              items
             </div>
 
             <div className="flex items-center gap-1">
@@ -521,11 +628,15 @@ const Items = () => {
                       </button>
                     );
                   } else if (
-                    (pageNum === currentPage - 2 || pageNum === currentPage + 2) &&
+                    (pageNum === currentPage - 2 ||
+                      pageNum === currentPage + 2) &&
                     totalPages > 5
                   ) {
                     return (
-                      <span key={i} className="px-2 text-gray-500 font-bold text-xs">
+                      <span
+                        key={i}
+                        className="px-2 text-gray-500 font-bold text-xs"
+                      >
                         ...
                       </span>
                     );
@@ -546,19 +657,24 @@ const Items = () => {
         )}
       </div>
 
-      {/* Modals */}
-      <AddItem
-        showModal={showModalAdd}
-        setShowModal={setShowModalAdd}
-        onItemAdded={fetchData}
-        modifiedItem={modifiedItem}
-      />
-      <EditItem
-        showModal={showModalEdit}
-        setShowModal={setShowModalEdit}
-        onItemUpdated={fetchData}
-        item={modifiedItem}
-      />
+      {/* Modals - Only render if user has permission */}
+      {canAddItem && (
+        <AddItem
+          showModal={showModalAdd}
+          setShowModal={setShowModalAdd}
+          onItemAdded={fetchData}
+          modifiedItem={modifiedItem}
+        />
+      )}
+      
+      {canEditItem && modifiedItem && (
+        <EditItem
+          showModal={showModalEdit}
+          setShowModal={setShowModalEdit}
+          onItemUpdated={fetchData}
+          item={modifiedItem}
+        />
+      )}
     </div>
   );
 };
