@@ -10,8 +10,10 @@ import BASE_URL from "../../../Utils/config";
 import AddDebt from "./AddDebt";
 import toast from "react-hot-toast";
 import { FiEdit, FiCheck, FiX } from "react-icons/fi";
+import { useSelector } from "react-redux";
 
 const Debts = () => {
+  const user = useSelector((state) => state.user.user);
   const [debts, setDebts] = useState([]);
   const [load, setLoad] = useState(false);
   const [deductions, setDeductions] = useState({});
@@ -34,7 +36,6 @@ const Debts = () => {
       label: "Liability",
       color: "bg-yellow-200 text-yellow-800",
     },
-    { value: "Other", label: "Other", color: "bg-gray-200 text-gray-800" },
   ];
 
   useEffect(() => {
@@ -136,7 +137,11 @@ const Debts = () => {
     }
   };
 
+  // Check if user has add permission
+  const canChangeDebtStatus = user?.roles?.canChangeDebtStatus === true;
 
+  // Check if user has edit permission
+  const canPayDebts = user?.roles?.canPayDebt === true;
 
   const filteredData = debts.filter((d) => {
     if (!d.createdAt) return false;
@@ -490,7 +495,7 @@ const Debts = () => {
 
                     {/* Change Status Column - Edit functionality */}
                     <td className="py-4 px-3 text-center bg-blue-50 border-r border-gray-200">
-                      {editingStatusId === d._id ? (
+                      {editingStatusId === d._id   && canChangeDebtStatus ? (
                         <div className="space-y-2">
                           <select
                             value={tempStatus}
@@ -590,23 +595,29 @@ const Debts = () => {
                     {/* Action Column - Gray 100 */}
                     <td className="py-4 px-3 text-center bg-gray-100">
                       {d.remainingAmount > 0 ? (
-                        <button
-                          onClick={() => handlePay(d)}
-                          disabled={
-                            !deductions[d._id] ||
-                            parseFloat(deductions[d._id]) <= 0 ||
-                            editingStatusId === d._id
-                          }
-                          className={`px-6 py-2.5 font-bold rounded-full transition-all ${
-                            deductions[d._id] &&
-                            parseFloat(deductions[d._id]) > 0 &&
-                            editingStatusId !== d._id
-                              ? "bg-yellow-100 hover:bg-yellow-200 text-black shadow hover:shadow-md"
-                              : "bg-gray-300 text-gray-500 cursor-not-allowed"
-                          }`}
-                        >
-                          Pay Now
-                        </button>
+                        canPayDebts ? (
+                          <button
+                            onClick={() => handlePay(d)}
+                            disabled={
+                              !deductions[d._id] ||
+                              parseFloat(deductions[d._id]) <= 0 ||
+                              editingStatusId === d._id
+                            }
+                            className={`px-6 py-2.5 font-bold rounded-full transition-all ${
+                              deductions[d._id] &&
+                              parseFloat(deductions[d._id]) > 0 &&
+                              editingStatusId !== d._id
+                                ? "bg-yellow-100 hover:bg-yellow-200 text-black shadow hover:shadow-md"
+                                : "bg-gray-300 text-gray-500 cursor-not-allowed"
+                            }`}
+                          >
+                            Pay Now
+                          </button>
+                        ) : (
+                          <span className="inline-flex items-center px-6 py-2.5 bg-gray-300 text-gray-600 font-bold rounded-full">
+                            Not Allowed
+                          </span>
+                        )
                       ) : (
                         <span className="inline-flex items-center px-6 py-2.5 bg-green-300 text-black font-bold rounded-full shadow">
                           Fully Paid

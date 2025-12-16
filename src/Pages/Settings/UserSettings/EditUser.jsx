@@ -61,11 +61,13 @@ const EditUser = ({ showModal, setShowModal, onUserUpdated, user }) => {
       canAddItems: false,
       canEditItems: false,
       canAddCategory: false,
-      CanEditCategory: false,
+      canEditCategory: false, // Fixed: Changed from CanEditCategory to canEditCategory
       canMakeTransaction: false,
       canPayBillTransaction: false,
       canApproveNewGrn: false,
       canPayBilledGrn: false,
+      canChangeDebtStatus: false, // Added: Debt management permission
+      canPayDebt: false, // Added: Debt management permission
       canAccessSettings: false,
       canAccessUserManagement: false,
       canAccessCustomerManagement: false,
@@ -94,11 +96,13 @@ const EditUser = ({ showModal, setShowModal, onUserUpdated, user }) => {
           canAddItems: user.roles?.canAddItems || false,
           canEditItems: user.roles?.canEditItems || false,
           canAddCategory: user.roles?.canAddCategory || false,
-          CanEditCategory: user.roles?.CanEditCategory || false,
+          canEditCategory: user.roles?.canEditCategory || user.roles?.CanEditCategory || false, // Fixed: Handle both cases
           canMakeTransaction: user.roles?.canMakeTransaction || false,
           canPayBillTransaction: user.roles?.canPayBillTransaction || false,
           canApproveNewGrn: user.roles?.canApproveNewGrn || false,
           canPayBilledGrn: user.roles?.canPayBilledGrn || false,
+          canChangeDebtStatus: user.roles?.canChangeDebtStatus || false, // Added
+          canPayDebt: user.roles?.canPayDebt || false, // Added
           canAccessSettings: user.roles?.canAccessSettings || false,
           canAccessUserManagement: user.roles?.canAccessUserManagement || false,
           canAccessCustomerManagement:
@@ -148,6 +152,19 @@ const EditUser = ({ showModal, setShowModal, onUserUpdated, user }) => {
 
     if (!editUser.email.trim()) {
       setShowError("Email is required");
+      return;
+    }
+
+    // Email format validation
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(editUser.email)) {
+      setShowError("Please enter a valid email address");
+      return;
+    }
+
+    // Password strength validation (if password is provided)
+    if (editUser.password && editUser.password.length < 6) {
+      setShowError("Password must be at least 6 characters long");
       return;
     }
 
@@ -217,11 +234,13 @@ const EditUser = ({ showModal, setShowModal, onUserUpdated, user }) => {
           canAddItems: user.roles?.canAddItems || false,
           canEditItems: user.roles?.canEditItems || false,
           canAddCategory: user.roles?.canAddCategory || false,
-          CanEditCategory: user.roles?.CanEditCategory || false,
+          canEditCategory: user.roles?.canEditCategory || user.roles?.CanEditCategory || false, // Fixed
           canMakeTransaction: user.roles?.canMakeTransaction || false,
           canPayBillTransaction: user.roles?.canPayBillTransaction || false,
           canApproveNewGrn: user.roles?.canApproveNewGrn || false,
           canPayBilledGrn: user.roles?.canPayBilledGrn || false,
+          canChangeDebtStatus: user.roles?.canChangeDebtStatus || false, // Added
+          canPayDebt: user.roles?.canPayDebt || false, // Added
           canAccessSettings: user.roles?.canAccessSettings || false,
           canAccessUserManagement: user.roles?.canAccessUserManagement || false,
           canAccessCustomerManagement:
@@ -238,7 +257,7 @@ const EditUser = ({ showModal, setShowModal, onUserUpdated, user }) => {
     setShowError("");
   };
 
-  // Organized permission groups with colors - SAME AS AddUser
+  // Organized permission groups with colors - UPDATED
   const permissionGroups = [
     {
       id: "inventory",
@@ -267,7 +286,7 @@ const EditUser = ({ showModal, setShowModal, onUserUpdated, user }) => {
           icon: <MdCategory className="w-4 h-4" />,
         },
         {
-          key: "CanEditCategory",
+          key: "canEditCategory", // Fixed: Changed from CanEditCategory to canEditCategory
           label: "Edit Categories",
           description: "Modify existing categories",
           icon: <FiSettings className="w-4 h-4" />,
@@ -315,6 +334,28 @@ const EditUser = ({ showModal, setShowModal, onUserUpdated, user }) => {
           label: "Pay Billed GRN",
           description: "Process payments for billed GRNs",
           icon: <FiCreditCard className="w-4 h-4" />,
+        },
+      ],
+    },
+    {
+      id: "debts", // Added: Debt management permission group
+      title: "Debt Management",
+      icon: <FiCreditCard className="w-5 h-5" />,
+      color: "from-amber-500 to-yellow-500",
+      bgColor: "bg-gradient-to-br from-amber-50 to-yellow-50",
+      borderColor: "border-amber-200",
+      permissions: [
+        {
+          key: "canChangeDebtStatus",
+          label: "Change Debt Status",
+          description: "Change debt status updates",
+          icon: <FiTrendingUp className="w-4 h-4" />,
+        },
+        {
+          key: "canPayDebt",
+          label: "Pay Debts",
+          description: "Settle outstanding debts",
+          icon: <FiDollarSign className="w-4 h-4" />,
         },
       ],
     },
@@ -453,7 +494,7 @@ const EditUser = ({ showModal, setShowModal, onUserUpdated, user }) => {
     },
   ];
 
-  // Quick preset configurations - SAME AS AddUser
+  // Quick preset configurations - UPDATED
   const rolePresets = [
     {
       id: "admin",
@@ -465,11 +506,13 @@ const EditUser = ({ showModal, setShowModal, onUserUpdated, user }) => {
         canAddItems: true,
         canEditItems: true,
         canAddCategory: true,
-        CanEditCategory: true,
+        canEditCategory: true, // Fixed
         canMakeTransaction: true,
         canPayBillTransaction: true,
         canApproveNewGrn: true,
         canPayBilledGrn: true,
+        canChangeDebtStatus: true, // Added
+        canPayDebt: true, // Added
         canAccessSettings: true,
         canAccessUserManagement: true,
         canAccessCustomerManagement: true,
@@ -488,11 +531,13 @@ const EditUser = ({ showModal, setShowModal, onUserUpdated, user }) => {
         canAddItems: true,
         canEditItems: true,
         canAddCategory: true,
-        CanEditCategory: true,
+        canEditCategory: true, // Fixed
         canMakeTransaction: true,
         canPayBillTransaction: true,
         canApproveNewGrn: true,
         canPayBilledGrn: true,
+        canChangeDebtStatus: true, // Added
+        canPayDebt: true, // Added
         canAccessSettings: false,
         canAccessUserManagement: false,
         canAccessCustomerManagement: true,
@@ -511,11 +556,13 @@ const EditUser = ({ showModal, setShowModal, onUserUpdated, user }) => {
         canAddItems: true,
         canEditItems: true,
         canAddCategory: false,
-        CanEditCategory: false,
+        canEditCategory: false, // Fixed
         canMakeTransaction: true,
         canPayBillTransaction: false,
         canApproveNewGrn: false,
         canPayBilledGrn: false,
+        canChangeDebtStatus: false, // Added
+        canPayDebt: false, // Added
         canAccessSettings: false,
         canAccessUserManagement: false,
         canAccessCustomerManagement: false,
@@ -534,11 +581,13 @@ const EditUser = ({ showModal, setShowModal, onUserUpdated, user }) => {
         canAddItems: false,
         canEditItems: false,
         canAddCategory: false,
-        CanEditCategory: false,
+        canEditCategory: false, // Fixed
         canMakeTransaction: true,
         canPayBillTransaction: true,
         canApproveNewGrn: true,
         canPayBilledGrn: true,
+        canChangeDebtStatus: true, // Added
+        canPayDebt: true, // Added
         canAccessSettings: false,
         canAccessUserManagement: false,
         canAccessCustomerManagement: true,
@@ -684,7 +733,7 @@ const EditUser = ({ showModal, setShowModal, onUserUpdated, user }) => {
                           value={editUser.password}
                           onChange={handleChange}
                           className="w-full pl-12 pr-4 py-3 border border-gray-300 rounded-xl bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-emerald-500/30 focus:border-emerald-500 transition-all"
-                          placeholder="Enter new password (optional)"
+                          placeholder="Enter new password (min 6 characters, optional)"
                           disabled={loading}
                           autoComplete="new-password"
                         />

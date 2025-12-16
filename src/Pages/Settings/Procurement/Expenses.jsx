@@ -13,10 +13,11 @@ import {
   IoMdDownload,
   IoMdRefresh,
 } from "react-icons/io";
-import { FiDollarSign, FiFilter, FiUser, FiEdit2 } from "react-icons/fi";
+import { FiDollarSign, FiEdit2, FiFilter, FiUser } from "react-icons/fi";
 import Loading from "../../../Components/Shared/Loading";
 import BASE_URL from "../../../Utils/config";
 import toast from "react-hot-toast";
+import EditExpense from "./EditExpense";
 
 const Expenses = () => {
   const [itemHold, setItemHold] = useState([]);
@@ -30,21 +31,14 @@ const Expenses = () => {
     date: null,
   });
 
-  // edit modal states
-  const [editModalOpen, setEditModalOpen] = useState(false);
-  const [editingExpense, setEditingExpense] = useState(null);
-  const [editForm, setEditForm] = useState({
-    title: "",
-    amount: "",
-    details: "",
-    date: null,
-  });
-  const [editLoading, setEditLoading] = useState(false);
-
   // filters
   const [filterCreatedBy, setFilterCreatedBy] = useState("");
   const [fromDate, setFromDate] = useState(null);
   const [toDate, setToDate] = useState(null);
+
+  // Add these state variables
+  const [editModalOpen, setEditModalOpen] = useState(false);
+  const [editingExpense, setEditingExpense] = useState(null);
 
   // pagination
   const [currentPage, setCurrentPage] = useState(1);
@@ -92,65 +86,11 @@ const Expenses = () => {
       setInput({ title: "", amount: "", details: "", date: null });
     } catch (error) {
       console.log("Error adding expense:", error);
-       const message =
-        error.response?.data?.message || error.message || "Failed to add expense";
-      toast.error(message);
-    }
-  };
-
-  // open edit modal
-  const openEditModal = (expense) => {
-    setEditingExpense(expense);
-    setEditForm({
-      title: expense.title,
-      amount: expense.amount.toString(),
-      details: expense.details || "",
-      date: dayjs(expense.date),
-    });
-    setEditModalOpen(true);
-  };
-
-  // close edit modal
-  const closeEditModal = () => {
-    setEditModalOpen(false);
-    setEditingExpense(null);
-    setEditForm({
-      title: "",
-      amount: "",
-      details: "",
-      date: null,
-    });
-  };
-
-  // update expense
-  const updateExpense = async () => {
-    if (!editForm.title || !editForm.amount || !editForm.date) {
-      toast.error("Please fill all required fields");
-      return;
-    }
-
-    try {
-      setEditLoading(true);
-      await axios.put(
-        `${BASE_URL}/api/manunuzi/updateMatumizi/${editingExpense._id}`,
-        {
-          title: editForm.title,
-          amount: Number(editForm.amount),
-          details: editForm.details || "",
-          date: editForm.date,
-        },
-        { withCredentials: true }
-      );
-      toast.success("Expense updated successfully!");
-      getExpenses();
-      closeEditModal();
-    } catch (error) {
-      console.log("Error updating expense:", error);
       const message =
-        error.response?.data?.message || error.message || "Failed to update status";
+        error.response?.data?.message ||
+        error.message ||
+        "Failed to add expense";
       toast.error(message);
-    } finally {
-      setEditLoading(false);
     }
   };
 
@@ -164,6 +104,21 @@ const Expenses = () => {
       )
     ),
   ].sort();
+
+  // Add these functions
+  const openEditModal = (expense) => {
+    setEditingExpense(expense);
+    setEditModalOpen(true);
+  };
+
+  const closeEditModal = () => {
+    setEditModalOpen(false);
+    setEditingExpense(null);
+  };
+
+  const handleUpdateSuccess = () => {
+    getExpenses(); // Refresh the expenses list
+  };
 
   // filtering
   const filtered = itemHold.filter((exp) => {
@@ -238,7 +193,7 @@ const Expenses = () => {
 
       autoTable(pdf, {
         startY: 35,
-        head: [["Title", "Amount", "Details", "Date", "Created By", "Actions"]],
+        head: [["Title", "Amount", "Details", "Date", "Created By"]],
         body: filtered.map((e) => [
           e.title,
           e.amount.toLocaleString(),
@@ -247,7 +202,6 @@ const Expenses = () => {
           e.createdBy
             ? `${e.createdBy.firstName} ${e.createdBy.lastName}`
             : "-",
-          "Edit/Delete",
         ]),
         headStyles: { fillColor: [34, 197, 94], textColor: 255 },
       });
@@ -266,229 +220,8 @@ const Expenses = () => {
     toast.success("Filters cleared!");
   };
 
-  // Edit Expense Modal Component - UPDATED DESIGN
-  const EditExpenseModal = () => (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-2xl w-full max-w-4xl shadow-2xl">
-        {/* Modal Header */}
-        <div className="bg-green-300 px-8 py-6 border-b border-green-200 rounded-t-2xl">
-          <div className="flex justify-between items-center">
-            <h2 className="text-2xl font-bold text-green-800">
-              <span className="mr-3">✏️</span> Edit Expense
-            </h2>
-            <button
-              onClick={closeEditModal}
-              className="text-green-800 hover:text-green-900 text-2xl font-bold"
-            >
-              ×
-            </button>
-          </div>
-          <p className="text-green-700 mt-2">
-            Update expense information below
-          </p>
-        </div>
-
-        {/* Modal Body */}
-        <div className="p-8">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
-            {/* Left Column */}
-            <div className="space-y-6">
-              <div>
-                <label
-                  className="block text-gray-700 font-medium mb-2"
-                  htmlFor="editTitle"
-                >
-                  Title <span className="text-red-500">*</span>
-                </label>
-                <input
-                  type="text"
-                  id="editTitle"
-                  value={editForm.title}
-                  onChange={(e) =>
-                    setEditForm({ ...editForm, title: e.target.value })
-                  }
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-300 focus:border-transparent transition duration-200 text-black"
-                  placeholder="Enter expense title"
-                />
-              </div>
-
-              <div>
-                <label
-                  className="block text-gray-700 font-medium mb-2"
-                  htmlFor="editDetails"
-                >
-                  Details
-                </label>
-                <textarea
-                  id="editDetails"
-                  value={editForm.details}
-                  onChange={(e) =>
-                    setEditForm({ ...editForm, details: e.target.value })
-                  }
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-300 focus:border-transparent transition duration-200 resize-none text-black"
-                  placeholder="Additional details (optional)"
-                  rows="4"
-                />
-              </div>
-            </div>
-
-            {/* Right Column */}
-            <div className="space-y-6">
-              <div>
-                <label
-                  className="block text-gray-700 font-medium mb-2"
-                  htmlFor="editAmount"
-                >
-                  Amount <span className="text-red-500">*</span>
-                </label>
-                <div className="relative">
-                  <span className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-500">
-                    Tsh
-                  </span>
-                  <input
-                    type="number"
-                    id="editAmount"
-                    value={editForm.amount}
-                    onChange={(e) =>
-                      setEditForm({
-                        ...editForm,
-                        amount: e.target.value,
-                      })
-                    }
-                    className="w-full pl-12 pr-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-300 focus:border-transparent transition duration-200 text-black"
-                    placeholder="0.00"
-                  />
-                </div>
-              </div>
-
-              <div>
-                <label
-                  className="block text-gray-700 font-medium mb-2"
-                  htmlFor="editDate"
-                >
-                  Date <span className="text-red-500">*</span>
-                </label>
-                <LocalizationProvider dateAdapter={AdapterDayjs}>
-                  <DatePicker
-                    value={editForm.date}
-                    onChange={(newValue) =>
-                      setEditForm({ ...editForm, date: newValue })
-                    }
-                    maxDate={dayjs()}
-                    slotProps={{
-                      textField: {
-                        fullWidth: true,
-                        sx: {
-                          "& .MuiOutlinedInput-root": {
-                            borderRadius: "12px",
-                            fontSize: "14px",
-                            padding: "8px 14px",
-                          },
-                        },
-                        className: "bg-white",
-                      },
-                    }}
-                  />
-                </LocalizationProvider>
-              </div>
-
-              {/* Current Data Preview */}
-              <div className="bg-gray-50 p-4 rounded-lg">
-                <h4 className="text-sm font-medium text-gray-700 mb-2">
-                  Current Data
-                </h4>
-                <div className="space-y-2">
-                  <p className="text-xs text-gray-600">
-                    <span className="font-medium">Original Amount:</span> Tsh{" "}
-                    {editingExpense?.amount?.toLocaleString()}
-                  </p>
-                  <p className="text-xs text-gray-600">
-                    <span className="font-medium">Original Date:</span>{" "}
-                    {dayjs(editingExpense?.date).format("DD/MM/YYYY")}
-                  </p>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* Additional Info Section */}
-          <div className="bg-gray-50 p-6 rounded-xl mb-6">
-            <h3 className="text-lg font-semibold text-gray-800 mb-4">
-              Additional Information
-            </h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="flex items-center space-x-3">
-                <div className="w-8 h-8 bg-green-100 rounded-lg flex items-center justify-center">
-                  <FiUser className="w-4 h-4 text-green-600" />
-                </div>
-                <div>
-                  <p className="text-xs text-gray-500">Created By</p>
-                  <p className="text-sm font-medium text-gray-800">
-                    {editingExpense?.createdBy
-                      ? `${editingExpense.createdBy.firstName} ${editingExpense.createdBy.lastName}`
-                      : "Unknown"}
-                  </p>
-                </div>
-              </div>
-              <div className="flex items-center space-x-3">
-                <div className="w-8 h-8 bg-green-100 rounded-lg flex items-center justify-center">
-                  <FiDollarSign className="w-4 h-4 text-green-600" />
-                </div>
-                <div>
-                  <p className="text-xs text-gray-500">Original Amount</p>
-                  <p className="text-sm font-medium text-gray-800">
-                    Tsh {editingExpense?.amount?.toLocaleString()}
-                  </p>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* Modal Footer */}
-        <div className="bg-gray-50 px-8 py-6 border-t border-gray-200 rounded-b-2xl">
-          <div className="flex justify-between items-center">
-            <div className="text-gray-600 text-sm">
-              <span className="font-medium">Note:</span> Changes will be applied
-              immediately
-            </div>
-            <div className="flex space-x-4">
-              <button
-                onClick={closeEditModal}
-                className="px-6 py-3 border border-gray-300 text-gray-700 font-medium rounded-lg hover:bg-gray-100 transition duration-200"
-                disabled={editLoading}
-              >
-                Cancel
-              </button>
-              <button
-                onClick={updateExpense}
-                disabled={editLoading}
-                className="px-6 py-3 bg-green-300 text-green-800 font-medium rounded-lg hover:bg-green-400 transition duration-200 shadow-md disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
-              >
-                {editLoading ? (
-                  <>
-                    <div className="w-4 h-4 border-2 border-green-800 border-t-transparent rounded-full animate-spin"></div>
-                    Updating...
-                  </>
-                ) : (
-                  <>
-                    <FiEdit2 className="w-4 h-4" />
-                    Update Expense
-                  </>
-                )}
-              </button>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-
   return (
     <div className="p-5 bg-gray-50 min-h-screen">
-      {/* Edit Expense Modal */}
-      {editModalOpen && <EditExpenseModal />}
-
       {/* Header */}
       <div className="flex flex-col md:flex-row md:items-center justify-between mb-6">
         <div>
@@ -855,7 +588,7 @@ const Expenses = () => {
                           </td>
 
                           {/* Created By Column */}
-                          <td className="py-3 px-2 text-center bg-gray-100 border-r border-gray-200">
+                          <td className="py-3 px-2 text-center bg-gray-100">
                             <span className="font-bold text-black text-sm">
                               {exp.createdBy
                                 ? `${exp.createdBy.firstName} ${exp.createdBy.lastName}`
@@ -863,21 +596,18 @@ const Expenses = () => {
                             </span>
                           </td>
 
-                          {/* Actions Column */}
-                          <td className="py-3 px-2 text-center bg-gray-50">
-                            <div className="flex items-center justify-center gap-2">
-                              <button
-                                onClick={() => openEditModal(exp)}
-                                className="p-2 bg-green-100 hover:bg-green-200 text-green-700 rounded-full transition-colors"
-                                title="Edit"
-                              >
-                                <FiEdit2 className="w-4 h-4" />
-                              </button>
-                            </div>
+                          <td className="py-3 px-2 text-center bg-gray-200">
+                            <button
+                              onClick={() => openEditModal(exp)}
+                              className="p-2 bg-green-100 hover:bg-green-200 text-green-700 rounded-full transition-colors"
+                              title="Edit"
+                            >
+                              <FiEdit2 className="w-4 h-4" />
+                            </button>
                           </td>
                         </tr>
                         <tr className="h-3">
-                          <td colSpan={7} className="p-0"></td>
+                          <td colSpan={6} className="p-0"></td>
                         </tr>
                       </>
                     ))}
@@ -898,12 +628,20 @@ const Expenses = () => {
                           </span>
                         </div>
                       </td>
-                      <td colSpan={4}></td>
+                      <td colSpan={3}></td>
+                      <td colSpan={3}></td>
                     </tr>
                   </tfoot>
                 </table>
               </div>
 
+              {editModalOpen && (
+                <EditExpense
+                  expense={editingExpense}
+                  onClose={closeEditModal}
+                  onSuccess={handleUpdateSuccess}
+                />
+              )}
               {/* Compact Pagination */}
               <div className="flex flex-col sm:flex-row items-center justify-between gap-3 mt-6 pt-4 border-t border-gray-300">
                 <div className="text-xs text-gray-700">

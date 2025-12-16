@@ -55,11 +55,13 @@ const AddUser = ({ showModal, setShowModal, onUserAdded }) => {
       canAddItems: false,
       canEditItems: false,
       canAddCategory: false,
-      CanEditCategory: false,
+      canEditCategory: false, // Fixed: Changed from CanEditCategory to canEditCategory
       canMakeTransaction: false,
       canPayBillTransaction: false,
       canApproveNewGrn: false,
       canPayBilledGrn: false,
+      canChangeDebtStatus: false, // Added: Missing in initial state
+      canPayDebt: false, // Added: Missing in initial state
       canAccessSettings: false,
       canAccessUserManagement: false,
       canAccessCustomerManagement: false,
@@ -119,8 +121,21 @@ const AddUser = ({ showModal, setShowModal, onUserAdded }) => {
       return;
     }
 
+    // Email format validation
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(newUser.email)) {
+      setShowError("Please enter a valid email address");
+      return;
+    }
+
     if (!newUser.password) {
       setShowError("Password is required");
+      return;
+    }
+
+    // Password strength validation (optional)
+    if (newUser.password.length < 6) {
+      setShowError("Password must be at least 6 characters long");
       return;
     }
 
@@ -185,11 +200,13 @@ const AddUser = ({ showModal, setShowModal, onUserAdded }) => {
         canAddItems: false,
         canEditItems: false,
         canAddCategory: false,
-        CanEditCategory: false,
+        canEditCategory: false, // Fixed
         canMakeTransaction: false,
         canPayBillTransaction: false,
         canApproveNewGrn: false,
         canPayBilledGrn: false,
+        canChangeDebtStatus: false, // Added
+        canPayDebt: false, // Added
         canAccessSettings: false,
         canAccessUserManagement: false,
         canAccessCustomerManagement: false,
@@ -204,7 +221,7 @@ const AddUser = ({ showModal, setShowModal, onUserAdded }) => {
     setShowError("");
   };
 
-  // Organized permission groups with colors - UPDATED WITH NEW ROLES
+  // Organized permission groups with colors
   const permissionGroups = [
     {
       id: "inventory",
@@ -233,7 +250,7 @@ const AddUser = ({ showModal, setShowModal, onUserAdded }) => {
           icon: <MdCategory className="w-4 h-4" />,
         },
         {
-          key: "CanEditCategory",
+          key: "canEditCategory", // Fixed: Changed from CanEditCategory to canEditCategory
           label: "Edit Categories",
           description: "Modify existing categories",
           icon: <FiSettings className="w-4 h-4" />,
@@ -281,6 +298,28 @@ const AddUser = ({ showModal, setShowModal, onUserAdded }) => {
           label: "Pay Billed GRN",
           description: "Process payments for billed GRNs",
           icon: <FiCreditCard className="w-4 h-4" />,
+        },
+      ],
+    },
+    {
+      id: "debts",
+      title: "Debt Management",
+      icon: <FiCreditCard className="w-5 h-5" />,
+      color: "from-amber-500 to-yellow-500",
+      bgColor: "bg-gradient-to-br from-amber-50 to-yellow-50",
+      borderColor: "border-amber-200",
+      permissions: [
+        {
+          key: "canChangeDebtStatus",
+          label: "Change Debt Status",
+          description: "Change debt status updates",
+          icon: <FiTrendingUp className="w-4 h-4" />,
+        },
+        {
+          key: "canPayDebt",
+          label: "Pay Debts",
+          description: "Settle outstanding debts",
+          icon: <FiDollarSign className="w-4 h-4" />,
         },
       ],
     },
@@ -419,7 +458,7 @@ const AddUser = ({ showModal, setShowModal, onUserAdded }) => {
     },
   ];
 
-  // Quick preset configurations - UPDATED WITH NEW ROLES
+  // Quick preset configurations
   const rolePresets = [
     {
       id: "admin",
@@ -431,11 +470,13 @@ const AddUser = ({ showModal, setShowModal, onUserAdded }) => {
         canAddItems: true,
         canEditItems: true,
         canAddCategory: true,
-        CanEditCategory: true,
+        canEditCategory: true, // Fixed
         canMakeTransaction: true,
         canPayBillTransaction: true,
         canApproveNewGrn: true,
         canPayBilledGrn: true,
+        canChangeDebtStatus: true, // Added
+        canPayDebt: true, // Added
         canAccessSettings: true,
         canAccessUserManagement: true,
         canAccessCustomerManagement: true,
@@ -454,11 +495,13 @@ const AddUser = ({ showModal, setShowModal, onUserAdded }) => {
         canAddItems: true,
         canEditItems: true,
         canAddCategory: true,
-        CanEditCategory: true,
+        canEditCategory: true, // Fixed
         canMakeTransaction: true,
         canPayBillTransaction: true,
         canApproveNewGrn: true,
         canPayBilledGrn: true,
+        canChangeDebtStatus: true, // Added
+        canPayDebt: true, // Added
         canAccessSettings: false,
         canAccessUserManagement: false,
         canAccessCustomerManagement: true,
@@ -477,11 +520,13 @@ const AddUser = ({ showModal, setShowModal, onUserAdded }) => {
         canAddItems: true,
         canEditItems: true,
         canAddCategory: false,
-        CanEditCategory: false,
+        canEditCategory: false, // Fixed
         canMakeTransaction: true,
         canPayBillTransaction: false,
         canApproveNewGrn: false,
         canPayBilledGrn: false,
+        canChangeDebtStatus: false, // Added
+        canPayDebt: false, // Added
         canAccessSettings: false,
         canAccessUserManagement: false,
         canAccessCustomerManagement: false,
@@ -500,11 +545,13 @@ const AddUser = ({ showModal, setShowModal, onUserAdded }) => {
         canAddItems: false,
         canEditItems: false,
         canAddCategory: false,
-        CanEditCategory: false,
+        canEditCategory: false, // Fixed
         canMakeTransaction: true,
         canPayBillTransaction: true,
         canApproveNewGrn: true,
         canPayBilledGrn: true,
+        canChangeDebtStatus: true,
+        canPayDebt: true,
         canAccessSettings: false,
         canAccessUserManagement: false,
         canAccessCustomerManagement: true,
@@ -650,7 +697,7 @@ const AddUser = ({ showModal, setShowModal, onUserAdded }) => {
                           value={newUser.password}
                           onChange={handleChange}
                           className="w-full pl-12 pr-4 py-3 border border-gray-300 rounded-xl bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-emerald-500/30 focus:border-emerald-500 transition-all"
-                          placeholder="Enter secure password"
+                          placeholder="Enter secure password (min 6 characters)"
                           disabled={loading}
                           autoComplete="new-password"
                         />
