@@ -33,13 +33,7 @@ const Settings = () => {
           title="Pre-Purchase"
           settings={[
             // { group: "Orders", items: ["Purchase Order", "Completed PO"] },
-            {
-              group: "Vendors",
-              items: [
-                user?.role?.canAccessSupplierManagement ? "Suppliers" : null,
-                "Madeni Binafsi",
-              ].filter(Boolean), // This removes null/empty values
-            },
+            { group: "Vendors", items: ["Suppliers", "Madeni Binafsi"] },
           ]}
           selectedSetting={selectedSetting}
           handleSelect={setSelectedSetting}
