@@ -1,15 +1,8 @@
 import axios from "axios";
 import { useEffect, useState } from "react";
 import { IoIosArrowBack, IoIosArrowForward } from "react-icons/io";
-import {
-  FaSearch,
-  FaFilter,
-} from "react-icons/fa";
-import {
-  FiRefreshCw,
-  FiDownload,
-  FiCalendar,
-} from "react-icons/fi";
+import { FaSearch, FaFilter } from "react-icons/fa";
+import { FiRefreshCw, FiDownload, FiCalendar } from "react-icons/fi";
 import { MdReceipt, MdPayment } from "react-icons/md";
 import { DatePicker } from "@mui/x-date-pickers/DatePicker";
 import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs";
@@ -21,8 +14,10 @@ import autoTable from "jspdf-autotable";
 import Loading from "../../../Components/Shared/Loading";
 import BASE_URL from "../../../Utils/config";
 import toast from "react-hot-toast";
+import { useSelector } from "react-redux";
 
 const Madeni = () => {
+  const user = useSelector((state) => state.user.user);
   const [billedData, setBilledData] = useState([]);
   const [filteredData, setFilteredData] = useState([]);
   const [load, setLoad] = useState(false);
@@ -41,10 +36,9 @@ const Madeni = () => {
   const fetchBilledTransactions = async () => {
     setLoad(true);
     try {
-      const res = await axios.get(
-        `${BASE_URL}/api/transactions/bill`,
-        { withCredentials: true }
-      );
+      const res = await axios.get(`${BASE_URL}/api/transactions/bill`, {
+        withCredentials: true,
+      });
       if (res.data.success) {
         setBilledData(res.data.data);
         setFilteredData(res.data.data);
@@ -79,11 +73,12 @@ const Madeni = () => {
     }
 
     if (customerFilter) {
-      filtered = filtered.filter((txn) =>
-        txn.customerDetails?.name
-          ?.toLowerCase()
-          .includes(customerFilter.toLowerCase()) ||
-        txn.customerDetails?.phone?.includes(customerFilter)
+      filtered = filtered.filter(
+        (txn) =>
+          txn.customerDetails?.name
+            ?.toLowerCase()
+            .includes(customerFilter.toLowerCase()) ||
+          txn.customerDetails?.phone?.includes(customerFilter)
       );
     }
 
@@ -116,7 +111,7 @@ const Madeni = () => {
       toast.error("Enter valid amount");
       return;
     }
-    
+
     try {
       const res = await axios.patch(
         `${BASE_URL}/api/transactions/payBill/${id}`,
@@ -146,7 +141,7 @@ const Madeni = () => {
           .join(", "),
         TotalAmount: txn.totalAmount,
         PaidAmount: txn.paidAmount || 0,
-        Remaining: (txn.totalAmount - (txn.paidAmount || 0)),
+        Remaining: txn.totalAmount - (txn.paidAmount || 0),
         Cashier: txn.createdBy
           ? `${txn.createdBy.firstName} ${txn.createdBy.lastName}`
           : "",
@@ -185,15 +180,7 @@ const Madeni = () => {
       autoTable(doc, {
         startY: 35,
         head: [
-          [
-            "Date",
-            "Customer",
-            "Phone",
-            "Items",
-            "Total",
-            "Paid",
-            "Remaining",
-          ],
+          ["Date", "Customer", "Phone", "Items", "Total", "Paid", "Remaining"],
         ],
         body: tableData,
         headStyles: { fillColor: [34, 197, 94], textColor: 255 },
@@ -216,18 +203,20 @@ const Madeni = () => {
   // Pagination
   const indexOfLast = currentPage * itemsPerPage;
   const indexOfFirst = indexOfLast - itemsPerPage;
-  const currentTransactions = filteredData.slice(
-    indexOfFirst,
-    indexOfLast
-  );
+  const currentTransactions = filteredData.slice(indexOfFirst, indexOfLast);
   const totalPages = Math.ceil(filteredData.length / itemsPerPage);
+
+  // Check if user has edit permission
+  const canPayBillTransactions = user?.roles?.canPayBillTransactions === true;
 
   return (
     <div className="p-5 bg-gray-50 min-h-screen">
       {/* Header */}
       <div className="flex flex-col md:flex-row md:items-center justify-between mb-6">
         <div>
-          <h1 className="text-2xl font-bold text-black mb-1">Billed Transactions</h1>
+          <h1 className="text-2xl font-bold text-black mb-1">
+            Billed Transactions
+          </h1>
           <p className="text-gray-600 text-sm">
             View and manage all billed/credit transactions
           </p>
@@ -264,7 +253,9 @@ const Madeni = () => {
             <div className="h-6 w-px bg-gray-300"></div>
 
             <div className="text-center px-3">
-              <p className="text-xs text-gray-500 font-medium">Total Remaining</p>
+              <p className="text-xs text-gray-500 font-medium">
+                Total Remaining
+              </p>
               <p className="text-base font-bold text-red-600">
                 Tsh {totals.remaining.toLocaleString()}
               </p>
@@ -273,7 +264,9 @@ const Madeni = () => {
 
           <div className="flex items-center gap-4">
             <div className="text-center px-3">
-              <p className="text-xs text-gray-500 font-medium">Total Transactions</p>
+              <p className="text-xs text-gray-500 font-medium">
+                Total Transactions
+              </p>
               <p className="font-bold text-black text-sm">
                 {filteredData.length}
               </p>
@@ -579,7 +572,10 @@ const Madeni = () => {
                               Remaining:
                             </span>
                             <span className="ml-auto font-extrabold text-red-900 text-sm">
-                              {(sale.totalAmount - (sale.paidAmount || 0)).toLocaleString()} Tsh
+                              {(
+                                sale.totalAmount - (sale.paidAmount || 0)
+                              ).toLocaleString()}{" "}
+                              Tsh
                             </span>
                           </div>
                         </div>
@@ -587,33 +583,45 @@ const Madeni = () => {
 
                       {/* Deduct Column - Gray 100 */}
                       <td className="py-3 px-2 text-center bg-gray-100 border-r border-gray-200">
-                        <div className="flex justify-center">
-                          <input
-                            type="number"
-                            value={deductions[sale._id] || ""}
-                            onChange={(e) => {
-                              const val = parseFloat(e.target.value);
-                              const remaining = sale.totalAmount - (sale.paidAmount || 0);
-                              if (val <= remaining || !val) {
-                                setDeductions({
-                                  ...deductions,
-                                  [sale._id]: e.target.value,
-                                });
-                              } else {
-                                toast.error("Amount cannot exceed remaining balance");
-                              }
-                            }}
-                            className="w-32 px-4 py-2 rounded-full border border-gray-300 bg-white text-black text-sm focus:outline-none focus:ring-2 focus:ring-green-300 focus:border-green-300 transition-all duration-300"
-                            placeholder="Amount (Tsh)"
-                          />
-                        </div>
+                        {canPayBillTransactions ? (
+                          <div className="flex justify-center">
+                            <input
+                              type="number"
+                              value={deductions[sale._id] || ""}
+                              onChange={(e) => {
+                                const val = parseFloat(e.target.value);
+                                const remaining =
+                                  sale.totalAmount - (sale.paidAmount || 0);
+                                if (val <= remaining || !val) {
+                                  setDeductions({
+                                    ...deductions,
+                                    [sale._id]: e.target.value,
+                                  });
+                                } else {
+                                  toast.error(
+                                    "Amount cannot exceed remaining balance"
+                                  );
+                                }
+                              }}
+                              className="w-32 px-4 py-2 rounded-full border border-gray-300 bg-white text-black text-sm focus:outline-none focus:ring-2 focus:ring-green-300 focus:border-green-300 transition-all duration-300"
+                              placeholder="Amount (Tsh)"
+                            />
+                          </div>
+                        ) : (
+                          <span className="inline-flex items-center px-6 py-2.5 bg-gray-300 text-gray-600 font-bold rounded-full">
+                            Not Allowed
+                          </span>
+                        )}
                       </td>
 
                       {/* Action Column - Gray 200 */}
                       <td className="py-3 px-2 text-center bg-gray-200">
                         <button
                           onClick={() => handleDeduct(sale._id)}
-                          disabled={!deductions[sale._id] || parseFloat(deductions[sale._id]) <= 0}
+                          disabled={
+                            !deductions[sale._id] ||
+                            parseFloat(deductions[sale._id]) <= 0
+                          }
                           className="px-6 py-2 bg-green-300 hover:bg-green-400 disabled:bg-gray-300 disabled:cursor-not-allowed text-black font-bold rounded-full shadow hover:shadow-md transition-all duration-200 text-sm"
                         >
                           Pay
@@ -685,10 +693,7 @@ const Madeni = () => {
             <div className="text-xs text-gray-700">
               <span className="font-bold text-black">
                 Showing {(currentPage - 1) * itemsPerPage + 1} to{" "}
-                {Math.min(
-                  currentPage * itemsPerPage,
-                  filteredData.length
-                )}
+                {Math.min(currentPage * itemsPerPage, filteredData.length)}
               </span>{" "}
               of{" "}
               <span className="font-bold text-black">

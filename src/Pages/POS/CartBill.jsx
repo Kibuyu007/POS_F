@@ -374,21 +374,45 @@ const Cart = ({ triggerRefreshMenu }) => {
               <>
                 <button
                   onClick={() => handleTransaction("Paid")}
-                  className="w-full py-3 rounded-lg bg-green-500 text-white font-semibold hover:bg-green-600 transition"
+                  className="w-full py-3 rounded-xl bg-gradient-to-r from-green-500 to-emerald-600 text-white font-semibold hover:from-green-600 hover:to-emerald-700 transition-all shadow-md hover:shadow-lg"
                 >
                   Cash
                 </button>
                 <button
                   onClick={() => handleTransaction("Bill")}
-                  className="w-full py-3 rounded-lg bg-gray-300 text-black font-semibold hover:bg-gray-400 transition"
+                  className="w-full py-3 rounded-xl bg-gradient-to-r from-blue-500 to-cyan-500 text-white font-semibold hover:from-blue-600 hover:to-cyan-600 transition-all shadow-md hover:shadow-lg"
                 >
                   Bill
                 </button>
               </>
             ) : (
-              <p className="text-center text-red-500 font-semibold mt-2 bg-red-200 px-2 py-2 rounded-md pr-14">
-                You do not have permission to perform transactions.
-              </p>
+              <div className="w-full">
+                <div className="backdrop-blur-sm bg-white/90 border border-red-200/50 rounded-xl p-4 shadow-sm">
+                  <div className="flex items-center gap-3">
+                    <div className="w-9 h-9 rounded-full bg-gradient-to-br from-red-500/10 to-pink-500/10 border border-red-200/50 flex items-center justify-center">
+                      <svg
+                        className="w-5 h-5 text-red-500"
+                        fill="currentColor"
+                        viewBox="0 0 20 20"
+                      >
+                        <path
+                          fillRule="evenodd"
+                          d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z"
+                          clipRule="evenodd"
+                        />
+                      </svg>
+                    </div>
+                    <div>
+                      <p className="text-sm font-semibold text-gray-900">
+                        No Access
+                      </p>
+                      <p className="text-xs text-gray-600">
+                        Transaction permissions not granted
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              </div>
             )}
           </div>
         ) : (

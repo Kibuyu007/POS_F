@@ -39,27 +39,29 @@ const Settings = () => {
           handleSelect={setSelectedSetting}
         />
 
-        <SettingsList
-          title="GRN"
-          settings={[
-            // {
-            //   group: "PO GRN",
-            //   items: ["Process PO GRN", "Icomplete PO GRN", "Unpaid PO"],
-            // },
-            {
-              // group: "Non-PO GRN",
-              group: "GRNS & Expenses",
-              items: [
-                "Process Non-PO GRN",
-                "Unpaid Non-PO",
-                "Completed Non-PO GRN",
-                "Expenses",
-              ],
-            },
-          ]}
-          selectedSetting={selectedSetting}
-          handleSelect={setSelectedSetting}
-        />
+        {user?.roles?.canApproveNewGrn && (
+          <SettingsList
+            title="GRN"
+            settings={[
+              // {
+              //   group: "PO GRN",
+              //   items: ["Process PO GRN", "Icomplete PO GRN", "Unpaid PO"],
+              // },
+              {
+                // group: "Non-PO GRN",
+                group: "GRNS & Expenses",
+                items: [
+                  "Process Non-PO GRN",
+                  "Unpaid Non-PO",
+                  "Completed Non-PO GRN",
+                  "Expenses",
+                ],
+              },
+            ]}
+            selectedSetting={selectedSetting}
+            handleSelect={setSelectedSetting}
+          />
+        )}
 
         <SettingsList
           title="Products Management"

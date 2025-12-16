@@ -8,8 +8,10 @@ import dayjs from "dayjs";
 import Loading from "../../../../Components/Shared/Loading";
 import BASE_URL from "../../../../Utils/config";
 import toast from "react-hot-toast";
+import { useSelector } from "react-redux";
 
 const MadeniNonPo = () => {
+  const user = useSelector((state) => state.user.user);
   const [nonPoData, setNonPoData] = useState([]);
   const [load, setLoad] = useState(false);
   const [deductions, setDeductions] = useState({});
@@ -147,6 +149,9 @@ const MadeniNonPo = () => {
   const unformatNumber = (value) => {
     return value.replace(/,/g, "");
   };
+
+  // Check if user has add permission
+  const canPayBilledGrn = user?.roles?.canPayBilledGrn === true;
 
   return (
     <div className="p-5 bg-gray-50 min-h-screen">
@@ -469,7 +474,7 @@ const MadeniNonPo = () => {
 
                       {/* Action Column - Gray 100 */}
                       <td className="py-4 px-3 text-center bg-gray-100">
-                        {!isFullyPaid ? (
+                        {!isFullyPaid && canPayBilledGrn ? (
                           <div className="flex flex-col gap-2">
                             <button
                               onClick={() => handlePay(item)}
@@ -487,9 +492,13 @@ const MadeniNonPo = () => {
                               Pay Now
                             </button>
                           </div>
-                        ) : (
+                        ) : isFullyPaid ? (
                           <span className="inline-flex items-center px-6 py-2.5 bg-green-300 text-black font-bold rounded-full shadow">
                             Fully Paid
+                          </span>
+                        ) : (
+                          <span className="inline-flex items-center px-6 py-2.5 bg-red-300 text-black font-bold rounded-full shadow">
+                            Not Allowed
                           </span>
                         )}
                       </td>
