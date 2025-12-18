@@ -207,7 +207,7 @@ const Madeni = () => {
   const totalPages = Math.ceil(filteredData.length / itemsPerPage);
 
   // Check if user has edit permission
-  const canPayBillTransactions = user?.roles?.canPayBillTransactions === true;
+  const canPayBillTransaction = user?.roles?.canPayBillTransaction === true;
 
   return (
     <div className="p-5 bg-gray-50 min-h-screen">
@@ -583,7 +583,7 @@ const Madeni = () => {
 
                       {/* Deduct Column - Gray 100 */}
                       <td className="py-3 px-2 text-center bg-gray-100 border-r border-gray-200">
-                        {canPayBillTransactions ? (
+                        {canPayBillTransaction ? (
                           <div className="flex justify-center">
                             <input
                               type="number"

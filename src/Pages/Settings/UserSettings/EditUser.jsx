@@ -29,7 +29,7 @@ import {
   FiSave,
   FiRefreshCw,
 } from "react-icons/fi";
-import { FaUserTag, FaUserTie, FaWarehouse } from "react-icons/fa";
+import { FaUserTie, FaWarehouse } from "react-icons/fa";
 import {
   MdSecurity,
   MdOutlineAdminPanelSettings,
@@ -101,7 +101,7 @@ const EditUser = ({ showModal, setShowModal, onUserUpdated, user }) => {
           canAddCategory: user.roles?.canAddCategory || false,
           canEditCategory: user.roles?.canEditCategory || false,
           canMakeTransaction: user.roles?.canMakeTransaction || false,
-          canPayBillTransaction: user.roles?.canPayBillTransaction || false,
+          canPayBillTransaction: user.roles?.canPayBillTransaction  || false,
           canApproveNewGrn: user.roles?.canApproveNewGrn || false,
           canPayBilledGrn: user.roles?.canPayBilledGrn || false,
           canChangeDebtStatus: user.roles?.canChangeDebtStatus || false,
@@ -116,7 +116,7 @@ const EditUser = ({ showModal, setShowModal, onUserUpdated, user }) => {
           canAccessMadeniReport: user.roles?.canAccessMadeniReport || false,
         },
       });
-      setPhotoPreview(user.photo ? `${BASE_URL}/uploads/${user.photo}` : null);
+      setPhotoPreview(user.photo ? `${BASE_URL}/pfps/${user.photo}` : null);
       setFile(null);
       setShowError("");
     }
@@ -1318,7 +1318,7 @@ const EditUser = ({ showModal, setShowModal, onUserUpdated, user }) => {
                             });
                             setPhotoPreview(
                               user.photo
-                                ? `${BASE_URL}/uploads/${user.photo}`
+                                ? `${BASE_URL}/pfps/${user.photo}`
                                 : null
                             );
                             setFile(null);

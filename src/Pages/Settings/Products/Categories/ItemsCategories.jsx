@@ -85,7 +85,7 @@ const ItemsCategories = () => {
   const canAddCategory = user?.roles?.canAddCategory === true;
   
   // Check if user has edit permission
-  const canEditCategory = user?.roles?.CanEditCategory === true;
+  const canEditCategory = user?.roles?.canEditCategory === true;
 
   return (
     <div className="p-5 bg-gray-50 min-h-screen">
