@@ -8,6 +8,7 @@ import { LocalizationProvider } from "@mui/x-date-pickers/LocalizationProvider";
 import { DatePicker } from "@mui/x-date-pickers/DatePicker";
 import dayjs from "dayjs";
 import { v4 as uuidv4 } from "uuid";
+import { FiTrendingUp, FiInfo, FiDollarSign } from "react-icons/fi";
 
 const Section2 = ({ onAddItem }) => {
   const { items } = useSelector((state) => state.items);
@@ -28,7 +29,6 @@ const Section2 = ({ onAddItem }) => {
     dispatch(fetchProducts());
   }, [dispatch]);
 
-  // Initialize form data with default values
   const firstDayOfMonth = dayjs().startOf("month").format("YYYY-MM-DD");
   const lastDayOfMonth = dayjs().endOf("month").format("YYYY-MM-DD");
 
@@ -36,7 +36,7 @@ const Section2 = ({ onAddItem }) => {
     buyingPrice: "",
     units: 1,
     itemsPerUnit: 1,
-    quantity: 1, // Initialize with 1 since units=1 and itemsPerUnit=1
+    quantity: 1,
     rejected: 0,
     billedAmount: 0,
     foc: 0,
@@ -47,43 +47,58 @@ const Section2 = ({ onAddItem }) => {
     comments: "",
     totalCost: "",
     sellingPrice: "",
+    enableWholesale: false,
+    wholesaleMinQty: 0,
+    wholesalePrice: 0,
   });
 
-  // Handle selection of an item from the table
-  const handleItemSelection = (itemToAdd) => {
-    if (finishAdd) {
-      alert("Finish the current item before selecting another.");
-      return;
-    }
+  const [calculatedValues, setCalculatedValues] = useState({
+    perUnitWholesalePrice: 0,
+    discountPercentage: 0,
+    totalRetailPrice: 0,
+    savingsAmount: 0,
+  });
 
-    if (selectedItem && selectedItem._id === itemToAdd._id) {
-      setShowError("This item is already selected.");
-      return;
-    }
-
-    setSelectedItem(itemToAdd);
-    setShowError("");
-    setFinishAdd(true);
-    
-    // Pre-fill selling price with current item price
-    setFormData(prev => ({
-      ...prev,
-      sellingPrice: itemToAdd.price || "",
-      quantity: prev.units * prev.itemsPerUnit // Recalculate with defaults
-    }));
+  // Helper function to format numbers with commas
+  const formatNumberWithCommas = (value) => {
+    if (value === "" || value === null || value === undefined) return "";
+    // Remove any existing commas
+    const stringValue = value.toString().replace(/,/g, '');
+    // Parse as float to handle decimal numbers
+    const number = parseFloat(stringValue);
+    if (isNaN(number)) return "";
+    // Format with commas for thousands
+    return number.toLocaleString('en-US', {
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 2
+    });
   };
 
-  const handleChange = (e) => {
+  // Handle numeric input change with comma formatting
+  const handleNumberChange = (e) => {
     const { name, value } = e.target;
-
-    setFormData((prev) => {
-      // Update the changed field
-      const updatedForm = {
-        ...prev,
-        [name]: value,
-      };
-
-      // Parse numbers safely
+    
+    // Remove all non-numeric characters except decimal point and minus sign
+    const cleanedValue = value.replace(/[^\d.-]/g, '');
+    
+    // Parse the cleaned value
+    let parsedValue;
+    if (cleanedValue === '' || cleanedValue === '-') {
+      parsedValue = '';
+    } else if (name === 'wholesaleMinQty' || name === 'units' || name === 'itemsPerUnit' || name === 'foc' || name === 'rejected' || name === 'billedAmount') {
+      // These should be integers
+      parsedValue = parseInt(cleanedValue);
+      if (isNaN(parsedValue)) parsedValue = '';
+    } else {
+      // These can be floats
+      parsedValue = parseFloat(cleanedValue);
+      if (isNaN(parsedValue)) parsedValue = '';
+    }
+    
+    setFormData(prev => {
+      const updatedForm = { ...prev, [name]: parsedValue };
+      
+      // Recalculate based on the updated value
       const units = parseFloat(updatedForm.units) || 0;
       const itemsPerUnit = parseInt(updatedForm.itemsPerUnit) || 0;
       const foc = parseInt(updatedForm.foc) || 0;
@@ -110,94 +125,161 @@ const Section2 = ({ onAddItem }) => {
         totalCost: totalCost,
       };
     });
-
+    
     setShowError("");
   };
 
-  // Add the selected item with details to parent component
+  // Handle text input change
+  const handleTextChange = (e) => {
+    const { name, value } = e.target;
+    setFormData(prev => ({ ...prev, [name]: value }));
+  };
+
+  // Handle checkbox change
+  const handleCheckboxChange = (e) => {
+    const { name, checked } = e.target;
+    setFormData(prev => ({ ...prev, [name]: checked }));
+  };
+
+  // Handle date change
+  const handleDateChange = (name, value) => {
+    setFormData(prev => ({ ...prev, [name]: value }));
+  };
+
+  useEffect(() => {
+    if (
+      formData.enableWholesale &&
+      formData.wholesalePrice > 0 &&
+      formData.wholesaleMinQty > 0 &&
+      formData.sellingPrice > 0
+    ) {
+      const perUnitWholesalePrice = formData.wholesalePrice / formData.wholesaleMinQty;
+      const totalRetailPrice = formData.sellingPrice * formData.wholesaleMinQty;
+      const savingsAmount = totalRetailPrice - formData.wholesalePrice;
+      const discountPercentage = totalRetailPrice > 0 ? (savingsAmount / totalRetailPrice) * 100 : 0;
+
+      setCalculatedValues({
+        perUnitWholesalePrice: parseFloat(perUnitWholesalePrice.toFixed(2)),
+        discountPercentage: parseFloat(discountPercentage.toFixed(1)),
+        totalRetailPrice: parseFloat(totalRetailPrice.toFixed(2)),
+        savingsAmount: parseFloat(savingsAmount.toFixed(2)),
+      });
+    } else {
+      setCalculatedValues({
+        perUnitWholesalePrice: 0,
+        discountPercentage: 0,
+        totalRetailPrice: 0,
+        savingsAmount: 0,
+      });
+    }
+  }, [formData.wholesalePrice, formData.wholesaleMinQty, formData.sellingPrice, formData.enableWholesale]);
+
+  const handleItemSelection = (itemToAdd) => {
+    if (finishAdd) {
+      alert("Finish the current item before selecting another.");
+      return;
+    }
+
+    if (selectedItem && selectedItem._id === itemToAdd._id) {
+      setShowError("This item is already selected.");
+      return;
+    }
+
+    setSelectedItem(itemToAdd);
+    setShowError("");
+    setFinishAdd(true);
+
+    setFormData((prev) => ({
+      ...prev,
+      sellingPrice: itemToAdd.price || "",
+      quantity: prev.units * prev.itemsPerUnit,
+      enableWholesale: itemToAdd.enableWholesale || false,
+      wholesaleMinQty: itemToAdd.wholesaleMinQty || 0,
+      wholesalePrice: itemToAdd.wholesalePrice || 0,
+    }));
+  };
+
+  const toggleWholesale = () => {
+    setFormData(prev => ({
+      ...prev,
+      enableWholesale: !prev.enableWholesale,
+    }));
+  };
+
   const handleAdd = () => {
     if (!selectedItem) return;
 
-    const newErrors = {
-      manufactureDate: false,
-      expiryDate: false,
-      receivedDate: false,
-    };
-
+    const newErrors = { manufactureDate: false, expiryDate: false, receivedDate: false };
     const today = dayjs().format("YYYY-MM-DD");
 
-    // Validate dates
     if (formData.manufactureDate && formData.manufactureDate > today) {
       newErrors.manufactureDate = true;
       setShowError("Manufacture date cannot be in the future.");
     }
 
-    if (
-      formData.expiryDate &&
-      formData.manufactureDate &&
-      formData.expiryDate < formData.manufactureDate
-    ) {
+    if (formData.expiryDate && formData.manufactureDate && formData.expiryDate < formData.manufactureDate) {
       newErrors.expiryDate = true;
       setShowError("Expiry date must be after manufacture date.");
     }
 
-    if (
-      formData.receivedDate &&
-      formData.manufactureDate &&
-      formData.receivedDate < formData.manufactureDate
-    ) {
+    if (formData.receivedDate && formData.manufactureDate && formData.receivedDate < formData.manufactureDate) {
       newErrors.receivedDate = true;
       setShowError("Received date must be on or after manufacture date.");
     }
 
-    if (
-      formData.expiryDate &&
-      formData.receivedDate &&
-      formData.receivedDate > formData.expiryDate
-    ) {
+    if (formData.expiryDate && formData.receivedDate && formData.receivedDate > formData.expiryDate) {
       newErrors.receivedDate = true;
       setShowError("Received date cannot be after expiry date.");
     }
 
     setErrorDate(newErrors);
-
-    // Stop if any error is true
     if (Object.values(newErrors).some((val) => val)) return;
 
-    // Validate that billed amount doesn't exceed available quantity
-    const totalItems = (formData.units * formData.itemsPerUnit) + formData.foc;
-    const netItems = totalItems - formData.rejected;
-    
-    if (formData.billedAmount > netItems) {
+    const totalItems = (formData.units || 0) * (formData.itemsPerUnit || 0) + (formData.foc || 0);
+    const netItems = totalItems - (formData.rejected || 0);
+
+    if ((formData.billedAmount || 0) > netItems) {
       setShowError("Billed Items cannot exceed available items");
       return;
     }
 
+    // Validate wholesale minimum quantity doesn't exceed paid quantity
+    if (formData.enableWholesale && (formData.wholesaleMinQty || 0) > (formData.quantity || 0)) {
+      setShowError("Wholesale minimum quantity cannot exceed paid quantity");
+      return;
+    }
+
+    // Prepare the data to send
     const fullItemData = {
       _id: uuidv4(),
       itemId: selectedItem._id,
       name: selectedItem.name,
       previousQuantity: selectedItem.itemQuantity,
       previousPrice: selectedItem.price,
-      quantity: formData.quantity,
-      buyingPrice: formData.buyingPrice,
+      quantity: parseFloat(formData.quantity) || 0,
+      buyingPrice: parseFloat(formData.buyingPrice) || 0,
       manufactureDate: formData.manufactureDate,
       expiryDate: formData.expiryDate,
       receivedDate: formData.receivedDate,
       batchNumber: formData.batchNumber,
-      foc: formData.foc,
-      rejected: formData.rejected,
-      billedAmount: formData.billedAmount,
+      foc: parseFloat(formData.foc) || 0,
+      rejected: parseFloat(formData.rejected) || 0,
+      billedAmount: parseFloat(formData.billedAmount) || 0,
       comments: formData.comments,
-      totalCost: formData.totalCost,
-      sellingPrice: formData.sellingPrice || selectedItem.price,
-      units: formData.units,
-      itemsPerUnit: formData.itemsPerUnit,
+      totalCost: parseFloat(formData.totalCost) || 0,
+      sellingPrice: parseFloat(formData.sellingPrice || selectedItem.price) || 0,
+      units: parseFloat(formData.units) || 0,
+      itemsPerUnit: parseInt(formData.itemsPerUnit) || 0,
+      // WHOLESALE FIELDS - Convert to proper types
+      enableWholesale: Boolean(formData.enableWholesale),
+      wholesaleMinQty: parseInt(formData.wholesaleMinQty) || 0,
+      wholesalePrice: parseFloat(formData.wholesalePrice) || 0,
     };
-    
+
+    console.log("Submitting item data:", fullItemData);
     onAddItem(fullItemData);
 
-    // Reset states for next selection
+    // Reset form
     setFinishAdd(false);
     setSelectedItem(null);
     setShowError("");
@@ -216,15 +298,13 @@ const Section2 = ({ onAddItem }) => {
       comments: "",
       totalCost: "",
       sellingPrice: "",
+      enableWholesale: false,
+      wholesaleMinQty: 0,
+      wholesalePrice: 0,
     });
-    setErrorDate({
-      manufactureDate: false,
-      expiryDate: false,
-      receivedDate: false,
-    });
+    setErrorDate({ manufactureDate: false, expiryDate: false, receivedDate: false });
   };
 
-  // Cancel current selection
   const handleCancel = () => {
     setSelectedItem(null);
     setFinishAdd(false);
@@ -244,19 +324,17 @@ const Section2 = ({ onAddItem }) => {
       comments: "",
       totalCost: "",
       sellingPrice: "",
+      enableWholesale: false,
+      wholesaleMinQty: 0,
+      wholesalePrice: 0,
     });
-    setErrorDate({
-      manufactureDate: false,
-      expiryDate: false,
-      receivedDate: false,
-    });
+    setErrorDate({ manufactureDate: false, expiryDate: false, receivedDate: false });
   };
 
   const hasItems = (Number(formData.quantity) > 0) || (Number(formData.billedAmount) > 0);
   const canAddItem = selectedItem && formData.buyingPrice && hasItems && !showError;
 
-  // Calculate for display purposes
-  const totalItemsReceived = (formData.units * formData.itemsPerUnit) + (Number(formData.foc) || 0);
+  const totalItemsReceived = (formData.units || 0) * (formData.itemsPerUnit || 0) + (Number(formData.foc) || 0);
   const netItemsAfterRejection = totalItemsReceived - (Number(formData.rejected) || 0);
 
   return (
@@ -511,19 +589,19 @@ const Section2 = ({ onAddItem }) => {
                   <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
                     <div>
                       <p className="text-gray-600">Total Items:</p>
-                      <p className="font-bold text-gray-900">{totalItemsReceived}</p>
+                      <p className="font-bold text-gray-900">{totalItemsReceived.toLocaleString()}</p>
                     </div>
                     <div>
                       <p className="text-gray-600">After Rejection:</p>
-                      <p className="font-bold text-gray-900">{netItemsAfterRejection}</p>
+                      <p className="font-bold text-gray-900">{netItemsAfterRejection.toLocaleString()}</p>
                     </div>
                     <div>
                       <p className="text-gray-600">Billed (Unpaid):</p>
-                      <p className="font-bold text-gray-900">{formData.billedAmount || 0}</p>
+                      <p className="font-bold text-gray-900">{(formData.billedAmount || 0).toLocaleString()}</p>
                     </div>
                     <div>
                       <p className="text-gray-600">Paid Quantity:</p>
-                      <p className="font-bold text-green-700">{formData.quantity || 0}</p>
+                      <p className="font-bold text-green-700">{(formData.quantity || 0).toLocaleString()}</p>
                     </div>
                   </div>
                 </div>
@@ -536,19 +614,17 @@ const Section2 = ({ onAddItem }) => {
                     </label>
                     <div className="relative">
                       <input
-                        type="number"
+                        type="text"
                         name="buyingPrice"
-                        value={formData.buyingPrice}
-                        onChange={handleChange}
+                        value={formatNumberWithCommas(formData.buyingPrice)}
+                        onChange={handleNumberChange}
                         className={`w-full pl-4 pr-12 py-3 border ${
                           Number(formData.buyingPrice) >
                           Number(selectedItem.price)
                             ? "border-red-400 bg-red-50"
                             : "border-gray-300 bg-gray-100"
                         } rounded-lg focus:ring-2 focus:ring-green-300 focus:border-green-300 text-gray-900 font-medium`}
-                        placeholder="0.00"
-                        min="0"
-                        step="0.01"
+                        placeholder="0"
                         required
                       />
                       <div className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-700 font-bold">
@@ -572,18 +648,17 @@ const Section2 = ({ onAddItem }) => {
                     </label>
                     <div className="relative">
                       <input
-                        type="number"
+                        type="text"
                         name="sellingPrice"
-                        value={formData.sellingPrice || selectedItem.price}
-                        onChange={handleChange}
+                        value={formatNumberWithCommas(formData.sellingPrice || selectedItem.price)}
+                        onChange={handleNumberChange}
                         className={`w-full pl-4 pr-12 py-3 border ${
                           Number(formData.buyingPrice) >
                           Number(formData.sellingPrice || selectedItem.price)
                             ? "border-red-400 bg-red-50"
                             : "border-gray-300 bg-gray-100"
                         } rounded-lg focus:ring-2 focus:ring-green-300 focus:border-green-300 text-gray-900 font-medium`}
-                        min="0"
-                        step="0.01"
+                        placeholder="0"
                       />
                       <div className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-700 font-bold">
                         Tsh
@@ -605,11 +680,10 @@ const Section2 = ({ onAddItem }) => {
                       Units
                     </label>
                     <input
-                      type="number"
+                      type="text"
                       name="units"
-                      value={formData.units}
-                      onChange={handleChange}
-                      min="0"
+                      value={formatNumberWithCommas(formData.units)}
+                      onChange={handleNumberChange}
                       className="w-full px-4 py-3 border border-gray-300 bg-gray-100 rounded-lg focus:ring-2 focus:ring-green-300 focus:border-green-300 text-gray-900 font-medium"
                       placeholder="Number of units"
                     />
@@ -620,11 +694,10 @@ const Section2 = ({ onAddItem }) => {
                       Items Per Unit
                     </label>
                     <input
-                      type="number"
+                      type="text"
                       name="itemsPerUnit"
-                      value={formData.itemsPerUnit}
-                      onChange={handleChange}
-                      min="1"
+                      value={formatNumberWithCommas(formData.itemsPerUnit)}
+                      onChange={handleNumberChange}
                       className="w-full px-4 py-3 border border-gray-300 bg-gray-100 rounded-lg focus:ring-2 focus:ring-green-300 focus:border-green-300 text-gray-900 font-medium"
                       placeholder="Items per unit"
                     />
@@ -636,11 +709,10 @@ const Section2 = ({ onAddItem }) => {
                       Free Items (FOC)
                     </label>
                     <input
-                      type="number"
+                      type="text"
                       name="foc"
-                      value={formData.foc}
-                      onChange={handleChange}
-                      min="0"
+                      value={formatNumberWithCommas(formData.foc)}
+                      onChange={handleNumberChange}
                       className="w-full px-4 py-3 border border-gray-300 bg-gray-100 rounded-lg focus:ring-2 focus:ring-green-300 focus:border-green-300 text-gray-900 font-medium"
                       placeholder="Free items quantity"
                     />
@@ -651,18 +723,16 @@ const Section2 = ({ onAddItem }) => {
                       Rejected Items
                     </label>
                     <input
-                      type="number"
+                      type="text"
                       name="rejected"
-                      value={formData.rejected}
-                      onChange={handleChange}
-                      min="0"
-                      max={totalItemsReceived}
+                      value={formatNumberWithCommas(formData.rejected)}
+                      onChange={handleNumberChange}
                       className="w-full px-4 py-3 border border-gray-300 bg-gray-100 rounded-lg focus:ring-2 focus:ring-green-300 focus:border-green-300 text-gray-900 font-medium"
                       placeholder="Rejected quantity"
                     />
                     {formData.rejected > totalItemsReceived && (
                       <p className="text-xs text-red-600 mt-1">
-                        Cannot reject more than total items received ({totalItemsReceived})
+                        Cannot reject more than total items received ({totalItemsReceived.toLocaleString()})
                       </p>
                     )}
                   </div>
@@ -673,18 +743,16 @@ const Section2 = ({ onAddItem }) => {
                       Billed Amount (Unpaid)
                     </label>
                     <input
-                      type="number"
+                      type="text"
                       name="billedAmount"
-                      value={formData.billedAmount}
-                      onChange={handleChange}
-                      min="0"
-                      max={netItemsAfterRejection}
+                      value={formatNumberWithCommas(formData.billedAmount)}
+                      onChange={handleNumberChange}
                       className="w-full px-4 py-3 border border-gray-300 bg-gray-100 rounded-lg focus:ring-2 focus:ring-green-300 focus:border-green-300 text-gray-900 font-medium"
                       placeholder="Unpaid items quantity"
                     />
                     {formData.billedAmount > netItemsAfterRejection && (
                       <p className="text-xs text-red-600 mt-1">
-                        Cannot bill more than available items after rejection ({netItemsAfterRejection})
+                        Cannot bill more than available items after rejection ({netItemsAfterRejection.toLocaleString()})
                       </p>
                     )}
                   </div>
@@ -695,9 +763,9 @@ const Section2 = ({ onAddItem }) => {
                     </label>
                     <div className="relative">
                       <input
-                        type="number"
+                        type="text"
                         name="quantity"
-                        value={formData.quantity}
+                        value={formatNumberWithCommas(formData.quantity)}
                         readOnly
                         className="w-full px-4 py-3 border border-gray-300 bg-gray-200 rounded-lg text-gray-900 font-bold"
                       />
@@ -709,238 +777,371 @@ const Section2 = ({ onAddItem }) => {
                       Calculated: (Units × Items/Unit + FOC - Rejected - Billed)
                     </p>
                   </div>
+                </div>
 
-                  {/* Dates Section */}
-                  <div className="md:col-span-2 border-t border-gray-300 pt-4 mt-2">
-                    <h4 className="text-md font-bold text-gray-900 mb-4">
-                      📅 Date Information
-                    </h4>
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                      {/* Manufacture Date */}
-                      <div>
-                        <label className="block text-sm font-semibold text-gray-900 mb-2">
-                          Manufacture Date
-                        </label>
-                        <LocalizationProvider dateAdapter={AdapterDayjs}>
-                          <DatePicker
-                            value={
-                              formData.manufactureDate
-                                ? dayjs(formData.manufactureDate)
-                                : null
-                            }
-                            onChange={(newValue) => {
-                              handleChange({
-                                target: {
-                                  name: "manufactureDate",
-                                  value: newValue
-                                    ? newValue.format("YYYY-MM-DD")
-                                    : "",
-                                },
-                              });
-                              setErrorDate((prev) => ({
-                                ...prev,
-                                manufactureDate: false,
-                              }));
-                            }}
-                            format="DD/MM/YYYY"
-                            slotProps={{
-                              textField: {
-                                fullWidth: true,
-                                size: "small",
-                                error: errorDate.manufactureDate,
-                                helperText:
-                                  errorDate.manufactureDate && "Invalid date",
-                              },
-                            }}
-                            sx={{
-                              "& .MuiOutlinedInput-root": {
-                                borderRadius: "0.5rem",
-                                backgroundColor: "#f9fafb",
-                                "&:hover .MuiOutlinedInput-notchedOutline": {
-                                  borderColor: "#86efac",
-                                },
-                                "&.Mui-focused .MuiOutlinedInput-notchedOutline":
-                                  {
-                                    borderColor: "#86efac",
-                                    borderWidth: "2px",
-                                  },
-                              },
-                              "& .MuiInputBase-input": {
-                                color: "#1f2937",
-                                fontWeight: "500",
-                              },
-                            }}
-                          />
-                        </LocalizationProvider>
+                {/* WHOLESALE SECTION */}
+                <div className="col-span-1 md:col-span-2 mt-6 pt-4 border-t border-gray-300">
+                  <div className="flex items-center justify-between mb-4">
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-full bg-blue-50 flex items-center justify-center">
+                        <FiTrendingUp className="w-5 h-5 text-blue-600" />
                       </div>
-
-                      {/* Expiry Date */}
                       <div>
-                        <label className="block text-sm font-semibold text-gray-900 mb-2">
-                          Expiry Date
-                        </label>
-                        <LocalizationProvider dateAdapter={AdapterDayjs}>
-                          <DatePicker
-                            value={
-                              formData.expiryDate
-                                ? dayjs(formData.expiryDate)
-                                : null
-                            }
-                            onChange={(newValue) => {
-                              handleChange({
-                                target: {
-                                  name: "expiryDate",
-                                  value: newValue
-                                    ? newValue.format("YYYY-MM-DD")
-                                    : "",
-                                },
-                              });
-                              setErrorDate((prev) => ({
-                                ...prev,
-                                expiryDate: false,
-                              }));
-                            }}
-                            format="DD/MM/YYYY"
-                            slotProps={{
-                              textField: {
-                                fullWidth: true,
-                                size: "small",
-                                error: errorDate.expiryDate,
-                                helperText:
-                                  errorDate.expiryDate &&
-                                  "Must be after manufacture",
-                              },
-                            }}
-                            sx={{
-                              "& .MuiOutlinedInput-root": {
-                                borderRadius: "0.5rem",
-                                backgroundColor: "#f9fafb",
-                                "&:hover .MuiOutlinedInput-notchedOutline": {
-                                  borderColor: "#86efac",
-                                },
-                              },
-                            }}
-                          />
-                        </LocalizationProvider>
-                      </div>
-
-                      {/* Received Date */}
-                      <div>
-                        <label className="block text-sm font-semibold text-gray-900 mb-2">
-                          Received Date
-                        </label>
-                        <LocalizationProvider dateAdapter={AdapterDayjs}>
-                          <DatePicker
-                            value={
-                              formData.receivedDate
-                                ? dayjs(formData.receivedDate)
-                                : null
-                            }
-                            onChange={(newValue) => {
-                              handleChange({
-                                target: {
-                                  name: "receivedDate",
-                                  value: newValue
-                                    ? newValue.format("YYYY-MM-DD")
-                                    : "",
-                                },
-                              });
-                              setErrorDate((prev) => ({
-                                ...prev,
-                                receivedDate: false,
-                              }));
-                            }}
-                            format="DD/MM/YYYY"
-                            slotProps={{
-                              textField: {
-                                fullWidth: true,
-                                size: "small",
-                                error: errorDate.receivedDate,
-                                helperText:
-                                  errorDate.receivedDate && "Invalid range",
-                              },
-                            }}
-                            sx={{
-                              "& .MuiOutlinedInput-root": {
-                                borderRadius: "0.5rem",
-                                backgroundColor: "#f9fafb",
-                                "&:hover .MuiOutlinedInput-notchedOutline": {
-                                  borderColor: "#86efac",
-                                },
-                              },
-                            }}
-                          />
-                        </LocalizationProvider>
+                        <h4 className="text-lg font-bold text-gray-900">Bulk/Wholesale Settings</h4>
+                        <p className="text-gray-600 text-sm">Configure special pricing for bulk purchases</p>
                       </div>
                     </div>
+                    <button
+                      type="button"
+                      onClick={toggleWholesale}
+                      className={`relative inline-flex items-center h-6 rounded-full w-11 transition-colors duration-200 ${formData.enableWholesale ? 'bg-blue-600' : 'bg-gray-300'}`}
+                    >
+                      <span className={`inline-block w-4 h-4 transform bg-white rounded-full transition-transform duration-200 ${formData.enableWholesale ? 'translate-x-6' : 'translate-x-1'}`} />
+                    </button>
                   </div>
 
-                  {/* Additional Information */}
-                  <div className="md:col-span-2 border-t border-gray-300 pt-4 mt-2">
-                    <h4 className="text-md font-bold text-gray-900 mb-4">
-                      📝 Additional Information
-                    </h4>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      {/* Batch Number */}
-                      <div>
-                        <label className="block text-sm font-semibold text-gray-900 mb-2">
-                          Batch Number *
-                        </label>
-                        <input
-                          type="text"
-                          name="batchNumber"
-                          value={formData.batchNumber}
-                          onChange={handleChange}
-                          className="w-full px-4 py-3 border border-gray-300 bg-gray-100 rounded-lg focus:ring-2 focus:ring-green-300 focus:border-green-300 text-gray-900 font-medium"
-                          placeholder="Enter batch number"
-                          required
-                        />
+                  {/* Wholesale Fields */}
+                  {formData.enableWholesale && (
+                    <div className="space-y-3 p-4 bg-blue-50 rounded-xl border border-blue-200">
+                      {/* Wholesale Fields in 2 columns */}
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        {/* Wholesale Minimum Quantity */}
+                        <div>
+                          <div className="mb-1">
+                            <label className="block text-sm font-bold text-gray-900">
+                              Minimum Quantity for Wholesale
+                            </label>
+                            <p className="text-xs text-gray-500">
+                              Minimum units required to qualify for wholesale price
+                            </p>
+                          </div>
+                          <div className="relative">
+                            <div className="absolute inset-y-0 left-3 flex items-center">
+                              <FiInfo className="w-4 h-4 text-blue-500" />
+                            </div>
+                            <input
+                              type="text"
+                              name="wholesaleMinQty"
+                              value={formatNumberWithCommas(formData.wholesaleMinQty)}
+                              onChange={handleNumberChange}
+                              className="w-full pl-10 pr-4 py-2 border border-blue-300 rounded-full bg-white text-black focus:outline-none focus:border-blue-500"
+                              placeholder="20"
+                            />
+                          </div>
+                          {formData.wholesaleMinQty > formData.quantity && (
+                            <p className="text-xs text-red-600 mt-1">
+                              Minimum quantity cannot exceed paid quantity ({formData.quantity.toLocaleString()})
+                            </p>
+                          )}
+                        </div>
+
+                        {/* Wholesale Total Price */}
+                        <div>
+                          <div className="mb-1">
+                            <label className="block text-sm font-bold text-gray-900">
+                              Wholesale Total Price (Tsh)
+                            </label>
+                            <p className="text-xs text-gray-500">
+                              Total price for {formData.wholesaleMinQty || "minimum"} units
+                            </p>
+                          </div>
+                          <div className="relative">
+                            <div className="absolute inset-y-0 left-3 flex items-center">
+                              <FiDollarSign className="w-4 h-4 text-blue-500" />
+                            </div>
+                            <input
+                              type="text"
+                              name="wholesalePrice"
+                              value={formatNumberWithCommas(formData.wholesalePrice)}
+                              onChange={handleNumberChange}
+                              className="w-full pl-10 pr-4 py-2 border border-blue-300 rounded-full bg-white text-black focus:outline-none focus:border-blue-500"
+                              placeholder="15,000"
+                            />
+                          </div>
+                        </div>
                       </div>
 
-                      {/* Total Cost */}
-                      <div>
-                        <label className="block text-sm font-semibold text-gray-900 mb-2">
-                          Total Cost (Auto)
-                        </label>
-                        <div className="relative">
-                          <input
-                            type="text"
-                            name="totalCost"
-                            value={
-                              formData.totalCost
-                                ? `Tsh ${Number(
-                                    formData.totalCost
-                                  ).toLocaleString()}`
-                                : ""
-                            }
-                            readOnly
-                            className="w-full pl-4 pr-4 py-3 border border-gray-300 bg-gray-200 rounded-lg text-gray-900 font-bold"
-                          />
-                          {formData.totalCost && (
-                            <div className="absolute right-3 top-1/2 transform -translate-y-1/2 text-green-600 font-bold">
-                              ✔
+                      {/* Wholesale Calculation Summary */}
+                      {formData.enableWholesale && formData.wholesalePrice > 0 && formData.wholesaleMinQty > 0 && formData.sellingPrice > 0 && (
+                        <div className="mt-3 p-3 bg-white rounded-lg border border-blue-200">
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                            {/* Retail vs Wholesale */}
+                            <div className="space-y-2">
+                              <div className="p-2 bg-gray-50 rounded">
+                                <p className="text-xs text-gray-500">Retail Total for {formData.wholesaleMinQty.toLocaleString()} units</p>
+                                <p className="text-sm font-bold text-gray-800">
+                                  Tsh {calculatedValues.totalRetailPrice.toLocaleString()}
+                                </p>
+                              </div>
+                              <div className="p-2 bg-blue-50 rounded">
+                                <p className="text-xs text-blue-600">Wholesale Total</p>
+                                <p className="text-sm font-bold text-blue-700">
+                                  Tsh {formData.wholesalePrice.toLocaleString()}
+                                </p>
+                              </div>
+                            </div>
+
+                            {/* Savings and Per Unit */}
+                            <div className="space-y-2">
+                              <div className={`p-2 ${calculatedValues.savingsAmount >= 0 ? 'bg-green-50' : 'bg-red-50'} rounded`}>
+                                <div className="flex justify-between">
+                                  <div>
+                                    <p className="text-xs text-gray-600">Difference</p>
+                                    <p className={`text-sm font-bold ${calculatedValues.savingsAmount >= 0 ? 'text-green-700' : 'text-red-700'}`}>
+                                      {calculatedValues.savingsAmount >= 0 ? 'Savings: ' : 'Extra: '}
+                                      Tsh {Math.abs(calculatedValues.savingsAmount).toLocaleString()}
+                                    </p>
+                                  </div>
+                                  <div className="text-right">
+                                    <p className="text-xs text-gray-600">Discount/Premium</p>
+                                    <p className={`text-sm font-bold ${calculatedValues.discountPercentage >= 0 ? 'text-green-700' : 'text-red-700'}`}>
+                                      {calculatedValues.discountPercentage >= 0 ? '' : '+'}{Math.abs(calculatedValues.discountPercentage).toFixed(1)}%
+                                    </p>
+                                  </div>
+                                </div>
+                              </div>
+                              <div className="grid grid-cols-2 gap-2">
+                                <div className="p-2 border border-gray-200 rounded text-center">
+                                  <p className="text-xs text-gray-500">Retail/unit</p>
+                                  <p className="text-sm font-medium">Tsh {parseFloat(formData.sellingPrice || selectedItem.price).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</p>
+                                </div>
+                                <div className={`p-2 border ${calculatedValues.perUnitWholesalePrice <= (formData.sellingPrice || selectedItem.price) ? 'border-green-200 bg-green-50' : 'border-red-200 bg-red-50'} rounded text-center`}>
+                                  <p className={`text-xs ${calculatedValues.perUnitWholesalePrice <= (formData.sellingPrice || selectedItem.price) ? 'text-green-600' : 'text-red-600'}`}>Wholesale/unit</p>
+                                  <p className={`text-sm font-bold ${calculatedValues.perUnitWholesalePrice <= (formData.sellingPrice || selectedItem.price) ? 'text-green-700' : 'text-red-700'}`}>
+                                    Tsh {calculatedValues.perUnitWholesalePrice.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}
+                                  </p>
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+
+                          {/* Stock Check */}
+                          {formData.quantity > 0 && (
+                            <div className={`mt-2 p-2 rounded text-center text-sm ${formData.quantity >= formData.wholesaleMinQty ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700'}`}>
+                              <span className="font-medium">
+                                {formData.quantity >= formData.wholesaleMinQty ? '✓' : '⚠'} 
+                                Paid quantity: {formData.quantity.toLocaleString()} units 
+                                {formData.quantity >= formData.wholesaleMinQty 
+                                  ? ` (Sufficient for wholesale orders)` 
+                                  : ` (Insufficient for wholesale minimum of ${formData.wholesaleMinQty.toLocaleString()} units)`}
+                              </span>
                             </div>
                           )}
                         </div>
-                        <p className="text-xs text-gray-600 mt-1">
-                          Buying Price × (Units × Items/Unit)
-                        </p>
-                      </div>
+                      )}
+                    </div>
+                  )}
+                </div>
 
-                      {/* Comments */}
-                      <div className="md:col-span-2">
-                        <label className="block text-sm font-semibold text-gray-900 mb-2">
-                          Comments
-                        </label>
-                        <textarea
-                          name="comments"
-                          value={formData.comments}
-                          onChange={handleChange}
-                          rows={3}
-                          className="w-full px-4 py-3 border border-gray-300 bg-gray-100 rounded-lg focus:ring-2 focus:ring-green-300 focus:border-green-300 text-gray-900 font-medium resize-none"
-                          placeholder="Add any comments or notes about this item..."
+                {/* Dates Section */}
+                <div className="col-span-1 md:col-span-2 mt-4 border-t border-gray-300 pt-4">
+                  <h4 className="text-md font-bold text-gray-900 mb-4">
+                    📅 Date Information
+                  </h4>
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    {/* Manufacture Date */}
+                    <div>
+                      <label className="block text-sm font-semibold text-gray-900 mb-2">
+                        Manufacture Date
+                      </label>
+                      <LocalizationProvider dateAdapter={AdapterDayjs}>
+                        <DatePicker
+                          value={
+                            formData.manufactureDate
+                              ? dayjs(formData.manufactureDate)
+                              : null
+                          }
+                          onChange={(newValue) => {
+                            handleDateChange("manufactureDate", newValue ? newValue.format("YYYY-MM-DD") : "");
+                            setErrorDate((prev) => ({
+                              ...prev,
+                              manufactureDate: false,
+                            }));
+                          }}
+                          format="DD/MM/YYYY"
+                          slotProps={{
+                            textField: {
+                              fullWidth: true,
+                              size: "small",
+                              error: errorDate.manufactureDate,
+                              helperText:
+                                errorDate.manufactureDate && "Invalid date",
+                            },
+                          }}
+                          sx={{
+                            "& .MuiOutlinedInput-root": {
+                              borderRadius: "0.5rem",
+                              backgroundColor: "#f9fafb",
+                              "&:hover .MuiOutlinedInput-notchedOutline": {
+                                borderColor: "#86efac",
+                              },
+                              "&.Mui-focused .MuiOutlinedInput-notchedOutline":
+                                {
+                                  borderColor: "#86efac",
+                                  borderWidth: "2px",
+                                },
+                            },
+                            "& .MuiInputBase-input": {
+                              color: "#1f2937",
+                              fontWeight: "500",
+                            },
+                          }}
                         />
+                      </LocalizationProvider>
+                    </div>
+
+                    {/* Expiry Date */}
+                    <div>
+                      <label className="block text-sm font-semibold text-gray-900 mb-2">
+                        Expiry Date
+                      </label>
+                      <LocalizationProvider dateAdapter={AdapterDayjs}>
+                        <DatePicker
+                          value={
+                            formData.expiryDate
+                              ? dayjs(formData.expiryDate)
+                              : null
+                          }
+                          onChange={(newValue) => {
+                            handleDateChange("expiryDate", newValue ? newValue.format("YYYY-MM-DD") : "");
+                            setErrorDate((prev) => ({
+                              ...prev,
+                              expiryDate: false,
+                            }));
+                          }}
+                          format="DD/MM/YYYY"
+                          slotProps={{
+                            textField: {
+                              fullWidth: true,
+                              size: "small",
+                              error: errorDate.expiryDate,
+                              helperText:
+                                errorDate.expiryDate &&
+                                "Must be after manufacture",
+                            },
+                          }}
+                          sx={{
+                            "& .MuiOutlinedInput-root": {
+                              borderRadius: "0.5rem",
+                              backgroundColor: "#f9fafb",
+                              "&:hover .MuiOutlinedInput-notchedOutline": {
+                                borderColor: "#86efac",
+                              },
+                            },
+                          }}
+                        />
+                      </LocalizationProvider>
+                    </div>
+
+                    {/* Received Date */}
+                    <div>
+                      <label className="block text-sm font-semibold text-gray-900 mb-2">
+                        Received Date
+                      </label>
+                      <LocalizationProvider dateAdapter={AdapterDayjs}>
+                        <DatePicker
+                          value={
+                            formData.receivedDate
+                              ? dayjs(formData.receivedDate)
+                              : null
+                          }
+                          onChange={(newValue) => {
+                            handleDateChange("receivedDate", newValue ? newValue.format("YYYY-MM-DD") : "");
+                            setErrorDate((prev) => ({
+                              ...prev,
+                              receivedDate: false,
+                            }));
+                          }}
+                          format="DD/MM/YYYY"
+                          slotProps={{
+                            textField: {
+                              fullWidth: true,
+                              size: "small",
+                              error: errorDate.receivedDate,
+                              helperText:
+                                errorDate.receivedDate && "Invalid range",
+                            },
+                          }}
+                          sx={{
+                            "& .MuiOutlinedInput-root": {
+                              borderRadius: "0.5rem",
+                              backgroundColor: "#f9fafb",
+                              "&:hover .MuiOutlinedInput-notchedOutline": {
+                                borderColor: "#86efac",
+                              },
+                            },
+                          }}
+                        />
+                      </LocalizationProvider>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Additional Information */}
+                <div className="col-span-1 md:col-span-2 border-t border-gray-300 pt-4 mt-4">
+                  <h4 className="text-md font-bold text-gray-900 mb-4">
+                    📝 Additional Information
+                  </h4>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {/* Batch Number */}
+                    <div>
+                      <label className="block text-sm font-semibold text-gray-900 mb-2">
+                        Batch Number *
+                      </label>
+                      <input
+                        type="text"
+                        name="batchNumber"
+                        value={formData.batchNumber}
+                        onChange={handleTextChange}
+                        className="w-full px-4 py-3 border border-gray-300 bg-gray-100 rounded-lg focus:ring-2 focus:ring-green-300 focus:border-green-300 text-gray-900 font-medium"
+                        placeholder="Enter batch number"
+                        required
+                      />
+                    </div>
+
+                    {/* Total Cost */}
+                    <div>
+                      <label className="block text-sm font-semibold text-gray-900 mb-2">
+                        Total Cost (Auto)
+                      </label>
+                      <div className="relative">
+                        <input
+                          type="text"
+                          name="totalCost"
+                          value={
+                            formData.totalCost
+                              ? `Tsh ${Number(
+                                  formData.totalCost
+                                ).toLocaleString()}`
+                              : ""
+                          }
+                          readOnly
+                          className="w-full pl-4 pr-4 py-3 border border-gray-300 bg-gray-200 rounded-lg text-gray-900 font-bold"
+                        />
+                        {formData.totalCost && (
+                          <div className="absolute right-3 top-1/2 transform -translate-y-1/2 text-green-600 font-bold">
+                            ✔
+                          </div>
+                        )}
                       </div>
+                      <p className="text-xs text-gray-600 mt-1">
+                        Buying Price × (Units × Items/Unit)
+                      </p>
+                    </div>
+
+                    {/* Comments */}
+                    <div className="md:col-span-2">
+                      <label className="block text-sm font-semibold text-gray-900 mb-2">
+                        Comments
+                      </label>
+                      <textarea
+                        name="comments"
+                        value={formData.comments}
+                        onChange={handleTextChange}
+                        rows={3}
+                        className="w-full px-4 py-3 border border-gray-300 bg-gray-100 rounded-lg focus:ring-2 focus:ring-green-300 focus:border-green-300 text-gray-900 font-medium resize-none"
+                        placeholder="Add any comments or notes about this item..."
+                      />
                     </div>
                   </div>
                 </div>
