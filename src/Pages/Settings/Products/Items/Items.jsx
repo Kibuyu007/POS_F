@@ -383,6 +383,8 @@ const Items = () => {
                   "Product",
                   "Buy Price",
                   "Sell Price",
+                  "Wholesale Price",
+                  "Qty for Wholesale",
                   "Quantity",
                   "Barcode",
                   "Manf Date",
@@ -474,6 +476,20 @@ const Items = () => {
                         <td className="py-3 px-2 text-center bg-yellow-100 border-r border-gray-200">
                           <span className="font-bold text-green-700 text-sm">
                             {item.price.toLocaleString()}
+                          </span>
+                        </td>
+
+                          {/* Sell Price Column - Blue 100 */}
+                        <td className="py-3 px-2 text-center bg-blue-200 border-r border-gray-200">
+                          <span className="font-bold text-green-700 text-sm">
+                            {(item.wholesalePrice || 0).toLocaleString()}
+                          </span>
+                        </td>
+
+                          {/* Sell Price Column - Blue 100 */}
+                        <td className="py-3 px-2 text-center bg-blue-200 border-r border-gray-200">
+                          <span className="font-bold text-green-700 text-sm">
+                            {(item.wholesaleMinQty || 0).toLocaleString()}
                           </span>
                         </td>
 
