@@ -9,14 +9,14 @@ import { LocalizationProvider } from "@mui/x-date-pickers/LocalizationProvider";
 import { DatePicker } from "@mui/x-date-pickers/DatePicker";
 
 // Icons
-import { 
-  FiTruck, 
-  FiFileText, 
-  FiUser, 
+import {
+  FiTruck,
+  FiFileText,
+  FiUser,
   FiCalendar,
   FiPackage,
   FiEdit2,
-  FiCheckCircle
+  FiCheckCircle,
 } from "react-icons/fi";
 import { RiBillLine } from "react-icons/ri";
 
@@ -29,7 +29,7 @@ import Section2 from "./Section2";
 const NonPoGrn = () => {
   const dispatch = useDispatch();
   const { supplier } = useSelector((state) => state.suppliers);
-  
+
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [itemHold, setItemHold] = useState(() => {
@@ -125,6 +125,11 @@ const NonPoGrn = () => {
         quantity: item.quantity,
         buyingPrice: item.buyingPrice,
         sellingPrice: item.sellingPrice,
+        enableWholesale: item.enableWholesale || false,
+        wholesaleMinQty: item.enableWholesale
+          ? Number(item.wholesaleMinQty)
+          : 0,
+        wholesalePrice: item.enableWholesale ? Number(item.wholesalePrice) : 0,
         batchNumber: item.batchNumber,
         manufactureDate: item.manufactureDate,
         expiryDate: item.expiryDate,
@@ -137,11 +142,9 @@ const NonPoGrn = () => {
     };
 
     try {
-      const response = await axios.post(
-        `${BASE_URL}/api/grn/newGrn`,
-        grnData,
-        { withCredentials: true }
-      );
+      const response = await axios.post(`${BASE_URL}/api/grn/newGrn`, grnData, {
+        withCredentials: true,
+      });
 
       if (response.status === 200 && response.data.success) {
         // Reset form on success
@@ -161,8 +164,8 @@ const NonPoGrn = () => {
         throw new Error(response.data.message || "Failed to save GRN.");
       }
     } catch (error) {
-      const errorMessage = error.response?.data?.message || 
-                          "Tatizo katika kuhifadhi manunuzi.";
+      const errorMessage =
+        error.response?.data?.message || "Tatizo katika kuhifadhi manunuzi.";
       setError(errorMessage);
       toast.error(errorMessage, {
         position: "bottom-right",
@@ -220,7 +223,13 @@ const NonPoGrn = () => {
       {/* Progress Indicator */}
       <div className="mb-8 flex items-center space-x-6">
         <div className="flex items-center">
-          <div className={`w-10 h-10 rounded-full flex items-center justify-center ${isSupplierValid ? 'bg-green-300 border-2 border-green-400' : 'bg-gray-200 border-2 border-gray-300'}`}>
+          <div
+            className={`w-10 h-10 rounded-full flex items-center justify-center ${
+              isSupplierValid
+                ? "bg-green-300 border-2 border-green-400"
+                : "bg-gray-200 border-2 border-gray-300"
+            }`}
+          >
             {isSupplierValid ? (
               <FiCheckCircle className="text-gray-900 text-lg font-bold" />
             ) : (
@@ -228,14 +237,24 @@ const NonPoGrn = () => {
             )}
           </div>
           <div className="ml-3">
-            <span className={`font-semibold ${isSupplierValid ? 'text-gray-900' : 'text-gray-600'}`}>
+            <span
+              className={`font-semibold ${
+                isSupplierValid ? "text-gray-900" : "text-gray-600"
+              }`}
+            >
               Supplier Details
             </span>
           </div>
         </div>
         <div className="w-12 h-2 bg-gray-300"></div>
         <div className="flex items-center">
-          <div className={`w-10 h-10 rounded-full flex items-center justify-center ${itemHold.length > 0 ? 'bg-green-300 border-2 border-green-400' : 'bg-gray-200 border-2 border-gray-300'}`}>
+          <div
+            className={`w-10 h-10 rounded-full flex items-center justify-center ${
+              itemHold.length > 0
+                ? "bg-green-300 border-2 border-green-400"
+                : "bg-gray-200 border-2 border-gray-300"
+            }`}
+          >
             {itemHold.length > 0 ? (
               <FiCheckCircle className="text-gray-900 text-lg font-bold" />
             ) : (
@@ -243,7 +262,11 @@ const NonPoGrn = () => {
             )}
           </div>
           <div className="ml-3">
-            <span className={`font-semibold ${itemHold.length > 0 ? 'text-gray-900' : 'text-gray-600'}`}>
+            <span
+              className={`font-semibold ${
+                itemHold.length > 0 ? "text-gray-900" : "text-gray-600"
+              }`}
+            >
               Add Items
             </span>
           </div>
@@ -259,8 +282,12 @@ const NonPoGrn = () => {
               <RiBillLine className="text-gray-900 font-bold" />
             </div>
             <div>
-              <h2 className="text-lg font-bold text-gray-900">Supplier Information</h2>
-              <p className="text-gray-700 text-sm font-medium">Fill in the supplier and delivery details</p>
+              <h2 className="text-lg font-bold text-gray-900">
+                Supplier Information
+              </h2>
+              <p className="text-gray-700 text-sm font-medium">
+                Fill in the supplier and delivery details
+              </p>
             </div>
           </div>
         </div>
@@ -281,10 +308,16 @@ const NonPoGrn = () => {
                     name="supplierName"
                     onChange={handleChange}
                     value={formData.supplierName}
-                    className={`w-full pl-10 pr-4 py-3 border ${formData.supplierName ? 'border-green-300 bg-green-50' : 'border-gray-300 bg-gray-100'} rounded-lg focus:ring-2 focus:ring-green-300 focus:border-green-300 font-medium text-gray-900`}
+                    className={`w-full pl-10 pr-4 py-3 border ${
+                      formData.supplierName
+                        ? "border-green-300 bg-green-50"
+                        : "border-gray-300 bg-gray-100"
+                    } rounded-lg focus:ring-2 focus:ring-green-300 focus:border-green-300 font-medium text-gray-900`}
                     required
                   >
-                    <option value="" disabled>Select a supplier</option>
+                    <option value="" disabled>
+                      Select a supplier
+                    </option>
                     {supplier.map((s) => (
                       <option key={s._id} value={s._id} className="font-medium">
                         {s.supplierName}
@@ -292,7 +325,13 @@ const NonPoGrn = () => {
                     ))}
                   </select>
                   <div className="absolute left-3 top-1/2 transform -translate-y-1/2">
-                    <RiBillLine className={`${formData.supplierName ? 'text-gray-900' : 'text-gray-600'}`} />
+                    <RiBillLine
+                      className={`${
+                        formData.supplierName
+                          ? "text-gray-900"
+                          : "text-gray-600"
+                      }`}
+                    />
                   </div>
                 </div>
               </div>
@@ -318,21 +357,21 @@ const NonPoGrn = () => {
                       },
                     }}
                     sx={{
-                      '& .MuiOutlinedInput-root': {
-                        borderRadius: '0.5rem',
-                        height: '44px',
-                        backgroundColor: '#f9fafb',
-                        '&:hover .MuiOutlinedInput-notchedOutline': {
-                          borderColor: '#86efac',
+                      "& .MuiOutlinedInput-root": {
+                        borderRadius: "0.5rem",
+                        height: "44px",
+                        backgroundColor: "#f9fafb",
+                        "&:hover .MuiOutlinedInput-notchedOutline": {
+                          borderColor: "#86efac",
                         },
-                        '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
-                          borderColor: '#86efac',
-                          borderWidth: '2px',
+                        "&.Mui-focused .MuiOutlinedInput-notchedOutline": {
+                          borderColor: "#86efac",
+                          borderWidth: "2px",
                         },
                       },
-                      '& .MuiInputBase-input': {
-                        color: '#1f2937',
-                        fontWeight: '500',
+                      "& .MuiInputBase-input": {
+                        color: "#1f2937",
+                        fontWeight: "500",
                       },
                     }}
                   />
@@ -458,12 +497,24 @@ const NonPoGrn = () => {
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-6">
               <div className="flex items-center">
-                <div className={`w-3 h-3 rounded-full mr-3 ${isSupplierValid ? 'bg-green-400' : 'bg-gray-400'}`}></div>
-                <span className="text-sm text-gray-900 font-medium">Supplier selected</span>
+                <div
+                  className={`w-3 h-3 rounded-full mr-3 ${
+                    isSupplierValid ? "bg-green-400" : "bg-gray-400"
+                  }`}
+                ></div>
+                <span className="text-sm text-gray-900 font-medium">
+                  Supplier selected
+                </span>
               </div>
               <div className="flex items-center">
-                <div className={`w-3 h-3 rounded-full mr-3 ${isDateValid ? 'bg-green-400' : 'bg-gray-400'}`}></div>
-                <span className="text-sm text-gray-900 font-medium">Date selected</span>
+                <div
+                  className={`w-3 h-3 rounded-full mr-3 ${
+                    isDateValid ? "bg-green-400" : "bg-gray-400"
+                  }`}
+                ></div>
+                <span className="text-sm text-gray-900 font-medium">
+                  Date selected
+                </span>
               </div>
             </div>
             <button
@@ -497,7 +548,9 @@ const NonPoGrn = () => {
               </div>
               <div>
                 <h2 className="text-lg font-bold text-gray-900">Add Items</h2>
-                <p className="text-gray-700 text-sm font-medium">Add products received in this delivery</p>
+                <p className="text-gray-700 text-sm font-medium">
+                  Add products received in this delivery
+                </p>
               </div>
             </div>
           </div>
@@ -516,20 +569,33 @@ const NonPoGrn = () => {
                 <FiPackage className="text-2xl text-gray-900 font-bold" />
               </div>
               <div>
-                <h3 className="font-bold text-gray-900 text-lg">Items Ready for Submission</h3>
-                <p className="text-gray-900 font-medium">Review before creating GRN</p>
+                <h3 className="font-bold text-gray-900 text-lg">
+                  Items Ready for Submission
+                </h3>
+                <p className="text-gray-900 font-medium">
+                  Review before creating GRN
+                </p>
               </div>
             </div>
             <div className="flex items-center space-x-8">
               <div className="text-center">
-                <div className="text-sm text-gray-900 font-medium">Total Items</div>
-                <div className="text-2xl font-bold text-gray-900">{itemHold.length}</div>
+                <div className="text-sm text-gray-900 font-medium">
+                  Total Items
+                </div>
+                <div className="text-2xl font-bold text-gray-900">
+                  {itemHold.length}
+                </div>
               </div>
               <div className="text-center">
-                <div className="text-sm text-gray-900 font-medium">Total Cost</div>
+                <div className="text-sm text-gray-900 font-medium">
+                  Total Cost
+                </div>
                 <div className="text-2xl font-bold text-gray-900">
                   {formatPriceWithCommas(
-                    itemHold.reduce((sum, item) => sum + (item.totalCost || 0), 0)
+                    itemHold.reduce(
+                      (sum, item) => sum + (item.totalCost || 0),
+                      0
+                    )
                   )}
                 </div>
               </div>
@@ -539,7 +605,10 @@ const NonPoGrn = () => {
       )}
 
       {/* Items Table (UNCHANGED) */}
-      <div style={{ maxHeight: "500px" }} className="mx-auto rounded-md border-2 border-gray-300 mt-10 max-h-96 px-4 py-6 sm:px-6 lg:px-8 shadow-sm overflow-x-auto bg-gray-50">
+      <div
+        style={{ maxHeight: "500px" }}
+        className="mx-auto rounded-md border-2 border-gray-300 mt-10 max-h-96 px-4 py-6 sm:px-6 lg:px-8 shadow-sm overflow-x-auto bg-gray-50"
+      >
         <div className="">
           <table className="min-w-full leading-normal table-fixed">
             <thead>
@@ -748,8 +817,16 @@ const NonPoGrn = () => {
           {error && (
             <div className="mb-6 p-4 bg-red-50 border border-red-300 rounded-lg">
               <div className="flex items-center">
-                <svg className="w-5 h-5 text-red-500 mr-3" fill="currentColor" viewBox="0 0 20 20">
-                  <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+                <svg
+                  className="w-5 h-5 text-red-500 mr-3"
+                  fill="currentColor"
+                  viewBox="0 0 20 20"
+                >
+                  <path
+                    fillRule="evenodd"
+                    d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z"
+                    clipRule="evenodd"
+                  />
                 </svg>
                 <p className="text-red-700 font-semibold">{error}</p>
               </div>
@@ -766,10 +843,8 @@ const NonPoGrn = () => {
                 Cancel
               </button>
             </div>
-            
+
             <div className="flex items-center space-x-8">
-              
-  
               <button
                 type="submit"
                 className="px-8 py-3 bg-green-300 text-gray-900 font-bold rounded-lg hover:bg-green-400 disabled:opacity-50 disabled:cursor-not-allowed transition-colors min-w-[180px] shadow-sm"
@@ -778,16 +853,42 @@ const NonPoGrn = () => {
               >
                 {loading ? (
                   <span className="flex items-center justify-center">
-                    <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-gray-900" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    <svg
+                      className="animate-spin -ml-1 mr-3 h-5 w-5 text-gray-900"
+                      xmlns="http://www.w3.org/2000/svg"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                    >
+                      <circle
+                        className="opacity-25"
+                        cx="12"
+                        cy="12"
+                        r="10"
+                        stroke="currentColor"
+                        strokeWidth="4"
+                      ></circle>
+                      <path
+                        className="opacity-75"
+                        fill="currentColor"
+                        d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                      ></path>
                     </svg>
                     Creating GRN...
                   </span>
                 ) : (
                   <span className="flex items-center justify-center">
-                    <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                    <svg
+                      className="w-5 h-5 mr-2"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M5 13l4 4L19 7"
+                      />
                     </svg>
                     Submit GRN
                   </span>

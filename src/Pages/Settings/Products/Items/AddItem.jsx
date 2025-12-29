@@ -5,19 +5,18 @@ import { additem } from "../../../../Redux/items";
 import { fetchCategories } from "../../../../Redux/itemsCategories";
 import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
-import { 
-  FiBox, 
-  FiDollarSign, 
-  FiTag, 
-  FiPackage, 
-  FiCalendar, 
-  FiRefreshCw, 
-  FiPercent, 
-  FiCamera, 
-  FiX, 
+import {
+  FiBox,
+  FiTag,
+  FiPackage,
+  FiCalendar,
+  FiRefreshCw,
+  FiPercent,
+  FiCamera,
+  FiX,
   FiCheck,
   FiTrendingUp,
-  FiMinus
+  FiMinus,
 } from "react-icons/fi";
 
 //API
@@ -35,16 +34,16 @@ const AddItem = ({ showModal, setShowModal, onUserAdded }) => {
 
   const [regi, setRegi] = useState({
     name: "",
-    price: 0,
+    price: "",
     category: "",
     barCode: "",
-    itemQuantity: 0,
+    itemQuantity: "",
     manufactureDate: new Date(),
     expireDate: new Date(),
-    reOrder: 0,
-    discount: 0,
-    wholesalePrice: 0,
-    wholesaleMinQty: 0,
+    reOrder: "",
+    discount: "",
+    wholesalePrice: "",
+    wholesaleMinQty: "",
     enableWholesale: false,
   });
 
@@ -63,12 +62,56 @@ const AddItem = ({ showModal, setShowModal, onUserAdded }) => {
     }
   }, [dispatch, category.length]);
 
+  // Helper function to format numbers with commas
+  const formatNumberWithCommas = (value) => {
+    if (value === "" || value === null || value === undefined) return "";
+    // Remove any existing commas
+    const stringValue = value.toString().replace(/,/g, "");
+    // Parse as float to handle decimal numbers
+    const number = parseFloat(stringValue);
+    if (isNaN(number)) return "";
+    // Format with commas for thousands
+    return number.toLocaleString("en-US", {
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 2,
+    });
+  };
+
+  // Parse comma-formatted number back to raw number
+  const parseCommaFormattedNumber = (formattedValue) => {
+    if (
+      formattedValue === "" ||
+      formattedValue === null ||
+      formattedValue === undefined
+    )
+      return "";
+    // Remove all non-numeric characters except decimal point
+    const cleanedValue = formattedValue.replace(/[^\d.]/g, "");
+    if (cleanedValue === "") return "";
+
+    // Parse as float
+    const number = parseFloat(cleanedValue);
+    return isNaN(number) ? "" : number;
+  };
+
   useEffect(() => {
-    if (regi.enableWholesale && regi.wholesalePrice > 0 && regi.wholesaleMinQty > 0 && regi.price > 0) {
-      const perUnitWholesalePrice = regi.wholesalePrice / regi.wholesaleMinQty;
-      const totalRetailPrice = regi.price * regi.wholesaleMinQty;
-      const savingsAmount = totalRetailPrice - regi.wholesalePrice;
-      const discountPercentage = totalRetailPrice > 0 ? (savingsAmount / totalRetailPrice) * 100 : 0;
+    const rawPrice = parseCommaFormattedNumber(regi.price) || 0;
+    const rawWholesalePrice =
+      parseCommaFormattedNumber(regi.wholesalePrice) || 0;
+    const rawWholesaleMinQty =
+      parseCommaFormattedNumber(regi.wholesaleMinQty) || 0;
+
+    if (
+      regi.enableWholesale &&
+      rawWholesalePrice > 0 &&
+      rawWholesaleMinQty > 0 &&
+      rawPrice > 0
+    ) {
+      const perUnitWholesalePrice = rawWholesalePrice / rawWholesaleMinQty;
+      const totalRetailPrice = rawPrice * rawWholesaleMinQty;
+      const savingsAmount = totalRetailPrice - rawWholesalePrice;
+      const discountPercentage =
+        totalRetailPrice > 0 ? (savingsAmount / totalRetailPrice) * 100 : 0;
 
       setCalculatedValues({
         perUnitWholesalePrice: parseFloat(perUnitWholesalePrice.toFixed(2)),
@@ -84,43 +127,57 @@ const AddItem = ({ showModal, setShowModal, onUserAdded }) => {
         savingsAmount: 0,
       });
     }
-  }, [regi.wholesalePrice, regi.wholesaleMinQty, regi.price, regi.enableWholesale]);
+  }, [
+    regi.wholesalePrice,
+    regi.wholesaleMinQty,
+    regi.price,
+    regi.enableWholesale,
+  ]);
 
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
 
-    if (type === 'checkbox') {
+    if (type === "checkbox") {
       setRegi({ ...regi, [name]: checked });
       return;
     }
 
-    let numericValue = value;
-    if (['price', 'itemQuantity', 'reOrder', 'discount', 'wholesalePrice', 'wholesaleMinQty'].includes(name)) {
-      numericValue = value === '' ? 0 : Number(value);
-      
-      if (numericValue < 0) {
-        numericValue = 0;
-        toast.error("Value cannot be negative");
-      }
+    // Handle text fields
+    if (name === "name" || name === "category" || name === "barCode") {
+      setRegi({ ...regi, [name]: value });
+      return;
     }
 
-    if (name === "discount") {
-      const price = Number(regi.price);
-      if (numericValue > price) {
-        toast.error("Discount can't be greater than Item Price");
+    // Handle numeric fields with comma formatting
+    if (
+      [
+        "price",
+        "itemQuantity",
+        "reOrder",
+        "discount",
+        "wholesalePrice",
+        "wholesaleMinQty",
+      ].includes(name)
+    ) {
+      // Allow only numbers and decimal point
+      const cleanedValue = value.replace(/[^\d.]/g, "");
+
+      // Prevent multiple decimal points
+      const parts = cleanedValue.split(".");
+      if (parts.length > 2) {
+        return; // Invalid input, don't update
+      }
+
+      // Limit decimal places to 2
+      if (parts.length === 2 && parts[1].length > 2) {
         return;
       }
+
+      setRegi({ ...regi, [name]: cleanedValue });
+      return;
     }
 
-    if (name === "wholesalePrice" && regi.enableWholesale) {
-      const retailTotal = regi.price * (regi.wholesaleMinQty || 1);
-      if (numericValue >= retailTotal) {
-        toast.error("Wholesale price should be less than retail total for the minimum quantity");
-        return;
-      }
-    }
-
-    setRegi({ ...regi, [name]: type === 'number' ? numericValue : value });
+    setRegi({ ...regi, [name]: value });
   };
 
   const toggleWholesale = () => {
@@ -129,8 +186,8 @@ const AddItem = ({ showModal, setShowModal, onUserAdded }) => {
       setRegi({
         ...regi,
         enableWholesale: false,
-        wholesalePrice: 0,
-        wholesaleMinQty: 0,
+        wholesalePrice: "",
+        wholesaleMinQty: "",
       });
     } else {
       setRegi({ ...regi, enableWholesale: true });
@@ -155,50 +212,81 @@ const AddItem = ({ showModal, setShowModal, onUserAdded }) => {
 
   const handleAddItems = async (e) => {
     e.preventDefault();
-    
+
+    // Parse numeric values before validation
+    const rawPrice = parseCommaFormattedNumber(regi.price) || 0;
+    const rawQuantity = parseCommaFormattedNumber(regi.itemQuantity) || 0;
+    const rawReOrder = parseCommaFormattedNumber(regi.reOrder) || 0;
+    const rawDiscount = parseCommaFormattedNumber(regi.discount) || 0;
+    const rawWholesalePrice =
+      parseCommaFormattedNumber(regi.wholesalePrice) || 0;
+    const rawWholesaleMinQty =
+      parseCommaFormattedNumber(regi.wholesaleMinQty) || 0;
+
     if (!regi.name.trim()) {
       setShowError("Item name is required");
       return;
     }
-    
-    if (!regi.price || Number(regi.price) <= 0) {
+
+    if (!rawPrice || Number(rawPrice) <= 0) {
       setShowError("Price must be greater than 0");
       return;
     }
-    
+
     if (!regi.category) {
       setShowError("Please select a category");
       return;
     }
-    
-    if (regi.discount && Number(regi.discount) > Number(regi.price)) {
+
+    if (rawDiscount && Number(rawDiscount) > Number(rawPrice)) {
       setShowError("Discount cannot exceed item price");
       return;
     }
 
     if (regi.enableWholesale) {
-      if (!regi.wholesalePrice || Number(regi.wholesalePrice) <= 0) {
-        setShowError("Wholesale price must be greater than 0 when wholesale is enabled");
+      if (!rawWholesalePrice || Number(rawWholesalePrice) <= 0) {
+        setShowError(
+          "Wholesale price must be greater than 0 when wholesale is enabled"
+        );
         return;
       }
-      if (!regi.wholesaleMinQty || Number(regi.wholesaleMinQty) <= 0) {
-        setShowError("Wholesale minimum quantity must be greater than 0 when wholesale is enabled");
+      if (!rawWholesaleMinQty || Number(rawWholesaleMinQty) <= 0) {
+        setShowError(
+          "Wholesale minimum quantity must be greater than 0 when wholesale is enabled"
+        );
         return;
       }
-      
-      const retailTotal = regi.price * regi.wholesaleMinQty;
-      if (Number(regi.wholesalePrice) >= retailTotal) {
-        setShowError("Wholesale price must be less than retail total for minimum quantity");
+
+      const retailTotal = rawPrice * rawWholesaleMinQty;
+      if (Number(rawWholesalePrice) >= retailTotal) {
+        setShowError(
+          "Wholesale price must be less than retail total for minimum quantity"
+        );
         return;
       }
     }
 
     setLoading(true);
     try {
-      const response = await axios.post(`${BASE_URL}/api/items/addItem`, regi, {
-        withCredentials: true,
-      });
-      
+      // Prepare data with parsed numeric values
+      const itemData = {
+        ...regi,
+        price: rawPrice,
+        itemQuantity: rawQuantity,
+        reOrder: rawReOrder,
+        discount: rawDiscount,
+        wholesalePrice: rawWholesalePrice,
+        wholesaleMinQty: rawWholesaleMinQty,
+      };
+
+      const response = await axios.post(
+        `${BASE_URL}/api/items/addItem`,
+        itemData,
+        {
+          withCredentials: true,
+        }
+      );
+
       dispatch(additem(response?.data));
 
       setRegi({
@@ -211,8 +299,8 @@ const AddItem = ({ showModal, setShowModal, onUserAdded }) => {
         expireDate: new Date(),
         reOrder: "",
         discount: "",
-        wholesalePrice: 0,
-        wholesaleMinQty: 0,
+        wholesalePrice: "",
+        wholesaleMinQty: "",
         enableWholesale: false,
       });
 
@@ -225,7 +313,7 @@ const AddItem = ({ showModal, setShowModal, onUserAdded }) => {
         totalRetailPrice: 0,
         savingsAmount: 0,
       });
-      
+
       toast.success("Item added successfully!");
       setTimeout(() => {
         setShowModal(false);
@@ -234,8 +322,7 @@ const AddItem = ({ showModal, setShowModal, onUserAdded }) => {
     } catch (error) {
       if (error.response && error.response.data) {
         setShowError(
-          error.response.data.error ||
-            "Failed to add item. Please try again."
+          error.response.data.error || "Failed to add item. Please try again."
         );
       } else {
         setShowError("An error occurred. Please Contact System Administrator.");
@@ -249,16 +336,16 @@ const AddItem = ({ showModal, setShowModal, onUserAdded }) => {
   const handleReset = () => {
     setRegi({
       name: "",
-      price: 0,
+      price: "",
       category: "",
       barCode: "",
-      itemQuantity: 0,
+      itemQuantity: "",
       manufactureDate: new Date(),
       expireDate: new Date(),
-      reOrder: 0,
-      discount: 0,
-      wholesalePrice: 0,
-      wholesaleMinQty: 0,
+      reOrder: "",
+      discount: "",
+      wholesalePrice: "",
+      wholesaleMinQty: "",
       enableWholesale: false,
     });
     setFile(null);
@@ -287,8 +374,12 @@ const AddItem = ({ showModal, setShowModal, onUserAdded }) => {
                       <FiBox className="w-5 h-5 text-black" />
                     </div>
                     <div>
-                      <h3 className="text-2xl font-bold text-black">+ Add New Item</h3>
-                      <p className="text-black/70 text-sm mt-1">Enter item details</p>
+                      <h3 className="text-2xl font-bold text-black">
+                        + Add New Item
+                      </h3>
+                      <p className="text-black/70 text-sm mt-1">
+                        Enter item details
+                      </p>
                     </div>
                   </div>
                   <button
@@ -301,7 +392,10 @@ const AddItem = ({ showModal, setShowModal, onUserAdded }) => {
 
                 {/* Main Form Content with scrolling */}
                 <div className="relative p-6 flex-auto overflow-y-auto max-h-[65vh]">
-                  <form onSubmit={handleAddItems} className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <form
+                    onSubmit={handleAddItems}
+                    className="grid grid-cols-1 md:grid-cols-3 gap-4"
+                  >
                     {/* Item Name - Full width */}
                     <div className="col-span-1 md:col-span-3">
                       <div className="mb-2">
@@ -334,20 +428,19 @@ const AddItem = ({ showModal, setShowModal, onUserAdded }) => {
                         </label>
                       </div>
                       <div className="relative">
-                        <div className="absolute inset-y-0 left-3 flex items-center">
-                          <FiDollarSign className="w-4 h-4 text-gray-500" />
-                        </div>
+                        <div className="absolute inset-y-0 left-3 flex items-center"></div>
                         <input
-                          type="number"
+                          type="text"
                           name="price"
-                          value={regi.price}
+                          value={formatNumberWithCommas(regi.price)}
                           onChange={handleChange}
-                          min="0"
-                          step="0.01"
                           className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-full bg-white text-black focus:outline-none focus:border-green-300"
                           placeholder="0.00"
                           disabled={loading}
                         />
+                        <div className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500 text-sm">
+                          Tsh
+                        </div>
                       </div>
                     </div>
 
@@ -393,11 +486,10 @@ const AddItem = ({ showModal, setShowModal, onUserAdded }) => {
                           <FiPackage className="w-4 h-4 text-gray-500" />
                         </div>
                         <input
-                          type="number"
+                          type="text"
                           name="itemQuantity"
-                          value={regi.itemQuantity}
+                          value={formatNumberWithCommas(regi.itemQuantity)}
                           onChange={handleChange}
-                          min="0"
                           className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-full bg-white text-black focus:outline-none focus:border-green-300"
                           placeholder="0"
                           disabled={loading}
@@ -465,11 +557,10 @@ const AddItem = ({ showModal, setShowModal, onUserAdded }) => {
                           <FiRefreshCw className="w-4 h-4 text-gray-500" />
                         </div>
                         <input
-                          type="number"
+                          type="text"
                           name="reOrder"
-                          value={regi.reOrder}
+                          value={formatNumberWithCommas(regi.reOrder)}
                           onChange={handleChange}
-                          min="0"
                           className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-full bg-white text-black focus:outline-none focus:border-green-300"
                           placeholder="0"
                           disabled={loading}
@@ -489,16 +580,17 @@ const AddItem = ({ showModal, setShowModal, onUserAdded }) => {
                           <FiPercent className="w-4 h-4 text-gray-500" />
                         </div>
                         <input
-                          type="number"
+                          type="text"
                           name="discount"
-                          value={regi.discount}
-                          min="0"
-                          max={regi.price}
+                          value={formatNumberWithCommas(regi.discount)}
                           onChange={handleChange}
                           className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-full bg-white text-black focus:outline-none focus:border-green-300"
                           placeholder="0.00"
                           disabled={loading}
                         />
+                        <div className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500 text-sm">
+                          Tsh
+                        </div>
                       </div>
                     </div>
 
@@ -510,16 +602,28 @@ const AddItem = ({ showModal, setShowModal, onUserAdded }) => {
                             <FiTrendingUp className="w-5 h-5 text-blue-600" />
                           </div>
                           <div>
-                            <h4 className="text-lg font-bold text-gray-900">Bulk/Wholesale Settings</h4>
-                            <p className="text-gray-600 text-sm">Configure special pricing for bulk purchases</p>
+                            <h4 className="text-lg font-bold text-gray-900">
+                              Bulk/Wholesale Settings
+                            </h4>
+                            <p className="text-gray-600 text-sm">
+                              Configure special pricing for bulk purchases
+                            </p>
                           </div>
                         </div>
                         <button
                           type="button"
                           onClick={toggleWholesale}
-                          className={`relative inline-flex items-center h-6 rounded-full w-11 transition-colors duration-200 ${regi.enableWholesale ? 'bg-blue-600' : 'bg-gray-300'}`}
+                          className={`relative inline-flex items-center h-6 rounded-full w-11 transition-colors duration-200 ${
+                            regi.enableWholesale ? "bg-blue-600" : "bg-gray-300"
+                          }`}
                         >
-                          <span className={`inline-block w-4 h-4 transform bg-white rounded-full transition-transform duration-200 ${regi.enableWholesale ? 'translate-x-6' : 'translate-x-1'}`} />
+                          <span
+                            className={`inline-block w-4 h-4 transform bg-white rounded-full transition-transform duration-200 ${
+                              regi.enableWholesale
+                                ? "translate-x-6"
+                                : "translate-x-1"
+                            }`}
+                          />
                         </button>
                       </div>
 
@@ -540,11 +644,12 @@ const AddItem = ({ showModal, setShowModal, onUserAdded }) => {
                                   <FiMinus className="w-4 h-4 text-blue-500" />
                                 </div>
                                 <input
-                                  type="number"
+                                  type="text"
                                   name="wholesaleMinQty"
-                                  value={regi.wholesaleMinQty}
+                                  value={formatNumberWithCommas(
+                                    regi.wholesaleMinQty
+                                  )}
                                   onChange={handleChange}
-                                  min="1"
                                   className="w-full pl-10 pr-4 py-2 border border-blue-300 rounded-full bg-white text-black focus:outline-none focus:border-blue-500"
                                   placeholder="20"
                                   disabled={loading}
@@ -560,85 +665,147 @@ const AddItem = ({ showModal, setShowModal, onUserAdded }) => {
                                 </label>
                               </div>
                               <div className="relative">
-                                <div className="absolute inset-y-0 left-3 flex items-center">
-                                  <FiDollarSign className="w-4 h-4 text-blue-500" />
-                                </div>
+                                <div className="absolute inset-y-0 left-3 flex items-center"></div>
                                 <input
-                                  type="number"
+                                  type="text"
                                   name="wholesalePrice"
-                                  value={regi.wholesalePrice}
+                                  value={formatNumberWithCommas(
+                                    regi.wholesalePrice
+                                  )}
                                   onChange={handleChange}
-                                  min="0"
-                                  step="0.01"
                                   className="w-full pl-10 pr-4 py-2 border border-blue-300 rounded-full bg-white text-black focus:outline-none focus:border-blue-500"
                                   placeholder="15000.00"
                                   disabled={loading}
                                 />
+                                <div className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500 text-sm">
+                                  Tsh
+                                </div>
                               </div>
                             </div>
                           </div>
 
                           {/* Wholesale Calculation Summary */}
-                          {regi.enableWholesale && regi.wholesalePrice > 0 && regi.wholesaleMinQty > 0 && regi.price > 0 && (
-                            <div className="mt-3 p-3 bg-white rounded-lg border border-blue-200">
-                              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                                {/* Retail vs Wholesale */}
-                                <div className="space-y-2">
-                                  <div className="p-2 bg-gray-50 rounded">
-                                    <p className="text-xs text-gray-500">Retail Total for {regi.wholesaleMinQty} units</p>
-                                    <p className="text-sm font-bold text-gray-800">
-                                      Tsh {calculatedValues.totalRetailPrice.toLocaleString()}
-                                    </p>
+                          {regi.enableWholesale &&
+                            parseCommaFormattedNumber(regi.wholesalePrice) >
+                              0 &&
+                            parseCommaFormattedNumber(regi.wholesaleMinQty) >
+                              0 &&
+                            parseCommaFormattedNumber(regi.price) > 0 && (
+                              <div className="mt-3 p-3 bg-white rounded-lg border border-blue-200">
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                                  {/* Retail vs Wholesale */}
+                                  <div className="space-y-2">
+                                    <div className="p-2 bg-gray-50 rounded">
+                                      <p className="text-xs text-gray-500">
+                                        Retail Total for{" "}
+                                        {parseCommaFormattedNumber(
+                                          regi.wholesaleMinQty
+                                        ).toLocaleString()}{" "}
+                                        units
+                                      </p>
+                                      <p className="text-sm font-bold text-gray-800">
+                                        Tsh{" "}
+                                        {calculatedValues.totalRetailPrice.toLocaleString()}
+                                      </p>
+                                    </div>
+                                    <div className="p-2 bg-blue-50 rounded">
+                                      <p className="text-xs text-blue-600">
+                                        Wholesale Total
+                                      </p>
+                                      <p className="text-sm font-bold text-blue-700">
+                                        Tsh{" "}
+                                        {parseCommaFormattedNumber(
+                                          regi.wholesalePrice
+                                        ).toLocaleString()}
+                                      </p>
+                                    </div>
                                   </div>
-                                  <div className="p-2 bg-blue-50 rounded">
-                                    <p className="text-xs text-blue-600">Wholesale Total</p>
-                                    <p className="text-sm font-bold text-blue-700">
-                                      Tsh {regi.wholesalePrice.toLocaleString()}
-                                    </p>
+
+                                  {/* Savings and Per Unit */}
+                                  <div className="space-y-2">
+                                    <div className="p-2 bg-green-50 rounded">
+                                      <div className="flex justify-between">
+                                        <div>
+                                          <p className="text-xs text-gray-600">
+                                            Savings
+                                          </p>
+                                          <p className="text-sm font-bold text-green-700">
+                                            Tsh{" "}
+                                            {calculatedValues.savingsAmount.toLocaleString()}
+                                          </p>
+                                        </div>
+                                        <div className="text-right">
+                                          <p className="text-xs text-gray-600">
+                                            Discount
+                                          </p>
+                                          <p className="text-sm font-bold text-green-700">
+                                            {
+                                              calculatedValues.discountPercentage
+                                            }
+                                            %
+                                          </p>
+                                        </div>
+                                      </div>
+                                    </div>
+                                    <div className="grid grid-cols-2 gap-2">
+                                      <div className="p-2 border border-gray-200 rounded text-center">
+                                        <p className="text-xs text-gray-500">
+                                          Retail/unit
+                                        </p>
+                                        <p className="text-sm font-medium">
+                                          Tsh{" "}
+                                          {parseCommaFormattedNumber(
+                                            regi.price
+                                          ).toLocaleString()}
+                                        </p>
+                                      </div>
+                                      <div className="p-2 border border-green-200 bg-green-50 rounded text-center">
+                                        <p className="text-xs text-green-600">
+                                          Wholesale/unit
+                                        </p>
+                                        <p className="text-sm font-bold text-green-700">
+                                          Tsh{" "}
+                                          {calculatedValues.perUnitWholesalePrice.toLocaleString()}
+                                        </p>
+                                      </div>
+                                    </div>
                                   </div>
                                 </div>
 
-                                {/* Savings and Per Unit */}
-                                <div className="space-y-2">
-                                  <div className="p-2 bg-green-50 rounded">
-                                    <div className="flex justify-between">
-                                      <div>
-                                        <p className="text-xs text-gray-600">Savings</p>
-                                        <p className="text-sm font-bold text-green-700">
-                                          Tsh {calculatedValues.savingsAmount.toLocaleString()}
-                                        </p>
-                                      </div>
-                                      <div className="text-right">
-                                        <p className="text-xs text-gray-600">Discount</p>
-                                        <p className="text-sm font-bold text-green-700">
-                                          {calculatedValues.discountPercentage}%
-                                        </p>
-                                      </div>
-                                    </div>
+                                {/* Stock Check */}
+                                {parseCommaFormattedNumber(regi.itemQuantity) >
+                                  0 && (
+                                  <div
+                                    className={`mt-2 p-2 rounded text-center text-sm ${
+                                      parseCommaFormattedNumber(
+                                        regi.itemQuantity
+                                      ) >=
+                                      parseCommaFormattedNumber(
+                                        regi.wholesaleMinQty
+                                      )
+                                        ? "bg-green-100 text-green-700"
+                                        : "bg-yellow-100 text-yellow-700"
+                                    }`}
+                                  >
+                                    <span className="font-medium">
+                                      {parseCommaFormattedNumber(
+                                        regi.itemQuantity
+                                      ) >=
+                                      parseCommaFormattedNumber(
+                                        regi.wholesaleMinQty
+                                      )
+                                        ? "✓"
+                                        : "⚠"}
+                                      Stock:{" "}
+                                      {parseCommaFormattedNumber(
+                                        regi.itemQuantity
+                                      ).toLocaleString()}{" "}
+                                      units
+                                    </span>
                                   </div>
-                                  <div className="grid grid-cols-2 gap-2">
-                                    <div className="p-2 border border-gray-200 rounded text-center">
-                                      <p className="text-xs text-gray-500">Retail/unit</p>
-                                      <p className="text-sm font-medium">Tsh {parseFloat(regi.price).toFixed(2)}</p>
-                                    </div>
-                                    <div className="p-2 border border-green-200 bg-green-50 rounded text-center">
-                                      <p className="text-xs text-green-600">Wholesale/unit</p>
-                                      <p className="text-sm font-bold text-green-700">Tsh {calculatedValues.perUnitWholesalePrice.toFixed(2)}</p>
-                                    </div>
-                                  </div>
-                                </div>
+                                )}
                               </div>
-
-                              {/* Stock Check */}
-                              {regi.itemQuantity > 0 && (
-                                <div className={`mt-2 p-2 rounded text-center text-sm ${regi.itemQuantity >= regi.wholesaleMinQty ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700'}`}>
-                                  <span className="font-medium">
-                                    {regi.itemQuantity >= regi.wholesaleMinQty ? '✓' : '⚠'} Stock: {regi.itemQuantity} units
-                                  </span>
-                                </div>
-                              )}
-                            </div>
-                          )}
+                            )}
                         </div>
                       )}
                     </div>
@@ -691,22 +858,84 @@ const AddItem = ({ showModal, setShowModal, onUserAdded }) => {
 
                     {/* Validation Summary - Full width */}
                     <div className="col-span-1 md:col-span-3 bg-gray-100 rounded-xl p-3 border border-gray-300">
-                      <p className="text-sm font-bold text-black mb-2">Validation Status</p>
+                      <p className="text-sm font-bold text-black mb-2">
+                        Validation Status
+                      </p>
                       <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
-                        <div className={`flex items-center gap-2 ${regi.name ? "text-green-700" : "text-gray-600"}`}>
-                          <div className={`w-2 h-2 rounded-full ${regi.name ? "bg-green-300" : "bg-gray-400"}`} />
-                          <span className="text-xs">Name {regi.name ? "✓" : ""}</span>
+                        <div
+                          className={`flex items-center gap-2 ${
+                            regi.name ? "text-green-700" : "text-gray-600"
+                          }`}
+                        >
+                          <div
+                            className={`w-2 h-2 rounded-full ${
+                              regi.name ? "bg-green-300" : "bg-gray-400"
+                            }`}
+                          />
+                          <span className="text-xs">
+                            Name {regi.name ? "✓" : ""}
+                          </span>
                         </div>
-                        <div className={`flex items-center gap-2 ${regi.price > 0 ? "text-green-700" : "text-gray-600"}`}>
-                          <div className={`w-2 h-2 rounded-full ${regi.price > 0 ? "bg-green-300" : "bg-gray-400"}`} />
-                          <span className="text-xs">Price {regi.price > 0 ? "✓" : ""}</span>
+                        <div
+                          className={`flex items-center gap-2 ${
+                            parseCommaFormattedNumber(regi.price) > 0
+                              ? "text-green-700"
+                              : "text-gray-600"
+                          }`}
+                        >
+                          <div
+                            className={`w-2 h-2 rounded-full ${
+                              parseCommaFormattedNumber(regi.price) > 0
+                                ? "bg-green-300"
+                                : "bg-gray-400"
+                            }`}
+                          />
+                          <span className="text-xs">
+                            Price{" "}
+                            {parseCommaFormattedNumber(regi.price) > 0
+                              ? "✓"
+                              : ""}
+                          </span>
                         </div>
-                        <div className={`flex items-center gap-2 ${regi.category ? "text-green-700" : "text-gray-600"}`}>
-                          <div className={`w-2 h-2 rounded-full ${regi.category ? "bg-green-300" : "bg-gray-400"}`} />
-                          <span className="text-xs">Category {regi.category ? "✓" : ""}</span>
+                        <div
+                          className={`flex items-center gap-2 ${
+                            regi.category ? "text-green-700" : "text-gray-600"
+                          }`}
+                        >
+                          <div
+                            className={`w-2 h-2 rounded-full ${
+                              regi.category ? "bg-green-300" : "bg-gray-400"
+                            }`}
+                          />
+                          <span className="text-xs">
+                            Category {regi.category ? "✓" : ""}
+                          </span>
                         </div>
-                        <div className={`flex items-center gap-2 ${regi.enableWholesale && regi.wholesalePrice > 0 && regi.wholesaleMinQty > 0 ? "text-green-700" : regi.enableWholesale ? "text-yellow-600" : "text-gray-400"}`}>
-                          <div className={`w-2 h-2 rounded-full ${regi.enableWholesale && regi.wholesalePrice > 0 && regi.wholesaleMinQty > 0 ? "bg-green-300" : regi.enableWholesale ? "bg-yellow-300" : "bg-gray-300"}`} />
+                        <div
+                          className={`flex items-center gap-2 ${
+                            regi.enableWholesale &&
+                            parseCommaFormattedNumber(regi.wholesalePrice) >
+                              0 &&
+                            parseCommaFormattedNumber(regi.wholesaleMinQty) > 0
+                              ? "text-green-700"
+                              : regi.enableWholesale
+                              ? "text-yellow-600"
+                              : "text-gray-400"
+                          }`}
+                        >
+                          <div
+                            className={`w-2 h-2 rounded-full ${
+                              regi.enableWholesale &&
+                              parseCommaFormattedNumber(regi.wholesalePrice) >
+                                0 &&
+                              parseCommaFormattedNumber(regi.wholesaleMinQty) >
+                                0
+                                ? "bg-green-300"
+                                : regi.enableWholesale
+                                ? "bg-yellow-300"
+                                : "bg-gray-300"
+                            }`}
+                          />
                           <span className="text-xs">Wholesale</span>
                         </div>
                       </div>
@@ -725,9 +954,17 @@ const AddItem = ({ showModal, setShowModal, onUserAdded }) => {
                     <div className="col-span-1 md:col-span-3">
                       <button
                         type="submit"
-                        disabled={loading || !regi.name || !regi.price || !regi.category}
+                        disabled={
+                          loading ||
+                          !regi.name ||
+                          !parseCommaFormattedNumber(regi.price) ||
+                          !regi.category
+                        }
                         className={`w-full py-2 font-bold rounded-full flex items-center justify-center gap-2 text-sm ${
-                          loading || !regi.name || !regi.price || !regi.category
+                          loading ||
+                          !regi.name ||
+                          !parseCommaFormattedNumber(regi.price) ||
+                          !regi.category
                             ? "bg-gray-300 text-gray-500 cursor-not-allowed"
                             : "bg-green-300 hover:bg-green-400 text-black"
                         }`}

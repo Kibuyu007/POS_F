@@ -17,7 +17,9 @@ import {
   FiCheck, 
   FiEdit,
   FiTrendingUp,
-  FiMinus
+  FiMinus,
+  FiInfo,
+  FiShoppingBag
 } from "react-icons/fi";
 
 //API
@@ -42,37 +44,58 @@ const EditItem = ({ showModal, setShowModal, item, onItemUpdated }) => {
 
   const [editData, setEditData] = useState({
     name: "",
-    price: 0,
+    price: "",
     category: "",
     photo: "",
     barCode: "",
-    itemQuantity: 0,
-    reOrder: 0,
-    discount: 0,
+    itemQuantity: "",
+    reOrder: "",
+    discount: "",
     manufactureDate: new Date(),
     expireDate: new Date(),
     // WHOLESALE FIELDS
-    wholesalePrice: 0,
-    wholesaleMinQty: 0,
+    wholesalePrice: "",
+    wholesaleMinQty: "",
     enableWholesale: false,
   });
+
+  // Helper function to format numbers with commas
+  const formatNumberWithCommas = (value) => {
+    if (value === "" || value === null || value === undefined) return "";
+    const stringValue = value.toString().replace(/,/g, '');
+    const number = parseFloat(stringValue);
+    if (isNaN(number)) return "";
+    return number.toLocaleString('en-US', {
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 2
+    });
+  };
+
+  // Parse comma-formatted number back to raw number
+  const parseCommaFormattedNumber = (formattedValue) => {
+    if (formattedValue === "" || formattedValue === null || formattedValue === undefined) return 0;
+    const cleanedValue = formattedValue.replace(/[^\d.]/g, '');
+    if (cleanedValue === "") return 0;
+    const number = parseFloat(cleanedValue);
+    return isNaN(number) ? 0 : number;
+  };
 
   useEffect(() => {
     if (item) {
       const newEditData = {
         name: item.name || "",
-        price: item.price || 0,
+        price: item.price?.toString() || "",
         photo: item.photo || "",
         category: item.category?._id || item.category || "",
         barCode: item.barCode || "",
-        itemQuantity: item.itemQuantity || 0,
-        reOrder: item.reOrder || 0,
-        discount: item.discount || 0,
+        itemQuantity: item.itemQuantity?.toString() || "",
+        reOrder: item.reOrder?.toString() || "",
+        discount: item.discount?.toString() || "",
         manufactureDate: item.manufactureDate ? new Date(item.manufactureDate) : new Date(),
         expireDate: item.expireDate ? new Date(item.expireDate) : new Date(),
         // WHOLESALE FIELDS
-        wholesalePrice: item.wholesalePrice || 0,
-        wholesaleMinQty: item.wholesaleMinQty || 0,
+        wholesalePrice: item.wholesalePrice?.toString() || "",
+        wholesaleMinQty: item.wholesaleMinQty?.toString() || "",
         enableWholesale: item.enableWholesale || false,
       };
       
@@ -101,10 +124,14 @@ const EditItem = ({ showModal, setShowModal, item, onItemUpdated }) => {
 
   // Recalculate when wholesale fields change
   useEffect(() => {
-    if (editData.enableWholesale && editData.wholesalePrice > 0 && editData.wholesaleMinQty > 0 && editData.price > 0) {
-      const perUnitWholesalePrice = editData.wholesalePrice / editData.wholesaleMinQty;
-      const totalRetailPrice = editData.price * editData.wholesaleMinQty;
-      const savingsAmount = totalRetailPrice - editData.wholesalePrice;
+    const rawPrice = parseCommaFormattedNumber(editData.price);
+    const rawWholesalePrice = parseCommaFormattedNumber(editData.wholesalePrice);
+    const rawWholesaleMinQty = parseCommaFormattedNumber(editData.wholesaleMinQty);
+    
+    if (editData.enableWholesale && rawWholesalePrice > 0 && rawWholesaleMinQty > 0 && rawPrice > 0) {
+      const perUnitWholesalePrice = rawWholesalePrice / rawWholesaleMinQty;
+      const totalRetailPrice = rawPrice * rawWholesaleMinQty;
+      const savingsAmount = totalRetailPrice - rawWholesalePrice;
       const discountPercentage = totalRetailPrice > 0 ? (savingsAmount / totalRetailPrice) * 100 : 0;
 
       setCalculatedValues({
@@ -136,25 +163,33 @@ const EditItem = ({ showModal, setShowModal, item, onItemUpdated }) => {
       return;
     }
 
-    let numericValue = value;
-    if (['price', 'itemQuantity', 'reOrder', 'discount', 'wholesalePrice', 'wholesaleMinQty'].includes(name)) {
-      numericValue = value === '' ? 0 : Number(value);
-      
-      if (numericValue < 0) {
-        numericValue = 0;
-        toast.error("Value cannot be negative");
-      }
+    // Handle text fields
+    if (name === "name" || name === "category" || name === "barCode") {
+      setEditData({ ...editData, [name]: value });
+      return;
     }
 
-    if (name === "discount") {
-      const price = Number(editData.price);
-      if (numericValue > price) {
-        toast.error("Discount can't be greater than Item Price");
+    // Handle numeric fields with comma formatting
+    if (['price', 'itemQuantity', 'reOrder', 'discount', 'wholesalePrice', 'wholesaleMinQty'].includes(name)) {
+      // Allow only numbers and decimal point
+      const cleanedValue = value.replace(/[^\d.]/g, '');
+      
+      // Prevent multiple decimal points
+      const parts = cleanedValue.split('.');
+      if (parts.length > 2) {
+        return; // Invalid input, don't update
+      }
+      
+      // Limit decimal places to 2
+      if (parts.length === 2 && parts[1].length > 2) {
         return;
       }
+      
+      setEditData({ ...editData, [name]: cleanedValue });
+      return;
     }
 
-    setEditData({ ...editData, [name]: type === 'number' ? numericValue : value });
+    setEditData({ ...editData, [name]: value });
   };
 
   const toggleWholesale = () => {
@@ -163,8 +198,8 @@ const EditItem = ({ showModal, setShowModal, item, onItemUpdated }) => {
       setEditData({
         ...editData,
         enableWholesale: false,
-        wholesalePrice: 0,
-        wholesaleMinQty: 0,
+        wholesalePrice: "",
+        wholesaleMinQty: "",
       });
     } else {
       setEditData({ ...editData, enableWholesale: true });
@@ -190,13 +225,21 @@ const EditItem = ({ showModal, setShowModal, item, onItemUpdated }) => {
   const handleEdit = async (e) => {
     e.preventDefault();
 
+    // Parse numeric values before validation
+    const rawPrice = parseCommaFormattedNumber(editData.price);
+    const rawQuantity = parseCommaFormattedNumber(editData.itemQuantity);
+    const rawReOrder = parseCommaFormattedNumber(editData.reOrder);
+    const rawDiscount = parseCommaFormattedNumber(editData.discount);
+    const rawWholesalePrice = parseCommaFormattedNumber(editData.wholesalePrice);
+    const rawWholesaleMinQty = parseCommaFormattedNumber(editData.wholesaleMinQty);
+
     // Validation
     if (!editData.name.trim()) {
       toast.error("Item name is required");
       return;
     }
 
-    if (!editData.price || Number(editData.price) <= 0) {
+    if (!rawPrice || Number(rawPrice) <= 0) {
       toast.error("Price must be greater than 0");
       return;
     }
@@ -206,30 +249,40 @@ const EditItem = ({ showModal, setShowModal, item, onItemUpdated }) => {
       return;
     }
 
-    if (editData.discount && Number(editData.discount) > Number(editData.price)) {
+    if (rawDiscount && Number(rawDiscount) > Number(rawPrice)) {
       toast.error("Discount cannot exceed item price");
       return;
     }
 
-    // Wholesale validation - REMOVED PRICE COMPARISON RESTRICTION
+    // Wholesale validation
     if (editData.enableWholesale) {
-      if (!editData.wholesalePrice || Number(editData.wholesalePrice) <= 0) {
+      if (!rawWholesalePrice || Number(rawWholesalePrice) <= 0) {
         toast.error("Wholesale price must be greater than 0 when wholesale is enabled");
         return;
       }
-      if (!editData.wholesaleMinQty || Number(editData.wholesaleMinQty) <= 0) {
+      if (!rawWholesaleMinQty || Number(rawWholesaleMinQty) <= 0) {
         toast.error("Wholesale minimum quantity must be greater than 0 when wholesale is enabled");
         return;
       }
-      // REMOVED: Price comparison restriction
     }
 
     setLoading(true);
 
     try {
+      // Prepare data with parsed numeric values
+      const updateData = {
+        ...editData,
+        price: rawPrice,
+        itemQuantity: rawQuantity,
+        reOrder: rawReOrder,
+        discount: rawDiscount,
+        wholesalePrice: rawWholesalePrice,
+        wholesaleMinQty: rawWholesaleMinQty,
+      };
+
       const response = await axios.put(
         `${BASE_URL}/api/items/editItem/${item._id}`,
-        editData,
+        updateData,
         { withCredentials: true }
       );
 
@@ -262,17 +315,17 @@ const EditItem = ({ showModal, setShowModal, item, onItemUpdated }) => {
     if (item) {
       const resetData = {
         name: item.name || "",
-        price: item.price || 0,
+        price: item.price?.toString() || "",
         photo: item.photo || "",
         category: item.category?._id || item.category || "",
         barCode: item.barCode || "",
-        itemQuantity: item.itemQuantity || 0,
-        reOrder: item.reOrder || 0,
-        discount: item.discount || 0,
+        itemQuantity: item.itemQuantity?.toString() || "",
+        reOrder: item.reOrder?.toString() || "",
+        discount: item.discount?.toString() || "",
         manufactureDate: item.manufactureDate ? new Date(item.manufactureDate) : new Date(),
         expireDate: item.expireDate ? new Date(item.expireDate) : new Date(),
-        wholesalePrice: item.wholesalePrice || 0,
-        wholesaleMinQty: item.wholesaleMinQty || 0,
+        wholesalePrice: item.wholesalePrice?.toString() || "",
+        wholesaleMinQty: item.wholesaleMinQty?.toString() || "",
         enableWholesale: item.enableWholesale || false,
       };
       
@@ -306,21 +359,21 @@ const EditItem = ({ showModal, setShowModal, item, onItemUpdated }) => {
             <div className="w-11/12 md:w-4/5 lg:w-3/4 xl:w-7/12 max-w-6xl">
               <div className="border border-gray-300 rounded-2xl shadow-lg relative flex flex-col w-full bg-white outline-none focus:outline-none max-h-[85vh]">
                 {/* Header */}
-                <div className="flex items-start justify-between p-5 bg-green-300 border-b border-gray-400 rounded-t-2xl">
+                <div className="flex items-start justify-between p-5 bg-gradient-to-r from-green-400 to-green-500 border-b border-gray-400 rounded-t-2xl">
                   <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-full bg-black/5 flex items-center justify-center">
-                      <FiEdit className="w-5 h-5 text-black" />
+                    <div className="w-10 h-10 rounded-full bg-white/20 flex items-center justify-center">
+                      <FiEdit className="w-5 h-5 text-white" />
                     </div>
                     <div>
-                      <h3 className="text-2xl font-bold text-black">Edit Item</h3>
-                      <p className="text-black/70 text-sm mt-1">Update item details</p>
+                      <h3 className="text-2xl font-bold text-white">Edit Item</h3>
+                      <p className="text-white/90 text-sm mt-1">Update item details</p>
                     </div>
                   </div>
                   <button
-                    className="p-2 hover:bg-black/5 rounded-full transition-colors"
+                    className="p-2 hover:bg-white/10 rounded-full transition-colors"
                     onClick={() => setShowModal(false)}
                   >
-                    <FiX className="w-5 h-5 text-black" />
+                    <FiX className="w-5 h-5 text-white" />
                   </button>
                 </div>
 
@@ -343,7 +396,7 @@ const EditItem = ({ showModal, setShowModal, item, onItemUpdated }) => {
                           name="name"
                           value={editData.name}
                           onChange={handleChange}
-                          className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-full bg-white text-black focus:outline-none focus:border-green-300"
+                          className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg bg-white text-gray-900 focus:outline-none focus:border-green-400 focus:ring-2 focus:ring-green-100"
                           placeholder="Enter item name"
                           disabled={loading}
                           autoFocus
@@ -355,7 +408,7 @@ const EditItem = ({ showModal, setShowModal, item, onItemUpdated }) => {
                     <div>
                       <div className="mb-2">
                         <label className="block text-sm font-bold text-gray-900">
-                          Retail Price
+                          Retail Price (per unit)
                         </label>
                       </div>
                       <div className="relative">
@@ -363,16 +416,17 @@ const EditItem = ({ showModal, setShowModal, item, onItemUpdated }) => {
                           <FiDollarSign className="w-4 h-4 text-gray-500" />
                         </div>
                         <input
-                          type="number"
+                          type="text"
                           name="price"
-                          value={editData.price}
+                          value={formatNumberWithCommas(editData.price)}
                           onChange={handleChange}
-                          min="0"
-                          step="0.01"
-                          className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-full bg-white text-black focus:outline-none focus:border-green-300"
+                          className="w-full pl-10 pr-12 py-2 border border-gray-300 rounded-lg bg-white text-gray-900 focus:outline-none focus:border-green-400 focus:ring-2 focus:ring-green-100"
                           placeholder="0.00"
                           disabled={loading}
                         />
+                        <div className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500 text-sm font-medium">
+                          Tsh
+                        </div>
                       </div>
                     </div>
 
@@ -391,7 +445,7 @@ const EditItem = ({ showModal, setShowModal, item, onItemUpdated }) => {
                           name="category"
                           value={editData.category}
                           onChange={handleChange}
-                          className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-full bg-white text-black focus:outline-none focus:border-green-300 appearance-none"
+                          className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg bg-white text-gray-900 focus:outline-none focus:border-green-400 focus:ring-2 focus:ring-green-100 appearance-none"
                           disabled={loading}
                         >
                           <option value="" disabled className="text-gray-500">
@@ -418,12 +472,11 @@ const EditItem = ({ showModal, setShowModal, item, onItemUpdated }) => {
                           <FiPackage className="w-4 h-4 text-gray-500" />
                         </div>
                         <input
-                          type="number"
+                          type="text"
                           name="itemQuantity"
-                          value={editData.itemQuantity}
+                          value={formatNumberWithCommas(editData.itemQuantity)}
                           onChange={handleChange}
-                          min="0"
-                          className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-full bg-white text-black focus:outline-none focus:border-green-300"
+                          className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg bg-white text-gray-900 focus:outline-none focus:border-green-400 focus:ring-2 focus:ring-green-100"
                           placeholder="0"
                           disabled={loading}
                         />
@@ -447,7 +500,7 @@ const EditItem = ({ showModal, setShowModal, item, onItemUpdated }) => {
                           showTimeSelect
                           timeIntervals={1}
                           dateFormat="Pp"
-                          className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-full bg-white text-black focus:outline-none focus:border-green-300 text-sm"
+                          className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg bg-white text-gray-900 focus:outline-none focus:border-green-400 focus:ring-2 focus:ring-green-100 text-sm"
                           wrapperClassName="w-full"
                           disabled={loading}
                         />
@@ -471,7 +524,7 @@ const EditItem = ({ showModal, setShowModal, item, onItemUpdated }) => {
                           showTimeSelect
                           timeIntervals={1}
                           dateFormat="Pp"
-                          className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-full bg-white text-black focus:outline-none focus:border-green-300 text-sm"
+                          className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg bg-white text-gray-900 focus:outline-none focus:border-green-400 focus:ring-2 focus:ring-green-100 text-sm"
                           wrapperClassName="w-full"
                           disabled={loading}
                         />
@@ -490,12 +543,11 @@ const EditItem = ({ showModal, setShowModal, item, onItemUpdated }) => {
                           <FiRefreshCw className="w-4 h-4 text-gray-500" />
                         </div>
                         <input
-                          type="number"
+                          type="text"
                           name="reOrder"
-                          value={editData.reOrder}
+                          value={formatNumberWithCommas(editData.reOrder)}
                           onChange={handleChange}
-                          min="0"
-                          className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-full bg-white text-black focus:outline-none focus:border-green-300"
+                          className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg bg-white text-gray-900 focus:outline-none focus:border-green-400 focus:ring-2 focus:ring-green-100"
                           placeholder="0"
                           disabled={loading}
                         />
@@ -514,161 +566,240 @@ const EditItem = ({ showModal, setShowModal, item, onItemUpdated }) => {
                           <FiPercent className="w-4 h-4 text-gray-500" />
                         </div>
                         <input
-                          type="number"
+                          type="text"
                           name="discount"
-                          value={editData.discount}
-                          min="0"
-                          max={editData.price}
+                          value={formatNumberWithCommas(editData.discount)}
                           onChange={handleChange}
-                          className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-full bg-white text-black focus:outline-none focus:border-green-300"
+                          className="w-full pl-10 pr-12 py-2 border border-gray-300 rounded-lg bg-white text-gray-900 focus:outline-none focus:border-green-400 focus:ring-2 focus:ring-green-100"
                           placeholder="0.00"
                           disabled={loading}
                         />
+                        <div className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500 text-sm font-medium">
+                          Tsh
+                        </div>
                       </div>
                     </div>
 
-                    {/* WHOLESALE SECTION - Full width */}
-                    <div className="col-span-1 md:col-span-3 mt-4 pt-4 border-t border-gray-300">
-                      <div className="flex items-center justify-between mb-4">
-                        <div className="flex items-center gap-3">
-                          <div className="w-10 h-10 rounded-full bg-blue-50 flex items-center justify-center">
-                            <FiTrendingUp className="w-5 h-5 text-blue-600" />
+                    {/* WHOLESALE SECTION - IMPROVED */}
+                    <div className="col-span-1 md:col-span-3 mt-6">
+                      <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-xl p-4">
+                        <div className="flex items-center justify-between mb-4">
+                          <div className="flex items-center gap-3">
+                            <div className="w-12 h-12 rounded-full bg-gradient-to-r from-blue-500 to-indigo-500 flex items-center justify-center shadow-md">
+                              <FiShoppingBag className="w-6 h-6 text-white" />
+                            </div>
+                            <div>
+                              <h4 className="text-lg font-bold text-gray-900">Bulk/Wholesale Pricing</h4>
+                              <p className="text-gray-600 text-sm">Set special prices for customers buying in bulk</p>
+                            </div>
                           </div>
-                          <div>
-                            <h4 className="text-lg font-bold text-gray-900">Bulk/Wholesale Settings</h4>
-                            <p className="text-gray-600 text-sm">Configure special pricing for bulk purchases</p>
+                          <div className="flex items-center gap-3">
+                            <span className={`text-sm font-medium px-3 py-1 rounded-full ${editData.enableWholesale ? 'bg-blue-100 text-blue-700' : 'bg-gray-100 text-gray-600'}`}>
+                              {editData.enableWholesale ? 'ACTIVE' : 'INACTIVE'}
+                            </span>
+                            <button
+                              type="button"
+                              onClick={toggleWholesale}
+                              className={`relative inline-flex items-center h-7 rounded-full w-14 transition-colors duration-300 shadow-sm ${editData.enableWholesale ? 'bg-blue-600' : 'bg-gray-300'}`}
+                            >
+                              <span className={`inline-block w-5 h-5 transform bg-white rounded-full transition-transform duration-300 shadow-md ${editData.enableWholesale ? 'translate-x-8' : 'translate-x-1'}`} />
+                            </button>
                           </div>
                         </div>
-                        <button
-                          type="button"
-                          onClick={toggleWholesale}
-                          className={`relative inline-flex items-center h-6 rounded-full w-11 transition-colors duration-200 ${editData.enableWholesale ? 'bg-blue-600' : 'bg-gray-300'}`}
-                        >
-                          <span className={`inline-block w-4 h-4 transform bg-white rounded-full transition-transform duration-200 ${editData.enableWholesale ? 'translate-x-6' : 'translate-x-1'}`} />
-                        </button>
-                      </div>
 
-                      {/* Wholesale Fields */}
-                      {editData.enableWholesale && (
-                        <div className="space-y-3 p-4 bg-blue-50 rounded-xl border border-blue-200">
-                          {/* Wholesale Fields in 2 columns */}
-                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            {/* Wholesale Minimum Quantity */}
-                            <div>
-                              <div className="mb-1">
-                                <label className="block text-sm font-bold text-gray-900">
-                                  Minimum Quantity for Wholesale
+                        {editData.enableWholesale && (
+                          <div className="space-y-4">
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                              {/* Wholesale Minimum Quantity */}
+                              <div className="bg-white p-4 rounded-lg border border-blue-200 shadow-sm">
+                                <label className="block text-sm font-bold text-gray-900 mb-2 flex items-center gap-2">
+                                  <FiInfo className="w-4 h-4 text-blue-500" />
+                                  Minimum Bulk Quantity
                                 </label>
-                              </div>
-                              <div className="relative">
-                                <div className="absolute inset-y-0 left-3 flex items-center">
-                                  <FiMinus className="w-4 h-4 text-blue-500" />
+                                <p className="text-xs text-gray-500 mb-3">
+                                  Minimum number of units required to qualify for wholesale pricing
+                                </p>
+                                <div className="relative">
+                                  <div className="absolute inset-y-0 left-3 flex items-center">
+                                    <FiPackage className="w-4 h-4 text-blue-500" />
+                                  </div>
+                                  <input
+                                    type="text"
+                                    name="wholesaleMinQty"
+                                    value={formatNumberWithCommas(editData.wholesaleMinQty)}
+                                    onChange={handleChange}
+                                    className="w-full pl-10 pr-4 py-2.5 border border-blue-300 rounded-lg bg-blue-50 text-gray-900 focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+                                    placeholder="Enter minimum quantity"
+                                    disabled={loading}
+                                  />
                                 </div>
-                                <input
-                                  type="number"
-                                  name="wholesaleMinQty"
-                                  value={editData.wholesaleMinQty}
-                                  onChange={handleChange}
-                                  min="1"
-                                  className="w-full pl-10 pr-4 py-2 border border-blue-300 rounded-full bg-white text-black focus:outline-none focus:border-blue-500"
-                                  placeholder="20"
-                                  disabled={loading}
-                                />
                               </div>
-                            </div>
 
-                            {/* Wholesale Total Price */}
-                            <div>
-                              <div className="mb-1">
-                                <label className="block text-sm font-bold text-gray-900">
-                                  Wholesale Total Price (Tsh)
-                                </label>
-                              </div>
-                              <div className="relative">
-                                <div className="absolute inset-y-0 left-3 flex items-center">
+                              {/* Wholesale Total Price */}
+                              <div className="bg-white p-4 rounded-lg border border-blue-200 shadow-sm">
+                                <label className="block text-sm font-bold text-gray-900 mb-2 flex items-center gap-2">
                                   <FiDollarSign className="w-4 h-4 text-blue-500" />
+                                  Bulk Total Price
+                                </label>
+                                <p className="text-xs text-gray-500 mb-3">
+                                  Total price for {parseCommaFormattedNumber(editData.wholesaleMinQty) || "minimum"} units
+                                </p>
+                                <div className="relative">
+                                  <div className="absolute inset-y-0 left-3 flex items-center">
+                                    <FiTrendingUp className="w-4 h-4 text-blue-500" />
+                                  </div>
+                                  <input
+                                    type="text"
+                                    name="wholesalePrice"
+                                    value={formatNumberWithCommas(editData.wholesalePrice)}
+                                    onChange={handleChange}
+                                    className="w-full pl-10 pr-12 py-2.5 border border-blue-300 rounded-lg bg-blue-50 text-gray-900 focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+                                    placeholder="Enter wholesale price"
+                                    disabled={loading}
+                                  />
+                                  <div className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500 text-sm font-medium">
+                                    Tsh
+                                  </div>
                                 </div>
-                                <input
-                                  type="number"
-                                  name="wholesalePrice"
-                                  value={editData.wholesalePrice}
-                                  onChange={handleChange}
-                                  min="0"
-                                  step="0.01"
-                                  className="w-full pl-10 pr-4 py-2 border border-blue-300 rounded-full bg-white text-black focus:outline-none focus:border-blue-500"
-                                  placeholder="15000.00"
-                                  disabled={loading}
-                                />
                               </div>
                             </div>
+
+                            {/* Wholesale Calculation Summary */}
+                            {editData.enableWholesale && 
+                             parseCommaFormattedNumber(editData.wholesalePrice) > 0 && 
+                             parseCommaFormattedNumber(editData.wholesaleMinQty) > 0 && 
+                             parseCommaFormattedNumber(editData.price) > 0 && (
+                              <div className="bg-white rounded-xl border border-blue-200 shadow-sm overflow-hidden">
+                                <div className="bg-gradient-to-r from-blue-50 to-indigo-50 px-4 py-3 border-b border-blue-200">
+                                  <h5 className="font-bold text-gray-900 flex items-center gap-2">
+                                    <FiTrendingUp className="w-4 h-4 text-blue-600" />
+                                    Wholesale Pricing Analysis
+                                  </h5>
+                                </div>
+                                
+                                <div className="p-4">
+                                  {/* Price Comparison */}
+                                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                                    <div className="space-y-2">
+                                      <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg border border-gray-200">
+                                        <div>
+                                          <p className="text-xs text-gray-500 font-medium">Retail Price Total</p>
+                                          <p className="text-lg font-bold text-gray-800">
+                                            Tsh {calculatedValues.totalRetailPrice.toLocaleString()}
+                                          </p>
+                                        </div>
+                                        <div className="text-right">
+                                          <p className="text-xs text-gray-500">{parseCommaFormattedNumber(editData.wholesaleMinQty).toLocaleString()} units ×</p>
+                                          <p className="text-sm font-medium">Tsh {parseCommaFormattedNumber(editData.price).toLocaleString()}/unit</p>
+                                        </div>
+                                      </div>
+                                      <div className="flex items-center justify-between p-3 bg-blue-50 rounded-lg border border-blue-200">
+                                        <div>
+                                          <p className="text-xs text-blue-600 font-medium">Wholesale Price Total</p>
+                                          <p className="text-lg font-bold text-blue-700">
+                                            Tsh {parseCommaFormattedNumber(editData.wholesalePrice).toLocaleString()}
+                                          </p>
+                                        </div>
+                                        <div className="text-right">
+                                          <p className="text-xs text-blue-600">Bulk discount</p>
+                                          <p className={`text-sm font-bold ${calculatedValues.savingsAmount >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                                            {calculatedValues.savingsAmount >= 0 ? '-' : '+'}Tsh {Math.abs(calculatedValues.savingsAmount).toLocaleString()}
+                                          </p>
+                                        </div>
+                                      </div>
+                                    </div>
+
+                                    {/* Unit Price Comparison */}
+                                    <div className="space-y-2">
+                                      <div className="grid grid-cols-2 gap-3">
+                                        <div className="p-3 bg-white rounded-lg border border-gray-200 text-center">
+                                          <p className="text-xs text-gray-500 mb-1">Retail per unit</p>
+                                          <p className="text-base font-bold text-gray-800">
+                                            Tsh {parseCommaFormattedNumber(editData.price).toLocaleString()}
+                                          </p>
+                                        </div>
+                                        <div className={`p-3 rounded-lg border text-center ${
+                                          calculatedValues.perUnitWholesalePrice <= parseCommaFormattedNumber(editData.price) 
+                                            ? 'bg-green-50 border-green-300' 
+                                            : 'bg-red-50 border-red-300'
+                                        }`}>
+                                          <p className="text-xs text-gray-500 mb-1">Wholesale per unit</p>
+                                          <p className={`text-base font-bold ${
+                                            calculatedValues.perUnitWholesalePrice <= parseCommaFormattedNumber(editData.price) 
+                                              ? 'text-green-700' 
+                                              : 'text-red-700'
+                                          }`}>
+                                            Tsh {calculatedValues.perUnitWholesalePrice.toLocaleString()}
+                                          </p>
+                                        </div>
+                                      </div>
+                                      
+                                      <div className={`p-3 rounded-lg border ${
+                                        calculatedValues.discountPercentage >= 0 
+                                          ? 'bg-green-50 border-green-200' 
+                                          : 'bg-red-50 border-red-200'
+                                      }`}>
+                                        <div className="flex items-center justify-between">
+                                          <div className="flex items-center gap-2">
+                                            <div className={`w-3 h-3 rounded-full ${
+                                              calculatedValues.discountPercentage >= 0 ? 'bg-green-500' : 'bg-red-500'
+                                            }`}></div>
+                                            <span className="text-sm font-medium text-gray-700">Discount/Premium</span>
+                                          </div>
+                                          <span className={`text-base font-bold ${
+                                            calculatedValues.discountPercentage >= 0 ? 'text-green-700' : 'text-red-700'
+                                          }`}>
+                                            {calculatedValues.discountPercentage >= 0 ? '' : '+'}{Math.abs(calculatedValues.discountPercentage).toFixed(1)}%
+                                          </span>
+                                        </div>
+                                      </div>
+                                    </div>
+                                  </div>
+
+                                  {/* Stock Availability */}
+                                  {parseCommaFormattedNumber(editData.itemQuantity) > 0 && (
+                                    <div className={`p-3 rounded-lg ${
+                                      parseCommaFormattedNumber(editData.itemQuantity) >= parseCommaFormattedNumber(editData.wholesaleMinQty)
+                                        ? 'bg-green-50 border border-green-200'
+                                        : 'bg-yellow-50 border border-yellow-200'
+                                    }`}>
+                                      <div className="flex items-center justify-between">
+                                        <div className="flex items-center gap-2">
+                                          <div className={`w-6 h-6 rounded-full flex items-center justify-center ${
+                                            parseCommaFormattedNumber(editData.itemQuantity) >= parseCommaFormattedNumber(editData.wholesaleMinQty)
+                                              ? 'bg-green-100 text-green-600'
+                                              : 'bg-yellow-100 text-yellow-600'
+                                          }`}>
+                                            {parseCommaFormattedNumber(editData.itemQuantity) >= parseCommaFormattedNumber(editData.wholesaleMinQty) ? '✓' : '⚠'}
+                                          </div>
+                                          <div>
+                                            <p className="text-sm font-medium text-gray-800">Stock Availability</p>
+                                            <p className="text-xs text-gray-600">
+                                              Current stock: {parseCommaFormattedNumber(editData.itemQuantity).toLocaleString()} units
+                                            </p>
+                                          </div>
+                                        </div>
+                                        <div className="text-right">
+                                          <p className={`text-sm font-bold ${
+                                            parseCommaFormattedNumber(editData.itemQuantity) >= parseCommaFormattedNumber(editData.wholesaleMinQty)
+                                              ? 'text-green-700'
+                                              : 'text-yellow-700'
+                                          }`}>
+                                            {parseCommaFormattedNumber(editData.itemQuantity) >= parseCommaFormattedNumber(editData.wholesaleMinQty)
+                                              ? `✓ Sufficient for bulk orders`
+                                              : `⚠ Needs ${(parseCommaFormattedNumber(editData.wholesaleMinQty) - parseCommaFormattedNumber(editData.itemQuantity)).toLocaleString()} more units`
+                                            }
+                                          </p>
+                                        </div>
+                                      </div>
+                                    </div>
+                                  )}
+                                </div>
+                              </div>
+                            )}
                           </div>
-
-                          {/* Wholesale Calculation Summary */}
-                          {editData.enableWholesale && editData.wholesalePrice > 0 && editData.wholesaleMinQty > 0 && editData.price > 0 && (
-                            <div className="mt-3 p-3 bg-white rounded-lg border border-blue-200">
-                              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                                {/* Retail vs Wholesale */}
-                                <div className="space-y-2">
-                                  <div className="p-2 bg-gray-50 rounded">
-                                    <p className="text-xs text-gray-500">Retail Total for {editData.wholesaleMinQty} units</p>
-                                    <p className="text-sm font-bold text-gray-800">
-                                      Tsh {calculatedValues.totalRetailPrice.toLocaleString()}
-                                    </p>
-                                  </div>
-                                  <div className="p-2 bg-blue-50 rounded">
-                                    <p className="text-xs text-blue-600">Wholesale Total</p>
-                                    <p className="text-sm font-bold text-blue-700">
-                                      Tsh {editData.wholesalePrice.toLocaleString()}
-                                    </p>
-                                  </div>
-                                </div>
-
-                                {/* Savings and Per Unit */}
-                                <div className="space-y-2">
-                                  <div className={`p-2 ${calculatedValues.savingsAmount >= 0 ? 'bg-green-50' : 'bg-red-50'} rounded`}>
-                                    <div className="flex justify-between">
-                                      <div>
-                                        <p className="text-xs text-gray-600">Difference</p>
-                                        <p className={`text-sm font-bold ${calculatedValues.savingsAmount >= 0 ? 'text-green-700' : 'text-red-700'}`}>
-                                          {calculatedValues.savingsAmount >= 0 ? 'Savings: ' : 'Extra: '}
-                                          Tsh {Math.abs(calculatedValues.savingsAmount).toLocaleString()}
-                                        </p>
-                                      </div>
-                                      <div className="text-right">
-                                        <p className="text-xs text-gray-600">Discount/Premium</p>
-                                        <p className={`text-sm font-bold ${calculatedValues.discountPercentage >= 0 ? 'text-green-700' : 'text-red-700'}`}>
-                                          {calculatedValues.discountPercentage >= 0 ? '' : '+'}{Math.abs(calculatedValues.discountPercentage).toFixed(1)}%
-                                        </p>
-                                      </div>
-                                    </div>
-                                  </div>
-                                  <div className="grid grid-cols-2 gap-2">
-                                    <div className="p-2 border border-gray-200 rounded text-center">
-                                      <p className="text-xs text-gray-500">Retail/unit</p>
-                                      <p className="text-sm font-medium">Tsh {parseFloat(editData.price).toFixed(2)}</p>
-                                    </div>
-                                    <div className={`p-2 border ${calculatedValues.perUnitWholesalePrice <= editData.price ? 'border-green-200 bg-green-50' : 'border-red-200 bg-red-50'} rounded text-center`}>
-                                      <p className={`text-xs ${calculatedValues.perUnitWholesalePrice <= editData.price ? 'text-green-600' : 'text-red-600'}`}>Wholesale/unit</p>
-                                      <p className={`text-sm font-bold ${calculatedValues.perUnitWholesalePrice <= editData.price ? 'text-green-700' : 'text-red-700'}`}>
-                                        Tsh {calculatedValues.perUnitWholesalePrice.toFixed(2)}
-                                      </p>
-                                    </div>
-                                  </div>
-                                </div>
-                              </div>
-
-                              {/* Stock Check */}
-                              {editData.itemQuantity > 0 && (
-                                <div className={`mt-2 p-2 rounded text-center text-sm ${editData.itemQuantity >= editData.wholesaleMinQty ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700'}`}>
-                                  <span className="font-medium">
-                                    {editData.itemQuantity >= editData.wholesaleMinQty ? '✓' : '⚠'} Stock: {editData.itemQuantity} units
-                                  </span>
-                                </div>
-                              )}
-                            </div>
-                          )}
-                        </div>
-                      )}
+                        )}
+                      </div>
                     </div>
 
                     {/* Photo Upload - Full width */}
@@ -689,18 +820,18 @@ const EditItem = ({ showModal, setShowModal, item, onItemUpdated }) => {
                           />
                           <label
                             htmlFor="photo-upload-edit"
-                            className="px-4 py-2 border border-gray-300 rounded-full bg-white text-black font-medium hover:bg-gray-50 cursor-pointer flex items-center gap-2 text-sm"
+                            className="px-4 py-2.5 border border-gray-300 rounded-lg bg-white text-gray-700 font-medium hover:bg-gray-50 cursor-pointer flex items-center gap-2 text-sm transition-colors"
                           >
                             <FiCamera className="w-4 h-4" />
                             Change Photo
                           </label>
                         </div>
                         {photoPreview && (
-                          <div className="relative">
+                          <div className="relative group">
                             <img
                               src={photoPreview}
                               alt="Preview"
-                              className="w-12 h-12 rounded-full object-cover border-2 border-gray-300"
+                              className="w-14 h-14 rounded-lg object-cover border-2 border-gray-300 shadow-sm"
                             />
                             <button
                               type="button"
@@ -709,7 +840,7 @@ const EditItem = ({ showModal, setShowModal, item, onItemUpdated }) => {
                                 setFile(null);
                                 setEditData({...editData, photo: ""});
                               }}
-                              className="absolute -top-1 -right-1 bg-red-500 text-white rounded-full w-4 h-4 flex items-center justify-center text-xs"
+                              className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs hover:bg-red-600 transition-colors"
                             >
                               ×
                             </button>
@@ -719,24 +850,40 @@ const EditItem = ({ showModal, setShowModal, item, onItemUpdated }) => {
                     </div>
 
                     {/* Validation Summary - Full width */}
-                    <div className="col-span-1 md:col-span-3 bg-gray-100 rounded-xl p-3 border border-gray-300">
-                      <p className="text-sm font-bold text-black mb-2">Validation Status</p>
-                      <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
-                        <div className={`flex items-center gap-2 ${editData.name ? "text-green-700" : "text-gray-600"}`}>
-                          <div className={`w-2 h-2 rounded-full ${editData.name ? "bg-green-300" : "bg-gray-400"}`} />
-                          <span className="text-xs">Name {editData.name ? "✓" : ""}</span>
+                    <div className="col-span-1 md:col-span-3 bg-gray-50 rounded-xl p-4 border border-gray-200">
+                      <p className="text-sm font-bold text-gray-900 mb-3">Validation Status</p>
+                      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                        <div className={`flex items-center gap-2 ${editData.name ? "text-green-700" : "text-gray-500"}`}>
+                          <div className={`w-2 h-2 rounded-full ${editData.name ? "bg-green-500" : "bg-gray-400"}`} />
+                          <span className="text-xs font-medium">Name {editData.name ? "✓" : ""}</span>
                         </div>
-                        <div className={`flex items-center gap-2 ${editData.price > 0 ? "text-green-700" : "text-gray-600"}`}>
-                          <div className={`w-2 h-2 rounded-full ${editData.price > 0 ? "bg-green-300" : "bg-gray-400"}`} />
-                          <span className="text-xs">Price {editData.price > 0 ? "✓" : ""}</span>
+                        <div className={`flex items-center gap-2 ${parseCommaFormattedNumber(editData.price) > 0 ? "text-green-700" : "text-gray-500"}`}>
+                          <div className={`w-2 h-2 rounded-full ${parseCommaFormattedNumber(editData.price) > 0 ? "bg-green-500" : "bg-gray-400"}`} />
+                          <span className="text-xs font-medium">Price {parseCommaFormattedNumber(editData.price) > 0 ? "✓" : ""}</span>
                         </div>
-                        <div className={`flex items-center gap-2 ${editData.category ? "text-green-700" : "text-gray-600"}`}>
-                          <div className={`w-2 h-2 rounded-full ${editData.category ? "bg-green-300" : "bg-gray-400"}`} />
-                          <span className="text-xs">Category {editData.category ? "✓" : ""}</span>
+                        <div className={`flex items-center gap-2 ${editData.category ? "text-green-700" : "text-gray-500"}`}>
+                          <div className={`w-2 h-2 rounded-full ${editData.category ? "bg-green-500" : "bg-gray-400"}`} />
+                          <span className="text-xs font-medium">Category {editData.category ? "✓" : ""}</span>
                         </div>
-                        <div className={`flex items-center gap-2 ${editData.enableWholesale && editData.wholesalePrice > 0 && editData.wholesaleMinQty > 0 ? "text-green-700" : editData.enableWholesale ? "text-yellow-600" : "text-gray-400"}`}>
-                          <div className={`w-2 h-2 rounded-full ${editData.enableWholesale && editData.wholesalePrice > 0 && editData.wholesaleMinQty > 0 ? "bg-green-300" : editData.enableWholesale ? "bg-yellow-300" : "bg-gray-300"}`} />
-                          <span className="text-xs">Wholesale</span>
+                        <div className={`flex items-center gap-2 ${
+                          editData.enableWholesale && 
+                          parseCommaFormattedNumber(editData.wholesalePrice) > 0 && 
+                          parseCommaFormattedNumber(editData.wholesaleMinQty) > 0 
+                            ? "text-green-700" 
+                            : editData.enableWholesale 
+                            ? "text-yellow-600" 
+                            : "text-gray-500"
+                        }`}>
+                          <div className={`w-2 h-2 rounded-full ${
+                            editData.enableWholesale && 
+                            parseCommaFormattedNumber(editData.wholesalePrice) > 0 && 
+                            parseCommaFormattedNumber(editData.wholesaleMinQty) > 0 
+                              ? "bg-green-500" 
+                              : editData.enableWholesale 
+                              ? "bg-yellow-500" 
+                              : "bg-gray-400"
+                          }`} />
+                          <span className="text-xs font-medium">Wholesale</span>
                         </div>
                       </div>
                     </div>
@@ -744,8 +891,16 @@ const EditItem = ({ showModal, setShowModal, item, onItemUpdated }) => {
                     {/* Error Message - Full width */}
                     {showError && (
                       <div className="col-span-1 md:col-span-3">
-                        <div className="bg-red-50 border border-red-200 text-red-600 rounded-xl p-3 text-sm">
-                          <span className="font-bold">Error: </span> {showError}
+                        <div className="bg-red-50 border border-red-200 text-red-700 rounded-xl p-4 text-sm">
+                          <div className="flex items-start gap-3">
+                            <div className="w-5 h-5 bg-red-500 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
+                              <span className="text-white text-xs font-bold">!</span>
+                            </div>
+                            <div>
+                              <p className="font-medium">Error</p>
+                              <p className="text-red-600 mt-1">{showError}</p>
+                            </div>
+                          </div>
                         </div>
                       </div>
                     )}
@@ -754,17 +909,17 @@ const EditItem = ({ showModal, setShowModal, item, onItemUpdated }) => {
                     <div className="col-span-1 md:col-span-3">
                       <button
                         type="submit"
-                        disabled={loading || !editData.name || !editData.price || !editData.category}
-                        className={`w-full py-2 font-bold rounded-full flex items-center justify-center gap-2 text-sm ${
-                          loading || !editData.name || !editData.price || !editData.category
-                            ? "bg-gray-300 text-gray-500 cursor-not-allowed"
-                            : "bg-green-300 hover:bg-green-400 text-black"
+                        disabled={loading || !editData.name || !parseCommaFormattedNumber(editData.price) || !editData.category}
+                        className={`w-full py-3 font-bold rounded-lg flex items-center justify-center gap-2 text-sm transition-all ${
+                          loading || !editData.name || !parseCommaFormattedNumber(editData.price) || !editData.category
+                            ? "bg-gray-200 text-gray-500 cursor-not-allowed"
+                            : "bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white shadow-md hover:shadow-lg transform hover:-translate-y-0.5"
                         }`}
                       >
                         {loading ? (
                           <>
                             <svg
-                              className="animate-spin h-4 w-4 text-black"
+                              className="animate-spin h-4 w-4 text-white"
                               xmlns="http://www.w3.org/2000/svg"
                               fill="none"
                               viewBox="0 0 24 24"
@@ -797,19 +952,21 @@ const EditItem = ({ showModal, setShowModal, item, onItemUpdated }) => {
                 </div>
 
                 {/* Footer */}
-                <div className="flex items-center justify-between p-4 border-t border-gray-300">
+                <div className="flex items-center justify-between p-4 border-t border-gray-300 bg-gray-50 rounded-b-2xl">
                   <button
                     type="button"
                     onClick={handleReset}
-                    className="px-4 py-2 bg-gray-200 hover:bg-gray-300 text-black font-bold rounded-full transition-colors text-sm"
+                    className="px-4 py-2 bg-gray-200 hover:bg-gray-300 text-gray-800 font-medium rounded-lg transition-colors text-sm flex items-center gap-2"
                     disabled={loading}
                   >
+                    <FiRefreshCw className="w-4 h-4" />
                     Reset
                   </button>
                   <button
-                    className="px-4 py-2 bg-gray-200 hover:bg-gray-300 text-black font-bold rounded-full transition-colors text-sm"
+                    className="px-4 py-2 bg-gray-200 hover:bg-gray-300 text-gray-800 font-medium rounded-lg transition-colors text-sm flex items-center gap-2"
                     onClick={() => setShowModal(false)}
                   >
+                    <FiX className="w-4 h-4" />
                     Close
                   </button>
                 </div>
