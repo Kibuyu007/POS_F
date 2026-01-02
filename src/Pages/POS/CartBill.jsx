@@ -19,7 +19,6 @@ const Cart = ({ triggerRefreshMenu }) => {
   const dispatch = useDispatch();
 
   const [errorMsg, setErrorMsg] = useState("");
-  const [lastTransactionDetails, setLastTransactionDetails] = useState(null);
   const [isProcessing, setIsProcessing] = useState(false);
   const [showLoadingModal, setShowLoadingModal] = useState(false);
   const [useLoyal, setUseLoyal] = useState(false);
@@ -60,12 +59,14 @@ const Cart = ({ triggerRefreshMenu }) => {
     }
   };
 
+  //CART & TOTALS
   const cartData = useSelector((state) => state.cart.cart);
   const total = useSelector(getTotalPrice);
   const taxRate = 0;
   const tax = (total * taxRate) / 100;
   const finalTotal = total + tax;
 
+  //TRANSACTION HANDLER
   const handleTransaction = async (status) => {
     if (cartData.length === 0) {
       toast.error("Please add items to the cart before proceeding!", {
@@ -105,6 +106,7 @@ const Cart = ({ triggerRefreshMenu }) => {
       );
 
       if (response.status === 201) {
+        const saleId = response.data.data._id;
         toast.success(
           `Transaction ${
             status === "Paid" ? "completed" : "saved as bill"
@@ -121,14 +123,10 @@ const Cart = ({ triggerRefreshMenu }) => {
         );
 
         dispatch(clearCart());
+        setTradeDiscount(0);
+        setUseTradeDiscount(false);
         triggerRefreshMenu();
-
-        setLastTransactionDetails({
-          items: payload.items,
-          totalAmount: payload.totalAmount,
-          customerDetails: payload.customerDetails,
-        });
-
+        setLastSaleId(saleId);
         dispatch(setReceiptPrinted(false));
         setShowPrintButton(true);
         setShowLoadingModal(false);
@@ -143,38 +141,21 @@ const Cart = ({ triggerRefreshMenu }) => {
     }
   };
 
-  const [pdfUrl, setPdfUrl] = useState("");
+  //RECEIPT PRINTING
+  const [lastSaleId, setLastSaleId] = useState(null);
   const [showPrintButton, setShowPrintButton] = useState(false);
 
-  const handlePrintReceipt = async () => {
-    try {
-      const response = await axios.get(
-        `${BASE_URL}/api/receipt/receipt`,
-        lastTransactionDetails,
-        {
-          responseType: "blob", // PDF blob
-        }
-      );
-
-      const blob = new Blob([response.data], { type: "application/pdf" });
-      const pdfUrl = URL.createObjectURL(blob);
-      setPdfUrl(pdfUrl);
-      window.open(pdfUrl, "_blank");
-      dispatch(setReceiptPrinted(true));
-    } catch (err) {
-      toast.error("Failed to generate receipt", {
-        position: "bottom-right",
-        style: {
-          borderRadius: "12px",
-          background: "#e74c3c",
-          color: "#fff",
-          fontSize: "18px",
-        },
-      });
-      console.error("Receipt error:", err);
-    } finally {
-      window.location.reload();
+  //Handle Print Receipt
+  const handlePrintReceipt = () => {
+    if (!lastSaleId) {
+      toast.error("No transaction found to print");
+      return;
     }
+
+    window.open(`${BASE_URL}/api/receipt/${lastSaleId}/receipt`, "_blank");
+
+    dispatch(setReceiptPrinted(true));
+    setShowPrintButton(false);
   };
 
   return (
@@ -283,7 +264,7 @@ const Cart = ({ triggerRefreshMenu }) => {
             >
               <span
                 className={`dot absolute left-1 top-1 w-4 h-4 bg-white rounded-full transition 
-      ${useTradeDiscount ? "translate-x-6 bg-green-500" : ""}`}
+                    ${useTradeDiscount ? "translate-x-6 bg-green-500" : ""}`}
               />
             </label>
           </label>
@@ -424,15 +405,6 @@ const Cart = ({ triggerRefreshMenu }) => {
             >
               Print Receipt
             </button>
-            {pdfUrl && (
-              <embed
-                src={pdfUrl}
-                type="application/pdf"
-                width="100%"
-                height="500px"
-                className="mt-4 rounded-lg shadow-md"
-              />
-            )}
           </div>
         )}
 

@@ -6,6 +6,7 @@ const initialState = {
   taxes: 0,
   totalPrice: 0,
   receiptPrinted: true, // <-- new state
+  
 };
 
 const cartSlice = createSlice({

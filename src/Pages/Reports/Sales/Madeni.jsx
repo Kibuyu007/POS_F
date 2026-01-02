@@ -174,7 +174,7 @@ const Madeni = () => {
         txn.items.map((i) => `${i.item?.name} × ${i.quantity}`).join(", "),
         `${txn.totalAmount.toLocaleString()} Tsh`,
         `${(txn.paidAmount || 0).toLocaleString()} Tsh`,
-        `${(txn.totalAmount - (txn.paidAmount || 0)).toLocaleString()} Tsh`,
+        `${(txn.totalAmount - (txn.paidAmount || 0) - (txn.discount || 0)).toLocaleString()} Tsh`,
       ]);
 
       autoTable(doc, {

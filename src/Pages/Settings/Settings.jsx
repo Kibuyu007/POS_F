@@ -73,7 +73,7 @@ const Settings = () => {
         {user?.roles?.canAccessCustomerManagement && (
           <SettingsList
             title="Customer Management"
-            settings={["All Customers"]}
+            settings={["All Customers",]}
             selectedSetting={selectedSetting}
             handleSelect={setSelectedSetting}
           />

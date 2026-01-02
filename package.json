@@ -22,7 +22,7 @@
     "@react-pdf/renderer": "^4.3.0",
     "@reduxjs/toolkit": "^2.6.0",
     "axios": "^1.8.3",
-    "dayjs": "^1.11.13",
+    "dayjs": "^1.11.19",
     "framer-motion": "^12.23.25",
     "jspdf": "^3.0.1",
     "jspdf-autotable": "^5.0.2",

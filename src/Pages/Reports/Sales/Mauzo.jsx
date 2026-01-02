@@ -1,21 +1,18 @@
 import axios from "axios";
 import { useEffect, useState } from "react";
 import { IoIosArrowBack, IoIosArrowForward } from "react-icons/io";
-import {
-  FaSearch,
-  FaFilter,
-} from "react-icons/fa";
-import {
-  FiRefreshCw,
-  FiDownload,
-  FiCalendar,
-  FiUsers,
-} from "react-icons/fi";
+import { FaSearch, FaFilter } from "react-icons/fa";
+import { FiRefreshCw, FiDownload, FiCalendar, FiUsers } from "react-icons/fi";
 import { MdReceipt, MdPayment } from "react-icons/md";
 import { DatePicker } from "@mui/x-date-pickers/DatePicker";
 import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs";
 import { LocalizationProvider } from "@mui/x-date-pickers";
 import dayjs from "dayjs";
+import isSameOrAfter from "dayjs/plugin/isSameOrAfter";
+import isSameOrBefore from "dayjs/plugin/isSameOrBefore";
+dayjs.extend(isSameOrAfter);
+dayjs.extend(isSameOrBefore);
+
 import * as XLSX from "xlsx";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
@@ -671,19 +668,48 @@ const Mauzo = () => {
                                   {txn.paidAmount?.toLocaleString() || 0} Tsh
                                 </span>
                               </div>
+
+                              <div className="flex items-center gap-2">
+                                <MdPayment className="text-black text-md" />
+                                <span className="text-green-700 font-semibold tracking-wide">
+                                  OverAll:
+                                </span>
+                                <span className="ml-auto font-bold text-green-800 text-md">
+                                  {(
+                                    (txn.totalAmount || 0) +
+                                    (txn.tradeDiscount || 0)
+                                  ).toLocaleString()}{" "}
+                                  Tsh
+                                </span>
+                              </div>
                             </>
                           ) : (
-                            <div className="flex items-center gap-2 bg-green-100 rounded-full px-4 py-2 shadow-md">
-                              <span className="text-green-700 font-semibold tracking-wide">
-                                Paid:
-                              </span>
-                              <span className="ml-auto font-extrabold text-green-900 text-sm">
-                                {(
-                                  txn.paidAmount || txn.totalAmount
-                                ).toLocaleString()}{" "}
-                                Tsh
-                              </span>
-                            </div>
+                            <>
+                              <div className="flex items-center gap-2 bg-green-100 rounded-full px-4 py-2 shadow-md">
+                                <span className="text-green-700 font-semibold tracking-wide">
+                                  Paid:
+                                </span>
+                                <span className="ml-auto font-extrabold text-green-900 text-sm">
+                                  {(
+                                    txn.paidAmount || txn.totalAmount
+                                  ).toLocaleString()}{" "}
+                                  Tsh
+                                </span>
+                              </div>
+
+                              <div className="flex items-center gap-2 bg-gray-200 rounded-full px-4 py-2 shadow-md">
+                                <span className="text-green-700 font-semibold tracking-wide">
+                                  OverAll:
+                                </span>
+                                <span className="ml-auto font-extrabold text-black text-sm">
+                                  {(
+                                    (txn.paidAmount || 0) +
+                                    (txn.tradeDiscount || 0)
+                                  ).toLocaleString()}{" "}
+                                  Tsh
+                                </span>
+                              </div>
+                            </>
                           )}
                         </div>
                       </td>
