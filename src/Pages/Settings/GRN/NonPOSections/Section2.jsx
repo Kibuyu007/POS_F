@@ -14,6 +14,7 @@ import {
   FiDollarSign,
   FiPackage,
   FiPercent,
+  FiMinus,
 } from "react-icons/fi";
 
 const Section2 = ({ onAddItem }) => {
@@ -64,7 +65,7 @@ const Section2 = ({ onAddItem }) => {
     totalCost: "",
     sellingPrice: "",
     enableWholesale: false,
-    wholesaleMinQty: 0,
+    wholesaleMinQty: 1, // Fixed to 1
     wholesalePrice: 0,
   });
 
@@ -97,7 +98,6 @@ const Section2 = ({ onAddItem }) => {
     if (cleanedValue === "" || cleanedValue === "-") {
       parsedValue = "";
     } else if (
-      name === "wholesaleMinQty" ||
       name === "units" ||
       name === "itemsPerUnit" ||
       name === "foc" ||
@@ -152,12 +152,11 @@ const Section2 = ({ onAddItem }) => {
     if (
       formData.enableWholesale &&
       formData.wholesalePrice > 0 &&
-      formData.wholesaleMinQty > 0 &&
       formData.sellingPrice > 0
     ) {
-      const perUnitWholesalePrice =
-        formData.wholesalePrice / formData.wholesaleMinQty;
-      const totalRetailPrice = formData.sellingPrice * formData.wholesaleMinQty;
+      // Since wholesaleMinQty is fixed to 1, calculations are simpler
+      const perUnitWholesalePrice = formData.wholesalePrice; // No division needed
+      const totalRetailPrice = formData.sellingPrice; // No multiplication needed
       const savingsAmount = totalRetailPrice - formData.wholesalePrice;
       const discountPercentage =
         totalRetailPrice > 0 ? (savingsAmount / totalRetailPrice) * 100 : 0;
@@ -178,7 +177,6 @@ const Section2 = ({ onAddItem }) => {
     }
   }, [
     formData.wholesalePrice,
-    formData.wholesaleMinQty,
     formData.sellingPrice,
     formData.enableWholesale,
   ]);
@@ -203,7 +201,7 @@ const Section2 = ({ onAddItem }) => {
       sellingPrice: itemToAdd.price || "",
       quantity: prev.units * prev.itemsPerUnit,
       enableWholesale: itemToAdd.enableWholesale || false,
-      wholesaleMinQty: itemToAdd.wholesaleMinQty || 0,
+      wholesaleMinQty: 1, // Fixed to 1
       wholesalePrice: itemToAdd.wholesalePrice || 0,
     }));
   };
@@ -212,6 +210,7 @@ const Section2 = ({ onAddItem }) => {
     setFormData((prev) => ({
       ...prev,
       enableWholesale: !prev.enableWholesale,
+      wholesaleMinQty: 1, // Always set to 1 when toggling
     }));
   };
 
@@ -273,7 +272,7 @@ const Section2 = ({ onAddItem }) => {
     // Validate wholesale minimum quantity doesn't exceed paid quantity
     if (
       formData.enableWholesale &&
-      (formData.wholesaleMinQty || 0) > (formData.quantity || 0)
+      1 > (formData.quantity || 0) // Since wholesaleMinQty is fixed to 1
     ) {
       setShowError("Wholesale minimum quantity cannot exceed paid quantity");
       return;
@@ -303,7 +302,7 @@ const Section2 = ({ onAddItem }) => {
       itemsPerUnit: parseInt(formData.itemsPerUnit) || 0,
       // WHOLESALE FIELDS - Convert to proper types
       enableWholesale: Boolean(formData.enableWholesale),
-      wholesaleMinQty: parseInt(formData.wholesaleMinQty) || 0,
+      wholesaleMinQty: 1, // Always 1
       wholesalePrice: parseFloat(formData.wholesalePrice) || 0,
     };
 
@@ -330,7 +329,7 @@ const Section2 = ({ onAddItem }) => {
       totalCost: "",
       sellingPrice: "",
       enableWholesale: false,
-      wholesaleMinQty: 0,
+      wholesaleMinQty: 1, // Fixed to 1
       wholesalePrice: 0,
     });
     setErrorDate({
@@ -360,7 +359,7 @@ const Section2 = ({ onAddItem }) => {
       totalCost: "",
       sellingPrice: "",
       enableWholesale: false,
-      wholesaleMinQty: 0,
+      wholesaleMinQty: 1, // Fixed to 1
       wholesalePrice: 0,
     });
     setErrorDate({
@@ -927,7 +926,7 @@ const Section2 = ({ onAddItem }) => {
                   </div>
                 </div>
 
-                {/* WHOLESALE SECTION - IMPROVED */}
+                {/* WHOLESALE SECTION - UPDATED */}
                 <div className="border border-gray-200 rounded-xl overflow-hidden">
                   <div className="bg-gradient-to-r from-blue-50 to-indigo-50 p-3 md:p-4 border-b border-gray-200">
                     <div className="flex items-center justify-between">
@@ -940,7 +939,7 @@ const Section2 = ({ onAddItem }) => {
                             Bulk/Wholesale Pricing
                           </h4>
                           <p className="text-gray-600 text-xs md:text-sm">
-                            Configure special pricing for bulk purchases
+                            Configure special pricing for wholesale purchases
                           </p>
                         </div>
                       </div>
@@ -979,42 +978,41 @@ const Section2 = ({ onAddItem }) => {
                     <div className="p-3 md:p-4 space-y-4">
                       {/* Wholesale Fields */}
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-3 md:gap-4">
-                        {/* Wholesale Minimum Quantity */}
+                        {/* Wholesale Minimum Quantity - Fixed at 1 */}
                         <div className="bg-white p-3 rounded-lg border border-blue-100">
                           <label className="block text-sm font-bold text-gray-900 mb-1 flex items-center gap-2">
                             <FiPackage className="w-4 h-4 text-blue-500" />
                             Minimum Quantity
                           </label>
                           <p className="text-xs text-gray-500 mb-2">
-                            Minimum units for wholesale price
+                            Fixed at 1 unit (package selection available at POS)
                           </p>
-                          <input
-                            type="text"
-                            name="wholesaleMinQty"
-                            value={formatNumberWithCommas(
-                              formData.wholesaleMinQty
-                            )}
-                            onChange={handleNumberChange}
-                            className="w-full px-3 md:px-4 py-2 border border-blue-200 rounded-lg bg-blue-50 text-gray-900 font-medium focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
-                            placeholder="e.g., 20"
-                          />
-                          {formData.wholesaleMinQty > formData.quantity && (
-                            <p className="text-xs text-red-600 mt-1">
-                              Exceeds paid quantity (
-                              {formData.quantity.toLocaleString()})
-                            </p>
-                          )}
+                          <div className="relative">
+                            <div className="absolute inset-y-0 left-3 flex items-center">
+                              <FiMinus className="w-4 h-4 text-blue-500" />
+                            </div>
+                            <input
+                              type="text"
+                              name="wholesaleMinQty"
+                              value="1"
+                              readOnly
+                              disabled
+                              className="w-full pl-10 pr-4 py-2 border border-blue-200 rounded-lg bg-gray-100 text-gray-700 focus:outline-none cursor-not-allowed"
+                            />
+                            <div className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500 text-sm">
+                              units
+                            </div>
+                          </div>
                         </div>
 
-                        {/* Wholesale Total Price */}
+                        {/* Wholesale Price (Per Unit) */}
                         <div className="bg-white p-3 rounded-lg border border-blue-100">
                           <label className="block text-sm font-bold text-gray-900 mb-1 flex items-center gap-2">
                             <FiDollarSign className="w-4 h-4 text-blue-500" />
-                            Wholesale Price
+                            Wholesale Price (per unit)
                           </label>
                           <p className="text-xs text-gray-500 mb-2">
-                            Total price for{" "}
-                            {formData.wholesaleMinQty || "minimum"} units
+                            Price per unit for wholesale purchases
                           </p>
                           <input
                             type="text"
@@ -1024,7 +1022,7 @@ const Section2 = ({ onAddItem }) => {
                             )}
                             onChange={handleNumberChange}
                             className="w-full px-3 md:px-4 py-2 border border-blue-200 rounded-lg bg-blue-50 text-gray-900 font-medium focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
-                            placeholder="e.g., 15,000"
+                            placeholder="e.g., 12,000"
                           />
                         </div>
                       </div>
@@ -1032,56 +1030,51 @@ const Section2 = ({ onAddItem }) => {
                       {/* Wholesale Calculation Summary */}
                       {formData.enableWholesale &&
                         formData.wholesalePrice > 0 &&
-                        formData.wholesaleMinQty > 0 &&
                         formData.sellingPrice > 0 && (
                           <div className="bg-gradient-to-r from-blue-50 to-indigo-50 p-3 md:p-4 rounded-lg border border-blue-200">
                             <h5 className="text-sm font-bold text-gray-900 mb-3 flex items-center gap-2">
                               <FiTrendingUp className="w-4 h-4 text-blue-600" />
-                              Wholesale Analysis
+                              Wholesale Price Comparison
                             </h5>
 
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                               {/* Price Comparison */}
                               <div className="space-y-2">
-                                <div className="flex items-center justify-between p-2 bg-white rounded border">
+                                <div className="flex items-center justify-between p-2 bg-white rounded border border-gray-300">
                                   <div>
                                     <p className="text-xs text-gray-500">
-                                      Retail total
+                                      Retail Price
                                     </p>
                                     <p className="text-sm font-bold text-gray-800">
                                       Tsh{" "}
-                                      {calculatedValues.totalRetailPrice.toLocaleString()}
+                                      {formatNumberWithCommas(
+                                        formData.sellingPrice ||
+                                          selectedItem.price
+                                      )}
                                     </p>
                                   </div>
                                   <div className="text-right">
                                     <p className="text-xs text-gray-500">
-                                      For{" "}
-                                      {formData.wholesaleMinQty.toLocaleString()}{" "}
-                                      units
+                                      Per unit
                                     </p>
-                                    <p className="text-sm">
-                                      @ Tsh{" "}
-                                      {parseFloat(
-                                        formData.sellingPrice ||
-                                          selectedItem.price
-                                      ).toLocaleString()}
-                                      /unit
-                                    </p>
+                                    <p className="text-sm">Retail rate</p>
                                   </div>
                                 </div>
                                 <div className="flex items-center justify-between p-2 bg-blue-50 rounded border border-blue-200">
                                   <div>
                                     <p className="text-xs text-blue-600">
-                                      Wholesale total
+                                      Wholesale Price
                                     </p>
                                     <p className="text-sm font-bold text-blue-700">
                                       Tsh{" "}
-                                      {formData.wholesalePrice.toLocaleString()}
+                                      {formatNumberWithCommas(
+                                        formData.wholesalePrice
+                                      )}
                                     </p>
                                   </div>
                                   <div className="text-right">
                                     <p className="text-xs text-blue-600">
-                                      Savings
+                                      Per unit
                                     </p>
                                     <p
                                       className={`text-sm font-bold ${
@@ -1090,6 +1083,9 @@ const Section2 = ({ onAddItem }) => {
                                           : "text-red-600"
                                       }`}
                                     >
+                                      {calculatedValues.savingsAmount >= 0
+                                        ? "Save: "
+                                        : "Premium: "}
                                       Tsh{" "}
                                       {Math.abs(
                                         calculatedValues.savingsAmount
@@ -1101,17 +1097,42 @@ const Section2 = ({ onAddItem }) => {
 
                               {/* Unit Price & Discount */}
                               <div className="space-y-2">
+                                <div className="p-2 bg-green-50 rounded border border-green-200">
+                                  <div className="flex items-center justify-between">
+                                    <div>
+                                      <p className="text-xs text-gray-600">
+                                        Savings per unit
+                                      </p>
+                                      <p className="text-sm font-bold text-green-700">
+                                        Tsh{" "}
+                                        {calculatedValues.savingsAmount.toLocaleString()}
+                                      </p>
+                                    </div>
+                                    <div className="text-right">
+                                      <p className="text-xs text-gray-600">
+                                        Discount
+                                      </p>
+                                      <p className="text-sm font-bold text-green-700">
+                                        {calculatedValues.discountPercentage.toFixed(
+                                          1
+                                        )}
+                                        %
+                                      </p>
+                                    </div>
+                                  </div>
+                                </div>
+
                                 <div className="grid grid-cols-2 gap-2">
-                                  <div className="bg-white p-2 rounded border text-center">
+                                  <div className="bg-white p-2 rounded border border-gray-300 text-center">
                                     <p className="text-xs text-gray-500">
-                                      Retail per unit
+                                      Retail/unit
                                     </p>
                                     <p className="text-sm font-medium">
                                       Tsh{" "}
-                                      {parseFloat(
+                                      {formatNumberWithCommas(
                                         formData.sellingPrice ||
                                           selectedItem.price
-                                      ).toLocaleString()}
+                                      )}
                                     </p>
                                   </div>
                                   <div
@@ -1119,12 +1140,12 @@ const Section2 = ({ onAddItem }) => {
                                       calculatedValues.perUnitWholesalePrice <=
                                       (formData.sellingPrice ||
                                         selectedItem.price)
-                                        ? "bg-green-50 border-green-200"
-                                        : "bg-red-50 border-red-200"
+                                        ? "bg-green-50 border-green-300"
+                                        : "bg-red-50 border-red-300"
                                     }`}
                                   >
                                     <p className="text-xs text-gray-500">
-                                      Wholesale per unit
+                                      Wholesale/unit
                                     </p>
                                     <p
                                       className={`text-sm font-bold ${
@@ -1140,78 +1161,18 @@ const Section2 = ({ onAddItem }) => {
                                     </p>
                                   </div>
                                 </div>
-
-                                <div
-                                  className={`p-2 rounded border ${
-                                    calculatedValues.discountPercentage >= 0
-                                      ? "bg-green-50 border-green-200"
-                                      : "bg-red-50 border-red-200"
-                                  }`}
-                                >
-                                  <div className="flex items-center justify-between">
-                                    <div className="flex items-center gap-2">
-                                      <FiPercent
-                                        className={`w-3 h-3 ${
-                                          calculatedValues.discountPercentage >=
-                                          0
-                                            ? "text-green-600"
-                                            : "text-red-600"
-                                        }`}
-                                      />
-                                      <span className="text-xs font-medium">
-                                        Discount/Premium
-                                      </span>
-                                    </div>
-                                    <span
-                                      className={`text-sm font-bold ${
-                                        calculatedValues.discountPercentage >= 0
-                                          ? "text-green-700"
-                                          : "text-red-700"
-                                      }`}
-                                    >
-                                      {calculatedValues.discountPercentage >= 0
-                                        ? ""
-                                        : "+"}
-                                      {Math.abs(
-                                        calculatedValues.discountPercentage
-                                      ).toFixed(1)}
-                                      %
-                                    </span>
-                                  </div>
-                                </div>
                               </div>
                             </div>
 
-                            {/* Stock Availability */}
-                            {formData.quantity > 0 && (
-                              <div
-                                className={`mt-3 p-2 rounded text-center ${
-                                  formData.quantity >= formData.wholesaleMinQty
-                                    ? "bg-green-100 text-green-800"
-                                    : "bg-yellow-100 text-yellow-800"
-                                }`}
-                              >
-                                <p className="text-xs font-medium">
-                                  {formData.quantity >= formData.wholesaleMinQty
-                                    ? "✅"
-                                    : "⚠️"}
-                                  <span className="ml-1">
-                                    Paid quantity:{" "}
-                                    <strong>
-                                      {formData.quantity.toLocaleString()}
-                                    </strong>{" "}
-                                    units
-                                    {formData.quantity >=
-                                    formData.wholesaleMinQty
-                                      ? " - Sufficient for wholesale orders"
-                                      : ` - Needs ${(
-                                          formData.wholesaleMinQty -
-                                          formData.quantity
-                                        ).toLocaleString()} more units for wholesale`}
-                                  </span>
-                                </p>
-                              </div>
-                            )}
+                            {/* Package Information Note */}
+                            <div className="mt-2 p-2 bg-indigo-50 rounded border border-indigo-200">
+                              <p className="text-xs text-indigo-700 text-center">
+                                <span className="font-bold">Note:</span> Package
+                                sizes (2,4,6,8,12,24, etc.) can be selected at
+                                the POS during wholesale sales. Wholesale price
+                                here is per unit.
+                              </p>
+                            </div>
                           </div>
                         )}
                     </div>

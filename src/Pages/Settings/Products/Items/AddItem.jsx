@@ -43,7 +43,7 @@ const AddItem = ({ showModal, setShowModal, onUserAdded }) => {
     reOrder: "",
     discount: "",
     wholesalePrice: "",
-    wholesaleMinQty: "",
+    wholesaleMinQty: "1", // Set default to 1 and make it string
     enableWholesale: false,
   });
 
@@ -98,17 +98,15 @@ const AddItem = ({ showModal, setShowModal, onUserAdded }) => {
     const rawPrice = parseCommaFormattedNumber(regi.price) || 0;
     const rawWholesalePrice =
       parseCommaFormattedNumber(regi.wholesalePrice) || 0;
-    const rawWholesaleMinQty =
-      parseCommaFormattedNumber(regi.wholesaleMinQty) || 0;
+    const rawWholesaleMinQty = 1; // Always 1
 
     if (
       regi.enableWholesale &&
       rawWholesalePrice > 0 &&
-      rawWholesaleMinQty > 0 &&
       rawPrice > 0
     ) {
-      const perUnitWholesalePrice = rawWholesalePrice / rawWholesaleMinQty;
-      const totalRetailPrice = rawPrice * rawWholesaleMinQty;
+      const perUnitWholesalePrice = rawWholesalePrice; // Since minQty is 1
+      const totalRetailPrice = rawPrice; // Since minQty is 1
       const savingsAmount = totalRetailPrice - rawWholesalePrice;
       const discountPercentage =
         totalRetailPrice > 0 ? (savingsAmount / totalRetailPrice) * 100 : 0;
@@ -129,7 +127,6 @@ const AddItem = ({ showModal, setShowModal, onUserAdded }) => {
     }
   }, [
     regi.wholesalePrice,
-    regi.wholesaleMinQty,
     regi.price,
     regi.enableWholesale,
   ]);
@@ -156,7 +153,6 @@ const AddItem = ({ showModal, setShowModal, onUserAdded }) => {
         "reOrder",
         "discount",
         "wholesalePrice",
-        "wholesaleMinQty",
       ].includes(name)
     ) {
       // Allow only numbers and decimal point
@@ -177,6 +173,11 @@ const AddItem = ({ showModal, setShowModal, onUserAdded }) => {
       return;
     }
 
+    // Don't allow changes to wholesaleMinQty - keep it as 1
+    if (name === "wholesaleMinQty") {
+      return; // Do nothing, keep it as "1"
+    }
+
     setRegi({ ...regi, [name]: value });
   };
 
@@ -187,10 +188,10 @@ const AddItem = ({ showModal, setShowModal, onUserAdded }) => {
         ...regi,
         enableWholesale: false,
         wholesalePrice: "",
-        wholesaleMinQty: "",
+        wholesaleMinQty: "1",
       });
     } else {
-      setRegi({ ...regi, enableWholesale: true });
+      setRegi({ ...regi, enableWholesale: true, wholesaleMinQty: "1" });
     }
   };
 
@@ -220,8 +221,7 @@ const AddItem = ({ showModal, setShowModal, onUserAdded }) => {
     const rawDiscount = parseCommaFormattedNumber(regi.discount) || 0;
     const rawWholesalePrice =
       parseCommaFormattedNumber(regi.wholesalePrice) || 0;
-    const rawWholesaleMinQty =
-      parseCommaFormattedNumber(regi.wholesaleMinQty) || 0;
+    const rawWholesaleMinQty = 1; // Always 1
 
     if (!regi.name.trim()) {
       setShowError("Item name is required");
@@ -250,17 +250,10 @@ const AddItem = ({ showModal, setShowModal, onUserAdded }) => {
         );
         return;
       }
-      if (!rawWholesaleMinQty || Number(rawWholesaleMinQty) <= 0) {
-        setShowError(
-          "Wholesale minimum quantity must be greater than 0 when wholesale is enabled"
-        );
-        return;
-      }
 
-      const retailTotal = rawPrice * rawWholesaleMinQty;
-      if (Number(rawWholesalePrice) >= retailTotal) {
+      if (Number(rawWholesalePrice) >= rawPrice) {
         setShowError(
-          "Wholesale price must be less than retail total for minimum quantity"
+          "Wholesale price must be less than retail price to offer a discount"
         );
         return;
       }
@@ -276,7 +269,7 @@ const AddItem = ({ showModal, setShowModal, onUserAdded }) => {
         reOrder: rawReOrder,
         discount: rawDiscount,
         wholesalePrice: rawWholesalePrice,
-        wholesaleMinQty: rawWholesaleMinQty,
+        wholesaleMinQty: 1, // Always 1
       };
 
       const response = await axios.post(
@@ -300,7 +293,7 @@ const AddItem = ({ showModal, setShowModal, onUserAdded }) => {
         reOrder: "",
         discount: "",
         wholesalePrice: "",
-        wholesaleMinQty: "",
+        wholesaleMinQty: "1",
         enableWholesale: false,
       });
 
@@ -345,7 +338,7 @@ const AddItem = ({ showModal, setShowModal, onUserAdded }) => {
       reOrder: "",
       discount: "",
       wholesalePrice: "",
-      wholesaleMinQty: "",
+      wholesaleMinQty: "1",
       enableWholesale: false,
     });
     setFile(null);
@@ -606,7 +599,7 @@ const AddItem = ({ showModal, setShowModal, onUserAdded }) => {
                               Bulk/Wholesale Settings
                             </h4>
                             <p className="text-gray-600 text-sm">
-                              Configure special pricing for bulk purchases
+                              Configure special pricing for wholesale purchases
                             </p>
                           </div>
                         </div>
@@ -632,12 +625,15 @@ const AddItem = ({ showModal, setShowModal, onUserAdded }) => {
                         <div className="space-y-3 p-4 bg-blue-50 rounded-xl border border-blue-200">
                           {/* Wholesale Fields in 2 columns */}
                           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            {/* Wholesale Minimum Quantity */}
+                            {/* Wholesale Minimum Quantity - Fixed at 1 */}
                             <div>
                               <div className="mb-1">
                                 <label className="block text-sm font-bold text-gray-900">
                                   Minimum Quantity for Wholesale
                                 </label>
+                                <p className="text-xs text-gray-500">
+                                  Fixed at 1 unit (package selection available at POS)
+                                </p>
                               </div>
                               <div className="relative">
                                 <div className="absolute inset-y-0 left-3 flex items-center">
@@ -646,26 +642,31 @@ const AddItem = ({ showModal, setShowModal, onUserAdded }) => {
                                 <input
                                   type="text"
                                   name="wholesaleMinQty"
-                                  value={formatNumberWithCommas(
-                                    regi.wholesaleMinQty
-                                  )}
-                                  onChange={handleChange}
-                                  className="w-full pl-10 pr-4 py-2 border border-blue-300 rounded-full bg-white text-black focus:outline-none focus:border-blue-500"
-                                  placeholder="20"
-                                  disabled={loading}
+                                  value="1"
+                                  readOnly
+                                  disabled
+                                  className="w-full pl-10 pr-4 py-2 border border-blue-300 rounded-full bg-gray-100 text-gray-700 focus:outline-none focus:border-blue-500 cursor-not-allowed"
                                 />
+                                <div className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500 text-sm">
+                                  units
+                                </div>
                               </div>
                             </div>
 
-                            {/* Wholesale Total Price */}
+                            {/* Wholesale Price (Per Unit) */}
                             <div>
                               <div className="mb-1">
                                 <label className="block text-sm font-bold text-gray-900">
-                                  Wholesale Total Price (Tsh)
+                                  Wholesale Price (per unit)
                                 </label>
+                                <p className="text-xs text-gray-500">
+                                  Price per unit when buying wholesale
+                                </p>
                               </div>
                               <div className="relative">
-                                <div className="absolute inset-y-0 left-3 flex items-center"></div>
+                                <div className="absolute inset-y-0 left-3 flex items-center">
+                                  <FiTrendingUp className="w-4 h-4 text-blue-500" />
+                                </div>
                                 <input
                                   type="text"
                                   name="wholesalePrice"
@@ -674,7 +675,7 @@ const AddItem = ({ showModal, setShowModal, onUserAdded }) => {
                                   )}
                                   onChange={handleChange}
                                   className="w-full pl-10 pr-4 py-2 border border-blue-300 rounded-full bg-white text-black focus:outline-none focus:border-blue-500"
-                                  placeholder="15000.00"
+                                  placeholder="0.00"
                                   disabled={loading}
                                 />
                                 <div className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500 text-sm">
@@ -688,46 +689,41 @@ const AddItem = ({ showModal, setShowModal, onUserAdded }) => {
                           {regi.enableWholesale &&
                             parseCommaFormattedNumber(regi.wholesalePrice) >
                               0 &&
-                            parseCommaFormattedNumber(regi.wholesaleMinQty) >
-                              0 &&
                             parseCommaFormattedNumber(regi.price) > 0 && (
                               <div className="mt-3 p-3 bg-white rounded-lg border border-blue-200">
+                                <h5 className="font-bold text-gray-800 mb-2 text-sm">
+                                  Wholesale Price Comparison
+                                </h5>
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                                   {/* Retail vs Wholesale */}
                                   <div className="space-y-2">
-                                    <div className="p-2 bg-gray-50 rounded">
-                                      <p className="text-xs text-gray-500">
-                                        Retail Total for{" "}
-                                        {parseCommaFormattedNumber(
-                                          regi.wholesaleMinQty
-                                        ).toLocaleString()}{" "}
-                                        units
+                                    <div className="p-2 bg-gray-50 rounded border border-gray-200">
+                                      <p className="text-xs text-gray-500 mb-1">
+                                        Retail Price
                                       </p>
-                                      <p className="text-sm font-bold text-gray-800">
+                                      <p className="text-lg font-bold text-gray-800">
                                         Tsh{" "}
-                                        {calculatedValues.totalRetailPrice.toLocaleString()}
+                                        {formatNumberWithCommas(regi.price)}
                                       </p>
                                     </div>
-                                    <div className="p-2 bg-blue-50 rounded">
-                                      <p className="text-xs text-blue-600">
-                                        Wholesale Total
+                                    <div className="p-2 bg-blue-50 rounded border border-blue-200">
+                                      <p className="text-xs text-blue-600 mb-1">
+                                        Wholesale Price
                                       </p>
-                                      <p className="text-sm font-bold text-blue-700">
+                                      <p className="text-lg font-bold text-blue-700">
                                         Tsh{" "}
-                                        {parseCommaFormattedNumber(
-                                          regi.wholesalePrice
-                                        ).toLocaleString()}
+                                        {formatNumberWithCommas(regi.wholesalePrice)}
                                       </p>
                                     </div>
                                   </div>
 
                                   {/* Savings and Per Unit */}
                                   <div className="space-y-2">
-                                    <div className="p-2 bg-green-50 rounded">
-                                      <div className="flex justify-between">
+                                    <div className="p-2 bg-green-50 rounded border border-green-200">
+                                      <div className="flex justify-between items-center">
                                         <div>
                                           <p className="text-xs text-gray-600">
-                                            Savings
+                                            Savings per unit
                                           </p>
                                           <p className="text-sm font-bold text-green-700">
                                             Tsh{" "}
@@ -747,63 +743,40 @@ const AddItem = ({ showModal, setShowModal, onUserAdded }) => {
                                         </div>
                                       </div>
                                     </div>
-                                    <div className="grid grid-cols-2 gap-2">
-                                      <div className="p-2 border border-gray-200 rounded text-center">
-                                        <p className="text-xs text-gray-500">
-                                          Retail/unit
-                                        </p>
-                                        <p className="text-sm font-medium">
-                                          Tsh{" "}
-                                          {parseCommaFormattedNumber(
-                                            regi.price
-                                          ).toLocaleString()}
-                                        </p>
-                                      </div>
-                                      <div className="p-2 border border-green-200 bg-green-50 rounded text-center">
-                                        <p className="text-xs text-green-600">
-                                          Wholesale/unit
-                                        </p>
-                                        <p className="text-sm font-bold text-green-700">
-                                          Tsh{" "}
-                                          {calculatedValues.perUnitWholesalePrice.toLocaleString()}
-                                        </p>
+                                    <div className="p-2 bg-amber-50 rounded border border-amber-200">
+                                      <div className="flex justify-between items-center">
+                                        <div>
+                                          <p className="text-xs text-gray-600">
+                                            Retail Markup
+                                          </p>
+                                          <p className="text-sm font-medium text-gray-700">
+                                            Tsh{" "}
+                                            {(
+                                              parseCommaFormattedNumber(regi.price) -
+                                              parseCommaFormattedNumber(regi.wholesalePrice)
+                                            ).toLocaleString()}
+                                          </p>
+                                        </div>
+                                        <div className="text-right">
+                                          <p className="text-xs text-gray-600">
+                                            Wholesale Discount
+                                          </p>
+                                          <p className="text-sm font-medium text-amber-700">
+                                            {calculatedValues.discountPercentage}%
+                                          </p>
+                                        </div>
                                       </div>
                                     </div>
                                   </div>
                                 </div>
 
-                                {/* Stock Check */}
-                                {parseCommaFormattedNumber(regi.itemQuantity) >
-                                  0 && (
-                                  <div
-                                    className={`mt-2 p-2 rounded text-center text-sm ${
-                                      parseCommaFormattedNumber(
-                                        regi.itemQuantity
-                                      ) >=
-                                      parseCommaFormattedNumber(
-                                        regi.wholesaleMinQty
-                                      )
-                                        ? "bg-green-100 text-green-700"
-                                        : "bg-yellow-100 text-yellow-700"
-                                    }`}
-                                  >
-                                    <span className="font-medium">
-                                      {parseCommaFormattedNumber(
-                                        regi.itemQuantity
-                                      ) >=
-                                      parseCommaFormattedNumber(
-                                        regi.wholesaleMinQty
-                                      )
-                                        ? "✓"
-                                        : "⚠"}
-                                      Stock:{" "}
-                                      {parseCommaFormattedNumber(
-                                        regi.itemQuantity
-                                      ).toLocaleString()}{" "}
-                                      units
-                                    </span>
-                                  </div>
-                                )}
+                                {/* Package Information Note */}
+                                <div className="mt-2 p-2 bg-indigo-50 rounded border border-indigo-200">
+                                  <p className="text-xs text-indigo-700 text-center">
+                                    <span className="font-bold">Note:</span> Package sizes (2,4,6,8,12,24, etc.) can be selected at the POS during wholesale sales.
+                                    Wholesale price here is per unit.
+                                  </p>
+                                </div>
                               </div>
                             )}
                         </div>
@@ -915,8 +888,7 @@ const AddItem = ({ showModal, setShowModal, onUserAdded }) => {
                           className={`flex items-center gap-2 ${
                             regi.enableWholesale &&
                             parseCommaFormattedNumber(regi.wholesalePrice) >
-                              0 &&
-                            parseCommaFormattedNumber(regi.wholesaleMinQty) > 0
+                              0
                               ? "text-green-700"
                               : regi.enableWholesale
                               ? "text-yellow-600"
@@ -927,8 +899,6 @@ const AddItem = ({ showModal, setShowModal, onUserAdded }) => {
                             className={`w-2 h-2 rounded-full ${
                               regi.enableWholesale &&
                               parseCommaFormattedNumber(regi.wholesalePrice) >
-                                0 &&
-                              parseCommaFormattedNumber(regi.wholesaleMinQty) >
                                 0
                                 ? "bg-green-300"
                                 : regi.enableWholesale
