@@ -597,14 +597,14 @@ const Mauzo = () => {
                       {/* Customer Column - Gray 100 */}
                       <td className="py-3 px-2 text-center bg-gray-100 border-r border-gray-200">
                         <span className="font-bold text-black text-sm">
-                          {txn.customerDetails.name}
+                          {txn.customerDetails.name || "Walk-in Customer"}
                         </span>
                       </td>
 
                       {/* Phone Column - Green 200 */}
                       <td className="py-3 px-2 text-center bg-green-200 border-r border-gray-200">
                         <span className="font-bold text-black text-sm">
-                          {txn.customerDetails.phone}
+                          {txn.customerDetails.phone || "-"}
                         </span>
                       </td>
 
@@ -620,7 +620,7 @@ const Mauzo = () => {
                                 >
                                   <span className="w-1.5 h-1.5 bg-green-500 rounded-full mr-2"></span>
                                   <span className="font-medium text-gray-800">
-                                    {i.item.name}
+                                    {i.item.name || "Unknown Item"}
                                   </span>
                                   <span className="ml-1 text-gray-600">
                                     × {i.quantity}
