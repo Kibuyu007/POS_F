@@ -99,112 +99,55 @@ const Login = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-red-900 via-green-900 to-red-900 relative overflow-hidden">
-      {/* Subtle Snowflakes */}
+    <div className="min-h-screen bg-gray-100 relative overflow-hidden flex flex-col">
+      {/* Subtle background effect */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        {[...Array(30)].map((_, i) => (
+        {[...Array(20)].map((_, i) => (
           <div
             key={i}
-            className="absolute top-0 w-1 h-1 bg-white rounded-full animate-snowfall"
+            className="absolute top-0 w-1 h-1 bg-emerald-400/20 rounded-full animate-bg-pulse"
             style={{
               left: `${Math.random() * 100}%`,
               animationDelay: `${Math.random() * 5}s`,
               animationDuration: `${8 + Math.random() * 12}s`,
-              opacity: 0.5 + Math.random() * 0.5,
+              opacity: 0.3 + Math.random() * 0.4,
             }}
           />
         ))}
       </div>
 
-      {/* Christmas Lights Decoration - Simple & Elegant */}
-      <div className="absolute top-0 left-0 right-0 h-12 flex justify-center items-center z-10 mt-4">
-        <div className="flex gap-3">
-          {[...Array(12)].map((_, i) => (
-            <div key={i} className="relative">
-              <div
-                className="w-5 h-8 rounded-full shadow-lg animate-bounce"
-                style={{
-                  animationDelay: `${i * 0.2}s`,
-                  animationDuration: "1.2s",
-                  backgroundColor:
-                    i % 4 === 0
-                      ? "#ef4444"
-                      : i % 4 === 1
-                      ? "#10b981"
-                      : i % 4 === 2
-                      ? "#f59e0b"
-                      : "#6366f1",
-                  boxShadow: `0 4px 15px ${
-                    i % 4 === 0
-                      ? "#ef4444"
-                      : i % 4 === 1
-                      ? "#10b981"
-                      : i % 4 === 2
-                      ? "#f59e0b"
-                      : "#6366f6"
-                  }`,
-                }}
-              >
-                {/* Light cap */}
-                <div className="absolute -top-1 left-1/2 transform -translate-x-1/2 w-3 h-2 bg-gray-800 rounded-t-sm"></div>
-              </div>
-            </div>
-          ))}
-        </div>
-      </div>
-
       {/* Main Content */}
-      <div className="min-h-screen flex flex-col justify-center items-center px-4 relative z-10">
-        {/* Christmas Header */}
+      <div className="flex-1 flex flex-col justify-center items-center px-4 relative z-10">
+        {/* Header */}
         <div className="text-center mb-8">
-          <div className="flex items-center justify-center gap-3 mb-3">
-            <span className="text-3xl animate-bounce">🎄</span>
-            <h1 className="text-3xl font-bold text-white">
-              Happy Christmas Season
-            </h1>
-            <span
-              className="text-3xl animate-bounce"
-              style={{ animationDelay: "0.5s" }}
-            >
-              🎅
-            </span>
-          </div>
-          <p className="text-yellow-200 font-medium">Login to continue</p>
+          <p className="text-emerald-100 font-medium">
+            Secure login to continue
+          </p>
         </div>
 
-        {/* Login Card - Keeping original style */}
+        {/* Login Card */}
         <div className="relative py-3 w-full max-w-md mx-auto">
-          <div className="absolute inset-0 bg-gradient-to-r from-red-600 to-green-600 shadow-lg transform -skew-y-6 sm:skew-y-0 sm:-rotate-6 sm:rounded-3xl animate-pulse"></div>
+          <div className="absolute inset-0 bg-gradient-to-r from-emerald-600 to-green-600 shadow-lg transform -skew-y-6 sm:skew-y-0 sm:-rotate-6 sm:rounded-3xl opacity-80"></div>
 
           <div className="relative px-4 py-10 bg-white shadow-xl rounded-2xl sm:rounded-3xl sm:p-20">
             <div className="max-w-md mx-auto w-full">
-              {/* Christmas Decoration on Card */}
-              <div className="flex justify-center gap-2 mb-6">
-                <span className="text-2xl animate-pulse">🎁</span>
-                <span
-                  className="text-2xl animate-pulse"
-                  style={{ animationDelay: "0.3s" }}
-                >
-                  🌟
-                </span>
-                <span
-                  className="text-2xl animate-pulse"
-                  style={{ animationDelay: "0.6s" }}
-                >
-                  🔔
-                </span>
+              {/* Card decoration */}
+              <div className="flex justify-center mb-6">
+                <div className="w-16 h-16 bg-gradient-to-br from-emerald-100 to-green-100 rounded-full flex items-center justify-center shadow-md">
+                  <span className="text-2xl text-emerald-600">🔑</span>
+                </div>
               </div>
 
               <form onSubmit={handleLogin} className="w-full">
                 <div className="relative">
-                  <div className="absolute left-3 top-1/2 transform -translate-y-1/2 text-red-600">
+                  <div className="absolute left-3 top-1/2 transform -translate-y-1/2 text-emerald-600">
                     👤
                   </div>
                   <input
                     ref={usernameRef}
                     className="w-full pl-12 pr-6 py-4 rounded-lg font-bold bg-gray-100 border-2 border-gray-200
                     placeholder-gray-600 text-lg focus:outline-none
-                    focus:border-red-500 focus:bg-white transition-all duration-300"
+                    focus:border-emerald-500 focus:bg-white transition-all duration-300"
                     type="text"
                     name="userName"
                     value={userLogin.userName}
@@ -214,7 +157,7 @@ const Login = () => {
                 </div>
 
                 <div className="relative mt-5">
-                  <div className="absolute left-3 top-1/2 transform -translate-y-1/2 text-green-600">
+                  <div className="absolute left-3 top-1/2 transform -translate-y-1/2 text-emerald-600">
                     🔒
                   </div>
                   <input
@@ -231,8 +174,8 @@ const Login = () => {
 
                 <button
                   type="submit"
-                  className="mt-8 tracking-wide font-bold bg-gradient-to-r from-red-600 to-green-600 text-white w-full py-4
-                  rounded-lg hover:from-red-700 hover:to-green-700 transition-all duration-300 ease-in-out flex
+                  className="mt-8 tracking-wide font-bold bg-gradient-to-r from-emerald-600 to-green-600 text-white w-full py-4
+                  rounded-lg hover:from-emerald-700 hover:to-green-700 transition-all duration-300 ease-in-out flex
                   items-center justify-center focus:shadow-outline focus:outline-none shadow-lg hover:scale-105"
                 >
                   {loading ? (
@@ -242,82 +185,102 @@ const Login = () => {
                     </>
                   ) : (
                     <>
-                      <span className="text-xl mr-2">🎅</span>
-                      <span className="text-xl">Login</span>
-                      <span className="text-xl ml-2">🎄</span>
+                      <span className="text-lg mr-2">→</span>
+                      <span className="text-lg">Login</span>
+                      <span className="text-lg ml-2">←</span>
                     </>
                   )}
                 </button>
 
                 {loginSuccessfuly && (
-                  <div className="mt-4 p-3 bg-green-100 border-2 border-green-400 text-green-800 text-center rounded-lg">
-                    🎉 {loginSuccessfuly}
+                  <div className="mt-4 p-3 bg-emerald-100 border-2 border-emerald-400 text-emerald-800 text-center rounded-lg">
+                    ✓ {loginSuccessfuly}
                   </div>
                 )}
 
                 {loginError && (
                   <div className="mt-4 p-3 bg-red-100 border-2 border-red-400 text-red-800 text-center rounded-lg">
-                    ❌ {loginError}
+                    ✗ {loginError}
                   </div>
                 )}
               </form>
-
-              {/* Christmas Message */}
-              <div className="mt-6 pt-6 border-t border-gray-200 text-center">
-                <p className="text-gray-600 text-sm">
-                  <span className="text-red-600 font-bold">🎁</span> Wishing you
-                  a joyful holiday season!
-                  <span className="text-green-600 font-bold"> 🎁</span>
-                </p>
-              </div>
             </div>
           </div>
         </div>
 
-        {/* Bottom Christmas Decorations */}
-        <div className="mt-8 flex gap-4">
-          {[...Array(5)].map((_, i) => (
-            <div
-              key={i}
-              className="text-2xl animate-bounce"
-              style={{
-                animationDelay: `${i * 0.3}s`,
-                animationDuration: "1.5s",
-              }}
-            >
-              {["🎄", "🎁", "🌟", "🔔", "🦌"][i]}
-            </div>
-          ))}
+        {/* Bottom decoration */}
+        <div className="mt-8 flex justify-center">
+          <div className="flex items-center gap-2 text-emerald-100">
+            <div className="w-2 h-2 bg-emerald-400 rounded-full"></div>
+            <div className="w-2 h-2 bg-green-400 rounded-full"></div>
+            <div className="w-2 h-2 bg-teal-400 rounded-full"></div>
+            <span className="text-sm ml-2 text-black">Secure Connection</span>
+            <div className="w-2 h-2 bg-teal-400 rounded-full"></div>
+            <div className="w-2 h-2 bg-green-400 rounded-full"></div>
+            <div className="w-2 h-2 bg-emerald-400 rounded-full"></div>
+          </div>
         </div>
       </div>
 
+      {/* Footer - Added at the bottom */}
+      <div className="w-full py-4 bg-gray-100 mt-auto relative z-10">
+        <div className="container mx-auto px-4">
+          <div className="flex flex-col md:flex-row justify-between items-center">
+            <div className="text-center md:text-left mb-4 md:mb-0">
+              <p className="text-gray-600 text-sm">
+                &copy; {new Date().getFullYear()} Sys Tech. All rights reserved.
+              </p>
+            </div>
+            <div className="flex items-center justify-center space-x-6">
+              <a
+                href="#"
+                className="text-gray-400 hover:text-emerald-400 transition-colors duration-300 text-sm"
+              >
+                Privacy Policy
+              </a>
+              <a
+                href="#"
+                className="text-gray-400 hover:text-emerald-400 transition-colors duration-300 text-sm"
+              >
+                Terms of Service
+              </a>
+              <a
+                href="#"
+                className="text-gray-400 hover:text-emerald-400 transition-colors duration-300 text-sm"
+              >
+                Contact Support
+              </a>
+            </div>
+          </div>
+          <div className="mt-4 text-center">
+            <p className="text-gray-500 text-xs">
+              Inventory Management System v2.0
+            </p>
+          </div>
+        </div>
+      </div>
+
+      {/* Bottom accent */}
+      <div className="absolute bottom-0 left-0 right-0 h-1 bg-gradient-to-r from-teal-500 via-green-500 to-emerald-500 z-10"></div>
+
       {/* CSS Animations */}
-      <style >{`
-        @keyframes snowfall {
+      <style>{`
+        @keyframes bg-pulse {
           0% {
-            transform: translateY(-100px) rotate(0deg);
-          }
-          100% {
-            transform: translateY(100vh) rotate(360deg);
-          }
-        }
-
-        .animate-snowfall {
-          animation: snowfall linear infinite;
-        }
-
-        .animate-pulse {
-          animation: pulse 2s ease-in-out infinite;
-        }
-
-        @keyframes pulse {
-          0%,
-          100% {
-            opacity: 1;
+            transform: translateY(-100px) scale(1);
+            opacity: 0.3;
           }
           50% {
-            opacity: 0.7;
+            opacity: 0.6;
           }
+          100% {
+            transform: translateY(100vh) scale(1.2);
+            opacity: 0.3;
+          }
+        }
+
+        .animate-bg-pulse {
+          animation: bg-pulse linear infinite;
         }
       `}</style>
     </div>

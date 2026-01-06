@@ -14,15 +14,33 @@ const ShiftDetails = () => {
   // Function to format the date
   const formatDate = (date) => {
     const months = [
-      "January", "February", "March", "April", "May", "June", "July",
-      "August", "September", "October", "November", "December"
+      "January",
+      "February",
+      "March",
+      "April",
+      "May",
+      "June",
+      "July",
+      "August",
+      "September",
+      "October",
+      "November",
+      "December",
     ];
-    return `${months[date.getMonth()]} ${String(date.getDate()).padStart(2, '0')}, ${date.getFullYear()}`;
+    return `${months[date.getMonth()]} ${String(date.getDate()).padStart(
+      2,
+      "0"
+    )}, ${date.getFullYear()}`;
   };
 
   // Function to format the time (hh:mm:ss)
   const formatTime = (date) => {
-    return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false });
+    return date.toLocaleTimeString([], {
+      hour: "2-digit",
+      minute: "2-digit",
+      second: "2-digit",
+      hour12: false,
+    });
   };
 
   // Update the time every second
@@ -34,12 +52,15 @@ const ShiftDetails = () => {
   }, []);
 
   return (
-    <div className="flex flex-col sm:flex-row items-center justify-between p-4 bg-secondary rounded-lg shadow-md w-full sm:w-auto gap-2 sm:gap-4">
-      
+    <div className="flex flex-col sm:flex-row items-center justify-between p-4 bg-secondary rounded-lg shadow-md w-full sm:w-auto gap-2 sm:gap-4 border-2 border-dashed border-gray-400">
       {/* Shift Name & Date */}
       <div className="text-center sm:text-left w-full sm:w-auto">
-        <h1 className="text-lg sm:text-xl font-bold text-textPrimary">{getShift(currentTime.getHours())}</h1>
-        <p className="text-textSecondary text-sm sm:text-base">{formatDate(currentTime)}</p>
+        <h1 className="text-lg sm:text-xl font-bold text-textPrimary">
+          {getShift(currentTime.getHours())}
+        </h1>
+        <p className="text-textSecondary text-sm sm:text-base">
+          {formatDate(currentTime)}
+        </p>
       </div>
 
       {/* Current Time */}
