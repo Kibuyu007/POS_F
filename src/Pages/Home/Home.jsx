@@ -98,7 +98,9 @@ const Home = () => {
 
         setTotalBuyingPrice(buyingTotal);
 
-        setProfit(salesTotal - (totalExpenses + discountTotal + buyingTotal));
+        const profitValue = salesTotal - (totalExpenses + buyingTotal);
+
+        setProfit(profitValue);
       } catch (error) {
         console.error("Failed to fetch transactions", error);
       } finally {
