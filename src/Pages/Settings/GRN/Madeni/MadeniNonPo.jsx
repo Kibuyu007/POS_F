@@ -697,69 +697,102 @@ const MadeniNonPo = () => {
                     {isExpanded && (
                       <tr>
                         <td colSpan={9} className="p-0">
-                          <div className="px-5 py-4 bg-gradient-to-r from-gray-50 to-green-50 border-t-2 border-green-300">
-                            {/* Header with better styling */}
-                            <div className="mb-4 flex items-center justify-between">
-                              <div className="flex items-center gap-3">
-                                <div className="w-8 h-8 bg-gradient-to-r from-green-300 to-green-400 rounded-full flex items-center justify-center shadow-sm">
-                                  <span className="text-black font-bold">
+                          <div className="relative pl-24 pr-6 py-6 bg-gradient-to-br from-white via-gray-50 to-white rounded-2xl shadow-lg border border-gray-200">
+                            {/* Black dotted rectangle - separated from content */}
+                            <div className="absolute left-0 top-8 bottom-8 w-36 pointer-events-none">
+                              <svg
+                                viewBox="0 0 180 480"
+                                className="h-full w-full"
+                                preserveAspectRatio="none"
+                              >
+                                <path
+                                  d="
+                                  M120 30
+                                    H40
+                                    Q10 30 10 60
+                                   V420
+                                   Q10 450 40 450
+                                     H120
+                                       "
+                                  fill="none"
+                                  stroke="#000000" /* Pure black */
+                                  strokeWidth="6"
+                                  strokeDasharray="4 12"
+                                  strokeLinecap="round"
+                                  strokeLinejoin="round"
+                                />
+                              </svg>
+                            </div>
+
+                            {/* Header - Gray only */}
+                            <div className="mb-6 flex items-start justify-between">
+                              <div className="flex items-start gap-4">
+                                <div className="w-12 h-12 bg-gradient-to-br from-gray-100 to-gray-200 rounded-full flex items-center justify-center shadow-sm">
+                                  <span className="text-gray-600 text-xl">
                                     📦
                                   </span>
                                 </div>
+
                                 <div>
-                                  <h4 className="font-bold text-black text-base">
+                                  <h4 className="font-bold text-gray-900 text-xl mb-1">
                                     {supplier.supplierName} Items
                                   </h4>
-                                  <div className="flex items-center gap-3 mt-1">
-                                    <div className="flex items-center gap-1">
-                                      <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-                                      <span className="text-xs text-gray-700 font-medium">
+
+                                  <div className="flex items-center gap-4 mt-3">
+                                    <div className="flex items-center gap-2 bg-gradient-to-r from-gray-50 to-gray-100 px-3 py-1.5 rounded-full border border-gray-200">
+                                      <span className="w-2.5 h-2.5 bg-gray-700 rounded-full" />
+                                      <span className="text-sm font-medium text-gray-800">
                                         {paidItems} paid
                                       </span>
                                     </div>
-                                    <div className="flex items-center gap-1">
-                                      <div className="w-2 h-2 bg-red-500 rounded-full"></div>
-                                      <span className="text-xs text-gray-700 font-medium">
+
+                                    <div className="flex items-center gap-2 bg-gradient-to-r from-gray-50 to-gray-100 px-3 py-1.5 rounded-full border border-gray-200">
+                                      <span className="w-2.5 h-2.5 bg-gray-400 rounded-full" />
+                                      <span className="text-sm font-medium text-gray-800">
                                         {pendingItems} pending
                                       </span>
                                     </div>
-                                    <div className="text-xs text-gray-500">
-                                      • {supplier.items.length} total
+
+                                    <div className="flex items-center gap-2 bg-gradient-to-r from-gray-50 to-gray-100 px-3 py-1.5 rounded-full border border-gray-200">
+                                      <span className="text-sm font-medium text-gray-800">
+                                        {supplier.items.length} total items
+                                      </span>
                                     </div>
                                   </div>
                                 </div>
                               </div>
+
                               <button
                                 onClick={() =>
                                   toggleSupplierExpansion(supplier.supplierId)
                                 }
-                                className="px-3 py-1.5 bg-gradient-to-r from-gray-200 to-gray-300 hover:from-gray-300 hover:to-gray-400 text-black font-medium text-sm rounded-full shadow-sm transition-all"
+                                className="px-5 py-2.5 text-sm bg-gradient-to-r from-gray-100 to-gray-200 hover:from-gray-200 hover:to-gray-300 text-gray-800 font-medium rounded-full shadow-sm transition-all hover:shadow"
                               >
                                 ▲ Close
                               </button>
                             </div>
 
-                            {/* Items Table - Enhanced */}
-                            <div className="overflow-hidden rounded-xl border-2 border-green-300 bg-white shadow-md">
+                            {/* Table - Gray only */}
+                            <div className="overflow-hidden rounded-xl border border-gray-300 bg-white shadow-sm">
                               <div className="overflow-x-auto">
-                                <table className="w-full">
+                                <table className="w-full text-sm">
                                   <thead>
-                                    <tr className="bg-gradient-to-r from-green-200 to-green-300 border-b-2 border-green-400">
+                                    <tr className="bg-gradient-to-r from-gray-100 to-gray-150 border-b border-gray-400">
                                       {[
                                         "Item",
                                         "GRN Date",
-                                        "Quantity",
+                                        "Qty",
                                         "Unit Price",
-                                        "Total Cost",
+                                        "Total",
                                         "Paid",
                                         "Remaining",
                                         "Status",
                                       ].map((h, idx) => (
                                         <th
                                           key={h}
-                                          className={`px-4 py-3 text-center text-xs font-bold text-black uppercase ${
+                                          className={`px-6 py-4 text-left font-bold text-gray-800 uppercase text-xs ${
                                             idx < 7
-                                              ? "border-r border-green-400"
+                                              ? "border-r border-gray-400"
                                               : ""
                                           }`}
                                         >
@@ -770,38 +803,36 @@ const MadeniNonPo = () => {
                                   </thead>
 
                                   <tbody>
-                                    {supplier.items.map((item, itemIdx) => {
-                                      const itemRemaining =
+                                    {supplier.items.map((item, idx) => {
+                                      const remaining =
                                         calculateItemRemainingBalance(item);
-                                      const isItemPaid = isItemFullyPaid(item);
+                                      const isPaid = isItemFullyPaid(item);
 
                                       return (
                                         <tr
                                           key={`${item.grnId}_${item.itemId}`}
-                                          className={`border-b border-green-100 last:border-b-0 transition-colors hover:bg-green-50 ${
-                                            itemIdx % 2 === 0
+                                          className={`group border-b last:border-b-0 transition-colors hover:bg-gray-50/60 ${
+                                            idx % 2 === 0
                                               ? "bg-white"
-                                              : "bg-gray-50"
+                                              : "bg-gray-50/30"
                                           }`}
                                         >
-                                          {/* Item Name */}
-                                          <td className="px-4 py-3 border-r border-gray-200">
-                                            <div className="flex items-center">
-                                              <div className="w-6 h-6 bg-gradient-to-r from-blue-100 to-blue-200 rounded-full flex items-center justify-center mr-3">
-                                                <span className="text-xs font-bold text-blue-700">
-                                                  {itemIdx + 1}
-                                                </span>
+                                          {/* Item */}
+                                          <td className="px-6 py-4 border-r border-gray-300">
+                                            <div className="flex items-center gap-3">
+                                              <div className="w-8 h-8 bg-gradient-to-br from-gray-200 to-gray-300 rounded-full flex items-center justify-center text-xs font-bold text-gray-700 shadow-sm">
+                                                {idx + 1}
                                               </div>
-                                              <span className="font-medium text-black text-sm truncate max-w-[160px]">
+                                              <span className="font-semibold text-gray-900">
                                                 {item.name}
                                               </span>
                                             </div>
                                           </td>
 
                                           {/* Date */}
-                                          <td className="px-4 py-3 text-center border-r border-gray-200">
-                                            <div className="bg-yellow-100 px-3 py-1 rounded-full inline-block">
-                                              <span className="text-sm font-bold text-black">
+                                          <td className="px-6 py-4 text-center border-r border-gray-300">
+                                            <div className="bg-gradient-to-r from-gray-100 to-gray-150 px-3 py-1.5 rounded-full border border-gray-300 inline-block">
+                                              <span className="font-medium text-gray-800">
                                                 {item.createdAt
                                                   ? dayjs(
                                                       item.createdAt
@@ -811,79 +842,74 @@ const MadeniNonPo = () => {
                                             </div>
                                           </td>
 
-                                          {/* Quantity */}
-                                          <td className="px-4 py-3 text-center border-r border-gray-200">
-                                            <div className="bg-blue-100 text-blue-800 px-2 py-1 rounded-full text-sm font-bold inline-block">
-                                              {item.quantity.toLocaleString()}
+                                          {/* Qty */}
+                                          <td className="px-6 py-4 text-center border-r border-gray-300">
+                                            <div className="bg-gradient-to-r from-gray-150 to-gray-200 px-3 py-1.5 rounded-full border border-gray-400 inline-block">
+                                              <span className="font-bold text-gray-800">
+                                                {item.quantity.toLocaleString()}
+                                              </span>
                                             </div>
                                           </td>
 
                                           {/* Unit Price */}
-                                          <td className="px-4 py-3 text-center border-r border-gray-200">
-                                            <span className="font-bold text-black">
-                                              {item.buyingPrice.toLocaleString()}
-                                            </span>
+                                          <td className="px-6 py-4 text-center border-r border-gray-300">
+                                            <div className="bg-gradient-to-r from-gray-100 to-gray-150 px-3 py-1.5 rounded-full border border-gray-300 inline-block shadow-sm">
+                                              <span className="font-semibold text-gray-800">
+                                                {item.buyingPrice.toLocaleString()}
+                                              </span>
+                                            </div>
                                           </td>
 
-                                          {/* Total Cost */}
-                                          <td className="px-4 py-3 text-center border-r border-gray-200">
-                                            <div className="bg-gradient-to-r from-blue-100 to-yellow-100 px-3 py-1.5 rounded-full">
-                                              <span className="font-bold text-black text-base">
+                                          {/* Total */}
+                                          <td className="px-6 py-4 text-center">
+                                            <div className="bg-indigo-50 px-4 py-2 rounded-full border border-gray-200 shadow-sm">
+                                              <span className="font-bold text-gray-900 text-base ">
                                                 {item.billedTotalCost.toLocaleString()}
                                               </span>
                                             </div>
                                           </td>
 
-                                          {/* Paid Amount */}
-                                          <td className="px-4 py-3 text-center border-r border-gray-200">
-                                            <div className="bg-gradient-to-r from-green-100 to-pink-50 px-3 py-1.5 rounded-full">
-                                              <span className="font-bold text-green-900 text-base">
+                                          {/* Paid */}
+                                          <td className="px-6 py-4 text-center border-r border-gray-300">
+                                            <div className="bg-gradient-to-r from-gray-100 to-gray-150 px-4 py-2 rounded-full border border-gray-300 shadow-sm">
+                                              <span className="font-bold text-green-700 text-base">
                                                 {item.paidAmount.toLocaleString()}
                                               </span>
                                             </div>
                                           </td>
 
                                           {/* Remaining */}
-                                          <td className="px-4 py-3 text-center border-r border-gray-200">
+                                          <td className="px-6 py-4 text-center border-r border-gray-300">
                                             <div
-                                              className={`px-3 py-1.5 rounded-full ${
-                                                itemRemaining > 0
-                                                  ? "bg-gradient-to-r from-red-100 to-red-100"
-                                                  : "bg-gradient-to-r from-green-100 to-green-200 shadow-md"
+                                              className={`px-4 py-2 rounded-full border shadow-sm ${
+                                                remaining > 0
+                                                  ? "bg-gradient-to-r from-gray-150 to-gray-200 border-gray-400"
+                                                  : "bg-gradient-to-r from-gray-100 to-gray-150 border-gray-300"
                                               }`}
                                             >
-                                              <span
-                                                className={`font-bold text-base ${
-                                                  itemRemaining > 0
-                                                    ? "text-red-800"
-                                                    : "text-green-800"
-                                                }`}
-                                              >
-                                                {itemRemaining.toLocaleString()}
+                                              <span className="font-bold text-base text-red-600">
+                                                {remaining.toLocaleString()}
                                               </span>
                                             </div>
                                           </td>
 
                                           {/* Status */}
-                                          <td className="px-4 py-3 text-center">
+                                          <td className="px-6 py-4 text-center">
                                             <div
-                                              className={`inline-flex items-center px-3 py-1.5 rounded-full font-bold text-sm ${
-                                                isItemPaid
-                                                  ? "bg-gradient-to-r from-green-300 to-green-400 text-black"
-                                                  : "bg-gradient-to-r from-yellow-300 to-yellow-400 text-black"
+                                              className={`inline-flex items-center gap-2 px-4 py-2 rounded-full font-semibold border ${
+                                                isPaid
+                                                  ? "bg-gradient-to-r from-gray-150 to-gray-200 border-gray-400 text-gray-800"
+                                                  : "bg-gradient-to-r from-gray-100 to-gray-150 border-gray-300 text-gray-800"
                                               }`}
                                             >
-                                              {isItemPaid ? (
-                                                <>
-                                                  <div className="w-2 h-2 bg-green-600 rounded-full mr-2"></div>
-                                                  <span>Paid</span>
-                                                </>
-                                              ) : (
-                                                <>
-                                                  <div className="w-2 h-2 bg-yellow-600 rounded-full mr-2"></div>
-                                                  <span>Pending</span>
-                                                </>
-                                              )}
+                                              <span
+                                                className={`w-3 h-3 rounded-full ${
+                                                  isPaid
+                                                    ? "bg-green-600"
+                                                    : "bg-yellow-500"
+                                                }`}
+                                              />
+                                              {isPaid ? "Paid" : "Pending"}
                                             </div>
                                           </td>
                                         </tr>

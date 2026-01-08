@@ -19,7 +19,7 @@ import { HiOutlineExclamationCircle } from "react-icons/hi";
 import { RiUserSettingsLine, RiDashboardLine } from "react-icons/ri";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
-import logo from "../../assets/logo.jpg";
+import logo from "../../assets/wise.png";
 import { logoutSuccess } from "../../Redux/userSlice";
 import { AiOutlineUser } from "react-icons/ai";
 import { itemsError, itemsFetch, itemsPending } from "../../Redux/items";
