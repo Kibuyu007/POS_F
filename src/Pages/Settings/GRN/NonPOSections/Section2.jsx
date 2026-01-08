@@ -8,14 +8,8 @@ import { LocalizationProvider } from "@mui/x-date-pickers/LocalizationProvider";
 import { DatePicker } from "@mui/x-date-pickers/DatePicker";
 import dayjs from "dayjs";
 import { v4 as uuidv4 } from "uuid";
-import {
-  FiTrendingUp,
-  FiInfo,
-  FiDollarSign,
-  FiPackage,
-  FiPercent,
-  FiMinus,
-} from "react-icons/fi";
+import { FiTrendingUp, FiDollarSign, FiPackage, FiMinus } from "react-icons/fi";
+import { CiCalculator1 } from "react-icons/ci";
 
 const Section2 = ({ onAddItem }) => {
   const { items } = useSelector((state) => state.items);
@@ -65,8 +59,11 @@ const Section2 = ({ onAddItem }) => {
     totalCost: "",
     sellingPrice: "",
     enableWholesale: false,
-    wholesaleMinQty: 1, // Fixed to 1
+    wholesaleMinQty: 1,
     wholesalePrice: 0,
+    // New calculator fields
+    wholesaleItemsNumber: "",
+    wholesaleTotalAmount: "",
   });
 
   const [calculatedValues, setCalculatedValues] = useState({
@@ -114,6 +111,19 @@ const Section2 = ({ onAddItem }) => {
     setFormData((prev) => {
       const updatedForm = { ...prev, [name]: parsedValue };
 
+      // Handle wholesale calculator
+      if (name === "wholesaleItemsNumber" || name === "wholesaleTotalAmount") {
+        // If both calculator fields have values, calculate wholesalePrice
+        if (
+          updatedForm.wholesaleItemsNumber &&
+          updatedForm.wholesaleTotalAmount
+        ) {
+          const calculatedPrice =
+            updatedForm.wholesaleTotalAmount / updatedForm.wholesaleItemsNumber;
+          updatedForm.wholesalePrice = calculatedPrice;
+        }
+      }
+
       const units = parseFloat(updatedForm.units) || 0;
       const itemsPerUnit = parseInt(updatedForm.itemsPerUnit) || 0;
       const foc = parseInt(updatedForm.foc) || 0;
@@ -155,8 +165,8 @@ const Section2 = ({ onAddItem }) => {
       formData.sellingPrice > 0
     ) {
       // Since wholesaleMinQty is fixed to 1, calculations are simpler
-      const perUnitWholesalePrice = formData.wholesalePrice; // No division needed
-      const totalRetailPrice = formData.sellingPrice; // No multiplication needed
+      const perUnitWholesalePrice = formData.wholesalePrice;
+      const totalRetailPrice = formData.sellingPrice;
       const savingsAmount = totalRetailPrice - formData.wholesalePrice;
       const discountPercentage =
         totalRetailPrice > 0 ? (savingsAmount / totalRetailPrice) * 100 : 0;
@@ -201,8 +211,10 @@ const Section2 = ({ onAddItem }) => {
       sellingPrice: itemToAdd.price || "",
       quantity: prev.units * prev.itemsPerUnit,
       enableWholesale: itemToAdd.enableWholesale || false,
-      wholesaleMinQty: 1, // Fixed to 1
+      wholesaleMinQty: 1,
       wholesalePrice: itemToAdd.wholesalePrice || 0,
+      wholesaleItemsNumber: "",
+      wholesaleTotalAmount: "",
     }));
   };
 
@@ -210,7 +222,9 @@ const Section2 = ({ onAddItem }) => {
     setFormData((prev) => ({
       ...prev,
       enableWholesale: !prev.enableWholesale,
-      wholesaleMinQty: 1, // Always set to 1 when toggling
+      wholesaleMinQty: 1,
+      wholesaleItemsNumber: "",
+      wholesaleTotalAmount: "",
     }));
   };
 
@@ -270,10 +284,7 @@ const Section2 = ({ onAddItem }) => {
     }
 
     // Validate wholesale minimum quantity doesn't exceed paid quantity
-    if (
-      formData.enableWholesale &&
-      1 > (formData.quantity || 0) // Since wholesaleMinQty is fixed to 1
-    ) {
+    if (formData.enableWholesale && 1 > (formData.quantity || 0)) {
       setShowError("Wholesale minimum quantity cannot exceed paid quantity");
       return;
     }
@@ -300,9 +311,9 @@ const Section2 = ({ onAddItem }) => {
         parseFloat(formData.sellingPrice || selectedItem.price) || 0,
       units: parseFloat(formData.units) || 0,
       itemsPerUnit: parseInt(formData.itemsPerUnit) || 0,
-      // WHOLESALE FIELDS - Convert to proper types
+      // WHOLESALE FIELDS
       enableWholesale: Boolean(formData.enableWholesale),
-      wholesaleMinQty: 1, // Always 1
+      wholesaleMinQty: 1,
       wholesalePrice: parseFloat(formData.wholesalePrice) || 0,
     };
 
@@ -329,8 +340,10 @@ const Section2 = ({ onAddItem }) => {
       totalCost: "",
       sellingPrice: "",
       enableWholesale: false,
-      wholesaleMinQty: 1, // Fixed to 1
+      wholesaleMinQty: 1,
       wholesalePrice: 0,
+      wholesaleItemsNumber: "",
+      wholesaleTotalAmount: "",
     });
     setErrorDate({
       manufactureDate: false,
@@ -359,8 +372,10 @@ const Section2 = ({ onAddItem }) => {
       totalCost: "",
       sellingPrice: "",
       enableWholesale: false,
-      wholesaleMinQty: 1, // Fixed to 1
+      wholesaleMinQty: 1,
       wholesalePrice: 0,
+      wholesaleItemsNumber: "",
+      wholesaleTotalAmount: "",
     });
     setErrorDate({
       manufactureDate: false,
@@ -779,7 +794,7 @@ const Section2 = ({ onAddItem }) => {
                       Number(selectedItem.price) && (
                       <div className="mt-1 md:mt-2 p-1 md:p-2 bg-red-50 border border-red-200 rounded text-xs">
                         <p className="text-red-700 font-medium">
-                          ⚠️ Buying price exceeds current selling price
+                          Buying price exceeds current selling price
                         </p>
                       </div>
                     )}
@@ -926,7 +941,7 @@ const Section2 = ({ onAddItem }) => {
                   </div>
                 </div>
 
-                {/* WHOLESALE SECTION - UPDATED */}
+                {/* WHOLESALE SECTION - WITH CALCULATOR */}
                 <div className="border border-gray-200 rounded-xl overflow-hidden">
                   <div className="bg-gradient-to-r from-blue-50 to-indigo-50 p-3 md:p-4 border-b border-gray-200">
                     <div className="flex items-center justify-between">
@@ -1005,7 +1020,7 @@ const Section2 = ({ onAddItem }) => {
                           </div>
                         </div>
 
-                        {/* Wholesale Price (Per Unit) */}
+                        {/* Wholesale Price (Per Unit) - Direct Input */}
                         <div className="bg-white p-3 rounded-lg border border-blue-100">
                           <label className="block text-sm font-bold text-gray-900 mb-1 flex items-center gap-2">
                             <FiDollarSign className="w-4 h-4 text-blue-500" />
@@ -1025,6 +1040,98 @@ const Section2 = ({ onAddItem }) => {
                             placeholder="e.g., 12,000"
                           />
                         </div>
+                      </div>
+
+                      {/* Wholesale Calculator Section */}
+                      <div className="bg-gradient-to-r from-blue-50 to-indigo-50 p-4 rounded-lg border border-blue-200">
+                        <div className="flex items-center gap-2 mb-3">
+                          <CiCalculator1 className="w-5 h-5 text-blue-600" />
+                          <h5 className="text-sm font-bold text-gray-900">
+                            Quick Calculator
+                          </h5>
+                          <span className="text-xs text-gray-500 ml-auto">
+                            Optional - Helps calculate price per unit
+                          </span>
+                        </div>
+
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                          {/* Number of Items */}
+                          <div>
+                            <label className="block text-xs font-semibold text-gray-700 mb-1">
+                              Number of Items
+                            </label>
+                            <div className="relative">
+                              <input
+                                type="text"
+                                name="wholesaleItemsNumber"
+                                value={formatNumberWithCommas(
+                                  formData.wholesaleItemsNumber || ""
+                                )}
+                                onChange={handleNumberChange}
+                                className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-white text-gray-900 focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+                                placeholder="e.g., 5"
+                              />
+                              <div className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500 text-sm">
+                                units
+                              </div>
+                            </div>
+                          </div>
+
+                          {/* Total Amount */}
+                          <div>
+                            <label className="block text-xs font-semibold text-gray-700 mb-1">
+                              Total Amount
+                            </label>
+                            <div className="relative">
+                              <input
+                                type="text"
+                                name="wholesaleTotalAmount"
+                                value={formatNumberWithCommas(
+                                  formData.wholesaleTotalAmount || ""
+                                )}
+                                onChange={handleNumberChange}
+                                className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-white text-gray-900 focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+                                placeholder="e.g., 50,000"
+                              />
+                              <div className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500 text-sm font-bold">
+                                Tsh
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Calculation Display */}
+                        {formData.wholesaleItemsNumber &&
+                          formData.wholesaleTotalAmount && (
+                            <div className="mt-3 p-3 bg-white rounded-lg border border-green-200">
+                              <div className="flex items-center justify-between">
+                                <div className="text-sm">
+                                  <span className="text-gray-600">
+                                    Calculated Price:
+                                  </span>
+                                  <span className="ml-2 font-bold text-green-700">
+                                    Tsh{" "}
+                                    {formatNumberWithCommas(
+                                      (
+                                        formData.wholesaleTotalAmount /
+                                        formData.wholesaleItemsNumber
+                                      ).toFixed(2)
+                                    )}{" "}
+                                    per unit
+                                  </span>
+                                </div>
+                                <div className="text-xs text-gray-500">
+                                  {formatNumberWithCommas(
+                                    formData.wholesaleTotalAmount
+                                  )}{" "}
+                                  ÷{" "}
+                                  {formatNumberWithCommas(
+                                    formData.wholesaleItemsNumber
+                                  )}
+                                </div>
+                              </div>
+                            </div>
+                          )}
                       </div>
 
                       {/* Wholesale Calculation Summary */}
@@ -1162,16 +1269,6 @@ const Section2 = ({ onAddItem }) => {
                                   </div>
                                 </div>
                               </div>
-                            </div>
-
-                            {/* Package Information Note */}
-                            <div className="mt-2 p-2 bg-indigo-50 rounded border border-indigo-200">
-                              <p className="text-xs text-indigo-700 text-center">
-                                <span className="font-bold">Note:</span> Package
-                                sizes (2,4,6,8,12,24, etc.) can be selected at
-                                the POS during wholesale sales. Wholesale price
-                                here is per unit.
-                              </p>
                             </div>
                           </div>
                         )}
