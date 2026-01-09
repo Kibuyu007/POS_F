@@ -283,11 +283,6 @@ const Section2 = ({ onAddItem }) => {
       return;
     }
 
-    // Validate wholesale minimum quantity doesn't exceed paid quantity
-    if (formData.enableWholesale && 1 > (formData.quantity || 0)) {
-      setShowError("Wholesale minimum quantity cannot exceed paid quantity");
-      return;
-    }
 
     // Prepare the data to send
     const fullItemData = {
