@@ -175,8 +175,8 @@ const Home = () => {
   }, [filteredGrns]);
 
   const profit = useMemo(() => {
-    return totalSales - (totalBuyingPrice + totalExpenses + totalDiscount);
-  }, [totalSales, totalBuyingPrice, totalExpenses, totalDiscount]);
+    return totalSales - (totalBuyingPrice + totalExpenses );
+  }, [totalSales, totalBuyingPrice, totalExpenses]);
 
   const billed = filteredSales.filter((t) => t.status === "Bill");
 
