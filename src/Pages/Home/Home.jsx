@@ -149,7 +149,7 @@ const Home = () => {
   );
 
   const totalDiscount = useMemo(
-    () => filteredSales.reduce((s, t) => s + (t.tradeDiscount?.amount || 0), 0),
+    () => filteredSales.reduce((s, t) => s + (t.tradeDiscount || 0), 0),
     [filteredSales]
   );
 

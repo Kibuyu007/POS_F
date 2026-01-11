@@ -7,6 +7,7 @@ import {
   FiPackage,
   FiChevronDown,
   FiChevronUp,
+  FiBox,
 } from "react-icons/fi";
 import { DatePicker } from "@mui/x-date-pickers/DatePicker";
 import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs";
@@ -21,6 +22,7 @@ const CompletedNonPO = () => {
   const [filteredGrns, setFilteredGrns] = useState([]);
   const [loading, setLoading] = useState(true);
   const [filterSupplier, setFilterSupplier] = useState("");
+  const [filterItem, setFilterItem] = useState("");
   const [filterFrom, setFilterFrom] = useState(null);
   const [filterTo, setFilterTo] = useState(null);
   const [filterStatus, setFilterStatus] = useState("");
@@ -52,10 +54,23 @@ const CompletedNonPO = () => {
 
   useEffect(() => {
     const filtered = grns.filter((grn) => {
-      const supplierMatch = grn.supplierName?.supplierName
-        ?.toLowerCase()
-        .includes(filterSupplier.toLowerCase());
+      // Supplier filter
+      const supplierMatch = filterSupplier
+        ? grn.supplierName?.supplierName
+            ?.toLowerCase()
+            .includes(filterSupplier.toLowerCase())
+        : true;
 
+      // Item filter - check if any item name matches
+      const itemMatch = filterItem
+        ? grn.items?.some((item) =>
+            item.name?.name
+              ?.toLowerCase()
+              .includes(filterItem.toLowerCase())
+          )
+        : true;
+
+      // Date filter
       const date = dayjs(grn.createdAt);
       const fromMatch = filterFrom
         ? date.isAfter(dayjs(filterFrom).subtract(1, "day"))
@@ -64,19 +79,20 @@ const CompletedNonPO = () => {
         ? date.isBefore(dayjs(filterTo).add(1, "day"))
         : true;
 
+      // Status filter
       let statusMatch = true;
       if (filterStatus) {
-        statusMatch = grn.items.some(
+        statusMatch = grn.items?.some(
           (item) => item.status.toLowerCase() === filterStatus.toLowerCase()
         );
       }
 
-      return supplierMatch && fromMatch && toMatch && statusMatch;
+      return supplierMatch && itemMatch && fromMatch && toMatch && statusMatch;
     });
 
     setFilteredGrns(filtered);
     setCurrentPage(1);
-  }, [grns, filterSupplier, filterFrom, filterTo, filterStatus]);
+  }, [grns, filterSupplier, filterItem, filterFrom, filterTo, filterStatus]);
 
   const totalItems = filteredGrns.length;
   const totalPages = Math.ceil(totalItems / itemsPerPage);
@@ -95,6 +111,7 @@ const CompletedNonPO = () => {
 
   const clearFilters = () => {
     setFilterSupplier("");
+    setFilterItem("");
     setFilterFrom(null);
     setFilterTo(null);
     setFilterStatus("");
@@ -214,9 +231,9 @@ const CompletedNonPO = () => {
 
       {/* Compact Filters */}
       <div className="mb-6 rounded-xl p-4 shadow bg-white">
-        <div className="flex flex-col md:flex-row md:items-end gap-4">
-          {/* Search Input */}
-          <div className="flex-1">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
+          {/* Search Supplier */}
+          <div>
             <label className="block text-xs font-bold text-gray-700 mb-1">
               Search Supplier
             </label>
@@ -234,8 +251,27 @@ const CompletedNonPO = () => {
             </div>
           </div>
 
+          {/* Search Item */}
+          <div>
+            <label className="block text-xs font-bold text-gray-700 mb-1">
+              Search Item
+            </label>
+            <div className="relative">
+              <div className="absolute inset-y-0 left-3 flex items-center">
+                <FiBox className="w-4 h-4 text-gray-400" />
+              </div>
+              <input
+                type="text"
+                placeholder="Item name..."
+                value={filterItem}
+                onChange={(e) => setFilterItem(e.target.value)}
+                className="w-full pl-9 pr-3 py-2 text-sm border border-gray-300 rounded-full bg-white text-black focus:border-green-300 focus:outline-none focus:ring-1 focus:ring-green-200"
+              />
+            </div>
+          </div>
+
           {/* Date Range */}
-          <div className="flex-1">
+          <div className="lg:col-span-2">
             <label className="block text-xs font-bold text-gray-700 mb-1">
               Date Range
             </label>
@@ -283,29 +319,27 @@ const CompletedNonPO = () => {
           </div>
 
           {/* Status Filter */}
-          <div className="flex-1">
+          <div>
             <label className="block text-xs font-bold text-gray-700 mb-1">
               Status
             </label>
-            <select
-              value={filterStatus}
-              onChange={(e) => setFilterStatus(e.target.value)}
-              className="w-full px-3 py-2 text-sm border border-gray-300 rounded-full bg-white text-black focus:border-green-300 focus:outline-none focus:ring-1 focus:ring-green-200"
-            >
-              <option value="">All Status</option>
-              <option value="Billed">Billed</option>
-              <option value="Completed">Completed</option>
-            </select>
-          </div>
-
-          {/* Clear Button */}
-          <div className="flex gap-2">
-            <button
-              onClick={clearFilters}
-              className="px-4 py-2 bg-gray-200 hover:bg-gray-300 text-black font-bold rounded-full transition-colors whitespace-nowrap text-sm"
-            >
-              Clear Filters
-            </button>
+            <div className="flex gap-2">
+              <select
+                value={filterStatus}
+                onChange={(e) => setFilterStatus(e.target.value)}
+                className="w-full px-3 py-2 text-sm border border-gray-300 rounded-full bg-white text-black focus:border-green-300 focus:outline-none focus:ring-1 focus:ring-green-200"
+              >
+                <option value="">All Status</option>
+                <option value="Billed">Billed</option>
+                <option value="Completed">Completed</option>
+              </select>
+              <button
+                onClick={clearFilters}
+                className="px-4 py-2 bg-gray-200 hover:bg-gray-300 text-black font-bold rounded-full transition-colors whitespace-nowrap text-sm"
+              >
+                Clear All
+              </button>
+            </div>
           </div>
         </div>
       </div>
@@ -686,7 +720,9 @@ const CompletedNonPO = () => {
           </div>
           <h3 className="text-lg font-bold text-black mb-2">No GRNs Found</h3>
           <p className="text-gray-600 text-sm mb-4">
-            Try adjusting your search filters
+            {filterSupplier || filterItem || filterFrom || filterTo || filterStatus
+              ? "No GRNs match your current filters"
+              : "No GRNs found in the system"}
           </p>
           <button
             onClick={clearFilters}
