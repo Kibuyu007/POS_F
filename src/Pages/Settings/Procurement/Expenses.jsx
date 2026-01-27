@@ -18,8 +18,13 @@ import Loading from "../../../Components/Shared/Loading";
 import BASE_URL from "../../../Utils/config";
 import toast from "react-hot-toast";
 import EditExpense from "./EditExpense";
+import { useSelector } from "react-redux"; // Add this import
 
 const Expenses = () => {
+  // Add this to get user from Redux
+  const user = useSelector((state) => state.user.user);
+  const canEditExpenses = user?.roles?.canEditExpenses === true;
+
   const [itemHold, setItemHold] = useState([]);
   const [loading, setLoading] = useState(false);
 
@@ -107,6 +112,10 @@ const Expenses = () => {
 
   // Add these functions
   const openEditModal = (expense) => {
+    if (!canEditExpenses) {
+      toast.error("You don't have permission to edit expenses");
+      return;
+    }
     setEditingExpense(expense);
     setEditModalOpen(true);
   };
@@ -596,18 +605,29 @@ const Expenses = () => {
                             </span>
                           </td>
 
+                          {/* Actions Column - Updated with permission control */}
                           <td className="py-3 px-2 text-center bg-gray-200">
-                            <button
-                              onClick={() => openEditModal(exp)}
-                              className="p-2 bg-green-100 hover:bg-green-200 text-green-700 rounded-full transition-colors"
-                              title="Edit"
-                            >
-                              <FiEdit2 className="w-4 h-4" />
-                            </button>
+                            {canEditExpenses ? (
+                              <button
+                                onClick={() => openEditModal(exp)}
+                                className="p-2 bg-green-100 hover:bg-green-200 text-green-700 rounded-full transition-colors"
+                                title="Edit"
+                              >
+                                <FiEdit2 className="w-4 h-4" />
+                              </button>
+                            ) : (
+                              <button
+                                className="p-2 bg-gray-100 text-gray-400 rounded-full cursor-not-allowed"
+                                title="Edit (Permission required)"
+                                disabled
+                              >
+                                <FiEdit2 className="w-4 h-4" />
+                              </button>
+                            )}
                           </td>
                         </tr>
                         <tr className="h-3">
-                          <td colSpan={6} className="p-0"></td>
+                          <td colSpan={7} className="p-0"></td>
                         </tr>
                       </>
                     ))}
@@ -628,14 +648,13 @@ const Expenses = () => {
                           </span>
                         </div>
                       </td>
-                      <td colSpan={3}></td>
-                      <td colSpan={3}></td>
+                      <td colSpan={4}></td>
                     </tr>
                   </tfoot>
                 </table>
               </div>
 
-              {editModalOpen && (
+              {editModalOpen && canEditExpenses && (
                 <EditExpense
                   expense={editingExpense}
                   onClose={closeEditModal}

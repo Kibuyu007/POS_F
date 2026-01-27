@@ -28,6 +28,7 @@ import {
   FiChevronDown,
   FiSave,
   FiRefreshCw,
+  FiEdit,
 } from "react-icons/fi";
 import { FaUserTie, FaWarehouse } from "react-icons/fa";
 import {
@@ -71,6 +72,7 @@ const EditUser = ({ showModal, setShowModal, onUserUpdated, user }) => {
       canPayBilledGrn: false,
       canChangeDebtStatus: false,
       canPayDebt: false,
+      canEditExpenses: false, // New permission added here
       canAccessSettings: false,
       canAccessUserManagement: false,
       canAccessCustomerManagement: false,
@@ -106,6 +108,7 @@ const EditUser = ({ showModal, setShowModal, onUserUpdated, user }) => {
           canPayBilledGrn: user.roles?.canPayBilledGrn || false,
           canChangeDebtStatus: user.roles?.canChangeDebtStatus || false,
           canPayDebt: user.roles?.canPayDebt || false,
+          canEditExpenses: user.roles?.canEditExpenses || false, // New permission added here
           canAccessSettings: user.roles?.canAccessSettings || false,
           canAccessUserManagement: user.roles?.canAccessUserManagement || false,
           canAccessCustomerManagement:
@@ -271,6 +274,11 @@ const EditUser = ({ showModal, setShowModal, onUserUpdated, user }) => {
           label: "Pay Bill Transactions",
           icon: <FiDollarSign />,
         },
+        {
+          key: "canEditExpenses", // Moved to Transaction Management
+          label: "Edit Expenses",
+          icon: <FiEdit />,
+        },
       ],
     },
     {
@@ -372,6 +380,7 @@ const EditUser = ({ showModal, setShowModal, onUserUpdated, user }) => {
         canPayBilledGrn: true,
         canChangeDebtStatus: true,
         canPayDebt: true,
+        canEditExpenses: true, // Added to admin preset
         canAccessSettings: true,
         canAccessUserManagement: true,
         canAccessCustomerManagement: true,
@@ -397,6 +406,7 @@ const EditUser = ({ showModal, setShowModal, onUserUpdated, user }) => {
         canPayBilledGrn: true,
         canChangeDebtStatus: true,
         canPayDebt: true,
+        canEditExpenses: true, // Added to manager preset
         canAccessSettings: false,
         canAccessUserManagement: false,
         canAccessCustomerManagement: true,
@@ -422,6 +432,7 @@ const EditUser = ({ showModal, setShowModal, onUserUpdated, user }) => {
         canPayBilledGrn: false,
         canChangeDebtStatus: false,
         canPayDebt: false,
+        canEditExpenses: false, // Added to staff preset
         canAccessSettings: false,
         canAccessUserManagement: false,
         canAccessCustomerManagement: false,
@@ -447,6 +458,7 @@ const EditUser = ({ showModal, setShowModal, onUserUpdated, user }) => {
         canPayBilledGrn: true,
         canChangeDebtStatus: true,
         canPayDebt: true,
+        canEditExpenses: true, // Added to accountant preset
         canAccessSettings: false,
         canAccessUserManagement: false,
         canAccessCustomerManagement: true,
@@ -1300,6 +1312,7 @@ const EditUser = ({ showModal, setShowModal, onUserUpdated, user }) => {
                                 canChangeDebtStatus:
                                   user.roles?.canChangeDebtStatus || false,
                                 canPayDebt: user.roles?.canPayDebt || false,
+                                canEditExpenses: user.roles?.canEditExpenses || false, // Added here
                                 canAccessSettings:
                                   user.roles?.canAccessSettings || false,
                                 canAccessUserManagement:

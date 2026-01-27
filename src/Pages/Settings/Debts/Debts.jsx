@@ -23,6 +23,7 @@ const Debts = () => {
   const [openAdd, setOpenAdd] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const [debtStatusFilter, setDebtStatusFilter] = useState("all");
+  const [paymentStatusFilter, setPaymentStatusFilter] = useState("not_paid"); // New state
   const [editingStatusId, setEditingStatusId] = useState(null);
   const [tempStatus, setTempStatus] = useState("");
   const [statusUpdating, setStatusUpdating] = useState(false);
@@ -38,13 +39,20 @@ const Debts = () => {
     },
   ];
 
+  // Payment status options
+  const paymentStatusOptions = [
+    { value: "all", label: "All" },
+    { value: "not_paid", label: "Not yet Paid" },
+    { value: "fully_paid", label: "Fully Paid" },
+  ];
+
   useEffect(() => {
     fetchDebts();
   }, []);
 
   useEffect(() => {
     setCurrentPage(1);
-  }, [customerFilter, startDate, endDate, debtStatusFilter]);
+  }, [customerFilter, startDate, endDate, debtStatusFilter, paymentStatusFilter]); // Added paymentStatusFilter
 
   const fetchDebts = async () => {
     setLoad(true);
@@ -145,6 +153,7 @@ const Debts = () => {
 
   const filteredData = debts.filter((d) => {
     if (!d.createdAt) return false;
+    
     const date = dayjs(d.createdAt);
     const matchStart = startDate
       ? date.isSameOrAfter(dayjs(startDate), "day")
@@ -159,7 +168,17 @@ const Debts = () => {
       : true;
     const matchDebtStatus =
       debtStatusFilter === "all" ? true : d.debtStatus === debtStatusFilter;
-    return matchStart && matchEnd && matchCustomer && matchDebtStatus;
+    
+    // Payment status filter logic
+    let matchPaymentStatus = true;
+    if (paymentStatusFilter === "not_paid") {
+      matchPaymentStatus = (d.remainingAmount || 0) > 0;
+    } else if (paymentStatusFilter === "fully_paid") {
+      matchPaymentStatus = (d.remainingAmount || 0) <= 0;
+    }
+    // If paymentStatusFilter is "all", matchPaymentStatus remains true
+    
+    return matchStart && matchEnd && matchCustomer && matchDebtStatus && matchPaymentStatus;
   });
 
   const totalDebt = filteredData.reduce(
@@ -259,9 +278,9 @@ const Debts = () => {
 
       {/* Filters Section */}
       <div className="mb-8 rounded-2xl p-5 shadow-md">
-        <div className="flex flex-col lg:flex-row lg:items-end gap-5">
+        <div className="grid grid-cols-1 lg:grid-cols-5 gap-5">
           {/* Search Input */}
-          <div className="flex-1">
+          <div className="lg:col-span-1">
             <label className="block text-sm font-bold text-gray-700 mb-2">
               Search Customer
             </label>
@@ -292,7 +311,7 @@ const Debts = () => {
           </div>
 
           {/* Date Range */}
-          <div className="flex-1">
+          <div className="lg:col-span-2">
             <label className="block text-sm font-bold text-gray-700 mb-2">
               Date Range
             </label>
@@ -338,7 +357,7 @@ const Debts = () => {
           </div>
 
           {/* Debt Status Filter */}
-          <div className="flex-1">
+          <div className="lg:col-span-1">
             <label className="block text-sm font-bold text-gray-700 mb-2">
               Debt Status
             </label>
@@ -356,14 +375,33 @@ const Debts = () => {
             </select>
           </div>
 
+          {/* Payment Status Filter - NEW */}
+          <div className="lg:col-span-1">
+            <label className="block text-sm font-bold text-gray-700 mb-2">
+              Payment Status
+            </label>
+            <select
+              value={paymentStatusFilter}
+              onChange={(e) => setPaymentStatusFilter(e.target.value)}
+              className="w-full px-4 py-3 border border-gray-300 rounded-full bg-white text-black focus:border-green-300 focus:outline-none focus:ring-1 focus:ring-green-200"
+            >
+              {paymentStatusOptions.map((option) => (
+                <option key={option.value} value={option.value}>
+                  {option.label}
+                </option>
+              ))}
+            </select>
+          </div>
+
           {/* Clear Button */}
-          <div className="flex gap-3 lg:items-end">
+          <div className="lg:col-span-5 flex justify-end">
             <button
               onClick={() => {
                 setCustomerFilter("");
                 setStartDate(null);
                 setEndDate(null);
                 setDebtStatusFilter("all");
+                setPaymentStatusFilter("not_paid"); // Reset to default
               }}
               className="px-5 py-3 bg-gray-200 hover:bg-gray-300 text-black font-bold rounded-full transition-colors whitespace-nowrap"
             >
