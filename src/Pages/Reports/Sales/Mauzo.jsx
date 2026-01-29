@@ -85,10 +85,9 @@ const Mauzo = () => {
     if (searchQuery) {
       filtered = filtered.filter(
         (txn) =>
-          txn.customerDetails.name
-            .toLowerCase()
+          txn.customerDetails?.name?.toLowerCase()
             .includes(searchQuery.toLowerCase()) ||
-          txn.customerDetails.phone.includes(searchQuery) ||
+          txn.customerDetails?.phone?.includes(searchQuery) ||
           txn.items.some((item) =>
             item.item.name.toLowerCase().includes(searchQuery.toLowerCase())
           )
