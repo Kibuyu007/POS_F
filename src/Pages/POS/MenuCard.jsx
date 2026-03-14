@@ -366,6 +366,7 @@ const MenuCard = ({ refreshTrigger }) => {
   return (
     <>
       {isLoading ? (
+        // Loading
         <div className="flex flex-col items-center justify-center py-20">
           <div className="relative">
             <div className="w-20 h-20 border-4 border-emerald-200 border-t-emerald-600 rounded-full animate-spin"></div>
@@ -374,7 +375,7 @@ const MenuCard = ({ refreshTrigger }) => {
             </div>
           </div>
           <p className="mt-4 text-gray-600 font-medium">
-            Loading menu items...
+            Loading All Items...
           </p>
         </div>
       ) : (

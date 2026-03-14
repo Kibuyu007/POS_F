@@ -3,6 +3,7 @@ import {
   clearCart,
   getTotalPrice,
   setReceiptPrinted,
+  getTotalItemDiscount,
 } from "../../Redux/cartSlice";
 import { useEffect, useState } from "react";
 import axios from "axios";
@@ -15,6 +16,9 @@ import { fetchAllCustomers } from "../../Redux/customerSlice";
 const Cart = ({ triggerRefreshMenu }) => {
   const user = useSelector((state) => state.user.user);
   const { allCustomers = [] } = useSelector((state) => state.customers);
+  const cartData = useSelector((state) => state.cart.cart);
+  const originalTotal = useSelector(getTotalPrice); // gross total before any discounts
+  const totalItemDiscount = useSelector(getTotalItemDiscount);
 
   const dispatch = useDispatch();
 
@@ -23,8 +27,8 @@ const Cart = ({ triggerRefreshMenu }) => {
   const [showLoadingModal, setShowLoadingModal] = useState(false);
   const [useLoyal, setUseLoyal] = useState(false);
   const [loyalCustomerId, setLoyalCustomerId] = useState("");
-  const [useTradeDiscount, setUseTradeDiscount] = useState(false);
-  const [tradeDiscount, setTradeDiscount] = useState(0);
+  const [useExtraDiscount, setUseExtraDiscount] = useState(false);
+  const [extraDiscount, setExtraDiscount] = useState(0);
 
   useEffect(() => {
     dispatch(fetchAllCustomers()); // Fetch loyal customers from backend
@@ -59,12 +63,20 @@ const Cart = ({ triggerRefreshMenu }) => {
     }
   };
 
-  //CART & TOTALS
-  const cartData = useSelector((state) => state.cart.cart);
-  const total = useSelector(getTotalPrice);
-  const taxRate = 0;
-  const tax = (total * taxRate) / 100;
-  const finalTotal = total + tax;
+  //TOTALS
+  const taxRate = 0; // adjust if you have tax
+
+  // Combined discount to be sent to backend (item discounts + extra discount)
+  const totalDiscount =
+    totalItemDiscount + (useExtraDiscount ? extraDiscount : 0);
+
+  // Maximum allowed extra discount so that total discount ≤ 10% of original total
+  const maxExtraDiscount = Math.max(0, originalTotal * 0.1 - totalItemDiscount);
+
+  // Taxable amount after all discounts
+  const taxableAmount = originalTotal - totalDiscount;
+  const tax = (taxableAmount * taxRate) / 100;
+  const finalTotal = taxableAmount + tax;
 
   //TRANSACTION HANDLER
   const handleTransaction = async (status) => {
@@ -96,13 +108,13 @@ const Cart = ({ triggerRefreshMenu }) => {
         customerDetails: useLoyal ? {} : customerDetails,
         loyalCustomer: useLoyal ? loyalCustomerId : null,
         status,
-        tradeDiscount: useTradeDiscount ? tradeDiscount : 0,
+        tradeDiscount: totalDiscount,
       };
 
       const response = await axios.post(
         `${BASE_URL}/api/transactions/sales`,
         payload,
-        { withCredentials: true }
+        { withCredentials: true },
       );
 
       if (response.status === 201) {
@@ -119,17 +131,18 @@ const Cart = ({ triggerRefreshMenu }) => {
               color: "#fff",
               fontSize: "18px",
             },
-          }
+          },
         );
 
         dispatch(clearCart());
-        setTradeDiscount(0);
-        setUseTradeDiscount(false);
+        setExtraDiscount(0);
+        setUseExtraDiscount(false);
         triggerRefreshMenu();
         setLastSaleId(saleId);
         dispatch(setReceiptPrinted(false));
         setShowPrintButton(true);
         setShowLoadingModal(false);
+        setErrorMsg("");
       } else {
         alert("Transaction failed");
       }
@@ -246,57 +259,70 @@ const Cart = ({ triggerRefreshMenu }) => {
         <div className="bg-white rounded-xl shadow px-6 py-4 space-y-3 mt-4">
           <label className="flex items-center justify-between p-4 border rounded-xl bg-gray-50 hover:bg-gray-100 transition cursor-pointer">
             <div>
-              <p className="text-gray-900 font-semibold">Trade Discount</p>
+              <p className="text-gray-900 font-semibold">Extra Discount</p>
+              <p className="text-xs text-gray-500">
+                Add additional discount (total discounts ≤ 10% of subtotal)
+              </p>
             </div>
-
-            {/* Toggle Switch */}
             <input
               type="checkbox"
-              checked={useTradeDiscount}
-              onChange={() => setUseTradeDiscount(!useTradeDiscount)}
+              checked={useExtraDiscount}
+              onChange={() => setUseExtraDiscount(!useExtraDiscount)}
               className="toggle-checkbox sr-only"
-              id="tradeDiscountToggle"
+              id="extraDiscountToggle"
             />
-
             <label
-              htmlFor="tradeDiscountToggle"
+              htmlFor="extraDiscountToggle"
               className="toggle-label block w-12 h-6 rounded-full transition bg-gray-300 relative"
             >
               <span
                 className={`dot absolute left-1 top-1 w-4 h-4 bg-white rounded-full transition 
-                    ${useTradeDiscount ? "translate-x-6 bg-green-500" : ""}`}
+                  ${useExtraDiscount ? "translate-x-6 bg-green-500" : ""}`}
               />
             </label>
           </label>
 
-          {useTradeDiscount && (
+          {useExtraDiscount && (
             <div className="mt-2">
               <label className="block text-gray-700 font-semibold mb-1">
-                Discount Amount
+                Extra Discount Amount
               </label>
               <input
-                type="number"
-                value={tradeDiscount}
+                type="text"
+                value={
+                  extraDiscount > 0 ? extraDiscount.toLocaleString("en-US") : ""
+                }
                 onChange={(e) => {
-                  const value = Number(e.target.value);
-                  const maxDiscount = finalTotal * 0.1; // 10%
+                  // Remove commas and any non-numeric characters except decimal point
+                  const rawValue = e.target.value.replace(/[^0-9.]/g, "");
+                  // Handle empty input
+                  const numericValue =
+                    rawValue === "" ? 0 : parseFloat(rawValue);
+                  if (isNaN(numericValue)) return;
 
-                  if (value > maxDiscount) {
-                    setTradeDiscount(maxDiscount);
+                  if (numericValue > maxExtraDiscount) {
+                    setExtraDiscount(maxExtraDiscount);
                     setErrorMsg(
-                      `Discount cannot exceed 10% (${maxDiscount.toLocaleString()} /=)`
+                      `Total discount cannot exceed 10% of subtotal. You can add at most ${maxExtraDiscount.toLocaleString()} /= extra.`,
                     );
-                  } else if (value < 0) {
-                    setTradeDiscount(0);
+                  } else if (numericValue < 0) {
+                    setExtraDiscount(0);
                     setErrorMsg("Discount cannot be negative.");
                   } else {
-                    setTradeDiscount(value);
+                    setExtraDiscount(numericValue);
                     setErrorMsg("");
                   }
                 }}
                 className="w-full px-4 py-2 rounded-lg border border-gray-300 focus:ring-green-400 focus:border-green-400"
-                placeholder={`Max: ${(finalTotal * 0.1).toLocaleString()} /=`}
+                placeholder={`Max extra: ${maxExtraDiscount.toLocaleString()} /=`}
+                disabled={maxExtraDiscount <= 0}
               />
+              {maxExtraDiscount <= 0 && (
+                <p className="text-sm text-orange-600 mt-1">
+                  Oyaaa, acha UPIMBI we falaa, dicount haitakiwi kuzidi 50% ya
+                  Bei ya Bidhaa, utapata Hasara Mbwa wee.
+                </p>
+              )}
             </div>
           )}
         </div>
@@ -323,10 +349,11 @@ const Cart = ({ triggerRefreshMenu }) => {
             <span>{tax}/=</span>
           </div> */}
 
-          {useTradeDiscount && (
+          {/* Item Discounts line – always show if >0 */}
+          {totalItemDiscount > 0 && (
             <div className="flex justify-between text-gray-800 font-medium">
-              <span>Trade Discount</span>
-              <span>{tradeDiscount?.toLocaleString()}/=</span>
+              <span>Item Discounts</span>
+              <span>-{totalItemDiscount.toLocaleString()}/=</span>
             </div>
           )}
           <div className="flex justify-between text-lg font-bold text-black pt-2 border-t">

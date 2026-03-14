@@ -7,6 +7,7 @@ import {
   removeItems,
   increaseQuantity,
   decreaseQuantity,
+  updateItemDiscount,
 } from "../../Redux/cartSlice";
 import { useEffect, useRef } from "react";
 
@@ -45,6 +46,14 @@ const CartInfo = () => {
     dispatch(decreaseQuantity(itemID));
   };
 
+  const handleDiscountChange = (id, value) => {
+    // Remove commas and any non-numeric characters except decimal point
+    const rawValue = value.replace(/[^0-9.]/g, "");
+    const numericValue = rawValue === "" ? 0 : parseFloat(rawValue);
+    if (isNaN(numericValue)) return;
+    dispatch(updateItemDiscount({ id, discount: numericValue }));
+  };
+
   return (
     <div className=" py-4 top-2">
       <div className="flex justify-between items-center mb-4">
@@ -77,6 +86,26 @@ const CartInfo = () => {
                 <span className="text-sm bg-orange-500 text-white rounded-full px-3 py-1 font-semibold">
                   Qty: {items.quantity}
                 </span>
+              </div>
+
+              {/* Discount Input Row */}
+              <div className="flex justify-between items-center mt-1 mb-2">
+                <label className="text-sm text-gray-600 font-medium">
+                  Discount
+                </label>
+                <input
+                  type="text"
+                  value={
+                    items.discount > 0
+                      ? items.discount.toLocaleString("en-US")
+                      : ""
+                  }
+                  onChange={(e) =>
+                    handleDiscountChange(items.id, e.target.value)
+                  }
+                  className="w-24 text-center border border-gray-300 rounded-md px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-green-400"
+                  placeholder={`Max ${(items.totalPrice * 0.6).toLocaleString()}`}
+                />
               </div>
 
               <div className="flex justify-between items-center">
