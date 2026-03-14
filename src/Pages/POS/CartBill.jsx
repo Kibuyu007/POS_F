@@ -17,7 +17,7 @@ const Cart = ({ triggerRefreshMenu }) => {
   const user = useSelector((state) => state.user.user);
   const { allCustomers = [] } = useSelector((state) => state.customers);
   const cartData = useSelector((state) => state.cart.cart);
-  const originalTotal = useSelector(getTotalPrice); // gross total before any discounts
+  const originalTotal = useSelector(getTotalPrice);
   const totalItemDiscount = useSelector(getTotalItemDiscount);
 
   const dispatch = useDispatch();
