@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import React, { useState, useEffect } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import {
   itemsFetch,
@@ -13,7 +13,7 @@ import EditItem from "./EditItem";
 
 //Icons
 import { AiTwotoneEdit } from "react-icons/ai";
-import { FaSearch, FaPrint, FaInfoCircle } from "react-icons/fa";
+import { FaSearch, FaPrint, FaInfoCircle, FaFileCsv, FaFileExcel, FaFilePdf } from "react-icons/fa";
 import {
   IoIosArrowBack,
   IoIosArrowForward,
@@ -25,6 +25,11 @@ import { FiAlertCircle } from "react-icons/fi";
 //API
 import BASE_URL from "../../../../Utils/config";
 import toast from "react-hot-toast";
+
+// Export libraries
+import jsPDF from "jspdf";
+import autoTable from "jspdf-autotable";
+import * as XLSX from "xlsx";
 
 const Items = () => {
   const dispatch = useDispatch();
@@ -177,6 +182,105 @@ const Items = () => {
     toast.success("Barcode printed!");
   };
 
+  // ---------- Export Functions ----------
+  const exportToCSV = () => {
+    if (filteredItems.length === 0) {
+      toast.error("No data to export");
+      return;
+    }
+
+    try {
+      // Prepare data
+      const exportData = filteredItems.map(item => ({
+        "Item Name": item.name,
+        "Selling Price": item.price
+      }));
+
+      // Convert to CSV
+      const headers = Object.keys(exportData[0]);
+      const csvRows = [];
+      csvRows.push(headers.join(","));
+      
+      for (const row of exportData) {
+        const values = headers.map(header => {
+          const val = row[header];
+          // Escape quotes and wrap in quotes if contains comma
+          const escaped = String(val).replace(/"/g, '""');
+          return `"${escaped}"`;
+        });
+        csvRows.push(values.join(","));
+      }
+      
+      const csvString = csvRows.join("\n");
+      const blob = new Blob(["\uFEFF" + csvString], { type: "text/csv;charset=utf-8;" });
+      const link = document.createElement("a");
+      const url = URL.createObjectURL(blob);
+      link.href = url;
+      link.setAttribute("download", `items_export_${new Date().toISOString().slice(0,19)}.csv`);
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+      toast.success("CSV exported successfully!");
+    } catch (error) {
+      console.error("CSV export error:", error);
+      toast.error("Failed to export CSV");
+    }
+  };
+
+  const exportToExcel = () => {
+    if (filteredItems.length === 0) {
+      toast.error("No data to export");
+      return;
+    }
+
+    try {
+      const exportData = filteredItems.map(item => ({
+        "Item Name": item.name,
+        "Selling Price": item.price
+      }));
+
+      const worksheet = XLSX.utils.json_to_sheet(exportData);
+      const workbook = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(workbook, worksheet, "Items");
+      XLSX.writeFile(workbook, `items_export_${new Date().toISOString().slice(0,19)}.xlsx`);
+      toast.success("Excel exported successfully!");
+    } catch (error) {
+      console.error("Excel export error:", error);
+      toast.error("Failed to export Excel");
+    }
+  };
+
+  const exportToPDF = () => {
+    if (filteredItems.length === 0) {
+      toast.error("No data to export");
+      return;
+    }
+
+    try {
+      const doc = new jsPDF();
+      const tableColumn = ["Item Name", "Selling Price"];
+      const tableRows = filteredItems.map(item => [item.name, item.price]);
+
+      autoTable(doc, {
+        head: [tableColumn],
+        body: tableRows,
+        startY: 20,
+        theme: "grid",
+        styles: { fontSize: 10, cellPadding: 3 },
+        headStyles: { fillColor: [76, 175, 80], textColor: 255, fontStyle: "bold" },
+      });
+
+      doc.text("Items Report", 14, 15);
+      doc.save(`items_export_${new Date().toISOString().slice(0,19)}.pdf`);
+      toast.success("PDF exported successfully!");
+    } catch (error) {
+      console.error("PDF export error:", error);
+      toast.error("Failed to export PDF");
+    }
+  };
+  // ------------------------------------
+
   return (
     <div className="p-5 bg-gray-50 min-h-screen">
       {/* Header */}
@@ -189,16 +293,43 @@ const Items = () => {
             View and manage all inventory items
           </p>
         </div>
-        <button
-          onClick={fetchData}
-          className="mt-3 md:mt-0 px-4 py-2 bg-green-300 hover:bg-green-400 text-black font-bold rounded-full shadow hover:shadow-md transition-all duration-200 flex items-center gap-2 text-sm"
-        >
-          <IoMdRefresh className="w-4 h-4" />
-          <span>Refresh</span>
-        </button>
+        <div className="flex gap-2 mt-3 md:mt-0">
+          {/* Export Buttons */}
+          <button
+            onClick={exportToCSV}
+            className="px-3 py-2 bg-blue-100 hover:bg-blue-200 text-blue-800 font-bold rounded-full shadow flex items-center gap-2 text-sm transition-all"
+            title="Export as CSV"
+          >
+            <FaFileCsv className="w-4 h-4" />
+            <span className="hidden sm:inline">CSV</span>
+          </button>
+          <button
+            onClick={exportToExcel}
+            className="px-3 py-2 bg-green-100 hover:bg-green-200 text-green-800 font-bold rounded-full shadow flex items-center gap-2 text-sm transition-all"
+            title="Export as Excel"
+          >
+            <FaFileExcel className="w-4 h-4" />
+            <span className="hidden sm:inline">Excel</span>
+          </button>
+          <button
+            onClick={exportToPDF}
+            className="px-3 py-2 bg-red-100 hover:bg-red-200 text-red-800 font-bold rounded-full shadow flex items-center gap-2 text-sm transition-all"
+            title="Export as PDF"
+          >
+            <FaFilePdf className="w-4 h-4" />
+            <span className="hidden sm:inline">PDF</span>
+          </button>
+          <button
+            onClick={fetchData}
+            className="px-4 py-2 bg-green-300 hover:bg-green-400 text-black font-bold rounded-full shadow hover:shadow-md transition-all duration-200 flex items-center gap-2 text-sm"
+          >
+            <IoMdRefresh className="w-4 h-4" />
+            <span>Refresh</span>
+          </button>
+        </div>
       </div>
 
-      {/* Compact Stats */}
+      {/* Compact Stats - unchanged */}
       <div className="mb-6">
         <div className="flex flex-col sm:flex-row items-center justify-between bg-white border border-gray-200 rounded-full p-4 shadow-sm">
           <div className="flex items-center gap-3 mb-3 sm:mb-0">
@@ -252,10 +383,10 @@ const Items = () => {
         </div>
       </div>
 
-      {/* Filter & Search - Compact & Clean */}
+      {/* Filter & Search - unchanged */}
       <div className="mb-6 rounded-xl p-4 shadow bg-white">
         <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mb-3">
-          {/* Status Filter Buttons - Horizontal Scroll on Mobile */}
+          {/* Status Filter Buttons */}
           <div className="md:col-span-2">
             <div className="flex overflow-x-auto pb-2 -mx-2 px-2">
               <div className="flex gap-2">
@@ -361,9 +492,8 @@ const Items = () => {
         </div>
       </div>
 
-      {/* Table Container */}
+      {/* Table Container - unchanged except for the table body which remains same */}
       <div className="rounded-xl shadow bg-white overflow-hidden">
-        {/* Error Message */}
         {showError && (
           <div className="m-4 p-3 bg-red-100 border border-red-300 rounded-lg">
             <div className="flex items-center gap-2 text-red-800">
@@ -373,7 +503,6 @@ const Items = () => {
           </div>
         )}
 
-        {/* Table */}
         <div className="overflow-x-auto">
           <table className="min-w-full">
             <thead>
@@ -407,7 +536,7 @@ const Items = () => {
             <tbody>
               {currentItems.length === 0 ? (
                 <tr>
-                  <td colSpan={10} className="text-center py-12">
+                  <td colSpan={12} className="text-center py-12">
                     <div className="space-y-3">
                       <div className="text-4xl">📦</div>
                       <p className="text-lg font-bold text-black">
@@ -446,54 +575,45 @@ const Items = () => {
                     daysUntilExpiry <= 30 && daysUntilExpiry > 0;
 
                   return (
-                    <>
-                      <tr
-                        key={item._id}
-                        className="hover:bg-gray-50 transition-colors"
-                      >
-                        {/* SN Column - Green 300 */}
+                    <React.Fragment key={item._id}>
+                      <tr className="hover:bg-gray-50 transition-colors">
+                        {/* SN Column */}
                         <td className="py-3 px-2 text-center border-r border-gray-300 bg-gray-200">
                           <span className="inline-flex items-center justify-center w-8 h-8 bg-green-300 text-black font-bold rounded-full text-xs">
                             {indexOfFirstItem + index + 1}
                           </span>
                         </td>
-
-                        {/* Product Column - Gray 200 */}
+                        {/* Product Column */}
                         <td className="py-3 px-2 text-center bg-gray-100 border-r border-gray-200">
                           <span className="font-bold text-black text-sm">
                             {item.name}
                           </span>
                         </td>
-
-                        {/* Buy Price Column - Yellow 100 */}
+                        {/* Buy Price Column */}
                         <td className="py-3 px-2 text-center bg-yellow-100 border-r border-gray-200">
                           <span className="font-bold text-black text-sm">
                             {item.buyingPrice.toLocaleString()}
                           </span>
                         </td>
-
-                        {/* Sell Price Column - Yellow 100 */}
+                        {/* Sell Price Column */}
                         <td className="py-3 px-2 text-center bg-yellow-100 border-r border-gray-200">
                           <span className="font-bold text-green-700 text-sm">
                             {item.price.toLocaleString()}
                           </span>
                         </td>
-
-                          {/* Sell Price Column - Blue 100 */}
+                        {/* Wholesale Price */}
                         <td className="py-3 px-2 text-center bg-blue-200 border-r border-gray-200">
                           <span className="font-bold text-green-700 text-sm">
                             {(item.wholesalePrice || 0).toLocaleString()}
                           </span>
                         </td>
-
-                          {/* Sell Price Column - Blue 100 */}
+                        {/* Qty for Wholesale */}
                         <td className="py-3 px-2 text-center bg-blue-200 border-r border-gray-200">
                           <span className="font-bold text-green-700 text-sm">
                             {(item.wholesaleMinQty || 0).toLocaleString()}
                           </span>
                         </td>
-
-                        {/* Quantity Column - Color coded */}
+                        {/* Quantity Column */}
                         <td className="py-3 px-2 text-center border-r border-gray-200">
                           <span
                             className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-bold ${
@@ -507,8 +627,7 @@ const Items = () => {
                             {item.itemQuantity.toLocaleString()}
                           </span>
                         </td>
-
-                        {/* Barcode Column - Gray 200 */}
+                        {/* Barcode Column */}
                         <td className="py-3 px-2 text-center bg-gray-200 border-r border-gray-200">
                           <button
                             onClick={() => handlePrint(item)}
@@ -518,8 +637,7 @@ const Items = () => {
                             Print
                           </button>
                         </td>
-
-                        {/* Manufacture Date Column - Green 200 */}
+                        {/* Manufacture Date Column */}
                         <td className="py-3 px-2 text-center bg-green-200 border-r border-gray-200">
                           <span className="font-bold text-black text-sm">
                             {new Date(item.manufactureDate).toLocaleDateString(
@@ -527,8 +645,7 @@ const Items = () => {
                             )}
                           </span>
                         </td>
-
-                        {/* Expiry Date Column - Color coded */}
+                        {/* Expiry Date Column */}
                         <td className="py-3 px-2 text-center border-r border-gray-200">
                           <span
                             className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-bold ${
@@ -546,16 +663,14 @@ const Items = () => {
                             {expiresSoon && " (Soon)"}
                           </span>
                         </td>
-
-                        {/* Category Column - Gray 100 */}
+                        {/* Category Column */}
                         <td className="py-3 px-2 text-center bg-gray-100 border-r border-gray-200">
                           <span className="font-bold text-black text-sm">
                             {category.find((u) => u._id === item.category)
                               ?.name || "-"}
                           </span>
                         </td>
-
-                        {/* Action Column - Gray 200 */}
+                        {/* Action Column */}
                         <td className="py-3 px-2 text-center bg-gray-200">
                           {canEditItem ? (
                             <button
@@ -589,9 +704,9 @@ const Items = () => {
                         </td>
                       </tr>
                       <tr className="h-3">
-                        <td colSpan={10} className="p-0"></td>
+                        <td colSpan={12} className="p-0"></td>
                       </tr>
-                    </>
+                    </React.Fragment>
                   );
                 })
               )}
@@ -673,7 +788,7 @@ const Items = () => {
         )}
       </div>
 
-      {/* Modals - Only render if user has permission */}
+      {/* Modals */}
       {canAddItem && (
         <AddItem
           showModal={showModalAdd}
