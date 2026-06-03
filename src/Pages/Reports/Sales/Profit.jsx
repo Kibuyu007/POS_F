@@ -4,7 +4,7 @@ import dayjs from "dayjs";
 import isBetween from "dayjs/plugin/isBetween";
 import { IoIosArrowBack, IoIosArrowForward } from "react-icons/io";
 import { FaSearch, FaFilter } from "react-icons/fa";
-import { FiRefreshCw, FiDownload} from "react-icons/fi";
+import { FiRefreshCw, FiDownload } from "react-icons/fi";
 import { DatePicker } from "@mui/x-date-pickers/DatePicker";
 import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs";
 import { LocalizationProvider } from "@mui/x-date-pickers";
@@ -28,21 +28,44 @@ const Profit = () => {
   const getDateRange = () => {
     const now = dayjs();
     switch (filter) {
-      case "today":
+      case "today": {
         return { from: now.startOf("day"), to: now.endOf("day") };
-      case "yesterday":
-        return { from: now.subtract(1, "day").startOf("day"), to: now.subtract(1, "day").endOf("day") };
-      case "week":
+      }
+
+      case "yesterday": {
+        return {
+          from: now.subtract(1, "day").startOf("day"),
+          to: now.subtract(1, "day").endOf("day"),
+        };
+      }
+
+      case "week": {
         return { from: now.startOf("week"), to: now.endOf("week") };
-      case "month":
+      }
+
+      case "month": {
         return { from: now.startOf("month"), to: now.endOf("month") };
-      case "custom":
-        if (!range.from || !range.to) return { from: now.startOf("day"), to: now.endOf("day") };
+      }
+
+      case "custom": {
+        if (!range.from || !range.to) {
+          return {
+            from: now.startOf("day"),
+            to: now.endOf("day"),
+          };
+        }
+
         const fromDate = dayjs(range.from).startOf("day");
         const toDate = dayjs(range.to).endOf("day");
-        return fromDate.isAfter(toDate) ? { from: toDate, to: fromDate } : { from: fromDate, to: toDate };
-      default:
+
+        return fromDate.isAfter(toDate)
+          ? { from: toDate, to: fromDate }
+          : { from: fromDate, to: toDate };
+      }
+
+      default: {
         return { from: now.startOf("day"), to: now.endOf("day") };
+      }
     }
   };
 
@@ -52,14 +75,18 @@ const Profit = () => {
     const fetchSales = async () => {
       try {
         setLoading(true);
-        const res = await axios.get(`${BASE_URL}/api/transactions/all`, { withCredentials: true });
+        const res = await axios.get(`${BASE_URL}/api/transactions/all`, {
+          withCredentials: true,
+        });
         if (res.data.success) {
           setTransactions(res.data.data || []);
           toast.success("Profit data loaded successfully!");
         }
       } catch (error) {
         console.error(error);
-        toast.error(error.response?.data?.message || "Failed to load transactions");
+        toast.error(
+          error.response?.data?.message || "Failed to load transactions",
+        );
       } finally {
         setLoading(false);
       }
@@ -68,15 +95,17 @@ const Profit = () => {
   }, []);
 
   const filteredSales = useMemo(() => {
-    let filtered = transactions.filter((tx) => dayjs(tx.createdAt).isBetween(from, to, null, "[]"));
-    
+    let filtered = transactions.filter((tx) =>
+      dayjs(tx.createdAt).isBetween(from, to, null, "[]"),
+    );
+
     if (searchQuery) {
       const query = searchQuery.toLowerCase();
       filtered = filtered.filter((tx) =>
-        tx.items.some((item) => item.item?.name?.toLowerCase().includes(query))
+        tx.items.some((item) => item.item?.name?.toLowerCase().includes(query)),
       );
     }
-    
+
     return filtered;
   }, [transactions, from, to, searchQuery]);
 
@@ -84,7 +113,12 @@ const Profit = () => {
     const rows = [];
     filteredSales.forEach((tx) => {
       const txDiscount = tx.tradeDiscount || 0;
-      const txSubTotal = tx.subTotal || tx.items.reduce((sum, item) => sum + (item.price || 0) * (item.quantity || 0), 0);
+      const txSubTotal =
+        tx.subTotal ||
+        tx.items.reduce(
+          (sum, item) => sum + (item.price || 0) * (item.quantity || 0),
+          0,
+        );
 
       tx.items.forEach((soldItem) => {
         const qty = soldItem.quantity || 0;
@@ -93,7 +127,8 @@ const Profit = () => {
         const itemName = soldItem.item?.name || "Unknown";
         const salesAmount = qty * sellingPrice;
         const buyingAmount = qty * buyingPrice;
-        const itemDiscount = txSubTotal > 0 ? (salesAmount / txSubTotal) * txDiscount : 0;
+        const itemDiscount =
+          txSubTotal > 0 ? (salesAmount / txSubTotal) * txDiscount : 0;
         const profit = salesAmount - buyingAmount - itemDiscount;
 
         rows.push({
@@ -122,7 +157,7 @@ const Profit = () => {
         acc.profit += row.profit;
         return acc;
       },
-      { sales: 0, buying: 0, discount: 0, profit: 0 }
+      { sales: 0, buying: 0, discount: 0, profit: 0 },
     );
   }, [reportData]);
 
@@ -161,7 +196,11 @@ const Profit = () => {
       doc.text("Item Profit Report", 14, 15);
       doc.setFontSize(10);
       doc.text(`Generated: ${dayjs().format("DD/MM/YYYY HH:mm")}`, 14, 22);
-      doc.text(`Period: ${from.format("DD/MM/YYYY")} - ${to.format("DD/MM/YYYY")}`, 14, 29);
+      doc.text(
+        `Period: ${from.format("DD/MM/YYYY")} - ${to.format("DD/MM/YYYY")}`,
+        14,
+        29,
+      );
 
       const tableData = reportData.map((row) => [
         dayjs(row.date).format("DD/MM/YY"),
@@ -175,7 +214,9 @@ const Profit = () => {
 
       autoTable(doc, {
         startY: 35,
-        head: [["Date", "Item", "Qty", "Buying", "Selling", "Discount", "Profit"]],
+        head: [
+          ["Date", "Item", "Qty", "Buying", "Selling", "Discount", "Profit"],
+        ],
         body: tableData,
         headStyles: { fillColor: [34, 197, 94], textColor: 255 },
       });
@@ -195,14 +236,17 @@ const Profit = () => {
     { key: "custom", label: "Custom" },
   ];
 
-  const getProfitColor = (value) => (value >= 0 ? "text-green-600" : "text-red-600");
+  const getProfitColor = (value) =>
+    value >= 0 ? "text-green-600" : "text-red-600";
 
   return (
     <div className="p-5 bg-gray-50 min-h-screen">
       {/* Header */}
       <div className="flex flex-col md:flex-row md:items-center justify-between mb-6">
         <div>
-          <h1 className="text-2xl font-bold text-black mb-1">Item Profit Report</h1>
+          <h1 className="text-2xl font-bold text-black mb-1">
+            Item Profit Report
+          </h1>
           <p className="text-gray-600 text-sm">
             Track profit margins across all items
           </p>
@@ -244,7 +288,9 @@ const Profit = () => {
               <div className="h-6 w-px bg-gray-300"></div>
               <div className="text-center px-3">
                 <p className="text-xs text-gray-500 font-medium">Net Profit</p>
-                <p className={`text-base font-bold ${getProfitColor(totals.profit)}`}>
+                <p
+                  className={`text-base font-bold ${getProfitColor(totals.profit)}`}
+                >
                   Tsh {totals.profit.toLocaleString()}
                 </p>
               </div>
@@ -266,14 +312,16 @@ const Profit = () => {
             <FaFilter className="w-5 h-5 text-green-600" />
           </div>
           <div>
-            <h3 className="text-base font-bold text-black">Filters & Date Range</h3>
+            <h3 className="text-base font-bold text-black">
+              Filters & Date Range
+            </h3>
             <p className="text-xs text-gray-600">
               Filter profit data by date period
             </p>
           </div>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-5">
+       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-5">
           <div>
             <label className="block text-sm font-bold text-gray-700 mb-2">
               Time Period
@@ -306,7 +354,12 @@ const Profit = () => {
                     <DatePicker
                       label="From"
                       value={range.from ? dayjs(range.from) : null}
-                      onChange={(newValue) => setRange({ ...range, from: newValue ? newValue.format("YYYY-MM-DD") : "" })}
+                      onChange={(newValue) =>
+                        setRange({
+                          ...range,
+                          from: newValue ? newValue.format("YYYY-MM-DD") : "",
+                        })
+                      }
                       slotProps={{
                         textField: {
                           size: "small",
@@ -325,7 +378,12 @@ const Profit = () => {
                     <DatePicker
                       label="To"
                       value={range.to ? dayjs(range.to) : null}
-                      onChange={(newValue) => setRange({ ...range, to: newValue ? newValue.format("YYYY-MM-DD") : "" })}
+                      onChange={(newValue) =>
+                        setRange({
+                          ...range,
+                          to: newValue ? newValue.format("YYYY-MM-DD") : "",
+                        })
+                      }
                       slotProps={{
                         textField: {
                           size: "small",
@@ -428,7 +486,9 @@ const Profit = () => {
         <div className="mt-5 pt-5 border-t border-gray-100">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
-              <span className="text-xs font-medium text-gray-600">Active filters:</span>
+              <span className="text-xs font-medium text-gray-600">
+                Active filters:
+              </span>
               <div className="flex flex-wrap gap-2">
                 {filter !== "today" && (
                   <span className="inline-flex items-center px-3 py-1 bg-green-100 text-green-800 text-xs font-medium rounded-full">
@@ -466,8 +526,19 @@ const Profit = () => {
             <table className="min-w-full">
               <thead>
                 <tr className="bg-gray-200">
-                  {["Date", "Item", "Qty", "Buying Price", "Selling Price", "Discount", "Profit"].map((header, idx) => (
-                    <th key={idx} className="px-3 py-3 text-center text-xs font-bold text-black uppercase border-r border-gray-300">
+                  {[
+                    "Date",
+                    "Item",
+                    "Qty",
+                    "Buying Price",
+                    "Selling Price",
+                    "Discount",
+                    "Profit",
+                  ].map((header, idx) => (
+                    <th
+                      key={idx}
+                      className="px-3 py-3 text-center text-xs font-bold text-black uppercase border-r border-gray-300"
+                    >
                       {header}
                     </th>
                   ))}
@@ -477,7 +548,10 @@ const Profit = () => {
               <tbody>
                 {currentData.map((row, index) => (
                   <>
-                    <tr key={index} className="hover:bg-gray-50 transition-colors">
+                    <tr
+                      key={index}
+                      className="hover:bg-gray-50 transition-colors"
+                    >
                       <td className="py-3 px-2 text-center bg-gray-200 border-r border-gray-300">
                         <span className="font-bold text-black text-sm">
                           {dayjs(row.date).format("DD/MM/YYYY HH:mm")}
@@ -508,7 +582,9 @@ const Profit = () => {
                           {row.discount.toFixed(2)} Tsh
                         </span>
                       </td>
-                      <td className={`py-3 px-2 text-center ${getProfitColor(row.profit)} bg-gray-100`}>
+                      <td
+                        className={`py-3 px-2 text-center ${getProfitColor(row.profit)} bg-gray-100`}
+                      >
                         <span className="font-bold text-sm">
                           {row.profit.toLocaleString()} Tsh
                         </span>
@@ -522,10 +598,24 @@ const Profit = () => {
               </tbody>
               <tfoot>
                 <tr className="bg-gradient-to-r from-green-50 to-green-100 text-sm font-semibold text-green-800 border-t border-green-200">
-                  <td colSpan="2" className="text-right p-3 pr-6 uppercase tracking-wider">Total Sales:</td>
-                  <td className="p-3 text-right text-lg font-bold text-green-600">{reportData.reduce((sum, r) => sum + r.qty, 0)}</td>
-                  <td colSpan="3" className="text-right p-3 pr-6 uppercase tracking-wider">Total Profit:</td>
-                  <td className={`p-3 text-right text-lg font-bold ${getProfitColor(totals.profit)}`}>
+                  <td
+                    colSpan="2"
+                    className="text-right p-3 pr-6 uppercase tracking-wider"
+                  >
+                    Total Sales:
+                  </td>
+                  <td className="p-3 text-right text-lg font-bold text-green-600">
+                    {reportData.reduce((sum, r) => sum + r.qty, 0)}
+                  </td>
+                  <td
+                    colSpan="3"
+                    className="text-right p-3 pr-6 uppercase tracking-wider"
+                  >
+                    Total Profit:
+                  </td>
+                  <td
+                    className={`p-3 text-right text-lg font-bold ${getProfitColor(totals.profit)}`}
+                  >
                     {totals.profit.toLocaleString()} Tsh
                   </td>
                 </tr>
@@ -538,15 +628,20 @@ const Profit = () => {
             <div className="flex flex-col sm:flex-row items-center justify-between gap-3 p-4 border-t border-gray-300 bg-gray-50">
               <div className="text-xs text-gray-700">
                 <span className="font-bold text-black">
-                  Showing {indexOfFirst + 1} to {Math.min(indexOfLast, reportData.length)}
+                  Showing {indexOfFirst + 1} to{" "}
+                  {Math.min(indexOfLast, reportData.length)}
                 </span>{" "}
                 of{" "}
-                <span className="font-bold text-black">{reportData.length}</span>{" "}
+                <span className="font-bold text-black">
+                  {reportData.length}
+                </span>{" "}
                 records
               </div>
               <div className="flex items-center gap-1">
                 <button
-                  onClick={() => currentPage > 1 && setCurrentPage(currentPage - 1)}
+                  onClick={() =>
+                    currentPage > 1 && setCurrentPage(currentPage - 1)
+                  }
                   disabled={currentPage === 1}
                   className="p-2 bg-gray-200 hover:bg-gray-300 text-black font-bold rounded-full disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
                 >
@@ -556,27 +651,46 @@ const Profit = () => {
                   {[...Array(totalPages)].map((_, i) => {
                     const pageNum = i + 1;
                     const isCurrent = currentPage === pageNum;
-                    const showPage = pageNum === 1 || pageNum === totalPages || (pageNum >= currentPage - 1 && pageNum <= currentPage + 1);
+                    const showPage =
+                      pageNum === 1 ||
+                      pageNum === totalPages ||
+                      (pageNum >= currentPage - 1 &&
+                        pageNum <= currentPage + 1);
                     if (showPage) {
                       return (
                         <button
                           key={i}
                           onClick={() => setCurrentPage(pageNum)}
                           className={`w-8 h-8 text-xs font-bold rounded-full transition-colors ${
-                            isCurrent ? "bg-green-300 text-black shadow" : "text-gray-700 hover:bg-gray-200"
+                            isCurrent
+                              ? "bg-green-300 text-black shadow"
+                              : "text-gray-700 hover:bg-gray-200"
                           }`}
                         >
                           {pageNum}
                         </button>
                       );
-                    } else if ((pageNum === currentPage - 2 || pageNum === currentPage + 2) && totalPages > 5) {
-                      return <span key={i} className="px-2 text-gray-500 font-bold text-xs">...</span>;
+                    } else if (
+                      (pageNum === currentPage - 2 ||
+                        pageNum === currentPage + 2) &&
+                      totalPages > 5
+                    ) {
+                      return (
+                        <span
+                          key={i}
+                          className="px-2 text-gray-500 font-bold text-xs"
+                        >
+                          ...
+                        </span>
+                      );
                     }
                     return null;
                   })}
                 </div>
                 <button
-                  onClick={() => currentPage < totalPages && setCurrentPage(currentPage + 1)}
+                  onClick={() =>
+                    currentPage < totalPages && setCurrentPage(currentPage + 1)
+                  }
                   disabled={currentPage === totalPages}
                   className="p-2 bg-gray-200 hover:bg-gray-300 text-black font-bold rounded-full disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
                 >
@@ -594,8 +708,12 @@ const Profit = () => {
           <div className="text-center py-12">
             <div className="space-y-3">
               <div className="text-4xl">📊</div>
-              <p className="text-lg font-bold text-black">No profit data found</p>
-              <p className="text-gray-600 text-sm">Try selecting a different date range</p>
+              <p className="text-lg font-bold text-black">
+                No profit data found
+              </p>
+              <p className="text-gray-600 text-sm">
+                Try selecting a different date range
+              </p>
             </div>
           </div>
         </div>
