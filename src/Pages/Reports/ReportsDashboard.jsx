@@ -5,6 +5,7 @@ import Madeni from "./Sales/Madeni";
 import Mauzo from "./Sales/Mauzo";
 import BillNonPo from "./Procurement/BillNonPo";
 import BillPo from "./Procurement/BillPo";
+import Profit from "./Sales/Profit";
 
 const ReportsDashboard = () => {
   const [selectedReport, setSelectedReport] = useState(null);
@@ -15,7 +16,7 @@ const ReportsDashboard = () => {
       <div className="w-full md:w-1/5 bg-secondary rounded-xl p-6 shadow-md overflow-auto">
         <ReportList
           title="Sales Reports"
-          reports={["Sales", "Madeni"]}
+          reports={["Mauzo", "Madeni", "Faida ya Bidhaa"]}
           selectedReport={selectedReport}
           handleSelect={setSelectedReport}
         />
@@ -41,10 +42,12 @@ const ReportsDashboard = () => {
       {/* Right Section - Display Selected Report */}
       <div className="w-full md:w-4/5 bg-secondary rounded-xl p-6 shadow-md text-white overflow-y-auto">
         <h2 className="text-xl font-semibold mb-4">Selected Report:</h2>
-        {selectedReport === "Sales" ? (
+        {selectedReport === "Mauzo" ? (
           <Mauzo />
         ) : selectedReport === "Madeni" ? (
           <Madeni />
+        ) : selectedReport === "Faida ya Bidhaa" ? (
+          <Profit />
         ) : selectedReport === "Report ya Madeni PO" ? (
           <BillPo />
         ) : selectedReport === "Report ya Madeni Non PO" ? (

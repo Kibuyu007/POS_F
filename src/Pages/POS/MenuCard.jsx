@@ -6,7 +6,6 @@ import {
   FaSearch,
   FaPlus,
   FaMinus,
-  FaBarcode,
   FaBox,
   FaShoppingCart,
   FaTag,

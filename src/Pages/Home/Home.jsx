@@ -110,26 +110,26 @@ const Home = () => {
   // -------------------- FILTERED DATA --------------------
   const filteredSales = useMemo(() => {
     return transactions.filter((tx) =>
-      dayjs(tx.createdAt).isBetween(from, to, null, "[]")
+      dayjs(tx.createdAt).isBetween(from, to, null, "[]"),
     );
   }, [transactions, from, to]);
 
   const filteredExpenses = useMemo(() => {
     return expenses.filter((e) =>
-      dayjs(e.createdAt).isBetween(from, to, null, "[]")
+      dayjs(e.createdAt).isBetween(from, to, null, "[]"),
     );
   }, [expenses, from, to]);
 
   const filteredGrns = useMemo(() => {
     return grns.filter((g) =>
-      dayjs(g.receivingDate).isBetween(from, to, null, "[]")
+      dayjs(g.receivingDate).isBetween(from, to, null, "[]"),
     );
   }, [grns, from, to]);
 
   // -------------------- CALCULATIONS --------------------
   const totalSales = useMemo(
     () => filteredSales.reduce((s, t) => s + (t.totalAmount || 0), 0),
-    [filteredSales]
+    [filteredSales],
   );
 
   const totalPaid = useMemo(
@@ -137,7 +137,7 @@ const Home = () => {
       filteredSales
         .filter((t) => t.status === "Paid")
         .reduce((s, t) => s + (t.totalAmount || 0), 0),
-    [filteredSales]
+    [filteredSales],
   );
 
   const totalBills = useMemo(
@@ -145,19 +145,19 @@ const Home = () => {
       filteredSales
         .filter((t) => t.status === "Bill")
         .reduce((s, t) => s + (t.totalAmount || 0), 0),
-    [filteredSales]
+    [filteredSales],
   );
 
   const totalDiscount = useMemo(
     () => filteredSales.reduce((s, t) => s + (t.tradeDiscount || 0), 0),
-    [filteredSales]
+    [filteredSales],
   );
 
   const totalBuyingPrice = useMemo(() => {
     return filteredSales.reduce((sum, tx) => {
       const txBuying = tx.items.reduce(
         (s, i) => s + (i.quantity || 0) * (i.buyingPrice || 0),
-        0
+        0,
       );
       return sum + txBuying;
     }, 0);
@@ -165,7 +165,7 @@ const Home = () => {
 
   const totalExpenses = useMemo(
     () => filteredExpenses.reduce((s, e) => s + Number(e.amount || 0), 0),
-    [filteredExpenses]
+    [filteredExpenses],
   );
 
   const totalGrn = useMemo(() => {
@@ -175,7 +175,7 @@ const Home = () => {
   }, [filteredGrns]);
 
   const profit = useMemo(() => {
-    return totalSales - (totalBuyingPrice + totalExpenses );
+    return totalSales - (totalBuyingPrice + totalExpenses);
   }, [totalSales, totalBuyingPrice, totalExpenses]);
 
   const billed = filteredSales.filter((t) => t.status === "Bill");
@@ -296,7 +296,7 @@ const Home = () => {
                     onChange={(e) =>
                       handleRangeSelect(
                         e.target.value,
-                        range.to || e.target.value
+                        range.to || e.target.value,
                       )
                     }
                     className="w-36 bg-transparent focus:outline-none text-sm"
@@ -309,7 +309,7 @@ const Home = () => {
                     onChange={(e) =>
                       handleRangeSelect(
                         range.from || e.target.value,
-                        e.target.value
+                        e.target.value,
                       )
                     }
                     className="w-36 bg-transparent focus:outline-none text-sm"
