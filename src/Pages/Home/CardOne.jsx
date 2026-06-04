@@ -1,9 +1,12 @@
-const CardOne = ({ title, icon, number, loading }) => {
+const CardOne = ({ title, icon, number, loading, onClick }) => {
   return (
-    <div className="bg-gradient-to-r from-green-100 via-green-100 to-gray-200 
-      rounded-xl shadow-md p-6 hover:shadow-lg 
-      transition-shadow duration-300">
-      
+    <div
+      onClick={onClick}
+      className={`bg-gradient-to-r from-green-100 via-green-100 to-gray-200 
+        rounded-xl shadow-md p-6 hover:shadow-lg 
+        transition-shadow duration-300
+        ${onClick ? "cursor-pointer transform hover:scale-105 transition-transform" : ""}`}
+    >
       {/* Title + Icon */}
       <div className="flex justify-between items-center">
         <h1 className="text-gray-800 font-semibold text-lg">

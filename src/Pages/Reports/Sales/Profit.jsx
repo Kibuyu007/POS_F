@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, useCallback } from "react";
 import axios from "axios";
 import dayjs from "dayjs";
 import isBetween from "dayjs/plugin/isBetween";
@@ -17,98 +17,114 @@ import toast from "react-hot-toast";
 dayjs.extend(isBetween);
 
 const Profit = () => {
+  // ==================== STATE ====================
   const [transactions, setTransactions] = useState([]);
+  const [expenses, setExpenses] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
   const [filter, setFilter] = useState("today");
   const [range, setRange] = useState({ from: "", to: "" });
   const [searchQuery, setSearchQuery] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 10;
 
-  const getDateRange = () => {
+  // ==================== DATE RANGE ====================
+  const getDateRange = useCallback(() => {
     const now = dayjs();
     switch (filter) {
-      case "today": {
+      case "today":
         return { from: now.startOf("day"), to: now.endOf("day") };
-      }
-
-      case "yesterday": {
+      case "yesterday":
         return {
           from: now.subtract(1, "day").startOf("day"),
           to: now.subtract(1, "day").endOf("day"),
         };
-      }
-
-      case "week": {
+      case "week":
         return { from: now.startOf("week"), to: now.endOf("week") };
-      }
-
-      case "month": {
+      case "month":
         return { from: now.startOf("month"), to: now.endOf("month") };
-      }
-
       case "custom": {
         if (!range.from || !range.to) {
-          return {
-            from: now.startOf("day"),
-            to: now.endOf("day"),
-          };
+          return { from: now.startOf("day"), to: now.endOf("day") };
         }
-
         const fromDate = dayjs(range.from).startOf("day");
         const toDate = dayjs(range.to).endOf("day");
-
         return fromDate.isAfter(toDate)
           ? { from: toDate, to: fromDate }
           : { from: fromDate, to: toDate };
       }
-
-      default: {
+      default:
         return { from: now.startOf("day"), to: now.endOf("day") };
-      }
     }
-  };
+  }, [filter, range]);
 
   const { from, to } = getDateRange();
 
+  // ==================== FETCH DATA ====================
   useEffect(() => {
     const fetchSales = async () => {
       try {
         setLoading(true);
-        const res = await axios.get(`${BASE_URL}/api/transactions/all`, {
-          withCredentials: true,
-        });
-        if (res.data.success) {
-          setTransactions(res.data.data || []);
-          toast.success("Profit data loaded successfully!");
+        setError(null);
+
+        const [salesRes, expensesRes] = await Promise.all([
+          axios.get(`${BASE_URL}/api/transactions/all`, {
+            withCredentials: true,
+          }),
+          axios.get(`${BASE_URL}/api/manunuzi/matumiziYote`, {
+            withCredentials: true,
+          }),
+        ]);
+
+        // Transactions API returns { success: true, data: [...] }
+        if (salesRes.data.success) {
+          setTransactions(salesRes.data.data || []);
         }
-      } catch (error) {
-        console.error(error);
-        toast.error(
-          error.response?.data?.message || "Failed to load transactions",
-        );
+
+        // CRITICAL FIX: matumiziYote returns data DIRECTLY as array, NOT wrapped in { success, data }
+        // Reference from Home.jsx: setExpenses(expRes.data || []);
+        setExpenses(expensesRes.data || []);
+
+        toast.success("Profit data loaded successfully!");
+      } catch (err) {
+        console.error("Profit fetch error:", err);
+        setError(err.response?.data?.message || "Failed to load transactions");
+        toast.error(err.response?.data?.message || "Failed to load transactions");
       } finally {
         setLoading(false);
       }
     };
+
     fetchSales();
   }, []);
 
+  // ==================== FILTERED SALES ====================
   const filteredSales = useMemo(() => {
     let filtered = transactions.filter((tx) =>
-      dayjs(tx.createdAt).isBetween(from, to, null, "[]"),
+      dayjs(tx.createdAt).isBetween(from, to, null, "[]")
     );
 
-    if (searchQuery) {
+    if (searchQuery.trim()) {
       const query = searchQuery.toLowerCase();
       filtered = filtered.filter((tx) =>
-        tx.items.some((item) => item.item?.name?.toLowerCase().includes(query)),
+        tx.items.some((item) =>
+          item.item?.name?.toLowerCase().includes(query)
+        )
       );
     }
 
     return filtered;
   }, [transactions, from, to, searchQuery]);
 
+  // ==================== EXPENSES - MATCHING Home.jsx PATTERN ====================
+  // CRITICAL FIX: Use createdAt (not date) and amount field - matching your working Home.jsx code
+  const totalExpenses = useMemo(() => {
+    return expenses
+      .filter((e) => dayjs(e.createdAt).isBetween(from, to, null, "[]"))
+      .reduce((s, e) => s + Number(e.amount || 0), 0);
+  }, [expenses, from, to]);
+
+  // ==================== REPORT DATA ====================
   const reportData = useMemo(() => {
     const rows = [];
     filteredSales.forEach((tx) => {
@@ -117,7 +133,7 @@ const Profit = () => {
         tx.subTotal ||
         tx.items.reduce(
           (sum, item) => sum + (item.price || 0) * (item.quantity || 0),
-          0,
+          0
         );
 
       tx.items.forEach((soldItem) => {
@@ -148,6 +164,7 @@ const Profit = () => {
     return rows;
   }, [filteredSales]);
 
+  // ==================== TOTALS ====================
   const totals = useMemo(() => {
     return reportData.reduce(
       (acc, row) => {
@@ -157,17 +174,26 @@ const Profit = () => {
         acc.profit += row.profit;
         return acc;
       },
-      { sales: 0, buying: 0, discount: 0, profit: 0 },
+      { sales: 0, buying: 0, discount: 0, profit: 0 }
     );
   }, [reportData]);
 
-  // Pagination
+  const finalProfit = useMemo(() => {
+    return totals.profit - totalExpenses;
+  }, [totals, totalExpenses]);
+
+  // ==================== PAGINATION ====================
   const indexOfLast = currentPage * itemsPerPage;
   const indexOfFirst = indexOfLast - itemsPerPage;
   const currentData = reportData.slice(indexOfFirst, indexOfLast);
   const totalPages = Math.ceil(reportData.length / itemsPerPage);
 
-  const exportToExcel = () => {
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [filter, range, searchQuery]);
+
+  // ==================== EXPORT FUNCTIONS ====================
+  const exportToExcel = useCallback(() => {
     try {
       const wsData = reportData.map((row) => ({
         Date: dayjs(row.date).format("DD/MM/YYYY HH:mm"),
@@ -184,12 +210,12 @@ const Profit = () => {
       XLSX.utils.book_append_sheet(wb, ws, "Profit Report");
       XLSX.writeFile(wb, `Profit_Report_${dayjs().format("YYYYMMDD")}.xlsx`);
       toast.success("Excel report downloaded!");
-    } catch (error) {
+    } catch (err) {
       toast.error("Failed to export Excel");
     }
-  };
+  }, [reportData]);
 
-  const exportToPDF = () => {
+  const exportToPDF = useCallback(() => {
     try {
       const doc = new jsPDF("landscape");
       doc.setFontSize(16);
@@ -199,7 +225,7 @@ const Profit = () => {
       doc.text(
         `Period: ${from.format("DD/MM/YYYY")} - ${to.format("DD/MM/YYYY")}`,
         14,
-        29,
+        29
       );
 
       const tableData = reportData.map((row) => [
@@ -214,20 +240,19 @@ const Profit = () => {
 
       autoTable(doc, {
         startY: 35,
-        head: [
-          ["Date", "Item", "Qty", "Buying", "Selling", "Discount", "Profit"],
-        ],
+        head: [["Date", "Item", "Qty", "Buying", "Selling", "Discount", "Profit"]],
         body: tableData,
         headStyles: { fillColor: [34, 197, 94], textColor: 255 },
       });
 
       doc.save(`Profit_Report_${dayjs().format("YYYYMMDD")}.pdf`);
       toast.success("PDF report downloaded!");
-    } catch (error) {
+    } catch (err) {
       toast.error("Failed to export PDF");
     }
-  };
+  }, [reportData, from]);
 
+  // ==================== HELPERS ====================
   const filters = [
     { key: "today", label: "Today" },
     { key: "yesterday", label: "Yesterday" },
@@ -236,24 +261,43 @@ const Profit = () => {
     { key: "custom", label: "Custom" },
   ];
 
-  const getProfitColor = (value) =>
-    value >= 0 ? "text-green-600" : "text-red-600";
+  const getProfitColor = (value) => (value >= 0 ? "text-green-600" : "text-red-600");
+  const getProfitBg = (value) => (value >= 0 ? "bg-green-50" : "bg-red-50");
 
+  const formatCurrency = (value) => {
+    return `Tsh ${value.toLocaleString("en-US", {
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 0,
+    })}`;
+  };
+
+  const handleRefresh = () => {
+    window.location.reload();
+  };
+
+  const clearFilters = () => {
+    setSearchQuery("");
+    setFilter("today");
+    setRange({ from: "", to: "" });
+    toast.success("Filters cleared!");
+  };
+
+  // ==================== RENDER ====================
   return (
-    <div className="p-5 bg-gray-50 min-h-screen">
+    <div className="p-3 sm:p-4 md:p-5 bg-gray-50 min-h-screen">
       {/* Header */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between mb-6">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-4 md:mb-6 gap-3">
         <div>
-          <h1 className="text-2xl font-bold text-black mb-1">
+          <h1 className="text-xl sm:text-2xl font-bold text-gray-900 mb-1">
             Item Profit Report
           </h1>
-          <p className="text-gray-600 text-sm">
+          <p className="text-gray-600 text-xs sm:text-sm">
             Track profit margins across all items
           </p>
         </div>
         <button
-          onClick={() => window.location.reload()}
-          className="mt-3 md:mt-0 px-4 py-2 bg-green-300 hover:bg-green-400 text-black font-bold rounded-full shadow hover:shadow-md transition-all duration-200 flex items-center gap-2 text-sm"
+          onClick={handleRefresh}
+          className="self-start sm:self-auto px-3 py-2 sm:px-4 bg-green-300 hover:bg-green-400 text-black font-bold rounded-full shadow hover:shadow-md transition-all duration-200 flex items-center gap-2 text-xs sm:text-sm"
         >
           <FiRefreshCw className={`w-4 h-4 ${loading ? "animate-spin" : ""}`} />
           <span>Refresh</span>
@@ -261,362 +305,356 @@ const Profit = () => {
       </div>
 
       {/* Stats Cards */}
-      {!loading && reportData.length > 0 && (
-        <div className="mb-6">
-          <div className="flex flex-col sm:flex-row items-center justify-between bg-white border border-gray-200 rounded-full p-4 shadow-sm">
-            <div className="flex items-center gap-3 mb-3 sm:mb-0">
-              <div className="text-center px-3">
-                <p className="text-xs text-gray-500 font-medium">Total Sales</p>
-                <p className="text-base font-bold text-black">
-                  Tsh {totals.sales.toLocaleString()}
-                </p>
+      {!loading && !error && reportData.length > 0 && (
+        <div className="mb-4 md:mb-6">
+          <div className="bg-white border border-gray-200 rounded-xl p-3 sm:p-4 shadow-sm">
+            <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 w-full">
+                <div className="text-center p-2 bg-gray-50 rounded-lg">
+                  <p className="text-[10px] sm:text-xs text-gray-500 font-medium uppercase">Total Sales</p>
+                  <p className="text-sm sm:text-base font-bold text-gray-900">
+                    {formatCurrency(totals.sales)}
+                  </p>
+                </div>
+                <div className="text-center p-2 bg-gray-50 rounded-lg">
+                  <p className="text-[10px] sm:text-xs text-gray-500 font-medium uppercase">Total Cost</p>
+                  <p className="text-sm sm:text-base font-bold text-red-600">
+                    {formatCurrency(totals.buying)}
+                  </p>
+                </div>
+                <div className="text-center p-2 bg-gray-50 rounded-lg">
+                  <p className="text-[10px] sm:text-xs text-gray-500 font-medium uppercase">Discounts</p>
+                  <p className="text-sm sm:text-base font-bold text-yellow-600">
+                    {formatCurrency(totals.discount)}
+                  </p>
+                </div>
+                <div className="text-center p-2 bg-gray-50 rounded-lg">
+                  <p className="text-[10px] sm:text-xs text-gray-500 font-medium uppercase">Expenses</p>
+                  <p className="text-sm sm:text-base font-bold text-orange-600">
+                    {formatCurrency(totalExpenses)}
+                  </p>
+                  <p className="text-[9px] text-gray-400">{expenses.length} records</p>
+                </div>
+                <div className={`text-center p-2 rounded-lg col-span-2 sm:col-span-1 lg:col-span-2 ${getProfitBg(finalProfit)}`}>
+                  <p className="text-[10px] sm:text-xs text-gray-500 font-medium uppercase">Net Profit</p>
+                  <p className={`text-sm sm:text-base font-bold ${getProfitColor(finalProfit)}`}>
+                    {formatCurrency(finalProfit)}
+                  </p>
+                </div>
               </div>
-              <div className="h-6 w-px bg-gray-300"></div>
-              <div className="text-center px-3">
-                <p className="text-xs text-gray-500 font-medium">Total Cost</p>
-                <p className="text-base font-bold text-red-600">
-                  Tsh {totals.buying.toLocaleString()}
-                </p>
+              <div className="hidden lg:flex items-center gap-2 shrink-0">
+                <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                <span className="text-xs font-medium text-gray-700">Profit</span>
+                <div className="w-2 h-2 bg-red-500 rounded-full ml-2"></div>
+                <span className="text-xs font-medium text-gray-700">Loss</span>
               </div>
-              <div className="h-6 w-px bg-gray-300"></div>
-              <div className="text-center px-3">
-                <p className="text-xs text-gray-500 font-medium">Discounts</p>
-                <p className="text-base font-bold text-yellow-600">
-                  Tsh {totals.discount.toFixed(2)}
-                </p>
-              </div>
-              <div className="h-6 w-px bg-gray-300"></div>
-              <div className="text-center px-3">
-                <p className="text-xs text-gray-500 font-medium">Net Profit</p>
-                <p
-                  className={`text-base font-bold ${getProfitColor(totals.profit)}`}
-                >
-                  Tsh {totals.profit.toLocaleString()}
-                </p>
-              </div>
-            </div>
-            <div className="flex items-center gap-2">
-              <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-              <span className="text-xs font-medium text-gray-700">Profit</span>
-              <div className="w-2 h-2 bg-red-500 rounded-full ml-2"></div>
-              <span className="text-xs font-medium text-gray-700">Loss</span>
             </div>
           </div>
         </div>
       )}
 
       {/* Filter Card */}
-      <div className="mb-6 rounded-xl p-5 shadow-lg bg-white border border-gray-100">
-        <div className="flex items-center gap-3 mb-6">
+      <div className="mb-4 md:mb-6 rounded-xl p-3 sm:p-4 md:p-5 shadow-lg bg-white border border-gray-100">
+        <div className="flex items-center gap-3 mb-4 md:mb-6">
           <div className="p-2 bg-green-100 rounded-lg">
-            <FaFilter className="w-5 h-5 text-green-600" />
+            <FaFilter className="w-4 h-4 sm:w-5 sm:h-5 text-green-600" />
           </div>
           <div>
-            <h3 className="text-base font-bold text-black">
+            <h3 className="text-sm sm:text-base font-bold text-gray-900">
               Filters & Date Range
             </h3>
-            <p className="text-xs text-gray-600">
+            <p className="text-[10px] sm:text-xs text-gray-600">
               Filter profit data by date period
             </p>
           </div>
         </div>
 
-       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-5">
-          <div>
-            <label className="block text-sm font-bold text-gray-700 mb-2">
-              Time Period
-            </label>
-            <div className="flex gap-2">
-              {filters.map((f) => (
-                <button
-                  key={f.key}
-                  className={`px-4 py-2.5 text-sm font-bold rounded-full transition-all duration-200 flex-1 ${
-                    filter === f.key
-                      ? "bg-green-300 text-black shadow-lg transform scale-105"
-                      : "bg-gray-100 text-gray-700 hover:bg-gray-200 hover:shadow-md"
-                  }`}
-                  onClick={() => setFilter(f.key)}
-                >
-                  {f.label}
-                </button>
-              ))}
-            </div>
+        <div className="mb-4">
+          <label className="block text-xs sm:text-sm font-bold text-gray-700 mb-2">
+            Time Period
+          </label>
+          <div className="flex flex-wrap gap-2">
+            {filters.map((f) => (
+              <button
+                key={f.key}
+                className={`px-3 py-2 sm:px-4 sm:py-2.5 text-xs sm:text-sm font-bold rounded-full transition-all duration-200 ${
+                  filter === f.key
+                    ? "bg-green-300 text-black shadow-lg transform scale-105"
+                    : "bg-gray-100 text-gray-700 hover:bg-gray-200 hover:shadow-md"
+                }`}
+                onClick={() => setFilter(f.key)}
+              >
+                {f.label}
+              </button>
+            ))}
           </div>
+        </div>
 
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4 mb-4">
           {filter === "custom" && (
-            <>
-              <div>
-                <label className="block text-sm font-bold text-gray-700 mb-2">
-                  Date Range
-                </label>
-                <div className="grid grid-cols-2 gap-2">
-                  <LocalizationProvider dateAdapter={AdapterDayjs}>
-                    <DatePicker
-                      label="From"
-                      value={range.from ? dayjs(range.from) : null}
-                      onChange={(newValue) =>
-                        setRange({
-                          ...range,
-                          from: newValue ? newValue.format("YYYY-MM-DD") : "",
-                        })
-                      }
-                      slotProps={{
-                        textField: {
-                          size: "small",
-                          sx: {
-                            "& .MuiOutlinedInput-root": {
-                              borderRadius: "12px",
-                              fontSize: "14px",
-                            },
+            <div className="sm:col-span-2 lg:col-span-2">
+              <label className="block text-xs sm:text-sm font-bold text-gray-700 mb-2">
+                Date Range
+              </label>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                <LocalizationProvider dateAdapter={AdapterDayjs}>
+                  <DatePicker
+                    label="From"
+                    value={range.from ? dayjs(range.from) : null}
+                    onChange={(newValue) =>
+                      setRange({
+                        ...range,
+                        from: newValue ? newValue.format("YYYY-MM-DD") : "",
+                      })
+                    }
+                    slotProps={{
+                      textField: {
+                        size: "small",
+                        fullWidth: true,
+                        sx: {
+                          "& .MuiOutlinedInput-root": {
+                            borderRadius: "12px",
+                            fontSize: "14px",
                           },
-                          className: "bg-white",
                         },
-                      }}
-                    />
-                  </LocalizationProvider>
-                  <LocalizationProvider dateAdapter={AdapterDayjs}>
-                    <DatePicker
-                      label="To"
-                      value={range.to ? dayjs(range.to) : null}
-                      onChange={(newValue) =>
-                        setRange({
-                          ...range,
-                          to: newValue ? newValue.format("YYYY-MM-DD") : "",
-                        })
-                      }
-                      slotProps={{
-                        textField: {
-                          size: "small",
-                          sx: {
-                            "& .MuiOutlinedInput-root": {
-                              borderRadius: "12px",
-                              fontSize: "14px",
-                            },
-                          },
-                          className: "bg-white",
-                        },
-                      }}
-                    />
-                  </LocalizationProvider>
-                </div>
-              </div>
-
-              <div>
-                <label className="block text-sm font-bold text-gray-700 mb-2">
-                  Search Items
-                </label>
-                <div className="relative">
-                  <div className="absolute inset-y-0 left-4 flex items-center">
-                    <FaSearch className="w-4 h-4 text-gray-500" />
-                  </div>
-                  <input
-                    type="text"
-                    placeholder="Search by item name..."
-                    className="w-full pl-11 pr-4 py-3 text-sm border border-gray-300 rounded-xl bg-white text-black focus:border-green-300 focus:outline-none focus:ring-2 focus:ring-green-100 transition-all duration-300"
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
+                        className: "bg-white",
+                      },
+                    }}
                   />
-                </div>
+                </LocalizationProvider>
+                <LocalizationProvider dateAdapter={AdapterDayjs}>
+                  <DatePicker
+                    label="To"
+                    value={range.to ? dayjs(range.to) : null}
+                    onChange={(newValue) =>
+                      setRange({
+                        ...range,
+                        to: newValue ? newValue.format("YYYY-MM-DD") : "",
+                      })
+                    }
+                    slotProps={{
+                      textField: {
+                        size: "small",
+                        fullWidth: true,
+                        sx: {
+                          "& .MuiOutlinedInput-root": {
+                            borderRadius: "12px",
+                            fontSize: "14px",
+                          },
+                        },
+                        className: "bg-white",
+                      },
+                    }}
+                  />
+                </LocalizationProvider>
               </div>
-            </>
+            </div>
           )}
 
           {filter !== "custom" && (
-            <>
-              <div>
-                <label className="block text-sm font-bold text-gray-700 mb-2">
-                  Period Info
-                </label>
-                <div className="bg-gray-100 rounded-xl p-3 text-center">
-                  <span className="text-sm font-bold text-black">
-                    {from.format("DD/MM/YYYY")} - {to.format("DD/MM/YYYY")}
-                  </span>
-                </div>
+            <div>
+              <label className="block text-xs sm:text-sm font-bold text-gray-700 mb-2">
+                Period Info
+              </label>
+              <div className="bg-gray-100 rounded-xl p-2 sm:p-3 text-center">
+                <span className="text-xs sm:text-sm font-bold text-gray-900">
+                  {from.format("DD/MM/YYYY")} - {to.format("DD/MM/YYYY")}
+                </span>
               </div>
-
-              <div>
-                <label className="block text-sm font-bold text-gray-700 mb-2">
-                  Search Items
-                </label>
-                <div className="relative">
-                  <div className="absolute inset-y-0 left-4 flex items-center">
-                    <FaSearch className="w-4 h-4 text-gray-500" />
-                  </div>
-                  <input
-                    type="text"
-                    placeholder="Search by item name..."
-                    className="w-full pl-11 pr-4 py-3 text-sm border border-gray-300 rounded-xl bg-white text-black focus:border-green-300 focus:outline-none focus:ring-2 focus:ring-green-100 transition-all duration-300"
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                  />
-                </div>
-              </div>
-            </>
+            </div>
           )}
+
+          <div className={filter === "custom" ? "sm:col-span-2 lg:col-span-1" : ""}>
+            <label className="block text-xs sm:text-sm font-bold text-gray-700 mb-2">
+              Search Items
+            </label>
+            <div className="relative">
+              <div className="absolute inset-y-0 left-3 sm:left-4 flex items-center pointer-events-none">
+                <FaSearch className="w-3 h-3 sm:w-4 sm:h-4 text-gray-500" />
+              </div>
+              <input
+                type="text"
+                placeholder="Search by item name..."
+                className="w-full pl-9 sm:pl-11 pr-3 sm:pr-4 py-2 sm:py-3 text-xs sm:text-sm border border-gray-300 rounded-xl bg-white text-gray-900 focus:border-green-300 focus:outline-none focus:ring-2 focus:ring-green-100 transition-all duration-300"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+              />
+            </div>
+          </div>
         </div>
 
-        <div className="flex justify-end gap-3">
+        <div className="flex flex-col sm:flex-row justify-end gap-2 sm:gap-3">
           <button
-            onClick={() => {
-              setSearchQuery("");
-              setFilter("today");
-              setRange({ from: "", to: "" });
-              toast.success("Filters cleared!");
-            }}
-            className="px-4 py-2 bg-gray-200 hover:bg-gray-300 text-black font-bold rounded-xl transition-all duration-300 shadow-sm hover:shadow-md flex items-center gap-2"
+            onClick={clearFilters}
+            className="px-3 py-2 sm:px-4 bg-gray-200 hover:bg-gray-300 text-black font-bold rounded-xl transition-all duration-300 shadow-sm hover:shadow-md text-xs sm:text-sm"
           >
             Clear Filters
           </button>
           <button
             onClick={exportToExcel}
-            className="px-4 py-2 bg-yellow-100 hover:bg-yellow-200 text-black font-bold rounded-xl transition-all duration-300 shadow-sm hover:shadow-md flex items-center gap-2"
+            className="px-3 py-2 sm:px-4 bg-yellow-100 hover:bg-yellow-200 text-black font-bold rounded-xl transition-all duration-300 shadow-sm hover:shadow-md flex items-center justify-center gap-2 text-xs sm:text-sm"
           >
-            <FiDownload className="w-4 h-4" />
+            <FiDownload className="w-3 h-3 sm:w-4 sm:h-4" />
             Excel
           </button>
           <button
             onClick={exportToPDF}
-            className="px-4 py-2 bg-green-300 hover:bg-green-400 text-black font-bold rounded-xl transition-all duration-300 shadow-sm hover:shadow-md flex items-center gap-2"
+            className="px-3 py-2 sm:px-4 bg-green-300 hover:bg-green-400 text-black font-bold rounded-xl transition-all duration-300 shadow-sm hover:shadow-md flex items-center justify-center gap-2 text-xs sm:text-sm"
           >
-            <FiDownload className="w-4 h-4" />
+            <FiDownload className="w-3 h-3 sm:w-4 sm:h-4" />
             PDF
           </button>
         </div>
 
-        <div className="mt-5 pt-5 border-t border-gray-100">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <span className="text-xs font-medium text-gray-600">
+        <div className="mt-3 sm:mt-5 pt-3 sm:pt-5 border-t border-gray-100">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2">
+            <div className="flex items-center gap-2 flex-wrap">
+              <span className="text-[10px] sm:text-xs font-medium text-gray-600">
                 Active filters:
               </span>
-              <div className="flex flex-wrap gap-2">
+              <div className="flex flex-wrap gap-1.5 sm:gap-2">
                 {filter !== "today" && (
-                  <span className="inline-flex items-center px-3 py-1 bg-green-100 text-green-800 text-xs font-medium rounded-full">
+                  <span className="inline-flex items-center px-2 py-1 sm:px-3 bg-green-100 text-green-800 text-[10px] sm:text-xs font-medium rounded-full">
                     Period: {filter}
                   </span>
                 )}
                 {searchQuery && (
-                  <span className="inline-flex items-center px-3 py-1 bg-yellow-100 text-yellow-800 text-xs font-medium rounded-full">
+                  <span className="inline-flex items-center px-2 py-1 sm:px-3 bg-yellow-100 text-yellow-800 text-[10px] sm:text-xs font-medium rounded-full">
                     Search: {searchQuery}
                   </span>
                 )}
               </div>
             </div>
-            <div className="text-xs text-gray-500">
-              {reportData.length} item sales recorded
+            <div className="text-[10px] sm:text-xs text-gray-500">
+              {reportData.length} sales · {expenses.length} expenses
             </div>
           </div>
         </div>
       </div>
 
+      {/* Error State */}
+      {error && !loading && (
+        <div className="rounded-xl shadow bg-white overflow-hidden mb-4">
+          <div className="p-8 sm:p-12 text-center">
+            <div className="inline-flex items-center justify-center w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-red-100 mb-4">
+              <svg className="w-5 h-5 sm:w-6 sm:h-6 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+            </div>
+            <p className="text-red-600 font-medium text-sm sm:text-base">{error}</p>
+            <button
+              onClick={handleRefresh}
+              className="mt-4 px-4 py-2 bg-green-300 text-black font-bold rounded-lg text-sm hover:bg-green-400 transition-colors"
+            >
+              Retry
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* Loading State */}
       {loading && (
-        <div className="rounded-xl shadow bg-white overflow-hidden p-12">
+        <div className="rounded-xl shadow bg-white overflow-hidden p-8 sm:p-12">
           <div className="flex flex-col items-center justify-center space-y-4">
-            <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-green-500"></div>
-            <p className="text-gray-500 text-sm">Loading profit data...</p>
+            <div className="animate-spin rounded-full h-8 w-8 sm:h-10 sm:w-10 border-b-2 border-green-500"></div>
+            <p className="text-gray-500 text-xs sm:text-sm">Loading profit data...</p>
           </div>
         </div>
       )}
 
       {/* Table */}
-      {!loading && reportData.length > 0 && (
+      {!loading && !error && reportData.length > 0 && (
         <div className="rounded-xl shadow bg-white overflow-hidden">
           <div className="overflow-x-auto">
             <table className="min-w-full">
               <thead>
                 <tr className="bg-gray-200">
-                  {[
-                    "Date",
-                    "Item",
-                    "Qty",
-                    "Buying Price",
-                    "Selling Price",
-                    "Discount",
-                    "Profit",
-                  ].map((header, idx) => (
+                  {["Date", "Item", "Qty", "Buying Price", "Selling Price", "Discount", "Profit"].map((header) => (
                     <th
-                      key={idx}
-                      className="px-3 py-3 text-center text-xs font-bold text-black uppercase border-r border-gray-300"
+                      key={header}
+                      className="px-2 sm:px-3 py-2 sm:py-3 text-center text-[10px] sm:text-xs font-bold text-gray-900 uppercase border-r border-gray-300 whitespace-nowrap"
                     >
                       {header}
                     </th>
                   ))}
                 </tr>
               </thead>
-              <tr className="h-3" />
-              <tbody>
+              <tbody className="divide-y divide-gray-100">
                 {currentData.map((row, index) => (
-                  <>
-                    <tr
-                      key={index}
-                      className="hover:bg-gray-50 transition-colors"
-                    >
-                      <td className="py-3 px-2 text-center bg-gray-200 border-r border-gray-300">
-                        <span className="font-bold text-black text-sm">
-                          {dayjs(row.date).format("DD/MM/YYYY HH:mm")}
-                        </span>
-                      </td>
-                      <td className="py-3 px-2 text-center bg-gray-100 border-r border-gray-200">
-                        <span className="font-bold text-black text-sm">
-                          {row.itemName}
-                        </span>
-                      </td>
-                      <td className="py-3 px-2 text-center bg-green-200 border-r border-gray-200">
-                        <span className="font-bold text-black text-sm">
-                          {row.qty}
-                        </span>
-                      </td>
-                      <td className="py-3 px-2 text-center border-r border-gray-200">
-                        <span className="font-bold text-black text-sm">
-                          {row.buyingPrice.toLocaleString()} Tsh
-                        </span>
-                      </td>
-                      <td className="py-3 px-2 text-center border-r border-gray-200">
-                        <span className="font-bold text-black text-sm">
-                          {row.sellingPrice.toLocaleString()} Tsh
-                        </span>
-                      </td>
-                      <td className="py-3 px-2 text-center bg-yellow-100 border-r border-gray-200">
-                        <span className="font-bold text-black text-sm">
-                          {row.discount.toFixed(2)} Tsh
-                        </span>
-                      </td>
-                      <td
-                        className={`py-3 px-2 text-center ${getProfitColor(row.profit)} bg-gray-100`}
-                      >
-                        <span className="font-bold text-sm">
-                          {row.profit.toLocaleString()} Tsh
-                        </span>
-                      </td>
-                    </tr>
-                    <tr className="h-3">
-                      <td colSpan={7} className="p-0"></td>
-                    </tr>
-                  </>
+                  <tr
+                    key={`${row.itemName}-${row.date}-${index}`}
+                    className="hover:bg-gray-50 transition-colors"
+                  >
+                    <td className="py-2 sm:py-3 px-1 sm:px-2 text-center bg-gray-50 border-r border-gray-300">
+                      <span className="font-bold text-gray-900 text-[10px] sm:text-xs">
+                        {dayjs(row.date).format("DD/MM/YY")}
+                      </span>
+                      <span className="block text-[9px] sm:text-[10px] text-gray-500">
+                        {dayjs(row.date).format("HH:mm")}
+                      </span>
+                    </td>
+                    <td className="py-2 sm:py-3 px-1 sm:px-2 text-center bg-gray-50 border-r border-gray-200">
+                      <span className="font-bold text-gray-900 text-[10px] sm:text-xs">
+                        {row.itemName}
+                      </span>
+                    </td>
+                    <td className="py-2 sm:py-3 px-1 sm:px-2 text-center bg-green-50 border-r border-gray-200">
+                      <span className="font-bold text-gray-900 text-[10px] sm:text-xs">
+                        {row.qty}
+                      </span>
+                    </td>
+                    <td className="py-2 sm:py-3 px-1 sm:px-2 text-center border-r border-gray-200">
+                      <span className="font-bold text-gray-900 text-[10px] sm:text-xs">
+                        {row.buyingPrice.toLocaleString()}
+                      </span>
+                    </td>
+                    <td className="py-2 sm:py-3 px-1 sm:px-2 text-center border-r border-gray-200">
+                      <span className="font-bold text-gray-900 text-[10px] sm:text-xs">
+                        {row.sellingPrice.toLocaleString()}
+                      </span>
+                    </td>
+                    <td className="py-2 sm:py-3 px-1 sm:px-2 text-center bg-yellow-50 border-r border-gray-200">
+                      <span className="font-bold text-gray-900 text-[10px] sm:text-xs">
+                        {row.discount.toFixed(0)}
+                      </span>
+                    </td>
+                    <td className={`py-2 sm:py-3 px-1 sm:px-2 text-center bg-gray-50 ${getProfitColor(row.profit)}`}>
+                      <span className="font-bold text-[10px] sm:text-xs">
+                        {row.profit.toLocaleString()}
+                      </span>
+                    </td>
+                  </tr>
                 ))}
               </tbody>
               <tfoot>
-                <tr className="bg-gradient-to-r from-green-50 to-green-100 text-sm font-semibold text-green-800 border-t border-green-200">
-                  <td
-                    colSpan="2"
-                    className="text-right p-3 pr-6 uppercase tracking-wider"
-                  >
-                    Total Sales:
+                <tr className="bg-gradient-to-r from-green-50 to-green-100 text-xs sm:text-sm font-semibold border-t border-green-200">
+                  <td colSpan="2" className="text-right p-2 sm:p-3 pr-4 sm:pr-6 uppercase tracking-wider text-gray-700">
+                    Total Qty:
                   </td>
-                  <td className="p-3 text-right text-lg font-bold text-green-600">
+                  <td className="p-2 sm:p-3 text-right text-sm sm:text-lg font-bold text-green-600">
                     {reportData.reduce((sum, r) => sum + r.qty, 0)}
                   </td>
-                  <td
-                    colSpan="3"
-                    className="text-right p-3 pr-6 uppercase tracking-wider"
-                  >
-                    Total Profit:
+                  <td colSpan="3" className="text-right p-2 sm:p-3 pr-4 sm:pr-6 uppercase tracking-wider text-gray-700">
+                    Gross Profit:
                   </td>
-                  <td
-                    className={`p-3 text-right text-lg font-bold ${getProfitColor(totals.profit)}`}
-                  >
-                    {totals.profit.toLocaleString()} Tsh
+                  <td className={`p-2 sm:p-3 text-right text-sm sm:text-lg font-bold ${getProfitColor(totals.profit)}`}>
+                    {formatCurrency(totals.profit)}
+                  </td>
+                </tr>
+                <tr className="bg-orange-50 border-t">
+                  <td colSpan="6" className="text-right p-2 sm:p-3 font-bold text-orange-700 text-xs sm:text-sm">
+                    Expenses: ({expenses.length} records)
+                  </td>
+                  <td className="p-2 sm:p-3 text-right font-bold text-orange-700 text-xs sm:text-sm">
+                    {formatCurrency(totalExpenses)}
+                  </td>
+                </tr>
+                <tr className="bg-blue-50 border-t">
+                  <td colSpan="6" className="text-right p-2 sm:p-3 font-bold text-blue-700 text-xs sm:text-sm">
+                    Net Profit:
+                  </td>
+                  <td className={`p-2 sm:p-3 text-right font-bold text-xs sm:text-sm ${getProfitColor(finalProfit)}`}>
+                    {formatCurrency(finalProfit)}
                   </td>
                 </tr>
               </tfoot>
@@ -625,27 +663,19 @@ const Profit = () => {
 
           {/* Pagination */}
           {totalPages > 1 && (
-            <div className="flex flex-col sm:flex-row items-center justify-between gap-3 p-4 border-t border-gray-300 bg-gray-50">
-              <div className="text-xs text-gray-700">
-                <span className="font-bold text-black">
-                  Showing {indexOfFirst + 1} to{" "}
-                  {Math.min(indexOfLast, reportData.length)}
-                </span>{" "}
-                of{" "}
-                <span className="font-bold text-black">
-                  {reportData.length}
-                </span>{" "}
-                records
+            <div className="flex flex-col sm:flex-row items-center justify-between gap-3 p-3 sm:p-4 border-t border-gray-300 bg-gray-50">
+              <div className="text-[10px] sm:text-xs text-gray-700 text-center sm:text-left">
+                <span className="font-bold text-gray-900">
+                  Showing {indexOfFirst + 1} to {Math.min(indexOfLast, reportData.length)}
+                </span> of <span className="font-bold text-gray-900">{reportData.length}</span> records
               </div>
               <div className="flex items-center gap-1">
                 <button
-                  onClick={() =>
-                    currentPage > 1 && setCurrentPage(currentPage - 1)
-                  }
+                  onClick={() => currentPage > 1 && setCurrentPage(currentPage - 1)}
                   disabled={currentPage === 1}
-                  className="p-2 bg-gray-200 hover:bg-gray-300 text-black font-bold rounded-full disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                  className="p-1.5 sm:p-2 bg-gray-200 hover:bg-gray-300 text-black font-bold rounded-full disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
                 >
-                  <IoIosArrowBack className="w-4 h-4" />
+                  <IoIosArrowBack className="w-3 h-3 sm:w-4 sm:h-4" />
                 </button>
                 <div className="flex items-center gap-1">
                   {[...Array(totalPages)].map((_, i) => {
@@ -654,14 +684,13 @@ const Profit = () => {
                     const showPage =
                       pageNum === 1 ||
                       pageNum === totalPages ||
-                      (pageNum >= currentPage - 1 &&
-                        pageNum <= currentPage + 1);
+                      (pageNum >= currentPage - 1 && pageNum <= currentPage + 1);
                     if (showPage) {
                       return (
                         <button
                           key={i}
                           onClick={() => setCurrentPage(pageNum)}
-                          className={`w-8 h-8 text-xs font-bold rounded-full transition-colors ${
+                          className={`w-7 h-7 sm:w-8 sm:h-8 text-[10px] sm:text-xs font-bold rounded-full transition-colors ${
                             isCurrent
                               ? "bg-green-300 text-black shadow"
                               : "text-gray-700 hover:bg-gray-200"
@@ -671,15 +700,11 @@ const Profit = () => {
                         </button>
                       );
                     } else if (
-                      (pageNum === currentPage - 2 ||
-                        pageNum === currentPage + 2) &&
+                      (pageNum === currentPage - 2 || pageNum === currentPage + 2) &&
                       totalPages > 5
                     ) {
                       return (
-                        <span
-                          key={i}
-                          className="px-2 text-gray-500 font-bold text-xs"
-                        >
+                        <span key={i} className="px-1 sm:px-2 text-gray-500 font-bold text-[10px] sm:text-xs">
                           ...
                         </span>
                       );
@@ -688,13 +713,11 @@ const Profit = () => {
                   })}
                 </div>
                 <button
-                  onClick={() =>
-                    currentPage < totalPages && setCurrentPage(currentPage + 1)
-                  }
+                  onClick={() => currentPage < totalPages && setCurrentPage(currentPage + 1)}
                   disabled={currentPage === totalPages}
-                  className="p-2 bg-gray-200 hover:bg-gray-300 text-black font-bold rounded-full disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                  className="p-1.5 sm:p-2 bg-gray-200 hover:bg-gray-300 text-black font-bold rounded-full disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
                 >
-                  <IoIosArrowForward className="w-4 h-4" />
+                  <IoIosArrowForward className="w-3 h-3 sm:w-4 sm:h-4" />
                 </button>
               </div>
             </div>
@@ -703,17 +726,23 @@ const Profit = () => {
       )}
 
       {/* Empty State */}
-      {!loading && reportData.length === 0 && (
+      {!loading && !error && reportData.length === 0 && (
         <div className="rounded-xl shadow bg-white overflow-hidden">
-          <div className="text-center py-12">
+          <div className="text-center py-8 sm:py-12 px-4">
             <div className="space-y-3">
-              <div className="text-4xl">📊</div>
-              <p className="text-lg font-bold text-black">
+              <div className="text-3xl sm:text-4xl">📊</div>
+              <p className="text-base sm:text-lg font-bold text-gray-900">
                 No profit data found
               </p>
-              <p className="text-gray-600 text-sm">
-                Try selecting a different date range
+              <p className="text-gray-600 text-xs sm:text-sm">
+                Try selecting a different date range or clearing filters
               </p>
+              <button
+                onClick={clearFilters}
+                className="mt-2 px-4 py-2 bg-green-300 hover:bg-green-400 text-black font-bold rounded-full text-xs sm:text-sm transition-colors"
+              >
+                Clear Filters
+              </button>
             </div>
           </div>
         </div>
