@@ -2,24 +2,29 @@ const CardOne = ({ title, icon, number, loading, onClick }) => {
   return (
     <div
       onClick={onClick}
-      className={`bg-gradient-to-r from-green-100 via-green-100 to-gray-200 
-        rounded-xl shadow-md p-6 hover:shadow-lg 
+      className={`
+        bg-gradient-to-r from-green-100 via-green-100 to-gray-200 
+        rounded-xl shadow-md 
+        p-3 sm:p-4 md:p-5 lg:p-6 
+        hover:shadow-lg 
         transition-shadow duration-300
-        ${onClick ? "cursor-pointer transform hover:scale-105 transition-transform" : ""}`}
+        min-w-0
+        ${onClick ? "cursor-pointer transform hover:scale-[1.02] active:scale-95 transition-transform" : ""}
+      `}
     >
       {/* Title + Icon */}
-      <div className="flex justify-between items-center">
-        <h1 className="text-gray-800 font-semibold text-lg">
+      <div className="flex justify-between items-start gap-2">
+        <h1 className="text-gray-800 font-semibold text-sm sm:text-base md:text-lg truncate min-w-0 flex-1">
           {loading ? (
-            <div className="h-4 w-24 bg-gray-300 rounded animate-pulse"></div>
+            <div className="h-3 sm:h-4 w-16 sm:w-24 bg-gray-300 rounded animate-pulse"></div>
           ) : (
-            title
+            <span className="block truncate">{title}</span>
           )}
         </h1>
 
-        <div className="bg-white/20 p-3 rounded-lg text-xl text-gray-700 backdrop-blur-sm">
+        <div className="bg-white/20 p-2 sm:p-2.5 md:p-3 rounded-lg text-base sm:text-lg md:text-xl text-gray-700 backdrop-blur-sm flex-shrink-0">
           {loading ? (
-            <div className="h-5 w-5 bg-gray-300 rounded animate-pulse"></div>
+            <div className="h-4 w-4 sm:h-5 sm:w-5 bg-gray-300 rounded animate-pulse"></div>
           ) : (
             icon
           )}
@@ -27,16 +32,18 @@ const CardOne = ({ title, icon, number, loading, onClick }) => {
       </div>
 
       {/* Main Number */}
-      <div className="mt-6">
+      <div className="mt-3 sm:mt-4 md:mt-6">
         {loading ? (
-          <div className="h-6 w-32 bg-gray-300 rounded animate-pulse"></div>
+          <div className="h-5 sm:h-6 w-24 sm:w-32 bg-gray-300 rounded animate-pulse"></div>
         ) : (
-          <h1 className="text-2xl font-bold text-gray-900">{number}</h1>
+          <h1 className="text-lg sm:text-xl md:text-2xl font-bold text-gray-900 truncate">
+            {number}
+          </h1>
         )}
       </div>
 
       {/* Decorative bar */}
-      <div className="mt-4 h-1 w-16 rounded-full bg-gradient-to-r from-green-800 to-indigo-300 opacity-40"></div>
+      <div className="mt-3 sm:mt-4 h-1 w-12 sm:w-16 rounded-full bg-gradient-to-r from-green-800 to-indigo-300 opacity-40"></div>
     </div>
   );
 };
