@@ -1,7 +1,8 @@
 import { useDispatch, useSelector } from "react-redux";
 import {
   clearCart,
-  getTotalPrice,
+  getSubTotal,
+  getGrandTotal,
   setReceiptPrinted,
   getTotalItemDiscount,
 } from "../../Redux/cartSlice";
@@ -9,76 +10,91 @@ import { useEffect, useState } from "react";
 import axios from "axios";
 import toast from "react-hot-toast";
 
-//API
+// API
 import BASE_URL from "../../Utils/config";
 import { fetchAllCustomers } from "../../Redux/customerSlice";
 
 const Cart = ({ triggerRefreshMenu }) => {
+  const dispatch = useDispatch();
+
+  // Redux Selectors
   const user = useSelector((state) => state.user.user);
   const { allCustomers = [] } = useSelector((state) => state.customers);
   const cartData = useSelector((state) => state.cart.cart);
-  const originalTotal = useSelector(getTotalPrice);
+  const originalTotal = useSelector(getSubTotal);
   const totalItemDiscount = useSelector(getTotalItemDiscount);
 
-  const dispatch = useDispatch();
-
+  // Local Component States
   const [errorMsg, setErrorMsg] = useState("");
   const [isProcessing, setIsProcessing] = useState(false);
   const [showLoadingModal, setShowLoadingModal] = useState(false);
   const [useLoyal, setUseLoyal] = useState(false);
   const [loyalCustomerId, setLoyalCustomerId] = useState("");
+
+  // FIX: Added missing states for Extra Discount logic
   const [useExtraDiscount, setUseExtraDiscount] = useState(false);
   const [extraDiscount, setExtraDiscount] = useState(0);
-
-  useEffect(() => {
-    dispatch(fetchAllCustomers()); // Fetch loyal customers from backend
-  }, [dispatch]);
 
   const [customerDetails, setCustomerDetails] = useState({
     name: "Mteja",
     phone: "0777777777",
   });
 
-  const handleLoyalToggle = (e) => {
-    setUseLoyal(e.target.checked);
-    if (!e.target.checked) setLoyalCustomerId(""); // reset if unchecked
-  };
-
-  const handleLoyalSelect = (e) => {
-    setLoyalCustomerId(e.target.value); // store the ObjectId
-  };
-
   const [validation, setValidation] = useState({
     name: true,
     phone: true,
   });
 
-  const handleInput = async (e) => {
+  const [lastSaleId, setLastSaleId] = useState(null);
+  const [showPrintButton, setShowPrintButton] = useState(false);
+
+  // Fetch Customers on Mount
+  useEffect(() => {
+    dispatch(fetchAllCustomers());
+  }, [dispatch]);
+
+  // Handlers
+  const handleLoyalToggle = (e) => {
+    setUseLoyal(e.target.checked);
+    if (!e.target.checked) setLoyalCustomerId("");
+  };
+
+  const handleLoyalSelect = (e) => {
+    setLoyalCustomerId(e.target.value);
+  };
+
+  const handleInput = (e) => {
     const { name, value } = e.target;
     setCustomerDetails({ ...customerDetails, [name]: value });
 
-    if (name == "phone") {
+    if (name === "phone") {
       const phoneVali = /^[0-9]{10}$/;
       setValidation((prev) => ({ ...prev, phone: phoneVali.test(value) }));
     }
   };
 
-  //TOTALS
-  const taxRate = 0; // adjust if you have tax
+  /* ==================================================
+     FINANCIAL CALCULATIONS & LOGIC
+  ================================================== */
+  const taxRate = 0; // Adjust if needed
 
-  // Combined discount to be sent to backend (item discounts + extra discount)
+  // Combined discount (Item specific discounts + Global Cart extra discount)
   const totalDiscount =
     totalItemDiscount + (useExtraDiscount ? extraDiscount : 0);
 
-  // Maximum allowed extra discount so that total discount ≤ 10% of original total
+  // Maximum allowed extra discount so that overall discount ≤ 10% of original total
   const maxExtraDiscount = Math.max(0, originalTotal * 0.1 - totalItemDiscount);
 
   // Taxable amount after all discounts
-  const taxableAmount = originalTotal - totalDiscount;
+  const taxableAmount = Math.max(0, originalTotal - totalDiscount);
   const tax = (taxableAmount * taxRate) / 100;
+
+  // FIX: Removed the duplicate top-level definition, keeping this calculated variable clean
   const finalTotal = taxableAmount + tax;
 
-  //TRANSACTION HANDLER
+  /* ==================================================
+     TRANSACTION PROCESSOR
+  ================================================== */
   const handleTransaction = async (status) => {
     if (cartData.length === 0) {
       toast.error("Please add items to the cart before proceeding!", {
@@ -90,7 +106,7 @@ const Cart = ({ triggerRefreshMenu }) => {
           fontSize: "18px",
         },
       });
-      return; // STOP the transaction completely
+      return;
     }
 
     if (isProcessing) return;
@@ -102,13 +118,16 @@ const Cart = ({ triggerRefreshMenu }) => {
         items: cartData.map((item) => ({
           item: item.id,
           quantity: item.quantity,
-          price: item.pricePerQuantity,
+          pricePerQuantity: item.pricePerQuantity, // Added for backend integrity
+          discount: item.discount || 0,
+          totalPrice: item.totalPrice,
         })),
-        totalAmount: finalTotal,
         customerDetails: useLoyal ? {} : customerDetails,
         loyalCustomer: useLoyal ? loyalCustomerId : null,
+        totalDiscount,
+        subtotal: originalTotal,
+        finalTotal,
         status,
-        tradeDiscount: totalDiscount,
       };
 
       const response = await axios.post(
@@ -120,9 +139,7 @@ const Cart = ({ triggerRefreshMenu }) => {
       if (response.status === 201) {
         const saleId = response.data.data._id;
         toast.success(
-          `Transaction ${
-            status === "Paid" ? "completed" : "saved as bill"
-          } successfully!`,
+          `Transaction ${status === "Paid" ? "completed" : "saved as bill"} successfully!`,
           {
             position: "bottom-right",
             style: {
@@ -154,11 +171,6 @@ const Cart = ({ triggerRefreshMenu }) => {
     }
   };
 
-  //RECEIPT PRINTING
-  const [lastSaleId, setLastSaleId] = useState(null);
-  const [showPrintButton, setShowPrintButton] = useState(false);
-
-  //Handle Print Receipt
   const handlePrintReceipt = () => {
     if (!lastSaleId) {
       toast.error("No transaction found to print");
@@ -166,18 +178,15 @@ const Cart = ({ triggerRefreshMenu }) => {
     }
 
     window.open(`${BASE_URL}/api/receipt/${lastSaleId}/receipt`, "_blank");
-
     dispatch(setReceiptPrinted(true));
     setShowPrintButton(false);
   };
 
   return (
     <>
-      {/* Customer Details, Name and Phone Number */}
       <div className="mt-6 space-y-6">
         {/* Customer Input Section */}
         <div className="bg-gradient-to-r from-blue-100 to-green-200 rounded-xl shadow-lg px-6 py-6">
-          {/* Toggle between normal or loyal customer */}
           <div className="flex items-center justify-between space-x-3 mb-6">
             <h2 className="text-xl font-semibold text-gray-800">
               Customer Info
@@ -189,14 +198,13 @@ const Cart = ({ triggerRefreshMenu }) => {
               onChange={handleLoyalToggle}
               className="hidden toggle-checkbox sr-only"
             />
-
             <label
               htmlFor="loyal-customer-checkbox"
-              className="toggle-label block w-12 h-6 rounded-full transition bg-gray-300 relative"
+              className="toggle-label block w-12 h-6 rounded-full transition bg-gray-300 relative cursor-pointer"
             >
               <span
                 className={`dot absolute left-1 top-1 w-4 h-4 bg-white rounded-full transition 
-      ${useLoyal ? "translate-x-6 bg-green-500" : ""}`}
+                  ${useLoyal ? "translate-x-6 bg-green-500" : ""}`}
               />
             </label>
           </div>
@@ -243,11 +251,15 @@ const Cart = ({ triggerRefreshMenu }) => {
                   Phone Number
                 </label>
                 <input
-                  type="number"
+                  type="text" // Switched to text to handle string formatting safely
                   name="phone"
                   value={customerDetails.phone}
                   onChange={handleInput}
-                  className="w-full px-4 py-2 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-green-400 shadow-sm"
+                  className={`w-full px-4 py-2 rounded-lg border focus:outline-none focus:ring-2 shadow-sm ${
+                    validation.phone
+                      ? "border-gray-300 focus:ring-green-400"
+                      : "border-red-500 focus:ring-red-400"
+                  }`}
                   placeholder="Enter phone number"
                 />
               </div>
@@ -273,7 +285,7 @@ const Cart = ({ triggerRefreshMenu }) => {
             />
             <label
               htmlFor="extraDiscountToggle"
-              className="toggle-label block w-12 h-6 rounded-full transition bg-gray-300 relative"
+              className="toggle-label block w-12 h-6 rounded-full transition bg-gray-300 relative cursor-pointer"
             >
               <span
                 className={`dot absolute left-1 top-1 w-4 h-4 bg-white rounded-full transition 
@@ -293,9 +305,7 @@ const Cart = ({ triggerRefreshMenu }) => {
                   extraDiscount > 0 ? extraDiscount.toLocaleString("en-US") : ""
                 }
                 onChange={(e) => {
-                  // Remove commas and any non-numeric characters except decimal point
                   const rawValue = e.target.value.replace(/[^0-9.]/g, "");
-                  // Handle empty input
                   const numericValue =
                     rawValue === "" ? 0 : parseFloat(rawValue);
                   if (isNaN(numericValue)) return;
@@ -319,7 +329,7 @@ const Cart = ({ triggerRefreshMenu }) => {
               />
               {maxExtraDiscount <= 0 && (
                 <p className="text-sm text-orange-600 mt-1">
-                  Oyaaa, acha UPIMBI we falaa, dicount haitakiwi kuzidi 50% ya
+                  Oyaaa, acha UPIMBI we falaa, discount haitakiwi kuzidi 10% ya
                   Bei ya Bidhaa, utapata Hasara Mbwa wee.
                 </p>
               )}
@@ -343,25 +353,27 @@ const Cart = ({ triggerRefreshMenu }) => {
             </span>
           </div>
 
-          {/* Tax */}
-          {/* <div className="flex justify-between text-gray-800 font-medium">
-            <span>Tax (2.5%)</span>
-            <span>{tax}/=</span>
-          </div> */}
-
-          {/* Item Discounts line – always show if >0 */}
           {totalItemDiscount > 0 && (
             <div className="flex justify-between text-gray-800 font-medium">
               <span>Item Discounts</span>
               <span>-{totalItemDiscount.toLocaleString()}/=</span>
             </div>
           )}
+
+          {useExtraDiscount && extraDiscount > 0 && (
+            <div className="flex justify-between text-gray-800 font-medium">
+              <span>Extra Discount</span>
+              <span>-{extraDiscount.toLocaleString()}/=</span>
+            </div>
+          )}
+
           <div className="flex justify-between text-lg font-bold text-black pt-2 border-t">
             <span>Total (Tsh)</span>
             <span>{finalTotal?.toLocaleString()}/=</span>
           </div>
         </div>
 
+        {/* Processing Modal */}
         {showLoadingModal && (
           <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
             <div className="bg-white px-6 py-8 rounded-lg shadow-xl text-center w-80">
@@ -375,7 +387,7 @@ const Cart = ({ triggerRefreshMenu }) => {
           </div>
         )}
 
-        {/* Buttons */}
+        {/* Action Buttons */}
         {!showPrintButton ? (
           <div className="flex gap-4">
             {user?.roles?.canMakeTransaction ? (
@@ -424,7 +436,6 @@ const Cart = ({ triggerRefreshMenu }) => {
             )}
           </div>
         ) : (
-          //Print Receipt
           <div className="mt-4">
             <button
               onClick={handlePrintReceipt}
@@ -434,9 +445,7 @@ const Cart = ({ triggerRefreshMenu }) => {
             </button>
           </div>
         )}
-
         <hr className="border-gray-400 mt-2" />
-        <div className="mb-2">{""}</div>
       </div>
     </>
   );

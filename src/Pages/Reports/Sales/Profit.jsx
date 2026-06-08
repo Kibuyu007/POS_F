@@ -1,10 +1,11 @@
-import { useEffect, useMemo, useState, useCallback } from "react";
+import React from "react";
+import { useEffect, useMemo, useState } from "react";
 import axios from "axios";
 import dayjs from "dayjs";
 import isBetween from "dayjs/plugin/isBetween";
 import { IoIosArrowBack, IoIosArrowForward } from "react-icons/io";
 import { FaSearch, FaFilter } from "react-icons/fa";
-import { FiRefreshCw, FiDownload } from "react-icons/fi";
+import { FiRefreshCw, FiDownload, FiX } from "react-icons/fi";
 import { DatePicker } from "@mui/x-date-pickers/DatePicker";
 import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs";
 import { LocalizationProvider } from "@mui/x-date-pickers";
@@ -13,6 +14,7 @@ import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 import BASE_URL from "../../../Utils/config";
 import toast from "react-hot-toast";
+import Loading from "../../../Components/Shared/Loading";
 
 dayjs.extend(isBetween);
 
@@ -26,19 +28,19 @@ const Profit = () => {
   const [range, setRange] = useState({ from: "", to: "" });
   const [searchQuery, setSearchQuery] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
+  const [showFilters, setShowFilters] = useState(false);
   const itemsPerPage = 10;
 
-  // ==================== DATE RANGE ====================
-  const getDateRange = useCallback(() => {
+  // ==================== DATE RANGE MEMO ====================
+  const { from, to } = useMemo(() => {
     const now = dayjs();
     switch (filter) {
       case "today":
         return { from: now.startOf("day"), to: now.endOf("day") };
-      case "yesterday":
-        return {
-          from: now.subtract(1, "day").startOf("day"),
-          to: now.subtract(1, "day").endOf("day"),
-        };
+      case "yesterday": {
+        const yesterday = now.subtract(1, "day");
+        return { from: yesterday.startOf("day"), to: yesterday.endOf("day") };
+      }
       case "week":
         return { from: now.startOf("week"), to: now.endOf("week") };
       case "month":
@@ -56,9 +58,7 @@ const Profit = () => {
       default:
         return { from: now.startOf("day"), to: now.endOf("day") };
     }
-  }, [filter, range]);
-
-  const { from, to } = getDateRange();
+  }, [filter, range.from, range.to]);
 
   // ==================== FETCH DATA ====================
   useEffect(() => {
@@ -76,20 +76,18 @@ const Profit = () => {
           }),
         ]);
 
-        // Transactions API returns { success: true, data: [...] }
         if (salesRes.data.success) {
           setTransactions(salesRes.data.data || []);
         }
 
-        // CRITICAL FIX: matumiziYote returns data DIRECTLY as array, NOT wrapped in { success, data }
-        // Reference from Home.jsx: setExpenses(expRes.data || []);
         setExpenses(expensesRes.data || []);
-
         toast.success("Profit data loaded successfully!");
       } catch (err) {
         console.error("Profit fetch error:", err);
         setError(err.response?.data?.message || "Failed to load transactions");
-        toast.error(err.response?.data?.message || "Failed to load transactions");
+        toast.error(
+          err.response?.data?.message || "Failed to load transactions",
+        );
       } finally {
         setLoading(false);
       }
@@ -101,23 +99,20 @@ const Profit = () => {
   // ==================== FILTERED SALES ====================
   const filteredSales = useMemo(() => {
     let filtered = transactions.filter((tx) =>
-      dayjs(tx.createdAt).isBetween(from, to, null, "[]")
+      dayjs(tx.createdAt).isBetween(from, to, null, "[]"),
     );
 
     if (searchQuery.trim()) {
       const query = searchQuery.toLowerCase();
       filtered = filtered.filter((tx) =>
-        tx.items.some((item) =>
-          item.item?.name?.toLowerCase().includes(query)
-        )
+        tx.items.some((item) => item.item?.name?.toLowerCase().includes(query)),
       );
     }
 
     return filtered;
   }, [transactions, from, to, searchQuery]);
 
-  // ==================== EXPENSES - MATCHING Home.jsx PATTERN ====================
-  // CRITICAL FIX: Use createdAt (not date) and amount field - matching your working Home.jsx code
+  // ==================== EXPENSES ====================
   const totalExpenses = useMemo(() => {
     return expenses
       .filter((e) => dayjs(e.createdAt).isBetween(from, to, null, "[]"))
@@ -127,24 +122,17 @@ const Profit = () => {
   // ==================== REPORT DATA ====================
   const reportData = useMemo(() => {
     const rows = [];
-    filteredSales.forEach((tx) => {
-      const txDiscount = tx.tradeDiscount || 0;
-      const txSubTotal =
-        tx.subTotal ||
-        tx.items.reduce(
-          (sum, item) => sum + (item.price || 0) * (item.quantity || 0),
-          0
-        );
 
+    filteredSales.forEach((tx) => {
       tx.items.forEach((soldItem) => {
         const qty = soldItem.quantity || 0;
         const sellingPrice = soldItem.price || 0;
         const buyingPrice = soldItem.buyingPrice || 0;
         const itemName = soldItem.item?.name || "Unknown";
+
         const salesAmount = qty * sellingPrice;
         const buyingAmount = qty * buyingPrice;
-        const itemDiscount =
-          txSubTotal > 0 ? (salesAmount / txSubTotal) * txDiscount : 0;
+        const itemDiscount = soldItem.discount || 0;
         const profit = salesAmount - buyingAmount - itemDiscount;
 
         rows.push({
@@ -158,9 +146,14 @@ const Profit = () => {
           discount: itemDiscount,
           profit,
           status: tx.status,
+          customer: tx.customerDetails?.name || "Walk-in",
+          cashier: tx.createdBy
+            ? `${tx.createdBy.firstName} ${tx.createdBy.lastName}`
+            : "-",
         });
       });
     });
+
     return rows;
   }, [filteredSales]);
 
@@ -172,28 +165,32 @@ const Profit = () => {
         acc.buying += row.buyingAmount;
         acc.discount += row.discount;
         acc.profit += row.profit;
+        acc.qty += row.qty;
         return acc;
       },
-      { sales: 0, buying: 0, discount: 0, profit: 0 }
+      { sales: 0, buying: 0, discount: 0, profit: 0, qty: 0 },
     );
   }, [reportData]);
 
   const finalProfit = useMemo(() => {
     return totals.profit - totalExpenses;
-  }, [totals, totalExpenses]);
+  }, [totals.profit, totalExpenses]);
 
   // ==================== PAGINATION ====================
   const indexOfLast = currentPage * itemsPerPage;
   const indexOfFirst = indexOfLast - itemsPerPage;
-  const currentData = reportData.slice(indexOfFirst, indexOfLast);
+  const currentData = useMemo(
+    () => reportData.slice(indexOfFirst, indexOfLast),
+    [reportData, indexOfFirst, indexOfLast],
+  );
   const totalPages = Math.ceil(reportData.length / itemsPerPage);
 
   useEffect(() => {
     setCurrentPage(1);
-  }, [filter, range, searchQuery]);
+  }, [filter, range.from, range.to, searchQuery]);
 
   // ==================== EXPORT FUNCTIONS ====================
-  const exportToExcel = useCallback(() => {
+  const exportToExcel = () => {
     try {
       const wsData = reportData.map((row) => ({
         Date: dayjs(row.date).format("DD/MM/YYYY HH:mm"),
@@ -213,9 +210,9 @@ const Profit = () => {
     } catch (err) {
       toast.error("Failed to export Excel");
     }
-  }, [reportData]);
+  };
 
-  const exportToPDF = useCallback(() => {
+  const exportToPDF = () => {
     try {
       const doc = new jsPDF("landscape");
       doc.setFontSize(16);
@@ -225,11 +222,11 @@ const Profit = () => {
       doc.text(
         `Period: ${from.format("DD/MM/YYYY")} - ${to.format("DD/MM/YYYY")}`,
         14,
-        29
+        29,
       );
 
       const tableData = reportData.map((row) => [
-        dayjs(row.date).format("DD/MM/YY"),
+        dayjs(row.date).format("DD/MM/Y"),
         row.itemName,
         row.qty.toString(),
         row.buyingPrice.toLocaleString(),
@@ -240,7 +237,9 @@ const Profit = () => {
 
       autoTable(doc, {
         startY: 35,
-        head: [["Date", "Item", "Qty", "Buying", "Selling", "Discount", "Profit"]],
+        head: [
+          ["Date", "Item", "Qty", "Buying", "Selling", "Discount", "Profit"],
+        ],
         body: tableData,
         headStyles: { fillColor: [34, 197, 94], textColor: 255 },
       });
@@ -250,7 +249,7 @@ const Profit = () => {
     } catch (err) {
       toast.error("Failed to export PDF");
     }
-  }, [reportData, from]);
+  };
 
   // ==================== HELPERS ====================
   const filters = [
@@ -261,14 +260,15 @@ const Profit = () => {
     { key: "custom", label: "Custom" },
   ];
 
-  const getProfitColor = (value) => (value >= 0 ? "text-green-600" : "text-red-600");
+  const getProfitColor = (value) =>
+    value >= 0 ? "text-green-600" : "text-red-600";
   const getProfitBg = (value) => (value >= 0 ? "bg-green-50" : "bg-red-50");
 
   const formatCurrency = (value) => {
-    return `Tsh ${value.toLocaleString("en-US", {
+    return `${value.toLocaleString("en-US", {
       minimumFractionDigits: 0,
       maximumFractionDigits: 0,
-    })}`;
+    })} Tsh`;
   };
 
   const handleRefresh = () => {
@@ -282,124 +282,169 @@ const Profit = () => {
     toast.success("Filters cleared!");
   };
 
+  const activeFilterCount = [
+    filter !== "today",
+    searchQuery,
+    filter === "custom" && (range.from || range.to),
+  ].filter(Boolean).length;
+
   // ==================== RENDER ====================
   return (
-    <div className="p-3 sm:p-4 md:p-5 bg-gray-50 min-h-screen">
+    <div className="p-2 sm:p-3 md:p-4 lg:p-5 bg-gray-50 min-h-screen">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-4 md:mb-6 gap-3">
-        <div>
-          <h1 className="text-xl sm:text-2xl font-bold text-gray-900 mb-1">
-            Item Profit Report
+      <div className="flex items-center justify-between mb-3 sm:mb-4">
+        <div className="min-w-0 flex-1">
+          <h1 className="text-lg sm:text-xl md:text-2xl font-bold text-black">
+            Report Ya Faida
           </h1>
-          <p className="text-gray-600 text-xs sm:text-sm">
+          <p className="text-gray-600 text-xs hidden sm:block">
             Track profit margins across all items
           </p>
         </div>
         <button
           onClick={handleRefresh}
-          className="self-start sm:self-auto px-3 py-2 sm:px-4 bg-green-300 hover:bg-green-400 text-black font-bold rounded-full shadow hover:shadow-md transition-all duration-200 flex items-center gap-2 text-xs sm:text-sm"
+          className="px-3 py-2 bg-green-300 hover:bg-green-400 text-black font-bold rounded-full shadow text-xs flex items-center gap-1.5 flex-shrink-0"
         >
-          <FiRefreshCw className={`w-4 h-4 ${loading ? "animate-spin" : ""}`} />
-          <span>Refresh</span>
+          <FiRefreshCw
+            className={`w-3.5 h-3.5 ${loading ? "animate-spin" : ""}`}
+          />
+          <span className="hidden sm:inline">Refresh</span>
         </button>
       </div>
 
-      {/* Stats Cards */}
+      {/* Stats Cards - Mobile Friendly */}
       {!loading && !error && reportData.length > 0 && (
-        <div className="mb-4 md:mb-6">
-          <div className="bg-white border border-gray-200 rounded-xl p-3 sm:p-4 shadow-sm">
-            <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
-              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 w-full">
-                <div className="text-center p-2 bg-gray-50 rounded-lg">
-                  <p className="text-[10px] sm:text-xs text-gray-500 font-medium uppercase">Total Sales</p>
-                  <p className="text-sm sm:text-base font-bold text-gray-900">
-                    {formatCurrency(totals.sales)}
-                  </p>
-                </div>
-                <div className="text-center p-2 bg-gray-50 rounded-lg">
-                  <p className="text-[10px] sm:text-xs text-gray-500 font-medium uppercase">Total Cost</p>
-                  <p className="text-sm sm:text-base font-bold text-red-600">
-                    {formatCurrency(totals.buying)}
-                  </p>
-                </div>
-                <div className="text-center p-2 bg-gray-50 rounded-lg">
-                  <p className="text-[10px] sm:text-xs text-gray-500 font-medium uppercase">Discounts</p>
-                  <p className="text-sm sm:text-base font-bold text-yellow-600">
-                    {formatCurrency(totals.discount)}
-                  </p>
-                </div>
-                <div className="text-center p-2 bg-gray-50 rounded-lg">
-                  <p className="text-[10px] sm:text-xs text-gray-500 font-medium uppercase">Expenses</p>
-                  <p className="text-sm sm:text-base font-bold text-orange-600">
-                    {formatCurrency(totalExpenses)}
-                  </p>
-                  <p className="text-[9px] text-gray-400">{expenses.length} records</p>
-                </div>
-                <div className={`text-center p-2 rounded-lg col-span-2 sm:col-span-1 lg:col-span-2 ${getProfitBg(finalProfit)}`}>
-                  <p className="text-[10px] sm:text-xs text-gray-500 font-medium uppercase">Net Profit</p>
-                  <p className={`text-sm sm:text-base font-bold ${getProfitColor(finalProfit)}`}>
-                    {formatCurrency(finalProfit)}
-                  </p>
-                </div>
-              </div>
-              <div className="hidden lg:flex items-center gap-2 shrink-0">
-                <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-                <span className="text-xs font-medium text-gray-700">Profit</span>
-                <div className="w-2 h-2 bg-red-500 rounded-full ml-2"></div>
-                <span className="text-xs font-medium text-gray-700">Loss</span>
-              </div>
-            </div>
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2 mb-3 sm:mb-4">
+          <div className="bg-white border border-gray-200 rounded-full p-2.5 sm:p-3 shadow-sm text-center">
+            <p className="text-[10px] sm:text-xs text-gray-500 font-medium mb-0.5">
+              Sales
+            </p>
+            <p className="text-xs sm:text-sm md:text-base font-bold text-black truncate">
+              {totals.sales.toLocaleString()}
+            </p>
+            <p className="text-[9px] text-gray-400">Tsh</p>
+          </div>
+          <div className="bg-white border border-gray-200 rounded-full p-2.5 sm:p-3 shadow-sm text-center">
+            <p className="text-[10px] sm:text-xs text-gray-500 font-medium mb-0.5">
+              Cost
+            </p>
+            <p className="text-xs sm:text-sm md:text-base font-bold text-red-600 truncate">
+              {totals.buying.toLocaleString()}
+            </p>
+            <p className="text-[9px] text-gray-400">Tsh</p>
+          </div>
+          <div className="bg-white border border-gray-200 rounded-full p-2.5 sm:p-3 shadow-sm text-center">
+            <p className="text-[10px] sm:text-xs text-gray-500 font-medium mb-0.5">
+              Discount
+            </p>
+            <p className="text-xs sm:text-sm md:text-base font-bold text-yellow-600 truncate">
+              {totals.discount.toLocaleString()}
+            </p>
+            <p className="text-[9px] text-gray-400">Tsh</p>
+          </div>
+          <div className="bg-white border border-gray-200 rounded-full p-2.5 sm:p-3 shadow-sm text-center">
+            <p className="text-[10px] sm:text-xs text-gray-500 font-medium mb-0.5">
+              Expenses
+            </p>
+            <p className="text-xs sm:text-sm md:text-base font-bold text-orange-600 truncate">
+              {totalExpenses.toLocaleString()}
+            </p>
+            <p className="text-[9px] text-gray-400">Tsh</p>
+          </div>
+          <div
+            className={`bg-white border border-gray-200 rounded-full p-2.5 sm:p-3 shadow-sm text-center col-span-2 sm:col-span-1 ${getProfitBg(finalProfit)}`}
+          >
+            <p className="text-[10px] sm:text-xs text-gray-500 font-medium mb-0.5">
+              Net Profit
+            </p>
+            <p
+              className={`text-xs sm:text-sm md:text-base font-bold truncate ${getProfitColor(finalProfit)}`}
+            >
+              {finalProfit.toLocaleString()}
+            </p>
+            <p className="text-[9px] text-gray-400">Tsh</p>
           </div>
         </div>
       )}
 
-      {/* Filter Card */}
-      <div className="mb-4 md:mb-6 rounded-xl p-3 sm:p-4 md:p-5 shadow-lg bg-white border border-gray-100">
-        <div className="flex items-center gap-3 mb-4 md:mb-6">
-          <div className="p-2 bg-green-100 rounded-lg">
-            <FaFilter className="w-4 h-4 sm:w-5 sm:h-5 text-green-600" />
+      {/* Quick Search + Filter Toggle */}
+      <div className="flex gap-2 mb-3 sm:mb-4">
+        <div className="flex-1 relative">
+          <div className="absolute inset-y-0 left-3 flex items-center">
+            <FaSearch className="w-3.5 h-3.5 text-gray-400" />
           </div>
-          <div>
-            <h3 className="text-sm sm:text-base font-bold text-gray-900">
-              Filters & Date Range
-            </h3>
-            <p className="text-[10px] sm:text-xs text-gray-600">
-              Filter profit data by date period
-            </p>
-          </div>
+          <input
+            type="text"
+            placeholder="Search items..."
+            className="w-full pl-9 pr-8 py-2.5 text-sm border border-gray-300 rounded-full bg-white text-black focus:border-green-300 focus:outline-none focus:ring-2 focus:ring-green-100"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+          />
+          {searchQuery && (
+            <button
+              onClick={() => setSearchQuery("")}
+              className="absolute inset-y-0 right-3 flex items-center text-gray-400"
+            >
+              <FiX className="w-4 h-4" />
+            </button>
+          )}
         </div>
+        <button
+          onClick={() => setShowFilters(!showFilters)}
+          className={`px-3 py-2.5 rounded-full border font-bold text-sm flex items-center gap-1.5 flex-shrink-0 transition-all ${
+            showFilters || activeFilterCount > 0
+              ? "bg-green-300 border-green-400 text-black"
+              : "bg-white border-gray-300 text-gray-700"
+          }`}
+        >
+          <FaFilter className="w-3.5 h-3.5" />
+          <span className="hidden sm:inline">Filters</span>
+          {activeFilterCount > 0 && (
+            <span className="bg-black text-white text-[10px] w-5 h-5 rounded-full flex items-center justify-center">
+              {activeFilterCount}
+            </span>
+          )}
+        </button>
+      </div>
 
-        <div className="mb-4">
-          <label className="block text-xs sm:text-sm font-bold text-gray-700 mb-2">
-            Time Period
-          </label>
-          <div className="flex flex-wrap gap-2">
-            {filters.map((f) => (
-              <button
-                key={f.key}
-                className={`px-3 py-2 sm:px-4 sm:py-2.5 text-xs sm:text-sm font-bold rounded-full transition-all duration-200 ${
-                  filter === f.key
-                    ? "bg-green-300 text-black shadow-lg transform scale-105"
-                    : "bg-gray-100 text-gray-700 hover:bg-gray-200 hover:shadow-md"
-                }`}
-                onClick={() => setFilter(f.key)}
-              >
-                {f.label}
-              </button>
-            ))}
+      {/* Period Pills - Always Visible */}
+      <div className="flex gap-2 mb-3 sm:mb-4 overflow-x-auto pb-1 scrollbar-hide">
+        {filters.map((f) => (
+          <button
+            key={f.key}
+            onClick={() => setFilter(f.key)}
+            className={`px-4 py-2 rounded-full text-xs font-bold whitespace-nowrap transition-all flex-shrink-0 ${
+              filter === f.key
+                ? "bg-black text-white shadow-md"
+                : "bg-white border border-gray-200 text-gray-600"
+            }`}
+          >
+            {f.label}
+          </button>
+        ))}
+      </div>
+
+      {/* Expandable Filters Panel */}
+      {showFilters && (
+        <div className="bg-white rounded-xl p-3 sm:p-4 shadow-lg border border-gray-100 mb-3 sm:mb-4 space-y-3">
+          <div className="flex items-center justify-between mb-2">
+            <h3 className="text-sm font-bold text-black">Advanced Filters</h3>
+            <button
+              onClick={() => setShowFilters(false)}
+              className="text-gray-400"
+            >
+              <FiX className="w-5 h-5" />
+            </button>
           </div>
-        </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4 mb-4">
           {filter === "custom" && (
-            <div className="sm:col-span-2 lg:col-span-2">
-              <label className="block text-xs sm:text-sm font-bold text-gray-700 mb-2">
-                Date Range
-              </label>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div>
+                <label className="block text-xs font-bold text-gray-700 mb-1.5">
+                  From Date
+                </label>
                 <LocalizationProvider dateAdapter={AdapterDayjs}>
                   <DatePicker
-                    label="From"
                     value={range.from ? dayjs(range.from) : null}
                     onChange={(newValue) =>
                       setRange({
@@ -413,18 +458,21 @@ const Profit = () => {
                         fullWidth: true,
                         sx: {
                           "& .MuiOutlinedInput-root": {
-                            borderRadius: "12px",
-                            fontSize: "14px",
+                            borderRadius: "10px",
+                            fontSize: "13px",
                           },
                         },
-                        className: "bg-white",
                       },
                     }}
                   />
                 </LocalizationProvider>
+              </div>
+              <div>
+                <label className="block text-xs font-bold text-gray-700 mb-1.5">
+                  To Date
+                </label>
                 <LocalizationProvider dateAdapter={AdapterDayjs}>
                   <DatePicker
-                    label="To"
                     value={range.to ? dayjs(range.to) : null}
                     onChange={(newValue) =>
                       setRange({
@@ -438,11 +486,10 @@ const Profit = () => {
                         fullWidth: true,
                         sx: {
                           "& .MuiOutlinedInput-root": {
-                            borderRadius: "12px",
-                            fontSize: "14px",
+                            borderRadius: "10px",
+                            fontSize: "13px",
                           },
                         },
-                        className: "bg-white",
                       },
                     }}
                   />
@@ -452,299 +499,377 @@ const Profit = () => {
           )}
 
           {filter !== "custom" && (
-            <div>
-              <label className="block text-xs sm:text-sm font-bold text-gray-700 mb-2">
-                Period Info
-              </label>
-              <div className="bg-gray-100 rounded-xl p-2 sm:p-3 text-center">
-                <span className="text-xs sm:text-sm font-bold text-gray-900">
-                  {from.format("DD/MM/YYYY")} - {to.format("DD/MM/YYYY")}
-                </span>
-              </div>
+            <div className="bg-gray-100 rounded-xl p-2.5 text-center">
+              <span className="text-xs font-bold text-black">
+                {from.format("DD/MM/YYYY")} - {to.format("DD/MM/YYYY")}
+              </span>
             </div>
           )}
 
-          <div className={filter === "custom" ? "sm:col-span-2 lg:col-span-1" : ""}>
-            <label className="block text-xs sm:text-sm font-bold text-gray-700 mb-2">
-              Search Items
-            </label>
-            <div className="relative">
-              <div className="absolute inset-y-0 left-3 sm:left-4 flex items-center pointer-events-none">
-                <FaSearch className="w-3 h-3 sm:w-4 sm:h-4 text-gray-500" />
-              </div>
-              <input
-                type="text"
-                placeholder="Search by item name..."
-                className="w-full pl-9 sm:pl-11 pr-3 sm:pr-4 py-2 sm:py-3 text-xs sm:text-sm border border-gray-300 rounded-xl bg-white text-gray-900 focus:border-green-300 focus:outline-none focus:ring-2 focus:ring-green-100 transition-all duration-300"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-              />
-            </div>
-          </div>
-        </div>
-
-        <div className="flex flex-col sm:flex-row justify-end gap-2 sm:gap-3">
-          <button
-            onClick={clearFilters}
-            className="px-3 py-2 sm:px-4 bg-gray-200 hover:bg-gray-300 text-black font-bold rounded-xl transition-all duration-300 shadow-sm hover:shadow-md text-xs sm:text-sm"
-          >
-            Clear Filters
-          </button>
-          <button
-            onClick={exportToExcel}
-            className="px-3 py-2 sm:px-4 bg-yellow-100 hover:bg-yellow-200 text-black font-bold rounded-xl transition-all duration-300 shadow-sm hover:shadow-md flex items-center justify-center gap-2 text-xs sm:text-sm"
-          >
-            <FiDownload className="w-3 h-3 sm:w-4 sm:h-4" />
-            Excel
-          </button>
-          <button
-            onClick={exportToPDF}
-            className="px-3 py-2 sm:px-4 bg-green-300 hover:bg-green-400 text-black font-bold rounded-xl transition-all duration-300 shadow-sm hover:shadow-md flex items-center justify-center gap-2 text-xs sm:text-sm"
-          >
-            <FiDownload className="w-3 h-3 sm:w-4 sm:h-4" />
-            PDF
-          </button>
-        </div>
-
-        <div className="mt-3 sm:mt-5 pt-3 sm:pt-5 border-t border-gray-100">
-          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2">
-            <div className="flex items-center gap-2 flex-wrap">
-              <span className="text-[10px] sm:text-xs font-medium text-gray-600">
-                Active filters:
-              </span>
-              <div className="flex flex-wrap gap-1.5 sm:gap-2">
-                {filter !== "today" && (
-                  <span className="inline-flex items-center px-2 py-1 sm:px-3 bg-green-100 text-green-800 text-[10px] sm:text-xs font-medium rounded-full">
-                    Period: {filter}
-                  </span>
-                )}
-                {searchQuery && (
-                  <span className="inline-flex items-center px-2 py-1 sm:px-3 bg-yellow-100 text-yellow-800 text-[10px] sm:text-xs font-medium rounded-full">
-                    Search: {searchQuery}
-                  </span>
-                )}
-              </div>
-            </div>
-            <div className="text-[10px] sm:text-xs text-gray-500">
-              {reportData.length} sales · {expenses.length} expenses
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Error State */}
-      {error && !loading && (
-        <div className="rounded-xl shadow bg-white overflow-hidden mb-4">
-          <div className="p-8 sm:p-12 text-center">
-            <div className="inline-flex items-center justify-center w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-red-100 mb-4">
-              <svg className="w-5 h-5 sm:w-6 sm:h-6 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-              </svg>
-            </div>
-            <p className="text-red-600 font-medium text-sm sm:text-base">{error}</p>
+          <div className="flex gap-2 pt-2 border-t border-gray-100">
             <button
-              onClick={handleRefresh}
-              className="mt-4 px-4 py-2 bg-green-300 text-black font-bold rounded-lg text-sm hover:bg-green-400 transition-colors"
+              onClick={clearFilters}
+              className="flex-1 py-2.5 bg-gray-100 hover:bg-gray-200 text-black font-bold rounded-xl text-xs"
             >
-              Retry
+              Clear All
+            </button>
+            <button
+              onClick={exportToExcel}
+              className="flex-1 py-2.5 bg-yellow-100 hover:bg-yellow-200 text-black font-bold rounded-xl text-xs flex items-center justify-center gap-1"
+            >
+              <FiDownload className="w-3.5 h-3.5" /> Excel
+            </button>
+            <button
+              onClick={exportToPDF}
+              className="flex-1 py-2.5 bg-green-300 hover:bg-green-400 text-black font-bold rounded-xl text-xs flex items-center justify-center gap-1"
+            >
+              <FiDownload className="w-3.5 h-3.5" /> PDF
             </button>
           </div>
         </div>
       )}
 
-      {/* Loading State */}
-      {loading && (
-        <div className="rounded-xl shadow bg-white overflow-hidden p-8 sm:p-12">
-          <div className="flex flex-col items-center justify-center space-y-4">
-            <div className="animate-spin rounded-full h-8 w-8 sm:h-10 sm:w-10 border-b-2 border-green-500"></div>
-            <p className="text-gray-500 text-xs sm:text-sm">Loading profit data...</p>
-          </div>
+      {/* Active Filter Chips */}
+      {activeFilterCount > 0 && !showFilters && (
+        <div className="flex flex-wrap gap-1.5 mb-3 sm:mb-4">
+          {filter !== "today" && (
+            <span className="inline-flex items-center px-2.5 py-1 bg-green-100 text-green-800 text-[10px] font-medium rounded-full">
+              Period: {filter}
+              <button onClick={() => setFilter("today")} className="ml-1">
+                <FiX className="w-3 h-3" />
+              </button>
+            </span>
+          )}
+          {searchQuery && (
+            <span className="inline-flex items-center px-2.5 py-1 bg-yellow-100 text-yellow-800 text-[10px] font-medium rounded-full">
+              Search: {searchQuery}
+              <button onClick={() => setSearchQuery("")} className="ml-1">
+                <FiX className="w-3 h-3" />
+              </button>
+            </span>
+          )}
+          {filter === "custom" && range.from && (
+            <span className="inline-flex items-center px-2.5 py-1 bg-blue-100 text-blue-800 text-[10px] font-medium rounded-full">
+              From {dayjs(range.from).format("DD/MM")}
+              <button
+                onClick={() => setRange({ ...range, from: "" })}
+                className="ml-1"
+              >
+                <FiX className="w-3 h-3" />
+              </button>
+            </span>
+          )}
+          {filter === "custom" && range.to && (
+            <span className="inline-flex items-center px-2.5 py-1 bg-blue-100 text-blue-800 text-[10px] font-medium rounded-full">
+              To {dayjs(range.to).format("DD/MM")}
+              <button
+                onClick={() => setRange({ ...range, to: "" })}
+                className="ml-1"
+              >
+                <FiX className="w-3 h-3" />
+              </button>
+            </span>
+          )}
         </div>
       )}
 
-      {/* Table */}
-      {!loading && !error && reportData.length > 0 && (
-        <div className="rounded-xl shadow bg-white overflow-hidden">
-          <div className="overflow-x-auto">
-            <table className="min-w-full">
-              <thead>
-                <tr className="bg-gray-200">
-                  {["Date", "Item", "Qty", "Buying Price", "Selling Price", "Discount", "Profit"].map((header) => (
-                    <th
-                      key={header}
-                      className="px-2 sm:px-3 py-2 sm:py-3 text-center text-[10px] sm:text-xs font-bold text-gray-900 uppercase border-r border-gray-300 whitespace-nowrap"
-                    >
-                      {header}
-                    </th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-100">
-                {currentData.map((row, index) => (
-                  <tr
-                    key={`${row.itemName}-${row.date}-${index}`}
-                    className="hover:bg-gray-50 transition-colors"
-                  >
-                    <td className="py-2 sm:py-3 px-1 sm:px-2 text-center bg-gray-50 border-r border-gray-300">
-                      <span className="font-bold text-gray-900 text-[10px] sm:text-xs">
-                        {dayjs(row.date).format("DD/MM/YY")}
-                      </span>
-                      <span className="block text-[9px] sm:text-[10px] text-gray-500">
-                        {dayjs(row.date).format("HH:mm")}
-                      </span>
-                    </td>
-                    <td className="py-2 sm:py-3 px-1 sm:px-2 text-center bg-gray-50 border-r border-gray-200">
-                      <span className="font-bold text-gray-900 text-[10px] sm:text-xs">
-                        {row.itemName}
-                      </span>
-                    </td>
-                    <td className="py-2 sm:py-3 px-1 sm:px-2 text-center bg-green-50 border-r border-gray-200">
-                      <span className="font-bold text-gray-900 text-[10px] sm:text-xs">
-                        {row.qty}
-                      </span>
-                    </td>
-                    <td className="py-2 sm:py-3 px-1 sm:px-2 text-center border-r border-gray-200">
-                      <span className="font-bold text-gray-900 text-[10px] sm:text-xs">
-                        {row.buyingPrice.toLocaleString()}
-                      </span>
-                    </td>
-                    <td className="py-2 sm:py-3 px-1 sm:px-2 text-center border-r border-gray-200">
-                      <span className="font-bold text-gray-900 text-[10px] sm:text-xs">
-                        {row.sellingPrice.toLocaleString()}
-                      </span>
-                    </td>
-                    <td className="py-2 sm:py-3 px-1 sm:px-2 text-center bg-yellow-50 border-r border-gray-200">
-                      <span className="font-bold text-gray-900 text-[10px] sm:text-xs">
-                        {row.discount.toFixed(0)}
-                      </span>
-                    </td>
-                    <td className={`py-2 sm:py-3 px-1 sm:px-2 text-center bg-gray-50 ${getProfitColor(row.profit)}`}>
-                      <span className="font-bold text-[10px] sm:text-xs">
-                        {row.profit.toLocaleString()}
-                      </span>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-              <tfoot>
-                <tr className="bg-gradient-to-r from-green-50 to-green-100 text-xs sm:text-sm font-semibold border-t border-green-200">
-                  <td colSpan="2" className="text-right p-2 sm:p-3 pr-4 sm:pr-6 uppercase tracking-wider text-gray-700">
-                    Total Qty:
-                  </td>
-                  <td className="p-2 sm:p-3 text-right text-sm sm:text-lg font-bold text-green-600">
-                    {reportData.reduce((sum, r) => sum + r.qty, 0)}
-                  </td>
-                  <td colSpan="3" className="text-right p-2 sm:p-3 pr-4 sm:pr-6 uppercase tracking-wider text-gray-700">
-                    Gross Profit:
-                  </td>
-                  <td className={`p-2 sm:p-3 text-right text-sm sm:text-lg font-bold ${getProfitColor(totals.profit)}`}>
-                    {formatCurrency(totals.profit)}
-                  </td>
-                </tr>
-                <tr className="bg-orange-50 border-t">
-                  <td colSpan="6" className="text-right p-2 sm:p-3 font-bold text-orange-700 text-xs sm:text-sm">
-                    Expenses: ({expenses.length} records)
-                  </td>
-                  <td className="p-2 sm:p-3 text-right font-bold text-orange-700 text-xs sm:text-sm">
-                    {formatCurrency(totalExpenses)}
-                  </td>
-                </tr>
-                <tr className="bg-blue-50 border-t">
-                  <td colSpan="6" className="text-right p-2 sm:p-3 font-bold text-blue-700 text-xs sm:text-sm">
-                    Net Profit:
-                  </td>
-                  <td className={`p-2 sm:p-3 text-right font-bold text-xs sm:text-sm ${getProfitColor(finalProfit)}`}>
-                    {formatCurrency(finalProfit)}
-                  </td>
-                </tr>
-              </tfoot>
-            </table>
-          </div>
+      <Loading load={loading} />
 
-          {/* Pagination */}
-          {totalPages > 1 && (
-            <div className="flex flex-col sm:flex-row items-center justify-between gap-3 p-3 sm:p-4 border-t border-gray-300 bg-gray-50">
-              <div className="text-[10px] sm:text-xs text-gray-700 text-center sm:text-left">
-                <span className="font-bold text-gray-900">
-                  Showing {indexOfFirst + 1} to {Math.min(indexOfLast, reportData.length)}
-                </span> of <span className="font-bold text-gray-900">{reportData.length}</span> records
-              </div>
-              <div className="flex items-center gap-1">
-                <button
-                  onClick={() => currentPage > 1 && setCurrentPage(currentPage - 1)}
-                  disabled={currentPage === 1}
-                  className="p-1.5 sm:p-2 bg-gray-200 hover:bg-gray-300 text-black font-bold rounded-full disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
-                >
-                  <IoIosArrowBack className="w-3 h-3 sm:w-4 sm:h-4" />
-                </button>
-                <div className="flex items-center gap-1">
-                  {[...Array(totalPages)].map((_, i) => {
-                    const pageNum = i + 1;
-                    const isCurrent = currentPage === pageNum;
-                    const showPage =
-                      pageNum === 1 ||
-                      pageNum === totalPages ||
-                      (pageNum >= currentPage - 1 && pageNum <= currentPage + 1);
-                    if (showPage) {
-                      return (
-                        <button
-                          key={i}
-                          onClick={() => setCurrentPage(pageNum)}
-                          className={`w-7 h-7 sm:w-8 sm:h-8 text-[10px] sm:text-xs font-bold rounded-full transition-colors ${
-                            isCurrent
-                              ? "bg-green-300 text-black shadow"
-                              : "text-gray-700 hover:bg-gray-200"
-                          }`}
-                        >
-                          {pageNum}
-                        </button>
-                      );
-                    } else if (
-                      (pageNum === currentPage - 2 || pageNum === currentPage + 2) &&
-                      totalPages > 5
-                    ) {
-                      return (
-                        <span key={i} className="px-1 sm:px-2 text-gray-500 font-bold text-[10px] sm:text-xs">
-                          ...
-                        </span>
-                      );
-                    }
-                    return null;
-                  })}
+      {/* Results Count */}
+      <div className="flex items-center justify-between mb-2 px-1">
+        <p className="text-xs text-gray-500">
+          <span className="font-bold text-black">{reportData.length}</span>{" "}
+          results
+        </p>
+        <p className="text-[10px] text-gray-400">
+          Page {currentPage} of {totalPages || 1}
+        </p>
+      </div>
+
+      {/* Mobile Card View */}
+      <div className="md:hidden space-y-2 mb-4">
+        {currentData.length === 0 ? (
+          <div className="bg-white rounded-xl p-6 text-center border border-gray-200">
+            <div className="text-3xl mb-2">📊</div>
+            <p className="text-sm font-bold text-black">No profit data</p>
+            <p className="text-xs text-gray-500">Try adjusting filters</p>
+          </div>
+        ) : (
+          currentData.map((row, idx) => (
+            <div
+              key={`${row.itemName}-${row.date}-${idx}`}
+              className="bg-white rounded-xl border border-gray-200 overflow-hidden shadow-sm"
+            >
+              {/* Card Header */}
+              <div className="flex items-center justify-between p-3 bg-gray-50 border-b border-gray-100">
+                <div className="flex items-center gap-2 min-w-0">
+                  <span
+                    className={`w-2 h-2 rounded-full flex-shrink-0 ${row.profit >= 0 ? "bg-green-500" : "bg-red-500"}`}
+                  />
+                  <span className="text-xs font-bold text-black truncate">
+                    {row.itemName}
+                  </span>
                 </div>
-                <button
-                  onClick={() => currentPage < totalPages && setCurrentPage(currentPage + 1)}
-                  disabled={currentPage === totalPages}
-                  className="p-1.5 sm:p-2 bg-gray-200 hover:bg-gray-300 text-black font-bold rounded-full disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                <span className="text-[10px] text-gray-500 flex-shrink-0">
+                  {dayjs(row.date).format("DD/MM HH:mm")}
+                </span>
+              </div>
+
+              {/* Card Body */}
+              <div className="p-3 space-y-2">
+                <div className="flex justify-between text-xs">
+                  <span className="text-gray-600">Qty:</span>
+                  <span className="font-bold text-black">{row.qty}</span>
+                </div>
+                <div className="flex justify-between text-xs">
+                  <span className="text-gray-600">Buying:</span>
+                  <span className="font-bold text-red-600">
+                    {row.buyingPrice.toLocaleString()} Tsh
+                  </span>
+                </div>
+                <div className="flex justify-between text-xs">
+                  <span className="text-gray-600">Selling:</span>
+                  <span className="font-bold text-black">
+                    {row.sellingPrice.toLocaleString()} Tsh
+                  </span>
+                </div>
+                <div className="flex justify-between text-xs">
+                  <span className="text-gray-600">Discount:</span>
+                  <span className="font-bold text-yellow-600">
+                    {row.discount.toLocaleString()} Tsh
+                  </span>
+                </div>
+                <div
+                  className={`flex justify-between text-xs pt-2 border-t border-gray-100 ${getProfitColor(row.profit)}`}
                 >
-                  <IoIosArrowForward className="w-3 h-3 sm:w-4 sm:h-4" />
-                </button>
+                  <span className="font-bold">Profit:</span>
+                  <span className="font-bold">
+                    {row.profit.toLocaleString()} Tsh
+                  </span>
+                </div>
+              </div>
+
+              {/* Card Footer */}
+              <div className="flex items-center justify-between px-3 py-2 bg-gray-50 border-t border-gray-100">
+                <span className="text-[10px] text-gray-500">{row.cashier}</span>
+                <span className="text-[10px] text-gray-400">
+                  {row.customer}
+                </span>
               </div>
             </div>
-          )}
+          ))
+        )}
+      </div>
+
+      {/* Desktop Table View */}
+      <div className="hidden md:block rounded-xl shadow bg-white overflow-hidden">
+        <div className="overflow-x-auto">
+          <table className="min-w-full">
+            <thead>
+              <tr className="bg-gray-200">
+                {[
+                  "Date",
+                  "Item",
+                  "Qty",
+                  "Buying Price",
+                  "Selling Price",
+                  "Discount",
+                  "Profit",
+                ].map((header, idx) => (
+                  <th
+                    key={idx}
+                    className="px-3 py-3 text-center text-xs font-bold text-black uppercase border-r border-gray-300"
+                  >
+                    {header}
+                  </th>
+                ))}
+              </tr>
+            </thead>
+
+            <tr className="h-3" />
+
+            <tbody>
+              {currentData.length === 0 ? (
+                <tr>
+                  <td colSpan={7} className="text-center py-12">
+                    <div className="space-y-3">
+                      <div className="text-4xl">📊</div>
+                      <p className="text-lg font-bold text-black">
+                        No profit data found
+                      </p>
+                      <p className="text-gray-600 text-sm">
+                        Try selecting a different date range or clearing filters
+                      </p>
+                    </div>
+                  </td>
+                </tr>
+              ) : (
+                currentData.map((row, index) => (
+                  <React.Fragment key={`${row.itemName}-${row.date}-${index}`}>
+                    <tr className="hover:bg-gray-50 transition-colors">
+                      <td className="py-3 px-2 text-center bg-gray-200 border-r border-gray-300">
+                        <span className="font-bold text-black text-xs">
+                          {dayjs(row.date).format("DD/MM/YYYY HH:mm")}
+                        </span>
+                      </td>
+                      <td className="py-3 px-2 text-center bg-gray-100 border-r border-gray-200">
+                        <span className="font-bold text-black text-xs">
+                          {row.itemName}
+                        </span>
+                      </td>
+                      <td className="py-3 px-2 text-center bg-green-50 border-r border-gray-200">
+                        <span className="font-bold text-black text-xs">
+                          {row.qty}
+                        </span>
+                      </td>
+                      <td className="py-3 px-2 text-center border-r border-gray-200">
+                        <span className="font-bold text-red-600 text-xs">
+                          {row.buyingPrice.toLocaleString()} Tsh
+                        </span>
+                      </td>
+                      <td className="py-3 px-2 text-center border-r border-gray-200">
+                        <span className="font-bold text-black text-xs">
+                          {row.sellingPrice.toLocaleString()} Tsh
+                        </span>
+                      </td>
+                      <td className="py-3 px-2 text-center bg-yellow-50 border-r border-gray-200">
+                        <span className="font-bold text-yellow-700 text-xs">
+                          {row.discount.toLocaleString()} Tsh
+                        </span>
+                      </td>
+                      <td
+                        className={`py-3 px-2 text-center bg-gray-50 ${getProfitColor(row.profit)}`}
+                      >
+                        <span className="font-bold text-xs">
+                          {row.profit.toLocaleString()} Tsh
+                        </span>
+                      </td>
+                    </tr>
+                    <tr className="h-3">
+                      <td colSpan={7} className="p-0"></td>
+                    </tr>
+                  </React.Fragment>
+                ))
+              )}
+            </tbody>
+
+            <tfoot>
+              <tr className="bg-gradient-to-r from-green-50 to-green-100 text-sm font-semibold text-green-800 border-t border-green-200">
+                <td></td>
+                <td></td>
+                <td className="text-right p-3 pr-6 uppercase tracking-wider text-xs">
+                  Total Qty:
+                </td>
+                <td className="p-3 text-right text-lg font-bold text-green-600">
+                  {totals.qty}
+                </td>
+                <td
+                  colSpan="2"
+                  className="text-right p-3 pr-6 uppercase tracking-wider text-xs"
+                >
+                  Gross Profit:
+                </td>
+                <td
+                  className={`p-3 text-right text-lg font-bold ${getProfitColor(totals.profit)}`}
+                >
+                  {formatCurrency(totals.profit)}
+                </td>
+              </tr>
+              <tr className="bg-orange-50 border-t">
+                <td
+                  colSpan="6"
+                  className="text-right p-3 font-bold text-orange-700 text-xs"
+                >
+                  Expenses: ({expenses.length} records)
+                </td>
+                <td className="p-3 text-right font-bold text-orange-700 text-xs">
+                  {formatCurrency(totalExpenses)}
+                </td>
+              </tr>
+              <tr className="bg-blue-50 border-t">
+                <td
+                  colSpan="6"
+                  className="text-right p-3 font-bold text-blue-700 text-xs"
+                >
+                  Net Profit:
+                </td>
+                <td
+                  className={`p-3 text-right font-bold text-xs ${getProfitColor(finalProfit)}`}
+                >
+                  {formatCurrency(finalProfit)}
+                </td>
+              </tr>
+            </tfoot>
+          </table>
+        </div>
+      </div>
+
+      {/* Pagination */}
+      {totalPages > 1 && (
+        <div className="flex items-center justify-between gap-2 mt-3 sm:mt-4 p-3 bg-white rounded-xl border border-gray-200 shadow-sm">
+          <button
+            onClick={() => currentPage > 1 && setCurrentPage(currentPage - 1)}
+            disabled={currentPage === 1}
+            className="p-2 bg-gray-100 hover:bg-gray-200 text-black rounded-lg disabled:opacity-40"
+          >
+            <IoIosArrowBack className="w-4 h-4" />
+          </button>
+
+          <div className="flex items-center gap-1">
+            {[...Array(Math.min(totalPages, 5))].map((_, i) => {
+              let pageNum;
+              if (totalPages <= 5) pageNum = i + 1;
+              else if (currentPage <= 3) pageNum = i + 1;
+              else if (currentPage >= totalPages - 2)
+                pageNum = totalPages - 4 + i;
+              else pageNum = currentPage - 2 + i;
+
+              return (
+                <button
+                  key={i}
+                  onClick={() => setCurrentPage(pageNum)}
+                  className={`w-8 h-8 text-xs font-bold rounded-lg transition-colors ${currentPage === pageNum ? "bg-black text-white" : "text-gray-700 hover:bg-gray-100"}`}
+                >
+                  {pageNum}
+                </button>
+              );
+            })}
+          </div>
+
+          <button
+            onClick={() =>
+              currentPage < totalPages && setCurrentPage(currentPage + 1)
+            }
+            disabled={currentPage === totalPages}
+            className="p-2 bg-gray-100 hover:bg-gray-200 text-black rounded-lg disabled:opacity-40"
+          >
+            <IoIosArrowForward className="w-4 h-4" />
+          </button>
         </div>
       )}
 
       {/* Empty State */}
       {!loading && !error && reportData.length === 0 && (
-        <div className="rounded-xl shadow bg-white overflow-hidden">
-          <div className="text-center py-8 sm:py-12 px-4">
-            <div className="space-y-3">
-              <div className="text-3xl sm:text-4xl">📊</div>
-              <p className="text-base sm:text-lg font-bold text-gray-900">
-                No profit data found
-              </p>
-              <p className="text-gray-600 text-xs sm:text-sm">
-                Try selecting a different date range or clearing filters
-              </p>
-              <button
-                onClick={clearFilters}
-                className="mt-2 px-4 py-2 bg-green-300 hover:bg-green-400 text-black font-bold rounded-full text-xs sm:text-sm transition-colors"
-              >
-                Clear Filters
-              </button>
-            </div>
-          </div>
+        <div className="bg-white rounded-xl p-6 text-center border border-gray-200">
+          <div className="text-3xl mb-2">📊</div>
+          <p className="text-sm font-bold text-black">No profit data found</p>
+          <p className="text-xs text-gray-500">
+            Try selecting a different date range or clearing filters
+          </p>
+        </div>
+      )}
+
+      {/* Error State */}
+      {error && !loading && (
+        <div className="bg-white rounded-xl p-6 text-center border border-gray-200">
+          <div className="text-3xl mb-2">⚠️</div>
+          <p className="text-sm font-bold text-red-600">{error}</p>
+          <button
+            onClick={handleRefresh}
+            className="mt-3 px-4 py-2 bg-green-300 hover:bg-green-400 text-black font-bold rounded-full text-xs"
+          >
+            Retry
+          </button>
         </div>
       )}
     </div>
