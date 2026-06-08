@@ -8,19 +8,19 @@ import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs";
 import { LocalizationProvider } from "@mui/x-date-pickers/LocalizationProvider";
 import { DatePicker } from "@mui/x-date-pickers/DatePicker";
 
-// Icons
 import {
-  FiTruck,
-  FiFileText,
-  FiUser,
-  FiCalendar,
-  FiPackage,
-  FiEdit2,
   FiCheckCircle,
+  FiX,
+  FiPlus,
+  FiChevronDown,
+  FiChevronUp,
+  FiMonitor,
+  FiTablet,
+  FiSmartphone,
 } from "react-icons/fi";
 import { RiBillLine } from "react-icons/ri";
+import { FiPackage } from "react-icons/fi";
 
-// API & Redux
 import BASE_URL from "../../../../Utils/config";
 import { fetchSuppliers } from "../../../../Redux/suppliers";
 import { fetchProducts } from "../../../../Redux/items";
@@ -32,12 +32,14 @@ const NonPoGrn = () => {
 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [showSection2, setShowSection2] = useState(false);
+  const [showItems, setShowItems] = useState(true);
+
   const [itemHold, setItemHold] = useState(() => {
     const storedItems = localStorage.getItem("itemHold");
     return storedItems ? JSON.parse(storedItems) : [];
   });
 
-  // Form state with localStorage persistence
   const [formData, setFormData] = useState(() => {
     const stored = localStorage.getItem("nonPoGrnForm");
     return stored
@@ -53,33 +55,27 @@ const NonPoGrn = () => {
         };
   });
 
-  // Fetch initial data
   useEffect(() => {
     dispatch(fetchSuppliers());
     dispatch(fetchProducts());
   }, [dispatch]);
 
-  // Persist form data to localStorage
   useEffect(() => {
     localStorage.setItem("nonPoGrnForm", JSON.stringify(formData));
   }, [formData]);
 
-  // Persist items to localStorage
   useEffect(() => {
     localStorage.setItem("itemHold", JSON.stringify(itemHold));
   }, [itemHold]);
 
-  // Handlers
   const handleAddItem = (itemData) => {
     setItemHold((prev) => [...prev, itemData]);
+    setShowSection2(false);
   };
 
   const handleChange = (e) => {
     const { name, value } = e.target;
-    setFormData((prev) => ({
-      ...prev,
-      [name]: value,
-    }));
+    setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
   const handleReceivingDate = (date) => {
@@ -94,9 +90,8 @@ const NonPoGrn = () => {
   };
 
   const handleSubmit = async () => {
-    // Validation
     if (!formData.supplierName || !formData.receivingDate) {
-      setError("Please fill all required fields.");
+      setError("Please select supplier and date.");
       return;
     }
 
@@ -106,7 +101,7 @@ const NonPoGrn = () => {
     }
 
     const selectedSupplier = supplier.find(
-      (sup) => sup._id === formData.supplierName
+      (sup) => sup._id === formData.supplierName,
     );
 
     setLoading(true);
@@ -147,7 +142,6 @@ const NonPoGrn = () => {
       });
 
       if (response.status === 200 && response.data.success) {
-        // Reset form on success
         setFormData({
           supplierName: "",
           invoiceNumber: "",
@@ -164,18 +158,9 @@ const NonPoGrn = () => {
         throw new Error(response.data.message || "Failed to save GRN.");
       }
     } catch (error) {
-      const errorMessage =
-        error.response?.data?.message || "Tatizo katika kuhifadhi manunuzi.";
+      const errorMessage = error.response?.data?.message || "Error saving GRN.";
       setError(errorMessage);
-      toast.error(errorMessage, {
-        position: "bottom-right",
-        style: {
-          borderRadius: "12px",
-          fontSize: "16px",
-          background: "#ef4444",
-          color: "#fff",
-        },
-      });
+      toast.error(errorMessage);
     } finally {
       setLoading(false);
     }
@@ -197,150 +182,175 @@ const NonPoGrn = () => {
     setError("");
   };
 
-  const formatPriceWithCommas = (price) => {
+  const formatPrice = (price) => {
     return new Intl.NumberFormat("en-US").format(price || 0);
   };
 
-  // Validation states
-  const isSupplierValid = formData.supplierName !== "";
-  const isDateValid = formData.receivingDate !== "";
+  const totalCost = itemHold.reduce(
+    (sum, item) => sum + (item.totalCost || 0),
+    0,
+  );
+
+  // Small screen warning component
+  const SmallScreenWarning = () => (
+    <div className="fixed inset-0 z-50 bg-white flex flex-col items-center justify-center p-6 text-center">
+      <div className="mb-8 relative">
+        <div className="w-32 h-32 bg-green-400/20 rounded-full flex items-center justify-center animate-pulse">
+          <div className="w-24 h-24 bg-green-400/30 rounded-full flex items-center justify-center">
+            <FiMonitor className="text-green-400 w-12 h-12" />
+          </div>
+        </div>
+        <div className="absolute -bottom-2 -right-2 w-10 h-10 bg-red-500 rounded-full flex items-center justify-center">
+          <FiSmartphone className="text-white w-5 h-5" />
+        </div>
+      </div>
+
+      <h1 className="text-2xl font-bold text-white mb-3">Screen Too Small</h1>
+      <p className="text-gray-400 text-base mb-2 max-w-xs">
+        This page requires a larger screen to manage GRN forms properly.
+      </p>
+      <p className="text-gray-500 text-sm mb-8 max-w-xs">
+        Please use a tablet, laptop, or desktop computer for the best
+        experience.
+      </p>
+
+      <div className="flex items-center gap-4 mb-8">
+        <div className="flex flex-col items-center gap-2 opacity-50">
+          <FiSmartphone className="text-gray-500 w-8 h-8" />
+          <span className="text-xs text-gray-600">Mobile</span>
+        </div>
+        <div className="w-12 h-0.5 bg-gray-700" />
+        <div className="flex flex-col items-center gap-2">
+          <FiTablet className="text-green-400 w-8 h-8" />
+          <span className="text-xs text-green-400">Tablet+</span>
+        </div>
+        <div className="w-12 h-0.5 bg-gray-700" />
+        <div className="flex flex-col items-center gap-2">
+          <FiMonitor className="text-green-400 w-8 h-8" />
+          <span className="text-xs text-green-400">Desktop</span>
+        </div>
+      </div>
+
+      <div className="bg-gray-800/50 rounded-2xl p-4 border border-gray-700 max-w-xs">
+        <p className="text-gray-400 text-xs mb-3">Minimum recommended:</p>
+        <div className="flex items-center justify-between text-sm">
+          <span className="text-white font-medium">Screen width</span>
+          <span className="text-green-400 font-bold">768px+</span>
+        </div>
+        <div className="flex items-center justify-between text-sm mt-2">
+          <span className="text-white font-medium">Device</span>
+          <span className="text-green-400 font-bold">Tablet / PC</span>
+        </div>
+      </div>
+
+      <button
+        onClick={() => (window.location.href = "/home")}
+        className="mt-8 px-6 py-3 bg-green-400 hover:bg-green-500 text-black font-bold rounded-full transition-colors text-sm"
+      >
+        Go to Dashboard
+      </button>
+    </div>
+  );
 
   return (
-    <div className="md:flex-row gap-6 px-4 py-6">
-      {/* Header Section */}
-      <div className="mb-8">
-        <h1 className="text-2xl font-bold text-gray-900 mb-3">
-          Create Non-Purchase GRN
-        </h1>
-        <div className="flex items-center">
-          <div className="w-4 h-4 bg-green-300 rounded-full mr-3"></div>
-          <p className="text-gray-700 text-base font-medium">
-            Register goods received from suppliers without a purchase order
+    <>
+      {/* Small screen warning - shows on screens less than 768px */}
+      <div className="md:hidden">
+        <SmallScreenWarning />
+      </div>
+
+      {/* Main content - only visible on md (768px) and above */}
+      <div className="hidden md:block p-4 lg:p-6 max-w-7xl mx-auto bg-gray-50 min-h-screen">
+        {/* Header */}
+        <div className="mb-6">
+          <h1 className="text-2xl lg:text-3xl font-bold text-black">
+            Create Non-PO GRN
+          </h1>
+          <p className="text-gray-500 text-sm mt-1">
+            Goods Received Note - Register supplier deliveries
           </p>
         </div>
-      </div>
 
-      {/* Progress Indicator */}
-      <div className="mb-8 flex items-center space-x-6">
-        <div className="flex items-center">
-          <div
-            className={`w-10 h-10 rounded-full flex items-center justify-center ${
-              isSupplierValid
-                ? "bg-green-300 border-2 border-green-400"
-                : "bg-gray-200 border-2 border-gray-300"
-            }`}
-          >
-            {isSupplierValid ? (
-              <FiCheckCircle className="text-gray-900 text-lg font-bold" />
-            ) : (
-              <span className="text-gray-900 font-bold">1</span>
-            )}
-          </div>
-          <div className="ml-3">
-            <span
-              className={`font-semibold ${
-                isSupplierValid ? "text-gray-900" : "text-gray-600"
+        {/* Progress Steps */}
+        <div className="flex items-center gap-4 mb-6">
+          <div className="flex items-center gap-2">
+            <div
+              className={`w-10 h-10 rounded-full flex items-center justify-center text-sm font-bold ${
+                formData.supplierName
+                  ? "bg-green-300 text-black"
+                  : "bg-gray-200 text-gray-500"
               }`}
             >
-              Supplier Details
+              {formData.supplierName ? <FiCheckCircle size={18} /> : "1"}
+            </div>
+            <span className="text-sm font-medium text-gray-700">Details</span>
+          </div>
+          <div className="w-8 h-0.5 bg-gray-300" />
+          <div className="flex items-center gap-2">
+            <div
+              className={`w-10 h-10 rounded-full flex items-center justify-center text-sm font-bold ${
+                itemHold.length > 0
+                  ? "bg-green-300 text-black"
+                  : "bg-gray-200 text-gray-500"
+              }`}
+            >
+              {itemHold.length > 0 ? <FiCheckCircle size={18} /> : "2"}
+            </div>
+            <span className="text-sm font-medium text-gray-700">
+              Items ({itemHold.length})
             </span>
           </div>
         </div>
-        <div className="w-12 h-2 bg-gray-300"></div>
-        <div className="flex items-center">
-          <div
-            className={`w-10 h-10 rounded-full flex items-center justify-center ${
-              itemHold.length > 0
-                ? "bg-green-300 border-2 border-green-400"
-                : "bg-gray-200 border-2 border-gray-300"
-            }`}
-          >
-            {itemHold.length > 0 ? (
-              <FiCheckCircle className="text-gray-900 text-lg font-bold" />
-            ) : (
-              <span className="text-gray-900 font-bold">2</span>
-            )}
-          </div>
-          <div className="ml-3">
-            <span
-              className={`font-semibold ${
-                itemHold.length > 0 ? "text-gray-900" : "text-gray-600"
-              }`}
-            >
-              Add Items
-            </span>
-          </div>
-        </div>
-      </div>
 
-      {/* Supplier Details Section */}
-      <div className="bg-white rounded-lg border border-gray-300 mb-8 shadow-sm">
-        {/* Section Header */}
-        <div className="px-6 py-4 border-b border-gray-300 bg-gradient-to-r from-green-50 to-gray-100">
-          <div className="flex items-center">
-            <div className="w-10 h-10 bg-green-300 rounded-lg flex items-center justify-center mr-4 shadow-sm">
-              <RiBillLine className="text-gray-900 font-bold" />
-            </div>
-            <div>
-              <h2 className="text-lg font-bold text-gray-900">
-                Supplier Information
-              </h2>
-              <p className="text-gray-700 text-sm font-medium">
-                Fill in the supplier and delivery details
-              </p>
+        {/* Supplier Details - Beautiful Card Design */}
+        <div className="bg-white rounded-2xl border border-gray-200 shadow-sm mb-6 overflow-hidden">
+          <div className="p-4 lg:p-5 border-b border-gray-100 bg-gradient-to-r from-green-50 to-gray-50">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 bg-green-300 rounded-xl flex items-center justify-center shadow-sm">
+                <RiBillLine className="text-black" size={20} />
+              </div>
+              <div>
+                <h2 className="font-bold text-black text-base lg:text-lg">
+                  Supplier Information
+                </h2>
+                <p className="text-gray-500 text-xs">
+                  Fill in delivery and supplier details
+                </p>
+              </div>
             </div>
           </div>
-        </div>
 
-        {/* Form Content */}
-        <div className="p-6">
-          <div className="space-y-6">
-            {/* First Row */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              {/* Supplier Selection */}
-              <div className="space-y-2">
-                <label className="flex items-center text-sm font-semibold text-gray-900">
-                  <RiBillLine className="mr-2 text-gray-700" />
-                  Supplier <span className="text-red-500 ml-1">*</span>
+          <div className="p-4 lg:p-5 space-y-5">
+            {/* Row 1: Supplier + Date */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
+              <div>
+                <label className="block text-sm font-bold text-gray-700 mb-2">
+                  Supplier <span className="text-red-500">*</span>
                 </label>
-                <div className="relative">
-                  <select
-                    name="supplierName"
-                    onChange={handleChange}
-                    value={formData.supplierName}
-                    className={`w-full pl-10 pr-4 py-3 border ${
-                      formData.supplierName
-                        ? "border-green-300 bg-green-50"
-                        : "border-gray-300 bg-gray-100"
-                    } rounded-lg focus:ring-2 focus:ring-green-300 focus:border-green-300 font-medium text-gray-900`}
-                    required
-                  >
-                    <option value="" disabled>
-                      Select a supplier
+                <select
+                  name="supplierName"
+                  onChange={handleChange}
+                  value={formData.supplierName}
+                  className={`w-full px-4 py-3 border rounded-xl text-base focus:outline-none focus:ring-2 focus:ring-green-200 appearance-none ${
+                    formData.supplierName
+                      ? "border-green-300 bg-green-50"
+                      : "border-gray-300 bg-white"
+                  }`}
+                >
+                  <option value="" disabled>
+                    Select a supplier
+                  </option>
+                  {supplier.map((s) => (
+                    <option key={s._id} value={s._id}>
+                      {s.supplierName}
                     </option>
-                    {supplier.map((s) => (
-                      <option key={s._id} value={s._id} className="font-medium">
-                        {s.supplierName}
-                      </option>
-                    ))}
-                  </select>
-                  <div className="absolute left-3 top-1/2 transform -translate-y-1/2">
-                    <RiBillLine
-                      className={`${
-                        formData.supplierName
-                          ? "text-gray-900"
-                          : "text-gray-600"
-                      }`}
-                    />
-                  </div>
-                </div>
+                  ))}
+                </select>
               </div>
 
-              {/* Receiving Date */}
-              <div className="space-y-2">
-                <label className="flex items-center text-sm font-semibold text-gray-900">
-                  <FiCalendar className="mr-2 text-gray-700" />
-                  Receiving Date <span className="text-red-500 ml-1">*</span>
+              <div>
+                <label className="block text-sm font-bold text-gray-700 mb-2">
+                  Receiving Date <span className="text-red-500">*</span>
                 </label>
                 <LocalizationProvider dateAdapter={AdapterDayjs}>
                   <DatePicker
@@ -352,26 +362,13 @@ const NonPoGrn = () => {
                       textField: {
                         fullWidth: true,
                         size: "small",
-                        error: !formData.receivingDate,
-                        helperText: !formData.receivingDate ? "Required" : "",
-                      },
-                    }}
-                    sx={{
-                      "& .MuiOutlinedInput-root": {
-                        borderRadius: "0.5rem",
-                        height: "44px",
-                        backgroundColor: "#f9fafb",
-                        "&:hover .MuiOutlinedInput-notchedOutline": {
-                          borderColor: "#86efac",
+                        sx: {
+                          "& .MuiOutlinedInput-root": {
+                            borderRadius: "0.75rem",
+                            height: "50px",
+                            fontSize: "16px",
+                          },
                         },
-                        "&.Mui-focused .MuiOutlinedInput-notchedOutline": {
-                          borderColor: "#86efac",
-                          borderWidth: "2px",
-                        },
-                      },
-                      "& .MuiInputBase-input": {
-                        color: "#1f2937",
-                        fontWeight: "500",
                       },
                     }}
                   />
@@ -379,146 +376,99 @@ const NonPoGrn = () => {
               </div>
             </div>
 
-            {/* Document Numbers Row */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              {/* Invoice Number */}
-              <div className="space-y-2">
-                <label className="flex items-center text-sm font-semibold text-gray-900">
-                  <FiFileText className="mr-2 text-gray-700" />
+            {/* Row 2: Invoice + LPO */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
+              <div>
+                <label className="block text-sm font-bold text-gray-700 mb-2">
                   Invoice Number
                 </label>
-                <div className="relative">
-                  <input
-                    type="text"
-                    name="invoiceNumber"
-                    value={formData.invoiceNumber}
-                    onChange={handleChange}
-                    className="w-full pl-10 pr-4 py-3 border border-gray-300 bg-gray-100 rounded-lg focus:ring-2 focus:ring-green-300 focus:border-green-300 font-medium text-gray-900"
-                    placeholder="INV-2023-001"
-                  />
-                  <div className="absolute left-3 top-1/2 transform -translate-y-1/2">
-                    <FiFileText className="text-gray-600" />
-                  </div>
-                </div>
+                <input
+                  type="text"
+                  name="invoiceNumber"
+                  value={formData.invoiceNumber}
+                  onChange={handleChange}
+                  className="w-full px-4 py-3 border border-gray-300 rounded-xl text-base focus:outline-none focus:ring-2 focus:ring-green-200"
+                  placeholder="INV-2024-001"
+                />
               </div>
-
-              {/* LPO Number */}
-              <div className="space-y-2">
-                <label className="flex items-center text-sm font-semibold text-gray-900">
-                  <FiFileText className="mr-2 text-gray-700" />
+              <div>
+                <label className="block text-sm font-bold text-gray-700 mb-2">
                   LPO Number
                 </label>
-                <div className="relative">
-                  <input
-                    type="text"
-                    name="lpoNumber"
-                    value={formData.lpoNumber}
-                    onChange={handleChange}
-                    className="w-full pl-10 pr-4 py-3 border border-gray-300 bg-gray-100 rounded-lg focus:ring-2 focus:ring-green-300 focus:border-green-300 font-medium text-gray-900"
-                    placeholder="LPO-2023-001"
-                  />
-                  <div className="absolute left-3 top-1/2 transform -translate-y-1/2">
-                    <FiFileText className="text-gray-600" />
-                  </div>
-                </div>
+                <input
+                  type="text"
+                  name="lpoNumber"
+                  value={formData.lpoNumber}
+                  onChange={handleChange}
+                  className="w-full px-4 py-3 border border-gray-300 rounded-xl text-base focus:outline-none focus:ring-2 focus:ring-green-200"
+                  placeholder="LPO-2024-001"
+                />
               </div>
             </div>
 
-            {/* Delivery Information Row */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              {/* Delivery Person */}
-              <div className="space-y-2">
-                <label className="flex items-center text-sm font-semibold text-gray-900">
-                  <FiUser className="mr-2 text-gray-700" />
+            {/* Row 3: Delivery Person + Note */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
+              <div>
+                <label className="block text-sm font-bold text-gray-700 mb-2">
                   Delivery Person
                 </label>
-                <div className="relative">
-                  <input
-                    type="text"
-                    name="deliveryPerson"
-                    value={formData.deliveryPerson}
-                    onChange={handleChange}
-                    className="w-full pl-10 pr-4 py-3 border border-gray-300 bg-gray-100 rounded-lg focus:ring-2 focus:ring-green-300 focus:border-green-300 font-medium text-gray-900"
-                    placeholder="Eddward Mwakayebe"
-                  />
-                  <div className="absolute left-3 top-1/2 transform -translate-y-1/2">
-                    <FiUser className="text-gray-600" />
-                  </div>
-                </div>
+                <input
+                  type="text"
+                  name="deliveryPerson"
+                  value={formData.deliveryPerson}
+                  onChange={handleChange}
+                  className="w-full px-4 py-3 border border-gray-300 rounded-xl text-base focus:outline-none focus:ring-2 focus:ring-green-200"
+                  placeholder="John Doe"
+                />
               </div>
-
-              {/* Delivery Note Number */}
-              <div className="space-y-2">
-                <label className="flex items-center text-sm font-semibold text-gray-900">
-                  <FiTruck className="mr-2 text-gray-700" />
+              <div>
+                <label className="block text-sm font-bold text-gray-700 mb-2">
                   Delivery Note No.
                 </label>
-                <div className="relative">
-                  <input
-                    type="text"
-                    name="deliveryNumber"
-                    value={formData.deliveryNumber}
-                    onChange={handleChange}
-                    className="w-full pl-10 pr-4 py-3 border border-gray-300 bg-gray-100 rounded-lg focus:ring-2 focus:ring-green-300 focus:border-green-300 font-medium text-gray-900"
-                    placeholder="DN-2023-001"
-                  />
-                  <div className="absolute left-3 top-1/2 transform -translate-y-1/2">
-                    <FiTruck className="text-gray-600" />
-                  </div>
-                </div>
+                <input
+                  type="text"
+                  name="deliveryNumber"
+                  value={formData.deliveryNumber}
+                  onChange={handleChange}
+                  className="w-full px-4 py-3 border border-gray-300 rounded-xl text-base focus:outline-none focus:ring-2 focus:ring-green-200"
+                  placeholder="DN-2024-001"
+                />
               </div>
             </div>
 
             {/* Description */}
-            <div className="space-y-2">
-              <label className="flex items-center text-sm font-semibold text-gray-900">
-                <FiEdit2 className="mr-2 text-gray-700" />
-                Description
+            <div>
+              <label className="block text-sm font-bold text-gray-700 mb-2">
+                Description / Notes
               </label>
-              <div className="relative">
-                <textarea
-                  name="description"
-                  value={formData.description}
-                  onChange={handleChange}
-                  rows={4}
-                  className="w-full pl-10 pr-4 py-3 border border-gray-300 bg-gray-100 rounded-lg focus:ring-2 focus:ring-green-300 focus:border-green-300 font-medium text-gray-900 resize-none"
-                  placeholder="Enter any additional notes or description..."
-                />
-                <div className="absolute left-3 top-3">
-                  <FiEdit2 className="text-gray-600" />
-                </div>
-              </div>
+              <textarea
+                name="description"
+                value={formData.description}
+                onChange={handleChange}
+                rows={3}
+                className="w-full px-4 py-3 border border-gray-300 rounded-xl text-base focus:outline-none focus:ring-2 focus:ring-green-200 resize-none"
+                placeholder="Additional notes about this delivery..."
+              />
             </div>
           </div>
-        </div>
 
-        {/* Form Status */}
-        <div className="px-6 py-4 border-t border-gray-300 bg-gray-100">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-6">
-              <div className="flex items-center">
+          {/* Form Footer */}
+          <div className="px-4 lg:px-5 py-3 border-t border-gray-100 bg-gray-50 flex items-center justify-between">
+            <div className="flex items-center gap-4">
+              <div className="flex items-center gap-1.5">
                 <div
-                  className={`w-3 h-3 rounded-full mr-3 ${
-                    isSupplierValid ? "bg-green-400" : "bg-gray-400"
-                  }`}
-                ></div>
-                <span className="text-sm text-gray-900 font-medium">
-                  Supplier selected
-                </span>
+                  className={`w-2.5 h-2.5 rounded-full ${formData.supplierName ? "bg-green-400" : "bg-gray-400"}`}
+                />
+                <span className="text-xs text-gray-600">Supplier</span>
               </div>
-              <div className="flex items-center">
+              <div className="flex items-center gap-1.5">
                 <div
-                  className={`w-3 h-3 rounded-full mr-3 ${
-                    isDateValid ? "bg-green-400" : "bg-gray-400"
-                  }`}
-                ></div>
-                <span className="text-sm text-gray-900 font-medium">
-                  Date selected
-                </span>
+                  className={`w-2.5 h-2.5 rounded-full ${formData.receivingDate ? "bg-green-400" : "bg-gray-400"}`}
+                />
+                <span className="text-xs text-gray-600">Date</span>
               </div>
             </div>
             <button
-              type="button"
               onClick={() => {
                 setFormData({
                   supplierName: "",
@@ -530,375 +480,196 @@ const NonPoGrn = () => {
                   receivingDate: new Date().toISOString().split("T")[0],
                 });
               }}
-              className="px-4 py-2 text-sm text-gray-900 font-medium hover:text-gray-700 hover:bg-gray-200 rounded transition-colors border border-gray-300"
+              className="text-xs font-medium text-gray-600 px-3 py-2 rounded-lg hover:bg-gray-200 transition-colors"
             >
               Clear Form
             </button>
           </div>
         </div>
-      </div>
 
-      {/* Add Items Section */}
-      <div className="mb-8">
-        <div className="bg-white rounded-lg border border-gray-300 shadow-sm">
-          <div className="px-6 py-4 border-b border-gray-300 bg-gradient-to-r from-green-50 to-gray-100">
-            <div className="flex items-center">
-              <div className="w-10 h-10 bg-green-300 rounded-lg flex items-center justify-center mr-4 shadow-sm">
-                <span className="text-gray-900 font-bold">2</span>
-              </div>
+        {/* Add Items Toggle */}
+        <button
+          onClick={() => setShowSection2(!showSection2)}
+          className="w-full mb-5 py-4 bg-green-300 hover:bg-green-400 text-black font-bold rounded-xl flex items-center justify-center gap-2 transition-colors text-base"
+        >
+          <FiPlus size={20} />
+          {showSection2 ? "Close Add Items" : "Add Items"}
+          <span className="bg-black text-white text-xs px-2.5 py-1 rounded-full ml-2">
+            {itemHold.length}
+          </span>
+        </button>
+
+        {/* Section 2 */}
+        {showSection2 && (
+          <div className="bg-white rounded-2xl border border-gray-200 shadow-sm mb-5 overflow-hidden">
+            <div className="p-4 lg:p-5">
+              <Section2 onAddItem={handleAddItem} />
+            </div>
+          </div>
+        )}
+
+        {/* Items Summary */}
+        {itemHold.length > 0 && (
+          <div
+            className="bg-green-50 border border-green-200 rounded-xl p-4 mb-5 flex items-center justify-between cursor-pointer hover:bg-green-100 transition-colors"
+            onClick={() => setShowItems(!showItems)}
+          >
+            <div className="flex items-center gap-3">
+              <FiPackage className="text-green-600" size={24} />
               <div>
-                <h2 className="text-lg font-bold text-gray-900">Add Items</h2>
-                <p className="text-gray-700 text-sm font-medium">
-                  Add products received in this delivery
+                <p className="text-base font-bold text-black">
+                  {itemHold.length} items added
+                </p>
+                <p className="text-sm text-gray-600">
+                  Total cost: Tsh {formatPrice(totalCost)}
                 </p>
               </div>
             </div>
-          </div>
-          <div className="p-6">
-            <Section2 onAddItem={handleAddItem} />
-          </div>
-        </div>
-      </div>
-
-      {/* Items Summary */}
-      {itemHold.length > 0 && (
-        <div className="mb-6 bg-gradient-to-r from-gray-100 to-green-100 rounded-lg p-5 border border-green-400 shadow-sm">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center">
-              <div className="w-12 h-12 bg-gray-100 rounded-lg flex items-center justify-center shadow-sm mr-4 border border-gray-300">
-                <FiPackage className="text-2xl text-gray-900 font-bold" />
-              </div>
-              <div>
-                <h3 className="font-bold text-gray-900 text-lg">
-                  Items Ready for Submission
-                </h3>
-                <p className="text-gray-900 font-medium">
-                  Review before creating GRN
-                </p>
-              </div>
-            </div>
-            <div className="flex items-center space-x-8">
-              <div className="text-center">
-                <div className="text-sm text-gray-900 font-medium">
-                  Total Items
-                </div>
-                <div className="text-2xl font-bold text-gray-900">
-                  {itemHold.length}
-                </div>
-              </div>
-              <div className="text-center">
-                <div className="text-sm text-gray-900 font-medium">
-                  Total Cost
-                </div>
-                <div className="text-2xl font-bold text-gray-900">
-                  {formatPriceWithCommas(
-                    itemHold.reduce(
-                      (sum, item) => sum + (item.totalCost || 0),
-                      0
-                    )
-                  )}
-                </div>
-              </div>
+            <div className="flex items-center gap-3">
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setItemHold([]);
+                }}
+                className="text-sm font-medium text-red-600 px-3 py-2 rounded-lg hover:bg-red-50 transition-colors"
+              >
+                Clear All
+              </button>
+              {showItems ? (
+                <FiChevronUp className="text-gray-500" size={20} />
+              ) : (
+                <FiChevronDown className="text-gray-500" size={20} />
+              )}
             </div>
           </div>
-        </div>
-      )}
+        )}
 
-      {/* Items Table (UNCHANGED) */}
-      <div
-        style={{ maxHeight: "500px" }}
-        className="mx-auto rounded-md border-2 border-gray-300 mt-10 max-h-96 px-4 py-6 sm:px-6 lg:px-8 shadow-sm overflow-x-auto bg-gray-50"
-      >
-        <div className="">
-          <table className="min-w-full leading-normal table-fixed">
-            <thead>
-              <tr>
-                <th className="px-5 py-3 border-b-2 border-gray-300 bg-gray-200 text-xs font-bold text-gray-900 uppercase tracking-wider">
-                  (S/N)
-                </th>
-
-                <th className="px-5 py-3 border-b-2 border-gray-300 bg-gray-200 text-xs font-bold text-gray-900 uppercase tracking-wider">
-                  Product Name
-                </th>
-
-                <th className="px-5 py-3 border-b-2 border-gray-300 bg-gray-200 text-xs font-bold text-gray-900 uppercase tracking-wider">
-                  Previous Balnce
-                </th>
-
-                <th className="px-5 py-3 border-b-2 border-gray-300 bg-gray-200 text-xs font-bold text-gray-900 uppercase tracking-wider">
-                  New Balance
-                </th>
-
-                <th className="px-5 py-3 border-b-2 border-gray-300 bg-gray-200 text-xs font-bold text-gray-900 uppercase tracking-wider">
-                  Buying Price
-                </th>
-
-                <th className="px-5 py-3 border-b-2 border-gray-300 bg-gray-200 text-xs font-bold text-gray-900 uppercase tracking-wider">
-                  Total Buying Price
-                </th>
-
-                <th className="px-5 py-3 border-b-2 border-gray-300 bg-gray-200 text-xs font-bold text-gray-900 uppercase tracking-wider">
-                  Previous Price
-                </th>
-
-                <th className="px-5 py-3 border-b-2 border-gray-300 bg-gray-200 text-xs font-bold text-gray-900 uppercase tracking-wider">
-                  New Price
-                </th>
-
-                <th className="px-5 py-3 border-b-2 border-gray-300 bg-gray-200 text-xs font-bold text-gray-900 uppercase tracking-wider">
-                  Receiving Date
-                </th>
-
-                <th className="px-5 py-3 border-b-2 border-gray-300 bg-gray-200 text-xs font-bold text-gray-900 uppercase tracking-wider">
-                  Expiring Date
-                </th>
-
-                <th className="px-5 py-3 border-b-2 border-gray-300 bg-gray-200 text-xs font-bold text-gray-900 uppercase tracking-wider">
-                  Remove
-                </th>
-              </tr>
-
-              <tr className="h-4" />
-            </thead>
-
-            <tbody>
-              <>
-                {Array.isArray(itemHold) &&
-                  itemHold.map((item, index) => (
-                    <>
-                      <tr
-                        key={item._id}
-                        className="h-16 border-gray-400 shadow-sm bg-gray-100"
+        {/* Items Table */}
+        {itemHold.length > 0 && showItems && (
+          <div className="bg-white rounded-2xl border border-gray-200 shadow-sm mb-5 overflow-hidden">
+            <div className="overflow-x-auto">
+              <table className="min-w-full">
+                <thead>
+                  <tr className="bg-gray-100">
+                    {[
+                      "#",
+                      "Product",
+                      "Qty",
+                      "Buy Price",
+                      "Total",
+                      "Sell Price",
+                      "Mfg Date",
+                      "Exp Date",
+                      "",
+                    ].map((h) => (
+                      <th
+                        key={h}
+                        className="px-4 py-3 text-left text-xs font-bold text-black uppercase tracking-wider"
                       >
-                        <td className="py-2 px-3 font-medium text-base border-x hover:bg-gray-200">
-                          <div className="flex justify-center">
-                            <div className="ml-3">
-                              <p className="text-gray-900 whitespace-no-wrap font-bold capitalize bg-green-300 rounded-full flex items-center justify-center h-8 w-8">
-                                {index + 1}
-                              </p>
-                            </div>
-                          </div>
-                        </td>
-
-                        <td
-                          className={`py-2 px-3 font-medium text-base border-x ${
-                            index == 0
-                              ? "border-t border-gray-300"
-                              : index == item?.length
-                              ? "border-y border-gray-300"
-                              : "border-t border-gray-300"
-                          } hover:bg-gray-200`}
+                        {h}
+                      </th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {itemHold.map((item, index) => (
+                    <tr
+                      key={index}
+                      className="border-b border-gray-100 hover:bg-gray-50 transition-colors"
+                    >
+                      <td className="px-4 py-3">
+                        <span className="w-8 h-8 bg-green-300 rounded-full flex items-center justify-center text-xs font-bold text-black">
+                          {index + 1}
+                        </span>
+                      </td>
+                      <td className="px-4 py-3 font-medium text-sm text-black">
+                        {item.name}
+                      </td>
+                      <td className="px-4 py-3 text-sm text-black">
+                        {formatPrice(item.quantity)}
+                      </td>
+                      <td className="px-4 py-3 text-sm text-black">
+                        Tsh {formatPrice(item.buyingPrice)}
+                      </td>
+                      <td className="px-4 py-3 text-sm font-bold text-black">
+                        Tsh {formatPrice(item.totalCost)}
+                      </td>
+                      <td className="px-4 py-3 text-sm text-black">
+                        Tsh {formatPrice(item.sellingPrice)}
+                      </td>
+                      <td className="px-4 py-3 text-sm text-gray-600">
+                        {item.manufactureDate || "—"}
+                      </td>
+                      <td className="px-4 py-3 text-sm text-gray-600">
+                        {item.expiryDate || "—"}
+                      </td>
+                      <td className="px-4 py-3">
+                        <button
+                          onClick={() => removeItem(item)}
+                          className="p-2 text-red-500 hover:text-red-700 rounded-lg hover:bg-red-50 transition-colors"
                         >
-                          <div className="flex">
-                            <span className="relative inline-block px-3 py-1 font-semibold capitalize leading-tight">
-                              <span
-                                aria-hidden
-                                className="absolute inset-0 opacity-50 rounded-full"
-                              />
-                              <span className="relative text-gray-900 font-medium">
-                                {item.name}
-                              </span>
-                            </span>
-                          </div>
-                        </td>
-
-                        <td className="py-2 px-3 font-medium text-base border-x hover:bg-gray-200 whitespace-nowrap overflow-hidden overflow-ellipsis max-w-[200px]">
-                          <div className="items-center text-center">
-                            <div className="ml-3">
-                              <p className="text-gray-900 whitespace-no-wrap font-semibold capitalize">
-                                {formatPriceWithCommas(item.previousQuantity)}
-                              </p>
-                            </div>
-                          </div>
-                        </td>
-
-                        <td className="py-2 px-3 font-medium text-base border-x hover:bg-gray-200">
-                          <div className="items-center text-center">
-                            <div className="ml-3">
-                              <p className="text-gray-900 whitespace-nowrap font-semibold capitalize">
-                                {formatPriceWithCommas(
-                                  (Number(item.quantity) || 0) +
-                                    (Number(item.billedAmount) || 0)
-                                )}
-                              </p>
-                            </div>
-                          </div>
-                        </td>
-
-                        <td className="py-2 px-3 font-medium text-base border-x hover:bg-gray-200">
-                          <div className="items-center text-center">
-                            <div className="ml-3">
-                              <p className="text-gray-900 whitespace-no-wrap font-semibold capitalize">
-                                {formatPriceWithCommas(item.buyingPrice)}
-                              </p>
-                            </div>
-                          </div>
-                        </td>
-
-                        <td className="py-2 px-3 font-medium text-base border-x hover:bg-gray-200">
-                          <div className="items-center text-center">
-                            <div className="ml-3">
-                              <p className="text-gray-900 whitespace-no-wrap font-semibold capitalize">
-                                {formatPriceWithCommas(item.totalCost)}
-                              </p>
-                            </div>
-                          </div>
-                        </td>
-
-                        <td className="py-2 px-3 font-medium text-base border-x hover:bg-gray-200 whitespace-nowrap overflow-hidden overflow-ellipsis max-w-[200px]">
-                          <div className="items-center text-center">
-                            <div className="ml-3">
-                              <p className="text-gray-900 whitespace-no-wrap font-semibold capitalize">
-                                {formatPriceWithCommas(item.previousPrice)}
-                              </p>
-                            </div>
-                          </div>
-                        </td>
-
-                        <td className="py-2 px-3 font-medium text-base border-x hover:bg-gray-200">
-                          <div className="items-center text-center">
-                            <div className="ml-3">
-                              <p className="text-gray-900 whitespace-no-wrap font-semibold capitalize">
-                                {formatPriceWithCommas(item.sellingPrice)}
-                              </p>
-                            </div>
-                          </div>
-                        </td>
-
-                        <td className="py-2 px-3 font-medium text-base border-x hover:bg-gray-200">
-                          <div className="items-center text-center">
-                            <div className="ml-3">
-                              <p className="text-gray-900 whitespace-no-wrap font-semibold capitalize">
-                                {item.manufactureDate}
-                              </p>
-                            </div>
-                          </div>
-                        </td>
-
-                        <td className="py-2 px-3 font-medium text-base border-x hover:bg-gray-200">
-                          <div className="items-center text-center">
-                            <div className="ml-3">
-                              <p className="text-gray-900 whitespace-no-wrap font-semibold capitalize">
-                                {item.expiryDate}
-                              </p>
-                            </div>
-                          </div>
-                        </td>
-
-                        <td className="py-2 px-3 font-medium text-base border-x hover:bg-gray-200">
-                          <div className="flex justify-center">
-                            <button
-                              type="button"
-                              onClick={() => removeItem(item)}
-                            >
-                              <span className="relative inline-block px-3 py-1 font-semibold text-gray-900 leading-tight">
-                                <span
-                                  aria-hidden
-                                  className="absolute inset-0 opacity-50 rounded-full"
-                                />
-                                <span className="relative text-3xl">
-                                  <MdDeleteForever />
-                                </span>
-                              </span>
-                            </button>
-                          </div>
-                        </td>
-                      </tr>
-                      <tr className="h-4" />
-                    </>
+                          <MdDeleteForever size={20} />
+                        </button>
+                      </td>
+                    </tr>
                   ))}
-              </>
-            </tbody>
-          </table>
-        </div>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        )}
+
+        {/* Error */}
+        {error && (
+          <div className="mb-5 p-4 bg-red-50 border border-red-200 rounded-xl flex items-center gap-3">
+            <FiX className="text-red-500 flex-shrink-0" size={20} />
+            <p className="text-sm text-red-700 font-medium">{error}</p>
+          </div>
+        )}
 
         {/* Action Buttons */}
-        <div className="mt-8 pt-6 border-t border-gray-300">
-          {error && (
-            <div className="mb-6 p-4 bg-red-50 border border-red-300 rounded-lg">
-              <div className="flex items-center">
-                <svg
-                  className="w-5 h-5 text-red-500 mr-3"
-                  fill="currentColor"
-                  viewBox="0 0 20 20"
-                >
+        <div className="flex gap-4 pb-6">
+          <button
+            onClick={handleCancel}
+            className="px-6 py-4 border border-gray-300 text-black font-medium rounded-xl hover:bg-gray-100 transition-colors text-base"
+          >
+            Cancel
+          </button>
+          <button
+            onClick={handleSubmit}
+            disabled={loading || itemHold.length === 0}
+            className="flex-1 px-6 py-4 bg-green-300 text-black font-bold rounded-xl hover:bg-green-400 disabled:opacity-50 disabled:cursor-not-allowed transition-colors text-base flex items-center justify-center gap-2"
+          >
+            {loading ? (
+              <>
+                <svg className="animate-spin h-5 w-5" viewBox="0 0 24 24">
+                  <circle
+                    className="opacity-25"
+                    cx="12"
+                    cy="12"
+                    r="10"
+                    stroke="currentColor"
+                    strokeWidth="4"
+                    fill="none"
+                  />
                   <path
-                    fillRule="evenodd"
-                    d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z"
-                    clipRule="evenodd"
+                    className="opacity-75"
+                    fill="currentColor"
+                    d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
                   />
                 </svg>
-                <p className="text-red-700 font-semibold">{error}</p>
-              </div>
-            </div>
-          )}
-
-          <div className="flex flex-col md:flex-row md:items-center md:justify-between space-y-4 md:space-y-0">
-            <div>
-              <button
-                type="button"
-                onClick={handleCancel}
-                className="px-6 py-3 border border-gray-300 text-gray-900 font-semibold rounded-lg hover:bg-gray-200 transition-colors"
-              >
-                Cancel
-              </button>
-            </div>
-
-            <div className="flex items-center space-x-8">
-              <button
-                type="submit"
-                className="px-8 py-3 bg-green-300 text-gray-900 font-bold rounded-lg hover:bg-green-400 disabled:opacity-50 disabled:cursor-not-allowed transition-colors min-w-[180px] shadow-sm"
-                onClick={handleSubmit}
-                disabled={loading || itemHold.length === 0}
-              >
-                {loading ? (
-                  <span className="flex items-center justify-center">
-                    <svg
-                      className="animate-spin -ml-1 mr-3 h-5 w-5 text-gray-900"
-                      xmlns="http://www.w3.org/2000/svg"
-                      fill="none"
-                      viewBox="0 0 24 24"
-                    >
-                      <circle
-                        className="opacity-25"
-                        cx="12"
-                        cy="12"
-                        r="10"
-                        stroke="currentColor"
-                        strokeWidth="4"
-                      ></circle>
-                      <path
-                        className="opacity-75"
-                        fill="currentColor"
-                        d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                      ></path>
-                    </svg>
-                    Creating GRN...
-                  </span>
-                ) : (
-                  <span className="flex items-center justify-center">
-                    <svg
-                      className="w-5 h-5 mr-2"
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M5 13l4 4L19 7"
-                      />
-                    </svg>
-                    Submit GRN
-                  </span>
-                )}
-              </button>
-            </div>
-          </div>
+                Saving...
+              </>
+            ) : (
+              <>
+                <FiCheckCircle size={20} />
+                Submit GRN
+              </>
+            )}
+          </button>
         </div>
       </div>
-    </div>
+    </>
   );
 };
 

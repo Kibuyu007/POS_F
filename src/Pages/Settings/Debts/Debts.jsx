@@ -1,3 +1,4 @@
+import React from "react";
 import axios from "axios";
 import { useEffect, useState } from "react";
 import { IoIosArrowBack, IoIosArrowForward } from "react-icons/io";
@@ -9,7 +10,8 @@ import Loading from "../../../Components/Shared/Loading";
 import BASE_URL from "../../../Utils/config";
 import AddDebt from "./AddDebt";
 import toast from "react-hot-toast";
-import { FiEdit, FiCheck, FiX } from "react-icons/fi";
+import { FiEdit, FiCheck, FiX, FiSearch } from "react-icons/fi";
+import { FaFilter } from "react-icons/fa";
 import { useSelector } from "react-redux";
 
 const Debts = () => {
@@ -23,13 +25,13 @@ const Debts = () => {
   const [openAdd, setOpenAdd] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const [debtStatusFilter, setDebtStatusFilter] = useState("all");
-  const [paymentStatusFilter, setPaymentStatusFilter] = useState("not_paid"); // New state
+  const [paymentStatusFilter, setPaymentStatusFilter] = useState("not_paid");
   const [editingStatusId, setEditingStatusId] = useState(null);
   const [tempStatus, setTempStatus] = useState("");
   const [statusUpdating, setStatusUpdating] = useState(false);
+  const [showFilters, setShowFilters] = useState(false);
   const itemsPerPage = 10;
 
-  // Define available debt status options
   const debtStatusOptions = [
     { value: "Asset", label: "Asset", color: "bg-red-200 text-red-800" },
     {
@@ -39,7 +41,6 @@ const Debts = () => {
     },
   ];
 
-  // Payment status options
   const paymentStatusOptions = [
     { value: "all", label: "All" },
     { value: "not_paid", label: "Not yet Paid" },
@@ -52,7 +53,13 @@ const Debts = () => {
 
   useEffect(() => {
     setCurrentPage(1);
-  }, [customerFilter, startDate, endDate, debtStatusFilter, paymentStatusFilter]); // Added paymentStatusFilter
+  }, [
+    customerFilter,
+    startDate,
+    endDate,
+    debtStatusFilter,
+    paymentStatusFilter,
+  ]);
 
   const fetchDebts = async () => {
     setLoad(true);
@@ -121,16 +128,15 @@ const Debts = () => {
         `${BASE_URL}/api/debts/updateDebt/${debtId}`,
         {
           debtStatus: tempStatus,
-        }
+        },
       );
 
       toast.success(res.data.message || "Status updated successfully");
 
-      // Update local state
       setDebts((prevDebts) =>
         prevDebts.map((debt) =>
-          debt._id === debtId ? { ...debt, debtStatus: tempStatus } : debt
-        )
+          debt._id === debtId ? { ...debt, debtStatus: tempStatus } : debt,
+        ),
       );
 
       setEditingStatusId(null);
@@ -145,15 +151,12 @@ const Debts = () => {
     }
   };
 
-  // Check if user has add permission
   const canChangeDebtStatus = user?.roles?.canChangeDebtStatus === true;
-
-  // Check if user has edit permission
   const canPayDebts = user?.roles?.canPayDebt === true;
 
   const filteredData = debts.filter((d) => {
     if (!d.createdAt) return false;
-    
+
     const date = dayjs(d.createdAt);
     const matchStart = startDate
       ? date.isSameOrAfter(dayjs(startDate), "day")
@@ -168,32 +171,35 @@ const Debts = () => {
       : true;
     const matchDebtStatus =
       debtStatusFilter === "all" ? true : d.debtStatus === debtStatusFilter;
-    
-    // Payment status filter logic
+
     let matchPaymentStatus = true;
     if (paymentStatusFilter === "not_paid") {
       matchPaymentStatus = (d.remainingAmount || 0) > 0;
     } else if (paymentStatusFilter === "fully_paid") {
       matchPaymentStatus = (d.remainingAmount || 0) <= 0;
     }
-    // If paymentStatusFilter is "all", matchPaymentStatus remains true
-    
-    return matchStart && matchEnd && matchCustomer && matchDebtStatus && matchPaymentStatus;
+
+    return (
+      matchStart &&
+      matchEnd &&
+      matchCustomer &&
+      matchDebtStatus &&
+      matchPaymentStatus
+    );
   });
 
   const totalDebt = filteredData.reduce(
     (sum, d) => sum + (d.totalAmount || 0),
-    0
+    0,
   );
   const totalRemaining = filteredData.reduce(
     (sum, d) => sum + (d.remainingAmount || 0),
-    0
+    0,
   );
   const totalPaid = totalDebt - totalRemaining;
   const paidDebts = filteredData.filter((d) => d.remainingAmount <= 0).length;
   const pendingDebts = filteredData.filter((d) => d.remainingAmount > 0).length;
 
-  // Get unique debt statuses for filter dropdown
   const uniqueDebtStatuses = [
     ...new Set(debts.map((d) => d.debtStatus).filter(Boolean)),
   ];
@@ -203,152 +209,197 @@ const Debts = () => {
 
   const currentList = filteredData.slice(
     (currentPage - 1) * itemsPerPage,
-    currentPage * itemsPerPage
+    currentPage * itemsPerPage,
   );
 
+  const activeFilterCount = [
+    debtStatusFilter !== "all",
+    paymentStatusFilter !== "not_paid",
+    startDate,
+    endDate,
+    customerFilter,
+  ].filter(Boolean).length;
+
+  const clearFilters = () => {
+    setCustomerFilter("");
+    setStartDate(null);
+    setEndDate(null);
+    setDebtStatusFilter("all");
+    setPaymentStatusFilter("not_paid");
+    setCurrentPage(1);
+  };
+
   return (
-    <div className="p-5 bg-gray-50 min-h-screen">
-      {/* Header */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between mb-8">
-        <div>
-          <h1 className="text-3xl font-bold text-black mb-2">
+    <div className="p-2 sm:p-3 md:p-4 lg:p-5 bg-gray-50 min-h-screen">
+      {/* Header - rounded-full */}
+      <div className="flex items-center justify-between mb-3 sm:mb-4">
+        <div className="min-w-0 flex-1">
+          <h1 className="text-lg sm:text-xl md:text-2xl font-bold text-black">
             Debts Management
           </h1>
-          <p className="text-gray-600">
-            Track and manage all customer debts in one place
+          <p className="text-gray-600 text-xs hidden sm:block">
+            Track and manage all customer debts
           </p>
         </div>
         <button
           onClick={() => setOpenAdd(true)}
-          className="mt-4 md:mt-0 px-6 py-3 bg-green-300 hover:bg-green-400 text-black font-bold rounded-full shadow-md hover:shadow-lg transition-all duration-200"
+          className="px-3 sm:px-4 py-2 sm:py-2.5 bg-green-300 hover:bg-green-400 text-black font-bold rounded-full shadow-md hover:shadow-lg transition-all duration-200 flex items-center gap-1.5 sm:gap-2 text-xs sm:text-sm flex-shrink-0"
         >
-          + Add New Debt
+          <span className="hidden sm:inline">+ Add New Debt</span>
+          <span className="sm:hidden">+</span>
         </button>
       </div>
 
-      {/* Stats Section - Horizontal Bar */}
-      <div className="mb-8">
-        <div className="flex flex-col sm:flex-row items-center justify-between bg-white border border-gray-200 rounded-full p-5 shadow-sm">
-          <div className="flex items-center gap-2 mb-4 sm:mb-0">
-            <div className="text-center px-4">
-              <p className="text-xs text-gray-500 font-medium">Total</p>
-              <p className="text-lg font-bold text-black">
-                Tsh {totalDebt.toLocaleString()}
-              </p>
-            </div>
-
-            <div className="h-10 w-px bg-gray-300"></div>
-
-            <div className="text-center px-4">
-              <p className="text-xs text-gray-500 font-medium">Pending</p>
-              <p className="text-lg font-bold text-red-600">
-                Tsh {totalRemaining.toLocaleString()}
-              </p>
-            </div>
-
-            <div className="h-10 w-px bg-gray-300"></div>
-
-            <div className="text-center px-4">
-              <p className="text-xs text-gray-500 font-medium">Paid</p>
-              <p className="text-lg font-bold text-green-600">
-                Tsh {totalPaid.toLocaleString()}
-              </p>
-            </div>
-          </div>
-
-          <div className="flex items-center gap-4">
-            <div className="flex items-center gap-2">
-              <div className="w-3 h-3 bg-red-500 rounded-full"></div>
-              <span className="text-sm font-medium text-gray-700">
-                Pending:{" "}
-              </span>
-              <span className="font-bold text-black">{pendingDebts}</span>
-            </div>
-
-            <div className="h-4 w-px bg-gray-300"></div>
-
-            <div className="flex items-center gap-2">
-              <div className="w-3 h-3 bg-green-500 rounded-full"></div>
-              <span className="text-sm font-medium text-gray-700">Paid: </span>
-              <span className="font-bold text-black">{paidDebts}</span>
-            </div>
-          </div>
+      {/* Stats Cards - rounded-full */}
+      <div className="grid grid-cols-3 gap-2 mb-3 sm:mb-4">
+        <div className="bg-white border border-gray-200 rounded-full p-2.5 sm:p-3 shadow-sm text-center">
+          <p className="text-[10px] sm:text-xs text-gray-500 font-medium mb-0.5">
+            Total
+          </p>
+          <p className="text-xs sm:text-sm md:text-base font-bold text-black truncate">
+            {totalDebt.toLocaleString()}
+          </p>
+          <p className="text-[9px] text-gray-400">Tsh</p>
+        </div>
+        <div className="bg-white border border-gray-200 rounded-full p-2.5 sm:p-3 shadow-sm text-center">
+          <p className="text-[10px] sm:text-xs text-gray-500 font-medium mb-0.5">
+            Pending
+          </p>
+          <p className="text-xs sm:text-sm md:text-base font-bold text-red-600 truncate">
+            {totalRemaining.toLocaleString()}
+          </p>
+          <p className="text-[9px] text-gray-400">Tsh</p>
+        </div>
+        <div className="bg-white border border-gray-200 rounded-full p-2.5 sm:p-3 shadow-sm text-center">
+          <p className="text-[10px] sm:text-xs text-gray-500 font-medium mb-0.5">
+            Paid
+          </p>
+          <p className="text-xs sm:text-sm md:text-base font-bold text-green-600 truncate">
+            {totalPaid.toLocaleString()}
+          </p>
+          <p className="text-[9px] text-gray-400">Tsh</p>
         </div>
       </div>
 
-      {/* Filters Section */}
-      <div className="mb-8 rounded-2xl p-5 shadow-md">
-        <div className="grid grid-cols-1 lg:grid-cols-5 gap-5">
-          {/* Search Input */}
-          <div className="lg:col-span-1">
-            <label className="block text-sm font-bold text-gray-700 mb-2">
-              Search Customer
-            </label>
-            <div className="relative">
-              <div className="absolute inset-y-0 left-3 flex items-center">
-                <svg
-                  className="w-5 h-5 text-gray-400"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
-                  />
-                </svg>
-              </div>
-              <input
-                type="text"
-                placeholder="Name or phone number..."
-                value={customerFilter}
-                onChange={(e) => setCustomerFilter(e.target.value)}
-                className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-full bg-white text-black focus:border-green-300 focus:outline-none focus:ring-1 focus:ring-green-200"
-              />
-            </div>
+      {/* Search Bar + Filter Toggle - rounded-full */}
+      <div className="flex gap-2 mb-3 sm:mb-4">
+        <div className="flex-1 relative">
+          <div className="absolute inset-y-0 left-3 sm:left-4 flex items-center">
+            <FiSearch className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-gray-400" />
+          </div>
+          <input
+            type="text"
+            placeholder="Search customer..."
+            value={customerFilter}
+            onChange={(e) => setCustomerFilter(e.target.value)}
+            className="w-full pl-9 sm:pl-11 pr-8 py-2.5 sm:py-3 text-sm border border-gray-300 rounded-full bg-white text-black focus:border-green-300 focus:outline-none focus:ring-2 focus:ring-green-100"
+          />
+          {customerFilter && (
+            <button
+              onClick={() => setCustomerFilter("")}
+              className="absolute inset-y-0 right-3 flex items-center text-gray-400"
+            >
+              <FiX className="w-4 h-4" />
+            </button>
+          )}
+        </div>
+        <button
+          onClick={() => setShowFilters(!showFilters)}
+          className={`px-3 sm:px-4 py-2.5 rounded-full border font-bold text-sm flex items-center gap-1.5 flex-shrink-0 transition-all ${
+            showFilters || activeFilterCount > 0
+              ? "bg-green-300 border-green-400 text-black"
+              : "bg-white border-gray-300 text-gray-700"
+          }`}
+        >
+          <FaFilter className="w-3.5 h-3.5" />
+          <span className="hidden sm:inline">Filters</span>
+          {activeFilterCount > 0 && (
+            <span className="bg-black text-white text-[10px] w-5 h-5 rounded-full flex items-center justify-center">
+              {activeFilterCount}
+            </span>
+          )}
+        </button>
+      </div>
+
+      {/* Status Pills - rounded-full */}
+      <div className="flex gap-2 mb-3 sm:mb-4 overflow-x-auto pb-1 scrollbar-hide">
+        {paymentStatusOptions.map((option) => (
+          <button
+            key={option.value}
+            onClick={() => setPaymentStatusFilter(option.value)}
+            className={`px-4 sm:px-5 py-2 rounded-full text-xs font-bold whitespace-nowrap transition-all flex-shrink-0 ${
+              paymentStatusFilter === option.value
+                ? "bg-black text-white shadow-md"
+                : "bg-white border border-gray-200 text-gray-600"
+            }`}
+          >
+            {option.label}
+            <span className="ml-1.5 opacity-70">
+              {option.value === "all"
+                ? filteredData.length
+                : option.value === "not_paid"
+                  ? pendingDebts
+                  : paidDebts}
+            </span>
+          </button>
+        ))}
+      </div>
+
+      {/* Expandable Filters Panel - rounded-full */}
+      {showFilters && (
+        <div className="bg-white rounded-full p-3 sm:p-4 shadow-lg border border-gray-100 mb-3 sm:mb-4 space-y-3">
+          <div className="flex items-center justify-between mb-2">
+            <h3 className="text-sm font-bold text-black">Advanced Filters</h3>
+            <button
+              onClick={() => setShowFilters(false)}
+              className="text-gray-400"
+            >
+              <FiX className="w-5 h-5" />
+            </button>
           </div>
 
-          {/* Date Range */}
-          <div className="lg:col-span-2">
-            <label className="block text-sm font-bold text-gray-700 mb-2">
-              Date Range
-            </label>
-            <div className="flex gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div>
+              <label className="block text-xs font-bold text-gray-700 mb-1.5">
+                From Date
+              </label>
               <LocalizationProvider dateAdapter={AdapterDayjs}>
                 <DatePicker
-                  label="From"
                   value={startDate}
                   onChange={setStartDate}
                   slotProps={{
                     textField: {
                       size: "small",
+                      fullWidth: true,
                       sx: {
                         "& .MuiOutlinedInput-root": {
-                          borderRadius: "9999px",
+                          borderRadius: "10px",
+                          fontSize: "13px",
                         },
                       },
-                      className: "w-full bg-white",
                     },
                   }}
                 />
               </LocalizationProvider>
-
+            </div>
+            <div>
+              <label className="block text-xs font-bold text-gray-700 mb-1.5">
+                To Date
+              </label>
               <LocalizationProvider dateAdapter={AdapterDayjs}>
                 <DatePicker
-                  label="To"
                   value={endDate}
                   onChange={setEndDate}
                   slotProps={{
                     textField: {
                       size: "small",
+                      fullWidth: true,
                       sx: {
                         "& .MuiOutlinedInput-root": {
-                          borderRadius: "9999px",
+                          borderRadius: "10px",
+                          fontSize: "13px",
                         },
                       },
-                      className: "w-full bg-white",
                     },
                   }}
                 />
@@ -356,15 +407,14 @@ const Debts = () => {
             </div>
           </div>
 
-          {/* Debt Status Filter */}
-          <div className="lg:col-span-1">
-            <label className="block text-sm font-bold text-gray-700 mb-2">
+          <div>
+            <label className="block text-xs font-bold text-gray-700 mb-1.5">
               Debt Status
             </label>
             <select
               value={debtStatusFilter}
               onChange={(e) => setDebtStatusFilter(e.target.value)}
-              className="w-full px-4 py-3 border border-gray-300 rounded-full bg-white text-black focus:border-green-300 focus:outline-none focus:ring-1 focus:ring-green-200"
+              className="w-full px-3 py-2.5 text-sm border border-gray-300 rounded-full bg-white focus:border-green-300 focus:outline-none"
             >
               <option value="all">All Statuses</option>
               {uniqueDebtStatuses.map((status) => (
@@ -375,358 +425,491 @@ const Debts = () => {
             </select>
           </div>
 
-          {/* Payment Status Filter - NEW */}
-          <div className="lg:col-span-1">
-            <label className="block text-sm font-bold text-gray-700 mb-2">
-              Payment Status
-            </label>
-            <select
-              value={paymentStatusFilter}
-              onChange={(e) => setPaymentStatusFilter(e.target.value)}
-              className="w-full px-4 py-3 border border-gray-300 rounded-full bg-white text-black focus:border-green-300 focus:outline-none focus:ring-1 focus:ring-green-200"
-            >
-              {paymentStatusOptions.map((option) => (
-                <option key={option.value} value={option.value}>
-                  {option.label}
-                </option>
-              ))}
-            </select>
-          </div>
-
-          {/* Clear Button */}
-          <div className="lg:col-span-5 flex justify-end">
+          <div className="flex gap-2 pt-2 border-t border-gray-100">
             <button
-              onClick={() => {
-                setCustomerFilter("");
-                setStartDate(null);
-                setEndDate(null);
-                setDebtStatusFilter("all");
-                setPaymentStatusFilter("not_paid"); // Reset to default
-              }}
-              className="px-5 py-3 bg-gray-200 hover:bg-gray-300 text-black font-bold rounded-full transition-colors whitespace-nowrap"
+              onClick={clearFilters}
+              className="flex-1 py-2.5 bg-gray-100 hover:bg-gray-200 text-black font-bold rounded-full text-xs"
             >
-              Clear Filters
+              Clear All
             </button>
           </div>
         </div>
-      </div>
+      )}
 
-      {/* Loading */}
+      {/* Active Filter Chips - rounded-full */}
+      {activeFilterCount > 0 && !showFilters && (
+        <div className="flex flex-wrap gap-1.5 mb-3 sm:mb-4">
+          {debtStatusFilter !== "all" && (
+            <span className="inline-flex items-center px-2.5 py-1 bg-red-100 text-red-800 text-[10px] font-medium rounded-full">
+              {debtStatusFilter}
+              <button
+                onClick={() => setDebtStatusFilter("all")}
+                className="ml-1"
+              >
+                <FiX className="w-3 h-3" />
+              </button>
+            </span>
+          )}
+          {paymentStatusFilter !== "not_paid" && (
+            <span className="inline-flex items-center px-2.5 py-1 bg-green-100 text-green-800 text-[10px] font-medium rounded-full">
+              {
+                paymentStatusOptions.find(
+                  (o) => o.value === paymentStatusFilter,
+                )?.label
+              }
+              <button
+                onClick={() => setPaymentStatusFilter("not_paid")}
+                className="ml-1"
+              >
+                <FiX className="w-3 h-3" />
+              </button>
+            </span>
+          )}
+          {startDate && (
+            <span className="inline-flex items-center px-2.5 py-1 bg-blue-100 text-blue-800 text-[10px] font-medium rounded-full">
+              From {dayjs(startDate).format("DD/MM")}
+              <button onClick={() => setStartDate(null)} className="ml-1">
+                <FiX className="w-3 h-3" />
+              </button>
+            </span>
+          )}
+          {endDate && (
+            <span className="inline-flex items-center px-2.5 py-1 bg-blue-100 text-blue-800 text-[10px] font-medium rounded-full">
+              To {dayjs(endDate).format("DD/MM")}
+              <button onClick={() => setEndDate(null)} className="ml-1">
+                <FiX className="w-3 h-3" />
+              </button>
+            </span>
+          )}
+          {customerFilter && (
+            <span className="inline-flex items-center px-2.5 py-1 bg-yellow-100 text-yellow-800 text-[10px] font-medium rounded-full">
+              {customerFilter}
+              <button onClick={() => setCustomerFilter("")} className="ml-1">
+                <FiX className="w-3 h-3" />
+              </button>
+            </span>
+          )}
+        </div>
+      )}
+
       <Loading load={load} />
 
-      {/* Table with Colored Columns */}
-      <div className="overflow-x-auto rounded-xl">
-        <table className="min-w-full">
-          <thead>
-            <tr className="bg-gray-200">
-              {[
-                "SN",
-                "Date",
-                "Customer",
-                "Phone",
-                "Total",
-                "Remaining",
-                "Status",
-                "Change Status",
-                "Deduct",
-                "Action",
-              ].map((h) => (
-                <th
-                  key={h}
-                  className="px-6 py-4 text-center text-sm font-bold text-black uppercase tracking-wider border-b-2 border-gray-400"
-                >
-                  {h}
-                </th>
-              ))}
-            </tr>
-          </thead>
+      {/* Results Count */}
+      <div className="flex items-center justify-between mb-2 px-1">
+        <p className="text-xs text-gray-500">
+          <span className="font-bold text-black">{filteredData.length}</span>{" "}
+          results
+        </p>
+        <p className="text-[10px] text-gray-400">
+          Page {currentPage} of {totalPages || 1}
+        </p>
+      </div>
 
-          <tr className="h-3" />
+      {/* Mobile Card View - NO rounded-full, use rounded-xl */}
+      <div className="md:hidden space-y-2 mb-4">
+        {currentList.length === 0 ? (
+          <div className="bg-white rounded-xl p-6 text-center border border-gray-200">
+            <div className="text-3xl mb-2">📋</div>
+            <p className="text-sm font-bold text-black">No debts found</p>
+            <p className="text-xs text-gray-500">Try adjusting filters</p>
+          </div>
+        ) : (
+          currentList.map((d, idx) => {
+            const isEditing = editingStatusId === d._id;
 
-          <tbody>
-            {currentList.length === 0 ? (
-              <tr>
-                <td colSpan={10} className="text-center py-12">
-                  <div className="space-y-3">
-                    <div className="text-4xl">📋</div>
-                    <p className="text-xl font-bold text-black">
-                      No debts found
-                    </p>
-                    <p className="text-gray-600">
-                      Try adjusting your search filters
-                    </p>
+            return (
+              <div
+                key={d._id}
+                className="bg-white rounded-xl border border-gray-200 overflow-hidden shadow-sm"
+              >
+                {/* Card Header */}
+                <div className="flex items-center justify-between p-3 bg-gray-50 border-b border-gray-100">
+                  <div className="flex items-center gap-2 min-w-0">
+                    <span className="inline-flex items-center justify-center w-7 h-7 bg-green-300 text-black font-bold rounded-full text-xs flex-shrink-0">
+                      {(currentPage - 1) * itemsPerPage + idx + 1}
+                    </span>
+                    <span className="text-xs font-bold text-black truncate">
+                      {d.customerName || "—"}
+                    </span>
                   </div>
-                </td>
-              </tr>
-            ) : (
-              currentList.map((d, idx) => (
-                <>
-                  <tr
-                    key={d._id}
-                    className="hover:bg-gray-50 transition-colors shadow-md"
+                  <span
+                    className={`inline-block px-2.5 py-1 font-bold rounded-full text-[10px] flex-shrink-0 ${
+                      d.remainingAmount > 0
+                        ? "bg-red-100 text-red-700"
+                        : "bg-green-300 text-green-900"
+                    }`}
                   >
-                    {/* SN Column - Green 300 */}
-                    <td className="py-4 px-3 text-center border-r border-gray-300 bg-gray-200">
-                      <span className="inline-flex items-center justify-center w-10 h-10 bg-green-300 text-black font-bold rounded-full shadow">
-                        {(currentPage - 1) * itemsPerPage + idx + 1}
-                      </span>
-                    </td>
+                    {d.remainingAmount > 0 ? "Pending" : "Paid"}
+                  </span>
+                </div>
 
-                    {/* Date Column - Gray 200 */}
-                    <td className="py-4 px-3 text-center bg-gray-100 border-r border-gray-200">
-                      <span className="font-bold text-black">
-                        {d.createdAt
-                          ? dayjs(d.createdAt).format("DD/MM/YYYY")
-                          : "—"}
-                      </span>
-                    </td>
-
-                    {/* Customer Column - Green 200 */}
-                    <td className="py-4 px-3 text-center bg-green-200 border-r border-gray-200">
-                      <span className="font-bold text-black">
-                        {d.customerName || "—"}
-                      </span>
-                    </td>
-
-                    {/* Phone Column - Gray 200 */}
-                    <td className="py-4 px-3 text-center bg-gray-200 border-r border-gray-200">
-                      <span className="font-bold text-black">
-                        {d.phone || "—"}
-                      </span>
-                    </td>
-
-                    {/* Total Column - Yellow 100 */}
-                    <td className="py-4 px-3 text-center bg-yellow-100 border-r border-gray-200">
-                      <span className="font-bold text-black">
-                        Tsh {(d.totalAmount || 0).toLocaleString()}
-                      </span>
-                    </td>
-
-                    {/* Remaining Column - Gray 100 */}
-                    <td className="py-4 px-3 text-center bg-gray-100 border-r border-gray-200">
-                      <span
-                        className={`inline-block px-4 py-2 font-bold rounded-full ${
-                          d.remainingAmount > 0
-                            ? "bg-red-100 text-red-700"
-                            : "bg-green-300 text-green-900"
-                        }`}
-                      >
-                        Tsh {(d.remainingAmount || 0).toLocaleString()}
-                      </span>
-                    </td>
-
-                    {/* Status Column - Display only */}
-                    <td className="py-4 px-3 text-center bg-gray-50 border-r border-gray-200">
-                      <span
-                        className={`px-4 py-2 rounded-full text-sm font-bold text-black
-                        ${
-                          d.debtStatus === "Asset"
-                            ? "bg-yellow-100"
-                            : d.debtStatus === "Liability"
-                            ? "bg-red-200"
-                            : "bg-gray-200"
-                        }`}
-                      >
-                        {d.debtStatus}
-                      </span>
-                    </td>
-
-                    {/* Change Status Column - Edit functionality */}
-                    <td className="py-4 px-3 text-center bg-blue-50 border-r border-gray-200">
-                      {editingStatusId === d._id   && canChangeDebtStatus ? (
-                        <div className="space-y-2">
-                          <select
-                            value={tempStatus}
-                            onChange={(e) => setTempStatus(e.target.value)}
-                            className="w-full px-3 py-2 border border-blue-300 rounded-full bg-white text-black focus:outline-none focus:border-blue-400"
-                            disabled={statusUpdating}
-                          >
-                            {debtStatusOptions.map((option) => (
-                              <option key={option.value} value={option.value}>
-                                {option.label}
-                              </option>
-                            ))}
-                          </select>
-                          <div className="flex justify-center gap-2">
-                            <button
-                              onClick={() => handleStatusUpdate(d._id)}
-                              disabled={statusUpdating}
-                              className="px-3 py-1 bg-green-300 hover:bg-green-400 text-black font-bold rounded-full flex items-center gap-1 text-sm transition-colors disabled:opacity-50 min-w-[80px] justify-center"
-                            >
-                              {statusUpdating ? (
-                                <svg
-                                  className="animate-spin h-3 w-3 text-black"
-                                  xmlns="http://www.w3.org/2000/svg"
-                                  fill="none"
-                                  viewBox="0 0 24 24"
-                                >
-                                  <circle
-                                    className="opacity-25"
-                                    cx="12"
-                                    cy="12"
-                                    r="10"
-                                    stroke="currentColor"
-                                    strokeWidth="4"
-                                  ></circle>
-                                  <path
-                                    className="opacity-75"
-                                    fill="currentColor"
-                                    d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                                  ></path>
-                                </svg>
-                              ) : (
-                                <FiCheck className="w-3 h-3" />
-                              )}
-                              Save
-                            </button>
-                            <button
-                              onClick={handleStatusCancel}
-                              disabled={statusUpdating}
-                              className="px-3 py-1 bg-gray-300 hover:bg-gray-400 text-black font-bold rounded-full flex items-center gap-1 text-sm transition-colors min-w-[80px] justify-center"
-                            >
-                              <FiX className="w-3 h-3" />
-                              Cancel
-                            </button>
-                          </div>
-                        </div>
-                      ) : (
-                        <button
-                          onClick={() => handleStatusEdit(d)}
-                          className="px-4 py-2 bg-blue-100 hover:bg-blue-200 text-blue-800 font-bold rounded-full flex items-center gap-2 justify-center transition-colors"
-                          disabled={
-                            editingStatusId !== null &&
-                            editingStatusId !== d._id
-                          }
+                {/* Card Body */}
+                <div className="p-3 space-y-2">
+                  <div className="flex justify-between text-xs">
+                    <span className="text-gray-500">Date:</span>
+                    <span className="font-bold text-black">
+                      {d.createdAt
+                        ? dayjs(d.createdAt).format("DD/MM/YY")
+                        : "—"}
+                    </span>
+                  </div>
+                  <div className="flex justify-between text-xs">
+                    <span className="text-gray-500">Phone:</span>
+                    <span className="font-bold text-black">
+                      {d.phone || "—"}
+                    </span>
+                  </div>
+                  <div className="flex justify-between text-xs">
+                    <span className="text-gray-500">Total:</span>
+                    <span className="font-bold text-black">
+                      Tsh {(d.totalAmount || 0).toLocaleString()}
+                    </span>
+                  </div>
+                  <div className="flex justify-between text-xs">
+                    <span className="text-gray-500">Remaining:</span>
+                    <span className="font-bold text-red-600">
+                      Tsh {(d.remainingAmount || 0).toLocaleString()}
+                    </span>
+                  </div>
+                  <div className="flex justify-between text-xs items-center">
+                    <span className="text-gray-500">Status:</span>
+                    {isEditing && canChangeDebtStatus ? (
+                      <div className="flex items-center gap-1">
+                        <select
+                          value={tempStatus}
+                          onChange={(e) => setTempStatus(e.target.value)}
+                          className="px-2 py-1 text-xs border border-blue-300 rounded-full bg-white"
+                          disabled={statusUpdating}
                         >
-                          <FiEdit className="w-4 h-4" />
-                          Change
+                          {debtStatusOptions.map((opt) => (
+                            <option key={opt.value} value={opt.value}>
+                              {opt.label}
+                            </option>
+                          ))}
+                        </select>
+                        <button
+                          onClick={() => handleStatusUpdate(d._id)}
+                          disabled={statusUpdating}
+                          className="p-1 bg-green-300 rounded-full"
+                        >
+                          <FiCheck className="w-3 h-3" />
                         </button>
-                      )}
-                    </td>
-
-                    {/* Deduct Column - Green 200 */}
-                    <td className="py-4 px-3 text-center bg-green-200 border-r border-gray-200">
-                      <div className="flex justify-center">
-                        <div className="relative">
-                          <span className="absolute left-3 top-2.5 text-gray-600 font-medium">
-                            Tsh
-                          </span>
-                          <input
-                            type="number"
-                            value={deductions[d._id] || ""}
-                            onChange={(e) =>
-                              setDeductions({
-                                ...deductions,
-                                [d._id]: e.target.value,
-                              })
-                            }
-                            className="w-48 pl-12 pr-4 py-2.5 border border-gray-300 rounded-full bg-white text-black font-medium focus:border-green-300 focus:outline-none"
-                            placeholder="0.00"
-                            max={d.remainingAmount}
-                            min="0"
-                            disabled={editingStatusId === d._id}
-                          />
-                        </div>
+                        <button
+                          onClick={handleStatusCancel}
+                          disabled={statusUpdating}
+                          className="p-1 bg-gray-300 rounded-full"
+                        >
+                          <FiX className="w-3 h-3" />
+                        </button>
                       </div>
-                    </td>
+                    ) : (
+                      <span
+                        className={`px-2.5 py-1 rounded-full text-[10px] font-bold ${
+                          d.debtStatus === "Asset"
+                            ? "bg-red-100 text-red-800"
+                            : "bg-yellow-100 text-yellow-800"
+                        }`}
+                      >
+                        {d.debtStatus || "—"}
+                      </span>
+                    )}
+                  </div>
 
-                    {/* Action Column - Gray 100 */}
-                    <td className="py-4 px-3 text-center bg-gray-100">
-                      {d.remainingAmount > 0 ? (
-                        canPayDebts ? (
+                  {/* Pay Section */}
+                  {d.remainingAmount > 0 && (
+                    <div className="pt-2 border-t border-gray-100">
+                      {canPayDebts ? (
+                        <div className="flex gap-2">
+                          <div className="relative flex-1">
+                            <span className="absolute left-3 top-2 text-[10px] text-gray-500 font-bold">
+                              Tsh
+                            </span>
+                            <input
+                              type="number"
+                              value={deductions[d._id] || ""}
+                              onChange={(e) =>
+                                setDeductions({
+                                  ...deductions,
+                                  [d._id]: e.target.value,
+                                })
+                              }
+                              className="w-full pl-10 pr-3 py-2 rounded-full border border-gray-300 text-sm focus:outline-none focus:border-green-300"
+                              placeholder="0.00"
+                            />
+                          </div>
                           <button
                             onClick={() => handlePay(d)}
                             disabled={
                               !deductions[d._id] ||
-                              parseFloat(deductions[d._id]) <= 0 ||
-                              editingStatusId === d._id
+                              parseFloat(deductions[d._id]) <= 0
                             }
-                            className={`px-6 py-2.5 font-bold rounded-full transition-all ${
-                              deductions[d._id] &&
-                              parseFloat(deductions[d._id]) > 0 &&
-                              editingStatusId !== d._id
-                                ? "bg-yellow-100 hover:bg-yellow-200 text-black shadow hover:shadow-md"
-                                : "bg-gray-300 text-gray-500 cursor-not-allowed"
-                            }`}
+                            className="px-4 py-2 bg-yellow-100 hover:bg-yellow-200 text-black font-bold rounded-full text-xs disabled:bg-gray-200 disabled:text-gray-500"
                           >
-                            Pay Now
+                            Pay
                           </button>
-                        ) : (
-                          <span className="inline-flex items-center px-6 py-2.5 bg-gray-300 text-gray-600 font-bold rounded-full">
-                            Not Allowed
-                          </span>
-                        )
+                        </div>
                       ) : (
-                        <span className="inline-flex items-center px-6 py-2.5 bg-green-300 text-black font-bold rounded-full shadow">
-                          Fully Paid
+                        <span className="inline-flex items-center px-3 py-1 bg-gray-200 text-gray-500 text-xs font-bold rounded-full">
+                          Not Allowed
                         </span>
                       )}
-                    </td>
-                  </tr>
-                  {/* Spacing row between rows */}
-                  <tr className="h-3">
-                    <td colSpan={10} className="p-0"></td>
-                  </tr>
-                </>
-              ))
-            )}
-          </tbody>
-        </table>
+                    </div>
+                  )}
+                  {d.remainingAmount <= 0 && (
+                    <div className="pt-2 border-t border-gray-100 text-center">
+                      <span className="inline-flex items-center px-3 py-1 bg-green-300 text-black text-xs font-bold rounded-full">
+                        Fully Paid
+                      </span>
+                    </div>
+                  )}
+                </div>
+              </div>
+            );
+          })
+        )}
       </div>
 
-      {/* Pagination */}
-      <div className="flex flex-col sm:flex-row items-center justify-between gap-4 mt-8 pt-6 border-t border-gray-300">
-        <div className="text-sm text-gray-700">
-          <span className="font-bold text-black">
-            Showing {(currentPage - 1) * itemsPerPage + 1} to{" "}
-            {Math.min(currentPage * itemsPerPage, totalItems)}
-          </span>{" "}
-          of <span className="font-bold text-black">{totalItems}</span> debts
-        </div>
+      {/* Desktop Table View - NO rounded-full, use rounded-xl */}
+      <div className="hidden md:block rounded-xl shadow bg-white overflow-hidden">
+        <div className="overflow-x-auto">
+          <table className="min-w-full">
+            <thead>
+              <tr className="bg-gray-200">
+                {[
+                  "SN",
+                  "Date",
+                  "Customer",
+                  "Phone",
+                  "Total",
+                  "Remaining",
+                  "Status",
+                  "Change",
+                  "Deduct",
+                  "Action",
+                ].map((h) => (
+                  <th
+                    key={h}
+                    className="px-3 py-3 text-center text-xs font-bold text-black uppercase border-r border-gray-300"
+                  >
+                    {h}
+                  </th>
+                ))}
+              </tr>
+            </thead>
 
-        <div className="flex items-center gap-2">
+            <tr className="h-3" />
+
+            <tbody>
+              {currentList.length === 0 ? (
+                <tr>
+                  <td colSpan={10} className="text-center py-12">
+                    <div className="space-y-3">
+                      <div className="text-4xl">📋</div>
+                      <p className="text-lg font-bold text-black">
+                        No debts found
+                      </p>
+                      <p className="text-gray-600 text-sm">
+                        Try adjusting your search filters
+                      </p>
+                    </div>
+                  </td>
+                </tr>
+              ) : (
+                currentList.map((d, idx) => {
+                  const isEditing = editingStatusId === d._id;
+
+                  return (
+                    <React.Fragment key={d._id}>
+                      <tr className="hover:bg-gray-50 transition-colors shadow-md">
+                        <td className="py-3 px-2 text-center border-r border-gray-300 bg-gray-200">
+                          <span className="inline-flex items-center justify-center w-8 h-8 bg-green-300 text-black font-bold rounded-full text-xs shadow">
+                            {(currentPage - 1) * itemsPerPage + idx + 1}
+                          </span>
+                        </td>
+                        <td className="py-3 px-2 text-center bg-gray-100 border-r border-gray-200">
+                          <span className="font-bold text-black text-xs">
+                            {d.createdAt
+                              ? dayjs(d.createdAt).format("DD/MM/YYYY")
+                              : "—"}
+                          </span>
+                        </td>
+                        <td className="py-3 px-2 text-center bg-green-200 border-r border-gray-200">
+                          <span className="font-bold text-black text-xs">
+                            {d.customerName || "—"}
+                          </span>
+                        </td>
+                        <td className="py-3 px-2 text-center bg-gray-200 border-r border-gray-200">
+                          <span className="font-bold text-black text-xs">
+                            {d.phone || "—"}
+                          </span>
+                        </td>
+                        <td className="py-3 px-2 text-center bg-yellow-100 border-r border-gray-200">
+                          <span className="font-bold text-black text-xs">
+                            Tsh {(d.totalAmount || 0).toLocaleString()}
+                          </span>
+                        </td>
+                        <td className="py-3 px-2 text-center bg-gray-100 border-r border-gray-200">
+                          <span
+                            className={`inline-block px-3 py-1 font-bold rounded-full text-xs ${
+                              d.remainingAmount > 0
+                                ? "bg-red-100 text-red-700"
+                                : "bg-green-300 text-green-900"
+                            }`}
+                          >
+                            Tsh {(d.remainingAmount || 0).toLocaleString()}
+                          </span>
+                        </td>
+                        <td className="py-3 px-2 text-center bg-gray-50 border-r border-gray-200">
+                          <span
+                            className={`px-3 py-1 rounded-full text-xs font-bold ${
+                              d.debtStatus === "Asset"
+                                ? "bg-red-100 text-red-800"
+                                : "bg-yellow-100 text-yellow-800"
+                            }`}
+                          >
+                            {d.debtStatus || "—"}
+                          </span>
+                        </td>
+                        <td className="py-3 px-2 text-center bg-blue-50 border-r border-gray-200">
+                          {isEditing && canChangeDebtStatus ? (
+                            <div className="space-y-2">
+                              <select
+                                value={tempStatus}
+                                onChange={(e) => setTempStatus(e.target.value)}
+                                className="w-full px-2 py-1 text-xs border border-blue-300 rounded-full bg-white"
+                                disabled={statusUpdating}
+                              >
+                                {debtStatusOptions.map((opt) => (
+                                  <option key={opt.value} value={opt.value}>
+                                    {opt.label}
+                                  </option>
+                                ))}
+                              </select>
+                              <div className="flex justify-center gap-1">
+                                <button
+                                  onClick={() => handleStatusUpdate(d._id)}
+                                  disabled={statusUpdating}
+                                  className="p-1 bg-green-300 rounded-full"
+                                >
+                                  <FiCheck className="w-3 h-3" />
+                                </button>
+                                <button
+                                  onClick={handleStatusCancel}
+                                  disabled={statusUpdating}
+                                  className="p-1 bg-gray-300 rounded-full"
+                                >
+                                  <FiX className="w-3 h-3" />
+                                </button>
+                              </div>
+                            </div>
+                          ) : (
+                            <button
+                              onClick={() => handleStatusEdit(d)}
+                              className="px-3 py-1.5 bg-blue-100 hover:bg-blue-200 text-blue-800 font-bold rounded-full text-xs flex items-center gap-1 transition-colors"
+                              disabled={
+                                editingStatusId !== null &&
+                                editingStatusId !== d._id
+                              }
+                            >
+                              <FiEdit className="w-3 h-3" /> Change
+                            </button>
+                          )}
+                        </td>
+                        <td className="py-3 px-2 text-center bg-green-200 border-r border-gray-200">
+                          <div className="flex justify-center">
+                            <div className="relative">
+                              <span className="absolute left-3 top-2 text-[10px] text-gray-500 font-bold">
+                                Tsh
+                              </span>
+                              <input
+                                type="number"
+                                value={deductions[d._id] || ""}
+                                onChange={(e) =>
+                                  setDeductions({
+                                    ...deductions,
+                                    [d._id]: e.target.value,
+                                  })
+                                }
+                                className="w-32 pl-10 pr-3 py-2 rounded-full border border-gray-300 bg-white text-xs focus:outline-none focus:border-green-300"
+                                placeholder="0.00"
+                                disabled={isEditing}
+                              />
+                            </div>
+                          </div>
+                        </td>
+                        <td className="py-3 px-2 text-center bg-gray-100">
+                          {d.remainingAmount > 0 ? (
+                            canPayDebts ? (
+                              <button
+                                onClick={() => handlePay(d)}
+                                disabled={
+                                  !deductions[d._id] ||
+                                  parseFloat(deductions[d._id]) <= 0 ||
+                                  isEditing
+                                }
+                                className={`px-4 py-2 font-bold rounded-full text-xs transition-all ${
+                                  deductions[d._id] &&
+                                  parseFloat(deductions[d._id]) > 0 &&
+                                  !isEditing
+                                    ? "bg-yellow-100 hover:bg-yellow-200 text-black shadow"
+                                    : "bg-gray-300 text-gray-500 cursor-not-allowed"
+                                }`}
+                              >
+                                Pay Now
+                              </button>
+                            ) : (
+                              <span className="inline-flex items-center px-4 py-2 bg-gray-300 text-gray-600 font-bold rounded-full text-xs">
+                                Not Allowed
+                              </span>
+                            )
+                          ) : (
+                            <span className="inline-flex items-center px-4 py-2 bg-green-300 text-black font-bold rounded-full text-xs shadow">
+                              Fully Paid
+                            </span>
+                          )}
+                        </td>
+                      </tr>
+                      <tr className="h-3">
+                        <td colSpan={10} className="p-0"></td>
+                      </tr>
+                    </React.Fragment>
+                  );
+                })
+              )}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      {/* Pagination - rounded-full */}
+      {totalPages > 1 && (
+        <div className="flex items-center justify-between gap-2 mt-3 sm:mt-4 p-3 bg-white rounded-full border border-gray-200 shadow-sm">
           <button
             onClick={() => currentPage > 1 && setCurrentPage(currentPage - 1)}
             disabled={currentPage === 1}
-            className="p-2.5 bg-gray-200 hover:bg-gray-300 text-black font-bold rounded-full disabled:opacity-40 disabled:cursor-not-allowed transition-all"
+            className="p-2 bg-gray-100 hover:bg-gray-200 text-black rounded-full disabled:opacity-40"
           >
-            <IoIosArrowBack className="w-5 h-5" />
+            <IoIosArrowBack className="w-4 h-4" />
           </button>
 
           <div className="flex items-center gap-1">
-            {[...Array(totalPages)].map((_, i) => {
-              const pageNum = i + 1;
-              const isCurrent = currentPage === pageNum;
-              const showPage =
-                pageNum === 1 ||
-                pageNum === totalPages ||
-                (pageNum >= currentPage - 1 && pageNum <= currentPage + 1);
+            {[...Array(Math.min(totalPages, 5))].map((_, i) => {
+              let pageNum;
+              if (totalPages <= 5) pageNum = i + 1;
+              else if (currentPage <= 3) pageNum = i + 1;
+              else if (currentPage >= totalPages - 2)
+                pageNum = totalPages - 4 + i;
+              else pageNum = currentPage - 2 + i;
 
-              if (showPage) {
-                return (
-                  <button
-                    key={i}
-                    onClick={() => setCurrentPage(pageNum)}
-                    className={`w-10 h-10 font-bold rounded-full transition-all ${
-                      isCurrent
-                        ? "bg-green-300 text-black shadow"
-                        : "text-gray-700 hover:bg-gray-200"
-                    }`}
-                  >
-                    {pageNum}
-                  </button>
-                );
-              } else if (
-                (pageNum === currentPage - 2 || pageNum === currentPage + 2) &&
-                totalPages > 5
-              ) {
-                return (
-                  <span key={i} className="px-3 text-gray-500 font-bold">
-                    ...
-                  </span>
-                );
-              }
-              return null;
+              return (
+                <button
+                  key={i}
+                  onClick={() => setCurrentPage(pageNum)}
+                  className={`w-8 h-8 text-xs font-bold rounded-full transition-colors ${currentPage === pageNum ? "bg-black text-white" : "text-gray-700 hover:bg-gray-100"}`}
+                >
+                  {pageNum}
+                </button>
+              );
             })}
           </div>
 
@@ -735,12 +918,12 @@ const Debts = () => {
               currentPage < totalPages && setCurrentPage(currentPage + 1)
             }
             disabled={currentPage === totalPages}
-            className="p-2.5 bg-gray-200 hover:bg-gray-300 text-black font-bold rounded-full disabled:opacity-40 disabled:cursor-not-allowed transition-all"
+            className="p-2 bg-gray-100 hover:bg-gray-200 text-black rounded-full disabled:opacity-40"
           >
-            <IoIosArrowForward className="w-5 h-5" />
+            <IoIosArrowForward className="w-4 h-4" />
           </button>
         </div>
-      </div>
+      )}
 
       {/* Add Debt Modal */}
       {openAdd && (

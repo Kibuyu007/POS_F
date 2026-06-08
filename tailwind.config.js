@@ -44,12 +44,15 @@ export default {
         "desktop-xl": "2560px",
       },
       animation: {
-        loadingBar: "loadingBar 2s linear infinite",
+        loadingBar: "loadingBar 2s ease-in-out infinite",
       },
       keyframes: {
         loadingBar: {
           "40%": { transform: "translateX(-100%)" },
           "100%": { transform: "translateX(100%)" },
+          '0%': { width: '0%', marginLeft: '0%', opacity: '1' },
+          '50%': { width: '100%', marginLeft: '0%', opacity: '1' },
+          '120%': { width: '0%', marginLeft: '100%', opacity: '0' },
         },
       },
     },

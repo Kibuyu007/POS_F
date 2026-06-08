@@ -261,7 +261,7 @@ const Mauzo = () => {
 
       {/* Stats Cards - Mobile Friendly */}
       <div className="grid grid-cols-3 gap-2 mb-3 sm:mb-4">
-        <div className="bg-white border border-gray-200 rounded-xl p-2.5 sm:p-3 shadow-sm text-center">
+        <div className="bg-white border border-gray-200 rounded-full p-2.5 sm:p-3 shadow-sm text-center">
           <p className="text-[10px] sm:text-xs text-gray-500 font-medium mb-0.5">
             Paid
           </p>
@@ -270,7 +270,7 @@ const Mauzo = () => {
           </p>
           <p className="text-[9px] text-gray-400">Tsh</p>
         </div>
-        <div className="bg-white border border-gray-200 rounded-xl p-2.5 sm:p-3 shadow-sm text-center">
+        <div className="bg-white border border-gray-200 rounded-full p-2.5 sm:p-3 shadow-sm text-center">
           <p className="text-[10px] sm:text-xs text-gray-500 font-medium mb-0.5">
             Billed
           </p>
@@ -279,7 +279,7 @@ const Mauzo = () => {
           </p>
           <p className="text-[9px] text-gray-400">Tsh</p>
         </div>
-        <div className="bg-white border border-gray-200 rounded-xl p-2.5 sm:p-3 shadow-sm text-center">
+        <div className="bg-white border border-gray-200 rounded-full p-2.5 sm:p-3 shadow-sm text-center">
           <p className="text-[10px] sm:text-xs text-gray-500 font-medium mb-0.5">
             Discount
           </p>
@@ -299,7 +299,7 @@ const Mauzo = () => {
           <input
             type="text"
             placeholder="Search..."
-            className="w-full pl-9 pr-8 py-2.5 text-sm border border-gray-300 rounded-xl bg-white text-black focus:border-green-300 focus:outline-none focus:ring-2 focus:ring-green-100"
+            className="w-full pl-9 pr-8 py-2.5 text-sm border border-gray-300 rounded-full bg-white text-black focus:border-green-300 focus:outline-none focus:ring-2 focus:ring-green-100"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
           />
@@ -314,7 +314,7 @@ const Mauzo = () => {
         </div>
         <button
           onClick={() => setShowFilters(!showFilters)}
-          className={`px-3 py-2.5 rounded-xl border font-bold text-sm flex items-center gap-1.5 flex-shrink-0 transition-all ${
+          className={`px-3 py-2.5 rounded-full border font-bold text-sm flex items-center gap-1.5 flex-shrink-0 transition-all ${
             showFilters || activeFilterCount > 0
               ? "bg-green-300 border-green-400 text-black"
               : "bg-white border-gray-300 text-gray-700"

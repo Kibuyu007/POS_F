@@ -1,4 +1,5 @@
-import React, { useState, useEffect } from "react";
+import React from "react";
+import { useState, useEffect } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import {
   itemsFetch,
@@ -13,14 +14,27 @@ import EditItem from "./EditItem";
 
 //Icons
 import { AiTwotoneEdit } from "react-icons/ai";
-import { FaSearch, FaPrint, FaInfoCircle, FaFileCsv, FaFileExcel, FaFilePdf } from "react-icons/fa";
 import {
-  IoIosArrowBack,
-  IoIosArrowForward,
-  IoMdAdd,
-  IoMdRefresh,
-} from "react-icons/io";
-import { FiAlertCircle } from "react-icons/fi";
+  FaSearch,
+  FaPrint,
+  FaFileCsv,
+  FaFileExcel,
+  FaFilePdf,
+  FaBox,
+  FaExclamationTriangle,
+  FaCalendarTimes,
+  FaTags,
+  FaBarcode,
+  FaDollarSign,
+  FaWarehouse,
+  FaPlus,
+  FaSync,
+  FaChevronDown,
+  FaChevronUp,
+  FaEllipsisV,
+} from "react-icons/fa";
+import { IoIosArrowBack, IoIosArrowForward } from "react-icons/io";
+import { FiAlertCircle, FiFilter, FiX } from "react-icons/fi";
 
 //API
 import BASE_URL from "../../../../Utils/config";
@@ -55,6 +69,12 @@ const Items = () => {
   const [showModalEdit, setShowModalEdit] = useState(false);
   const [modifiedItem, setModifiedItem] = useState(null);
 
+  // UI States
+  const [showMobileFilters, setShowMobileFilters] = useState(false);
+  const [expandedItem, setExpandedItem] = useState(null);
+  const [showExportMenu, setShowExportMenu] = useState(false);
+  const [showMobileActions, setShowMobileActions] = useState(false);
+
   // Fetch data
   const fetchData = async () => {
     try {
@@ -80,7 +100,7 @@ const Items = () => {
     } catch (error) {
       console.error("Error fetching items:", error);
       setShowError(
-        "An error occurred. Please contact the system administrator."
+        "An error occurred. Please contact the system administrator.",
       );
       dispatch(itemsError(error.message));
       toast.error("Failed to load items");
@@ -91,20 +111,18 @@ const Items = () => {
     fetchData();
   }, [searchQuery, categoryFilter, filterStatus]);
 
-  // Check if user has add permission
+  // Check permissions
   const canAddItem = user?.roles?.canAddItems === true;
-
-  // Check if user has edit permission
   const canEditItem = user?.roles?.canEditItems === true;
 
-  // Filter items based on status and category
+  // Filter items
   const filteredItems = items.filter((item) => {
     const isExpired = new Date(item.expireDate) < new Date();
     const expiresSoon = () => {
       const expireDate = new Date(item.expireDate);
       const today = new Date();
       const daysUntilExpiry = Math.ceil(
-        (expireDate - today) / (1000 * 60 * 60 * 24)
+        (expireDate - today) / (1000 * 60 * 60 * 24),
       );
       return daysUntilExpiry <= 30 && daysUntilExpiry > 0;
     };
@@ -117,42 +135,44 @@ const Items = () => {
     return true;
   });
 
-  // Pagination calculations
+  // Pagination
   const indexOfLastItem = currentPage * itemsPerPage;
   const indexOfFirstItem = indexOfLastItem - itemsPerPage;
   const currentItems = filteredItems.slice(indexOfFirstItem, indexOfLastItem);
   const totalPages = Math.ceil(filteredItems.length / itemsPerPage);
   const totalItems = filteredItems.length;
 
-  // Next page
   const nextPage = () => {
-    if (currentPage < totalPages) {
-      setCurrentPage(currentPage + 1);
-    }
+    if (currentPage < totalPages) setCurrentPage(currentPage + 1);
   };
 
-  // Previous page
   const prevPage = () => {
-    if (currentPage > 1) {
-      setCurrentPage(currentPage - 1);
-    }
+    if (currentPage > 1) setCurrentPage(currentPage - 1);
   };
 
-  // Calculate statistics
+  // Statistics
   const totalValue = filteredItems.reduce(
     (sum, item) => sum + item.buyingPrice * item.itemQuantity,
-    0
+    0,
   );
   const totalItemsCount = filteredItems.reduce(
     (sum, item) => sum + item.itemQuantity,
-    0
+    0,
   );
   const lowStockItems = filteredItems.filter(
-    (item) => item.reOrderStatus === "Low"
+    (item) => item.reOrderStatus === "Low",
   ).length;
   const expiredItems = filteredItems.filter(
-    (item) => new Date(item.expireDate) < new Date()
+    (item) => new Date(item.expireDate) < new Date(),
   ).length;
+  const expiresSoonCount = filteredItems.filter((item) => {
+    const expireDate = new Date(item.expireDate);
+    const today = new Date();
+    const daysUntilExpiry = Math.ceil(
+      (expireDate - today) / (1000 * 60 * 60 * 24),
+    );
+    return daysUntilExpiry <= 30 && daysUntilExpiry > 0;
+  }).length;
 
   // Print Barcode
   const handlePrint = (item) => {
@@ -164,13 +184,13 @@ const Items = () => {
         <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.5/dist/JsBarcode.all.min.js"></script>
       </head>
       <body>
-        <div style="text-align:center;">
-          <h3>${item.name}</h3>
+        <div style="text-align:center; padding: 20px;">
+          <h3 style="font-family: Arial, sans-serif; color: #1e293b; margin-bottom: 15px;">${item.name}</h3>
           <svg id="barcode"></svg>
         </div>
         <script>
           window.onload = function() {
-            JsBarcode("#barcode", "${item.barCode}", {width:2, height:60, displayValue:true});
+            JsBarcode("#barcode", "${item.barCode}", {width:2, height:60, displayValue:true, font: "Arial"});
             window.print();
             window.onafterprint = () => window.close();
           }
@@ -182,46 +202,56 @@ const Items = () => {
     toast.success("Barcode printed!");
   };
 
-  // ---------- Export Functions ----------
+  // Export Functions
   const exportToCSV = () => {
     if (filteredItems.length === 0) {
       toast.error("No data to export");
       return;
     }
-
     try {
-      // Prepare data
-      const exportData = filteredItems.map(item => ({
+      const exportData = filteredItems.map((item) => ({
         "Item Name": item.name,
-        "Selling Price": item.price
+        Barcode: item.barCode,
+        "Buy Price": item.buyingPrice,
+        "Sell Price": item.price,
+        "Wholesale Price": item.wholesalePrice || 0,
+        "Wholesale Min Qty": item.wholesaleMinQty || 0,
+        Quantity: item.itemQuantity,
+        Category: category.find((u) => u._id === item.category)?.name || "-",
+        Status: item.reOrderStatus,
+        "Manufacture Date": new Date(item.manufactureDate).toLocaleDateString(
+          "en-GB",
+        ),
+        "Expiry Date": new Date(item.expireDate).toLocaleDateString("en-GB"),
       }));
-
-      // Convert to CSV
       const headers = Object.keys(exportData[0]);
-      const csvRows = [];
-      csvRows.push(headers.join(","));
-      
+      const csvRows = [headers.join(",")];
       for (const row of exportData) {
-        const values = headers.map(header => {
+        const values = headers.map((header) => {
           const val = row[header];
-          // Escape quotes and wrap in quotes if contains comma
           const escaped = String(val).replace(/"/g, '""');
           return `"${escaped}"`;
         });
         csvRows.push(values.join(","));
       }
-      
       const csvString = csvRows.join("\n");
-      const blob = new Blob(["\uFEFF" + csvString], { type: "text/csv;charset=utf-8;" });
+      const blob = new Blob(["\uFEFF" + csvString], {
+        type: "text/csv;charset=utf-8;",
+      });
       const link = document.createElement("a");
       const url = URL.createObjectURL(blob);
       link.href = url;
-      link.setAttribute("download", `items_export_${new Date().toISOString().slice(0,19)}.csv`);
+      link.setAttribute(
+        "download",
+        `items_export_${new Date().toISOString().slice(0, 19)}.csv`,
+      );
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
       URL.revokeObjectURL(url);
       toast.success("CSV exported successfully!");
+      setShowExportMenu(false);
+      setShowMobileActions(false);
     } catch (error) {
       console.error("CSV export error:", error);
       toast.error("Failed to export CSV");
@@ -233,18 +263,32 @@ const Items = () => {
       toast.error("No data to export");
       return;
     }
-
     try {
-      const exportData = filteredItems.map(item => ({
+      const exportData = filteredItems.map((item) => ({
         "Item Name": item.name,
-        "Selling Price": item.price
+        Barcode: item.barCode,
+        "Buy Price": item.buyingPrice,
+        "Sell Price": item.price,
+        "Wholesale Price": item.wholesalePrice || 0,
+        "Wholesale Min Qty": item.wholesaleMinQty || 0,
+        Quantity: item.itemQuantity,
+        Category: category.find((u) => u._id === item.category)?.name || "-",
+        Status: item.reOrderStatus,
+        "Manufacture Date": new Date(item.manufactureDate).toLocaleDateString(
+          "en-GB",
+        ),
+        "Expiry Date": new Date(item.expireDate).toLocaleDateString("en-GB"),
       }));
-
       const worksheet = XLSX.utils.json_to_sheet(exportData);
       const workbook = XLSX.utils.book_new();
       XLSX.utils.book_append_sheet(workbook, worksheet, "Items");
-      XLSX.writeFile(workbook, `items_export_${new Date().toISOString().slice(0,19)}.xlsx`);
+      XLSX.writeFile(
+        workbook,
+        `items_export_${new Date().toISOString().slice(0, 19)}.xlsx`,
+      );
       toast.success("Excel exported successfully!");
+      setShowExportMenu(false);
+      setShowMobileActions(false);
     } catch (error) {
       console.error("Excel export error:", error);
       toast.error("Failed to export Excel");
@@ -256,172 +300,343 @@ const Items = () => {
       toast.error("No data to export");
       return;
     }
-
     try {
       const doc = new jsPDF();
-      const tableColumn = ["Item Name", "Selling Price"];
-      const tableRows = filteredItems.map(item => [item.name, item.price]);
-
+      const tableColumn = [
+        "Item Name",
+        "Barcode",
+        "Buy Price",
+        "Sell Price",
+        "Wholesale",
+        "Qty",
+        "Category",
+        "Status",
+      ];
+      const tableRows = filteredItems.map((item) => [
+        item.name,
+        item.barCode,
+        item.buyingPrice.toLocaleString(),
+        item.price.toLocaleString(),
+        (item.wholesalePrice || 0).toLocaleString(),
+        item.itemQuantity.toLocaleString(),
+        category.find((u) => u._id === item.category)?.name || "-",
+        item.reOrderStatus,
+      ]);
       autoTable(doc, {
         head: [tableColumn],
         body: tableRows,
         startY: 20,
         theme: "grid",
-        styles: { fontSize: 10, cellPadding: 3 },
-        headStyles: { fillColor: [76, 175, 80], textColor: 255, fontStyle: "bold" },
+        styles: { fontSize: 9, cellPadding: 2, font: "helvetica" },
+        headStyles: {
+          fillColor: [76, 175, 80],
+          textColor: 255,
+          fontStyle: "bold",
+        },
+        alternateRowStyles: { fillColor: [248, 250, 252] },
       });
-
-      doc.text("Items Report", 14, 15);
-      doc.save(`items_export_${new Date().toISOString().slice(0,19)}.pdf`);
+      doc.setFontSize(16);
+      doc.setTextColor(76, 175, 80);
+      doc.text("Inventory Report", 14, 15);
+      doc.setFontSize(10);
+      doc.setTextColor(100, 116, 139);
+      doc.text(
+        `Generated on ${new Date().toLocaleDateString("en-GB")}`,
+        14,
+        22,
+      );
+      doc.save(`items_export_${new Date().toISOString().slice(0, 19)}.pdf`);
       toast.success("PDF exported successfully!");
+      setShowExportMenu(false);
+      setShowMobileActions(false);
     } catch (error) {
       console.error("PDF export error:", error);
       toast.error("Failed to export PDF");
     }
   };
-  // ------------------------------------
+
+  // Helper: Status badge
+  const getItemStatus = (item) => {
+    const isExpired = new Date(item.expireDate) < new Date();
+    const expireDate = new Date(item.expireDate);
+    const today = new Date();
+    const daysUntilExpiry = Math.ceil(
+      (expireDate - today) / (1000 * 60 * 60 * 24),
+    );
+    const expiresSoon = daysUntilExpiry <= 30 && daysUntilExpiry > 0;
+
+    if (isExpired) {
+      return {
+        label: "Expired",
+        class: "bg-red-100 text-red-800 border-red-300",
+        icon: <FaCalendarTimes className="w-3 h-3" />,
+      };
+    }
+    if (expiresSoon) {
+      return {
+        label: `${daysUntilExpiry}d left`,
+        class: "bg-yellow-100 text-yellow-800 border-yellow-300",
+        icon: <FaExclamationTriangle className="w-3 h-3" />,
+      };
+    }
+    if (item.reOrderStatus === "Low") {
+      return {
+        label: "Low Stock",
+        class: "bg-red-100 text-red-800 border-red-300",
+        icon: <FaExclamationTriangle className="w-3 h-3" />,
+      };
+    }
+    return {
+      label: "Active",
+      class: "bg-green-100 text-green-800 border-green-300",
+      icon: <FaBox className="w-3 h-3" />,
+    };
+  };
+
+  // Helper: Quantity badge
+  const getQuantityStyle = (status) => {
+    if (status === "Low") return "bg-red-100 text-red-800 border-red-300";
+    if (status === "Normal")
+      return "bg-green-100 text-green-800 border-green-300";
+    return "bg-blue-100 text-blue-800 border-blue-300";
+  };
 
   return (
-    <div className="p-5 bg-gray-50 min-h-screen">
-      {/* Header */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between mb-6">
-        <div>
-          <h1 className="text-2xl font-bold text-black mb-1">
-            Inventory Management
-          </h1>
-          <p className="text-gray-600 text-sm">
-            View and manage all inventory items
-          </p>
-        </div>
-        <div className="flex gap-2 mt-3 md:mt-0">
-          {/* Export Buttons */}
-          <button
-            onClick={exportToCSV}
-            className="px-3 py-2 bg-blue-100 hover:bg-blue-200 text-blue-800 font-bold rounded-full shadow flex items-center gap-2 text-sm transition-all"
-            title="Export as CSV"
-          >
-            <FaFileCsv className="w-4 h-4" />
-            <span className="hidden sm:inline">CSV</span>
-          </button>
-          <button
-            onClick={exportToExcel}
-            className="px-3 py-2 bg-green-100 hover:bg-green-200 text-green-800 font-bold rounded-full shadow flex items-center gap-2 text-sm transition-all"
-            title="Export as Excel"
-          >
-            <FaFileExcel className="w-4 h-4" />
-            <span className="hidden sm:inline">Excel</span>
-          </button>
-          <button
-            onClick={exportToPDF}
-            className="px-3 py-2 bg-red-100 hover:bg-red-200 text-red-800 font-bold rounded-full shadow flex items-center gap-2 text-sm transition-all"
-            title="Export as PDF"
-          >
-            <FaFilePdf className="w-4 h-4" />
-            <span className="hidden sm:inline">PDF</span>
-          </button>
-          <button
-            onClick={fetchData}
-            className="px-4 py-2 bg-green-300 hover:bg-green-400 text-black font-bold rounded-full shadow hover:shadow-md transition-all duration-200 flex items-center gap-2 text-sm"
-          >
-            <IoMdRefresh className="w-4 h-4" />
-            <span>Refresh</span>
-          </button>
-        </div>
-      </div>
-
-      {/* Compact Stats - unchanged */}
-      <div className="mb-6">
-        <div className="flex flex-col sm:flex-row items-center justify-between bg-white border border-gray-200 rounded-full p-4 shadow-sm">
-          <div className="flex items-center gap-3 mb-3 sm:mb-0">
-            <div className="text-center px-3">
-              <p className="text-xs text-gray-500 font-medium">Total Items</p>
-              <p className="text-base font-bold text-black">
-                {filteredItems.length}
-              </p>
-            </div>
-
-            <div className="h-6 w-px bg-gray-300"></div>
-
-            <div className="text-center px-3">
-              <p className="text-xs text-gray-500 font-medium">Stock Value</p>
-              <p className="text-base font-bold text-black">
-                Tsh {totalValue.toLocaleString()}
-              </p>
-            </div>
-
-            <div className="h-6 w-px bg-gray-300"></div>
-
-            <div className="text-center px-3">
-              <p className="text-xs text-gray-500 font-medium">Total Qty</p>
-              <p className="text-base font-bold text-green-600">
-                {totalItemsCount.toLocaleString()}
-              </p>
-            </div>
+    <div className="min-h-screen bg-gray-100">
+      <div className="mx-auto px-3 sm:px-4 lg:px-6 py-4 sm:py-6">
+        {/* Header */}
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-5 gap-3">
+          <div>
+            <h1 className="text-xl sm:text-2xl font-bold text-black">
+              Inventory Management
+            </h1>
+            <p className="text-sm text-gray-600 mt-0.5 hidden sm:block">
+              View and manage all inventory items
+            </p>
           </div>
 
-          <div className="flex items-center gap-4">
-            <div className="flex items-center gap-2">
-              <div className="w-2 h-2 bg-red-500 rounded-full"></div>
-              <span className="text-xs font-medium text-gray-700">Low: </span>
-              <span className="font-bold text-black text-sm">
-                {lowStockItems}
-              </span>
-            </div>
+          {/* Desktop Actions */}
+          <div className="hidden sm:flex items-center gap-2 flex-shrink-0">
+            {/* Export Dropdown */}
+            <div className="relative">
+              <button
+                onClick={() => setShowExportMenu(!showExportMenu)}
+                className="flex items-center gap-2 px-4 py-2.5 bg-white hover:bg-gray-50 text-black font-bold rounded-full border border-gray-300 shadow-sm text-sm transition-all"
+              >
+                <FaFileCsv className="w-4 h-4 text-green-600" />
+                <span>Export</span>
+                <FaChevronDown
+                  className={`w-3 h-3 transition-transform ${showExportMenu ? "rotate-180" : ""}`}
+                />
+              </button>
 
-            <div className="h-4 w-px bg-gray-300"></div>
-
-            <div className="flex items-center gap-2">
-              <div className="w-2 h-2 bg-yellow-500 rounded-full"></div>
-              <span className="text-xs font-medium text-gray-700">
-                Expired:{" "}
-              </span>
-              <span className="font-bold text-black text-sm">
-                {expiredItems}
-              </span>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Filter & Search - unchanged */}
-      <div className="mb-6 rounded-xl p-4 shadow bg-white">
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mb-3">
-          {/* Status Filter Buttons */}
-          <div className="md:col-span-2">
-            <div className="flex overflow-x-auto pb-2 -mx-2 px-2">
-              <div className="flex gap-2">
-                {["All", "Active", "Low Stock", "Expires Soon", "Expired"].map(
-                  (status) => (
+              {showExportMenu && (
+                <>
+                  <div
+                    className="fixed inset-0 z-40"
+                    onClick={() => setShowExportMenu(false)}
+                  />
+                  <div className="absolute right-0 mt-2 w-48 bg-white border border-gray-300 rounded-2xl shadow-xl z-50 overflow-hidden">
                     <button
-                      key={status}
-                      className={`px-4 py-2.5 text-sm font-bold rounded-full transition-all duration-200 whitespace-nowrap flex-shrink-0 ${
-                        filterStatus === status
-                          ? "bg-green-300 text-black shadow-lg ring-2 ring-green-400 ring-offset-1"
-                          : "bg-gray-100 text-gray-700 hover:bg-gray-200 hover:shadow"
-                      }`}
-                      onClick={() => {
-                        setFilterStatus(status);
-                        setCurrentPage(1);
-                      }}
+                      onClick={exportToCSV}
+                      className="w-full flex items-center gap-3 px-4 py-3 text-sm text-black hover:bg-gray-50 transition-colors font-bold"
                     >
-                      {status}
+                      <FaFileCsv className="w-4 h-4 text-blue-600" /> Export CSV
                     </button>
-                  )
-                )}
+                    <button
+                      onClick={exportToExcel}
+                      className="w-full flex items-center gap-3 px-4 py-3 text-sm text-black hover:bg-gray-50 transition-colors font-bold"
+                    >
+                      <FaFileExcel className="w-4 h-4 text-green-600" /> Export
+                      Excel
+                    </button>
+                    <button
+                      onClick={exportToPDF}
+                      className="w-full flex items-center gap-3 px-4 py-3 text-sm text-black hover:bg-gray-50 transition-colors font-bold"
+                    >
+                      <FaFilePdf className="w-4 h-4 text-red-600" /> Export PDF
+                    </button>
+                  </div>
+                </>
+              )}
+            </div>
+
+            <button
+              onClick={fetchData}
+              className="flex items-center gap-2 px-4 py-2.5 bg-green-300 hover:bg-green-400 text-black font-bold rounded-full border border-green-400 shadow-sm text-sm transition-all"
+            >
+              <FaSync
+                className={`w-4 h-4 ${itemsPending ? "animate-spin" : ""}`}
+              />
+              <span>Refresh</span>
+            </button>
+
+            {canAddItem ? (
+              <button
+                onClick={() => setShowModalAdd(true)}
+                className="flex items-center gap-2 px-4 py-2.5 bg-green-300 hover:bg-green-400 text-black font-bold rounded-full border border-green-400 shadow-sm transition-all text-sm"
+              >
+                <FaPlus className="w-4 h-4" />
+                <span>Add Item</span>
+              </button>
+            ) : (
+              <div className="relative group">
+                <button
+                  disabled
+                  className="flex items-center gap-2 px-4 py-2.5 bg-gray-300 text-gray-500 font-bold rounded-full border border-gray-400 cursor-not-allowed text-sm"
+                >
+                  <FaPlus className="w-4 h-4" />
+                  <span>Add Item</span>
+                </button>
+                <div className="absolute right-0 top-full mt-2 w-64 p-3 bg-gray-800 text-white text-sm rounded-2xl shadow-xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50">
+                  <p className="font-bold mb-1">Permission Required</p>
+                  <p className="text-gray-300 text-xs">
+                    You need the{" "}
+                    <span className="font-bold text-green-300">Add Items</span>{" "}
+                    permission to create new inventory items.
+                  </p>
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* Mobile Actions - Compact 3-dot menu */}
+          <div className="sm:hidden relative">
+            <button
+              onClick={() => setShowMobileActions(!showMobileActions)}
+              className="flex items-center justify-center gap-2 px-4 py-2.5 bg-white hover:bg-gray-50 text-black font-bold rounded-full border border-gray-300 shadow-sm text-sm transition-all w-full"
+            >
+              <FaEllipsisV className="w-4 h-4" />
+              <span>Actions</span>
+            </button>
+
+            {showMobileActions && (
+              <>
+                <div
+                  className="fixed inset-0 z-40"
+                  onClick={() => setShowMobileActions(false)}
+                />
+                <div className="absolute right-0 left-0 mt-2 bg-white border border-gray-300 rounded-2xl shadow-xl z-50 overflow-hidden">
+                  <button
+                    onClick={() => {
+                      setShowMobileActions(false);
+                      setShowExportMenu(true);
+                    }}
+                    className="w-full flex items-center gap-3 px-4 py-3 text-sm text-black hover:bg-gray-50 transition-colors font-bold border-b border-gray-200"
+                  >
+                    <FaFileCsv className="w-4 h-4 text-green-600" /> Export
+                  </button>
+                  <button
+                    onClick={() => {
+                      fetchData();
+                      setShowMobileActions(false);
+                    }}
+                    className="w-full flex items-center gap-3 px-4 py-3 text-sm text-black hover:bg-gray-50 transition-colors font-bold border-b border-gray-200"
+                  >
+                    <FaSync
+                      className={`w-4 h-4 ${itemsPending ? "animate-spin" : ""}`}
+                    />{" "}
+                    Refresh
+                  </button>
+                  {canAddItem ? (
+                    <button
+                      onClick={() => {
+                        setShowModalAdd(true);
+                        setShowMobileActions(false);
+                      }}
+                      className="w-full flex items-center gap-3 px-4 py-3 text-sm text-black hover:bg-gray-50 transition-colors font-bold"
+                    >
+                      <FaPlus className="w-4 h-4 text-green-600" /> Add Item
+                    </button>
+                  ) : (
+                    <button
+                      disabled
+                      className="w-full flex items-center gap-3 px-4 py-3 text-sm text-gray-400 cursor-not-allowed font-bold"
+                    >
+                      <FaPlus className="w-4 h-4" /> Add Item (No Permission)
+                    </button>
+                  )}
+                </div>
+              </>
+            )}
+          </div>
+        </div>
+
+        {/* Stats Cards - Rounded Full with better text fitting */}
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-5">
+          <div className="bg-white rounded-full border border-gray-300 p-3 sm:p-4 shadow-sm hover:shadow-md transition-shadow">
+            <div className="flex items-center gap-2 sm:gap-3">
+              <div className="w-9 h-9 sm:w-10 sm:h-10 bg-green-200 rounded-full flex items-center justify-center flex-shrink-0 border border-green-400">
+                <FaBox className="w-4 h-4 sm:w-5 sm:h-5 text-green-700" />
+              </div>
+              <div className="min-w-0">
+                <p className="text-[10px] sm:text-xs text-gray-600 font-bold truncate">
+                  Total Items
+                </p>
+                <p className="text-lg sm:text-xl font-bold text-black">
+                  {filteredItems.length}
+                </p>
               </div>
             </div>
           </div>
+          <div className="bg-white rounded-full border border-gray-300 p-3 sm:p-4 shadow-sm hover:shadow-md transition-shadow">
+            <div className="flex items-center gap-2 sm:gap-3">
+              <div className="w-9 h-9 sm:w-10 sm:h-10 bg-green-200 rounded-full flex items-center justify-center flex-shrink-0 border border-green-400">
+                <FaDollarSign className="w-4 h-4 sm:w-5 sm:h-5 text-green-700" />
+              </div>
+              <div className="min-w-0">
+                <p className="text-[10px] sm:text-xs text-gray-600 font-bold truncate">
+                  Stock Value
+                </p>
+                <p className="text-lg sm:text-xl font-bold text-black truncate">
+                  Tsh {totalValue.toLocaleString()}
+                </p>
+              </div>
+            </div>
+          </div>
+          <div className="bg-white rounded-full border border-gray-300 p-3 sm:p-4 shadow-sm hover:shadow-md transition-shadow">
+            <div className="flex items-center gap-2 sm:gap-3">
+              <div className="w-9 h-9 sm:w-10 sm:h-10 bg-red-200 rounded-full flex items-center justify-center flex-shrink-0 border border-red-400">
+                <FaExclamationTriangle className="w-4 h-4 sm:w-5 sm:h-5 text-red-700" />
+              </div>
+              <div className="min-w-0">
+                <p className="text-[10px] sm:text-xs text-gray-600 font-bold truncate">
+                  Low Stock
+                </p>
+                <p className="text-lg sm:text-xl font-bold text-red-700">
+                  {lowStockItems}
+                </p>
+              </div>
+            </div>
+          </div>
+          <div className="bg-white rounded-full border border-gray-300 p-3 sm:p-4 shadow-sm hover:shadow-md transition-shadow">
+            <div className="flex items-center gap-2 sm:gap-3">
+              <div className="w-9 h-9 sm:w-10 sm:h-10 bg-yellow-200 rounded-full flex items-center justify-center flex-shrink-0 border border-yellow-400">
+                <FaCalendarTimes className="w-4 h-4 sm:w-5 sm:h-5 text-yellow-700" />
+              </div>
+              <div className="min-w-0">
+                <p className="text-[10px] sm:text-xs text-gray-600 font-bold truncate">
+                  Expired
+                </p>
+                <p className="text-lg sm:text-xl font-bold text-yellow-700">
+                  {expiredItems + expiresSoonCount}
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
 
-          {/* Search */}
-          <div>
-            <div className="relative">
-              <div className="absolute inset-y-0 left-3 flex items-center">
+        {/* Filters & Search Bar - Rounded Full */}
+        <div className="bg-white rounded-xl border border-gray-300 p-4 shadow-sm mb-5">
+          <div className="flex flex-col sm:flex-row gap-3">
+            <div className="relative flex-1">
+              <div className="absolute inset-y-0 left-4 flex items-center pointer-events-none">
                 <FaSearch className="w-4 h-4 text-gray-500" />
               </div>
               <input
                 type="text"
-                placeholder="Search..."
-                className="w-full pl-10 pr-3 py-2.5 text-sm border border-gray-300 rounded-full bg-white text-black focus:border-green-300 focus:outline-none focus:ring-1 focus:ring-green-200"
+                placeholder="Search items by name or barcode..."
+                className="w-full pl-11 pr-4 py-2.5 bg-gray-100 border border-gray-300 rounded-full text-sm text-black placeholder-gray-500 focus:border-green-400 focus:outline-none focus:ring-2 focus:ring-green-100 transition-all"
                 value={searchQuery}
                 onChange={(e) => {
                   setSearchQuery(e.target.value);
@@ -429,313 +644,591 @@ const Items = () => {
                   setCurrentPage(1);
                 }}
               />
+              {searchQuery && (
+                <button
+                  onClick={() => setSearchQuery("")}
+                  className="absolute inset-y-0 right-4 flex items-center text-gray-400 hover:text-gray-600"
+                >
+                  <FiX className="w-4 h-4" />
+                </button>
+              )}
             </div>
-          </div>
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-          {/* Category Filter */}
-          <div>
-            <select
-              value={categoryFilter}
-              onChange={(e) => {
-                setCategoryFilter(e.target.value);
-                setCurrentPage(1);
-              }}
-              className="w-full px-4 py-2.5 text-sm border border-gray-300 rounded-full bg-white text-black focus:border-green-300 focus:outline-none focus:ring-1 focus:ring-green-200"
+            <div className="min-w-[200px]">
+              <select
+                value={categoryFilter}
+                onChange={(e) => {
+                  setCategoryFilter(e.target.value);
+                  setCurrentPage(1);
+                }}
+                className="w-full px-4 py-2.5 bg-gray-100 border border-gray-300 rounded-full text-sm text-black focus:border-green-400 focus:outline-none focus:ring-2 focus:ring-green-100 transition-all appearance-none cursor-pointer"
+              >
+                <option value="All">All Categories</option>
+                {category.map((cat) => (
+                  <option key={cat._id} value={cat._id}>
+                    {cat.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <button
+              onClick={() => setShowMobileFilters(!showMobileFilters)}
+              className={`lg:hidden flex items-center justify-center gap-2 px-4 py-2.5 rounded-full border font-bold text-sm transition-all ${
+                showMobileFilters
+                  ? "bg-green-300 border-green-400 text-black"
+                  : "bg-gray-100 border-gray-300 text-gray-700"
+              }`}
             >
-              <option value="All">All Categories</option>
-              {category.map((cat) => (
-                <option key={cat._id} value={cat._id}>
-                  {cat.name}
-                </option>
-              ))}
-            </select>
+              <FiFilter className="w-4 h-4" />
+              Filters
+            </button>
           </div>
 
-          {/* Add Item Button with Permission Check */}
-          {canAddItem ? (
-            <div className="flex items-center justify-end">
-              <button
-                onClick={() => setShowModalAdd(true)}
-                className="px-4 py-2 bg-green-300 hover:bg-green-400 text-black font-bold rounded-full shadow hover:shadow-md transition-all duration-200 flex items-center gap-2 text-sm"
-              >
-                <IoMdAdd className="w-4 h-4" />
-                <span>Add Item</span>
-              </button>
+          {/* Status Filter Pills - Rounded Full */}
+          <div
+            className={`mt-4 ${showMobileFilters ? "block" : "hidden lg:block"}`}
+          >
+            <div className="flex flex-wrap gap-2">
+              {["All", "Active", "Low Stock", "Expires Soon", "Expired"].map(
+                (status) => (
+                  <button
+                    key={status}
+                    onClick={() => {
+                      setFilterStatus(status);
+                      setCurrentPage(1);
+                    }}
+                    className={`px-5 py-2 rounded-full text-sm font-bold transition-all duration-200 ${
+                      filterStatus === status
+                        ? "bg-green-300 text-black shadow border border-green-400"
+                        : "bg-gray-100 text-gray-700 hover:bg-gray-200 border border-gray-300"
+                    }`}
+                  >
+                    {status}
+                  </button>
+                ),
+              )}
             </div>
-          ) : (
-            <div className="flex items-center justify-end gap-2">
-              <button
-                disabled
-                className="px-4 py-2 bg-gray-300 text-gray-500 font-bold rounded-full shadow flex items-center gap-2 text-sm cursor-not-allowed"
-                title="You don't have permission to add items"
-              >
-                <IoMdAdd className="w-4 h-4" />
-                <span>Add Item</span>
-              </button>
-              <div className="relative group">
-                <div className="text-gray-500">
-                  <FaInfoCircle className="w-5 h-5" />
-                </div>
-                <div className="absolute right-0 top-full mt-2 w-64 p-3 bg-gray-800 text-white text-sm rounded-lg shadow-xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-10">
-                  <div className="absolute -top-1 right-3 w-3 h-3 bg-gray-800 transform rotate-45"></div>
-                  <p className="font-semibold">Permission Required</p>
-                  <p className="mt-1 text-gray-300">
-                    You need the <span className="font-bold">Add Items</span> permission
-                    to create new inventory items.
-                  </p>
-                </div>
-              </div>
-            </div>
-          )}
+          </div>
         </div>
-      </div>
 
-      {/* Table Container - unchanged except for the table body which remains same */}
-      <div className="rounded-xl shadow bg-white overflow-hidden">
+        {/* Error Alert - Rounded Full */}
         {showError && (
-          <div className="m-4 p-3 bg-red-100 border border-red-300 rounded-lg">
-            <div className="flex items-center gap-2 text-red-800">
-              <FiAlertCircle className="w-4 h-4" />
-              <span className="text-sm font-medium">{showError}</span>
+          <div className="bg-red-100 border border-red-300 rounded-full p-4 mb-5">
+            <div className="flex items-center gap-3">
+              <div className="w-8 h-8 bg-red-200 rounded-full flex items-center justify-center flex-shrink-0">
+                <FiAlertCircle className="w-4 h-4 text-red-700" />
+              </div>
+              <p className="text-sm text-red-800 font-bold">{showError}</p>
             </div>
           </div>
         )}
 
-        <div className="overflow-x-auto">
-          <table className="min-w-full">
-            <thead>
-              <tr className="bg-gray-200">
-                {[
-                  "SN",
-                  "Product",
-                  "Buy Price",
-                  "Sell Price",
-                  "Wholesale Price",
-                  "Qty for Wholesale",
-                  "Quantity",
-                  "Barcode",
-                  "Manf Date",
-                  "Exp Date",
-                  "Category",
-                  "Action",
-                ].map((header, idx) => (
-                  <th
-                    key={idx}
-                    className="px-3 py-3 text-center text-xs font-bold text-black uppercase border-r border-gray-300"
+        {/* Results Count */}
+        <div className="flex items-center justify-between mb-3">
+          <p className="text-sm text-gray-600">
+            <span className="font-bold text-black">{filteredItems.length}</span>{" "}
+            items found
+          </p>
+          <p className="text-xs text-gray-500">
+            Page {currentPage} of {totalPages || 1}
+          </p>
+        </div>
+
+        {/* ===== MOBILE & TABLET VIEW (Cards - Rounded 2xl) ===== */}
+        <div className="lg:hidden space-y-3">
+          {currentItems.length === 0 ? (
+            <div className="bg-white rounded-2xl p-8 text-center border border-gray-300 shadow-sm">
+              <div className="w-16 h-16 bg-gray-200 rounded-full flex items-center justify-center mx-auto mb-4">
+                <FaBox className="w-8 h-8 text-gray-500" />
+              </div>
+              <h3 className="text-lg font-bold text-black mb-1">
+                No items found
+              </h3>
+              <p className="text-sm text-gray-600">
+                Try adjusting your search or filters
+              </p>
+              {canAddItem &&
+                !searchQuery &&
+                filterStatus === "All" &&
+                categoryFilter === "All" && (
+                  <button
+                    onClick={() => setShowModalAdd(true)}
+                    className="mt-4 px-5 py-2.5 bg-green-300 hover:bg-green-400 text-black font-bold rounded-full transition-all border border-green-400"
                   >
-                    {header}
-                  </th>
-                ))}
-              </tr>
-            </thead>
+                    Add First Item
+                  </button>
+                )}
+            </div>
+          ) : (
+            currentItems.map((item) => {
+              const isExpanded = expandedItem === item._id;
+              const status = getItemStatus(item);
+              const isExpired = new Date(item.expireDate) < new Date();
+              const expireDate = new Date(item.expireDate);
+              const today = new Date();
+              const daysUntilExpiry = Math.ceil(
+                (expireDate - today) / (1000 * 60 * 60 * 24),
+              );
+              const expiresSoon = daysUntilExpiry <= 30 && daysUntilExpiry > 0;
 
-            <tr className="h-3" />
-
-            <tbody>
-              {currentItems.length === 0 ? (
-                <tr>
-                  <td colSpan={12} className="text-center py-12">
-                    <div className="space-y-3">
-                      <div className="text-4xl">📦</div>
-                      <p className="text-lg font-bold text-black">
-                        No items found
-                      </p>
-                      <p className="text-gray-600 text-sm">
-                        Try adjusting your search filters
-                      </p>
-                      {canAddItem && !searchQuery && filterStatus === "All" && categoryFilter === "All" && (
-                        <button
-                          onClick={() => setShowModalAdd(true)}
-                          className="mt-2 px-4 py-2 bg-green-300 hover:bg-green-400 text-black font-bold rounded-full transition-colors text-sm"
+              return (
+                <div
+                  key={item._id}
+                  className={`bg-white rounded-2xl border overflow-hidden shadow-sm hover:shadow-md transition-all ${
+                    isExpired
+                      ? "border-red-300"
+                      : expiresSoon
+                        ? "border-yellow-300"
+                        : item.reOrderStatus === "Low"
+                          ? "border-red-300"
+                          : "border-gray-300"
+                  }`}
+                >
+                  {/* Card Header */}
+                  <div
+                    className="p-4"
+                    onClick={() =>
+                      setExpandedItem(isExpanded ? null : item._id)
+                    }
+                  >
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="flex items-start gap-3 flex-1 min-w-0">
+                        <div
+                          className={`w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 border-2 ${
+                            isExpired
+                              ? "bg-red-200 border-red-400"
+                              : expiresSoon
+                                ? "bg-yellow-200 border-yellow-400"
+                                : item.reOrderStatus === "Low"
+                                  ? "bg-red-200 border-red-400"
+                                  : "bg-green-200 border-green-400"
+                          }`}
                         >
-                          Add First Item
-                        </button>
-                      )}
-                      {!canAddItem && !searchQuery && filterStatus === "All" && categoryFilter === "All" && (
-                        <div className="mt-3 p-3 bg-amber-50 border border-amber-200 rounded-lg">
-                          <p className="text-sm text-amber-800 font-medium">
-                            <span className="font-bold">Permission Required:</span> You need Add Items permission to create new inventory items.
+                          <FaBox
+                            className={`w-4 h-4 ${
+                              isExpired
+                                ? "text-red-700"
+                                : expiresSoon
+                                  ? "text-yellow-700"
+                                  : item.reOrderStatus === "Low"
+                                    ? "text-red-700"
+                                    : "text-green-700"
+                            }`}
+                          />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <h3 className="font-bold text-black text-sm truncate">
+                            {item.name}
+                          </h3>
+                          <div className="flex items-center gap-2 mt-1 flex-wrap">
+                            <span className="inline-flex items-center gap-1 text-xs text-gray-600">
+                              <FaBarcode className="w-3 h-3" />
+                              {item.barCode}
+                            </span>
+                            <span
+                              className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-bold border ${status.class}`}
+                            >
+                              {status.icon}
+                              {status.label}
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+                      <div className="flex-shrink-0">
+                        {isExpanded ? (
+                          <FaChevronUp className="w-5 h-5 text-gray-500" />
+                        ) : (
+                          <FaChevronDown className="w-5 h-5 text-gray-500" />
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Quick Stats Row - Rounded Full */}
+                    <div className="mt-3 flex gap-2">
+                      <div className="flex-1 bg-gray-100 rounded-full p-2.5 text-center border border-gray-300">
+                        <p className="text-[10px] text-gray-600 uppercase font-bold">
+                          Buy
+                        </p>
+                        <p className="text-sm font-bold text-black">
+                          {item.buyingPrice.toLocaleString()}
+                        </p>
+                      </div>
+                      <div className="flex-1 bg-green-100 rounded-full p-2.5 text-center border border-green-300">
+                        <p className="text-[10px] text-green-700 uppercase font-bold">
+                          Sell
+                        </p>
+                        <p className="text-sm font-bold text-green-700">
+                          {item.price.toLocaleString()}
+                        </p>
+                      </div>
+                      <div
+                        className={`flex-1 rounded-full p-2.5 text-center border ${getQuantityStyle(item.reOrderStatus)}`}
+                      >
+                        <p className="text-[10px] uppercase font-bold">Qty</p>
+                        <p className="text-sm font-bold">
+                          {item.itemQuantity.toLocaleString()}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Expanded Details */}
+                  {isExpanded && (
+                    <div className="px-4 pb-4 border-t border-gray-200">
+                      <div className="grid grid-cols-2 gap-2 mt-3">
+                        <div className="bg-gray-100 rounded-full p-3 border border-gray-300">
+                          <div className="flex items-center gap-1.5 mb-1">
+                            <FaDollarSign className="w-3.5 h-3.5 text-gray-500" />
+                            <span className="text-xs text-gray-600 font-bold">
+                              Wholesale
+                            </span>
+                          </div>
+                          <p className="text-sm font-bold text-black">
+                            {(item.wholesalePrice || 0).toLocaleString()}
                           </p>
                         </div>
-                      )}
-                    </div>
-                  </td>
-                </tr>
-              ) : (
-                currentItems.map((item, index) => {
-                  const isExpired = new Date(item.expireDate) < new Date();
-                  const expireDate = new Date(item.expireDate);
-                  const today = new Date();
-                  const daysUntilExpiry = Math.ceil(
-                    (expireDate - today) / (1000 * 60 * 60 * 24)
-                  );
-                  const expiresSoon =
-                    daysUntilExpiry <= 30 && daysUntilExpiry > 0;
-
-                  return (
-                    <React.Fragment key={item._id}>
-                      <tr className="hover:bg-gray-50 transition-colors">
-                        {/* SN Column */}
-                        <td className="py-3 px-2 text-center border-r border-gray-300 bg-gray-200">
-                          <span className="inline-flex items-center justify-center w-8 h-8 bg-green-300 text-black font-bold rounded-full text-xs">
-                            {indexOfFirstItem + index + 1}
-                          </span>
-                        </td>
-                        {/* Product Column */}
-                        <td className="py-3 px-2 text-center bg-gray-100 border-r border-gray-200">
-                          <span className="font-bold text-black text-sm">
-                            {item.name}
-                          </span>
-                        </td>
-                        {/* Buy Price Column */}
-                        <td className="py-3 px-2 text-center bg-yellow-100 border-r border-gray-200">
-                          <span className="font-bold text-black text-sm">
-                            {item.buyingPrice.toLocaleString()}
-                          </span>
-                        </td>
-                        {/* Sell Price Column */}
-                        <td className="py-3 px-2 text-center bg-yellow-100 border-r border-gray-200">
-                          <span className="font-bold text-green-700 text-sm">
-                            {item.price.toLocaleString()}
-                          </span>
-                        </td>
-                        {/* Wholesale Price */}
-                        <td className="py-3 px-2 text-center bg-blue-200 border-r border-gray-200">
-                          <span className="font-bold text-green-700 text-sm">
-                            {(item.wholesalePrice || 0).toLocaleString()}
-                          </span>
-                        </td>
-                        {/* Qty for Wholesale */}
-                        <td className="py-3 px-2 text-center bg-blue-200 border-r border-gray-200">
-                          <span className="font-bold text-green-700 text-sm">
+                        <div className="bg-gray-100 rounded-full p-3 border border-gray-300">
+                          <div className="flex items-center gap-1.5 mb-1">
+                            <FaWarehouse className="w-3.5 h-3.5 text-gray-500" />
+                            <span className="text-xs text-gray-600 font-bold">
+                              Min Qty
+                            </span>
+                          </div>
+                          <p className="text-sm font-bold text-black">
                             {(item.wholesaleMinQty || 0).toLocaleString()}
-                          </span>
-                        </td>
-                        {/* Quantity Column */}
-                        <td className="py-3 px-2 text-center border-r border-gray-200">
-                          <span
-                            className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-bold ${
-                              item.reOrderStatus === "Low"
-                                ? "bg-red-100 text-red-700"
-                                : item.reOrderStatus === "Normal"
-                                ? "bg-green-100 text-green-700"
-                                : "bg-blue-100 text-blue-700"
-                            }`}
-                          >
-                            {item.itemQuantity.toLocaleString()}
-                          </span>
-                        </td>
-                        {/* Barcode Column */}
-                        <td className="py-3 px-2 text-center bg-gray-200 border-r border-gray-200">
-                          <button
-                            onClick={() => handlePrint(item)}
-                            className="px-3 py-1.5 bg-gray-300 hover:bg-gray-400 text-black font-bold rounded-full text-xs transition-colors flex items-center gap-1 mx-auto"
-                          >
-                            <FaPrint className="w-3 h-3" />
-                            Print
-                          </button>
-                        </td>
-                        {/* Manufacture Date Column */}
-                        <td className="py-3 px-2 text-center bg-green-200 border-r border-gray-200">
-                          <span className="font-bold text-black text-sm">
+                          </p>
+                        </div>
+                        <div className="bg-green-100 rounded-full p-3 border border-green-300">
+                          <div className="flex items-center gap-1.5 mb-1">
+                            <FaCalendarTimes className="w-3.5 h-3.5 text-green-600" />
+                            <span className="text-xs text-green-700 font-bold">
+                              Mfg Date
+                            </span>
+                          </div>
+                          <p className="text-sm font-bold text-black">
                             {new Date(item.manufactureDate).toLocaleDateString(
-                              "en-GB"
+                              "en-GB",
                             )}
-                          </span>
-                        </td>
-                        {/* Expiry Date Column */}
-                        <td className="py-3 px-2 text-center border-r border-gray-200">
-                          <span
-                            className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-bold ${
-                              isExpired
-                                ? "bg-red-100 text-red-700"
-                                : expiresSoon
-                                ? "bg-yellow-100 text-yellow-700"
-                                : "bg-green-100 text-green-700"
-                            }`}
+                          </p>
+                        </div>
+                        <div
+                          className={`rounded-full p-3 border ${isExpired ? "bg-red-100 border-red-300" : expiresSoon ? "bg-yellow-100 border-yellow-300" : "bg-green-100 border-green-300"}`}
+                        >
+                          <div className="flex items-center gap-1.5 mb-1">
+                            <FaCalendarTimes
+                              className={`w-3.5 h-3.5 ${isExpired ? "text-red-600" : expiresSoon ? "text-yellow-600" : "text-green-600"}`}
+                            />
+                            <span
+                              className={`text-xs font-bold ${isExpired ? "text-red-700" : expiresSoon ? "text-yellow-700" : "text-green-700"}`}
+                            >
+                              Exp Date
+                            </span>
+                          </div>
+                          <p
+                            className={`text-sm font-bold ${isExpired ? "text-red-700" : expiresSoon ? "text-yellow-700" : "text-black"}`}
                           >
                             {new Date(item.expireDate).toLocaleDateString(
-                              "en-GB"
+                              "en-GB",
                             )}
-                            {isExpired && " (Expired)"}
-                            {expiresSoon && " (Soon)"}
+                          </p>
+                        </div>
+                      </div>
+
+                      <div className="mt-3">
+                        <div className="flex items-center gap-1.5 mb-1">
+                          <FaTags className="w-3.5 h-3.5 text-gray-500" />
+                          <span className="text-xs text-gray-600 font-bold">
+                            Category
                           </span>
-                        </td>
-                        {/* Category Column */}
-                        <td className="py-3 px-2 text-center bg-gray-100 border-r border-gray-200">
-                          <span className="font-bold text-black text-sm">
-                            {category.find((u) => u._id === item.category)
-                              ?.name || "-"}
-                          </span>
-                        </td>
-                        {/* Action Column */}
-                        <td className="py-3 px-2 text-center bg-gray-200">
-                          {canEditItem ? (
+                        </div>
+                        <span className="inline-flex items-center px-3 py-1.5 rounded-full text-xs font-bold bg-gray-200 text-black border border-gray-300">
+                          {category.find((u) => u._id === item.category)
+                            ?.name || "-"}
+                        </span>
+                      </div>
+
+                      {/* Actions - Rounded Full */}
+                      <div className="flex gap-2 mt-4">
+                        <button
+                          onClick={() => handlePrint(item)}
+                          className="flex-1 flex items-center justify-center gap-2 px-3 py-2.5 bg-gray-200 hover:bg-gray-300 text-black font-bold rounded-full text-xs transition-all border border-gray-300"
+                        >
+                          <FaPrint className="w-3.5 h-3.5" />
+                          Print Barcode
+                        </button>
+                        {canEditItem && (
+                          <button
+                            onClick={() => {
+                              setShowModalEdit(true);
+                              setModifiedItem(item);
+                            }}
+                            className="flex-1 flex items-center justify-center gap-2 px-3 py-2.5 bg-green-300 hover:bg-green-400 text-black font-bold rounded-full text-xs transition-all border border-green-400"
+                          >
+                            <AiTwotoneEdit className="w-3.5 h-3.5" />
+                            Edit Item
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              );
+            })
+          )}
+        </div>
+
+        {/* ===== DESKTOP VIEW (Table - Better Design, NOT rounded full) ===== */}
+        <div className="hidden lg:block bg-white rounded-xl border border-gray-300 overflow-hidden shadow-sm">
+          <div className="overflow-x-auto">
+            <table className="w-full min-w-[1200px]">
+              <thead>
+                <tr className="bg-green-200 border-b border-green-400">
+                  {[
+                    "SN",
+                    "Product",
+                    "Buy Price",
+                    "Sell Price",
+                    "Wholesale",
+                    "Min Qty",
+                    "Quantity",
+                    "Barcode",
+                    "Mfg Date",
+                    "Exp Date",
+                    "Category",
+                    "Status",
+                    "Action",
+                  ].map((header, idx) => (
+                    <th
+                      key={idx}
+                      className="px-4 py-3.5 text-center text-xs font-bold text-black uppercase tracking-wider whitespace-nowrap border-r border-green-300"
+                    >
+                      {header}
+                    </th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {currentItems.length === 0 ? (
+                  <tr>
+                    <td colSpan={13} className="text-center py-16">
+                      <div className="flex flex-col items-center gap-4">
+                        <div className="w-16 h-16 bg-gray-200 rounded-full flex items-center justify-center">
+                          <FaBox className="w-8 h-8 text-gray-500" />
+                        </div>
+                        <div>
+                          <p className="text-lg font-bold text-black">
+                            No items found
+                          </p>
+                          <p className="text-sm text-gray-600 mt-1">
+                            Try adjusting your search or filters
+                          </p>
+                        </div>
+                        {canAddItem &&
+                          !searchQuery &&
+                          filterStatus === "All" &&
+                          categoryFilter === "All" && (
                             <button
-                              onClick={() => {
-                                setShowModalEdit(true);
-                                setModifiedItem(item);
-                              }}
-                              className="p-2 bg-green-300 hover:bg-green-400 text-black rounded-full transition-colors"
-                              title="Edit Item"
+                              onClick={() => setShowModalAdd(true)}
+                              className="mt-2 px-5 py-2.5 bg-green-300 hover:bg-green-400 text-black font-bold rounded-full transition-all border border-green-400"
                             >
-                              <AiTwotoneEdit className="w-4 h-4" />
+                              Add First Item
                             </button>
-                          ) : (
-                            <div className="relative group inline-block">
-                              <button
-                                disabled
-                                className="p-2 bg-gray-300 text-gray-500 rounded-full cursor-not-allowed"
-                                title="You don't have permission to edit items"
+                          )}
+                      </div>
+                    </td>
+                  </tr>
+                ) : (
+                  currentItems.map((item, index) => {
+                    const status = getItemStatus(item);
+                    const isExpired = new Date(item.expireDate) < new Date();
+                    const expireDate = new Date(item.expireDate);
+                    const today = new Date();
+                    const daysUntilExpiry = Math.ceil(
+                      (expireDate - today) / (1000 * 60 * 60 * 24),
+                    );
+                    const expiresSoon =
+                      daysUntilExpiry <= 30 && daysUntilExpiry > 0;
+
+                    return (
+                      <React.Fragment key={item._id}>
+                        <tr className="hover:bg-green-50 transition-colors cursor-pointer group">
+                          <td className="px-4 py-4 text-center border-r border-gray-200">
+                            <span className="inline-flex items-center justify-center w-8 h-8 bg-green-300 text-black font-bold rounded-full text-xs">
+                              {indexOfFirstItem + index + 1}
+                            </span>
+                          </td>
+                          <td className="px-4 py-4 text-left border-r border-gray-200">
+                            <div className="flex items-center gap-3">
+                              <div
+                                className={`w-8 h-8 rounded-full flex items-center justify-center border-2 ${
+                                  isExpired
+                                    ? "bg-red-200 border-red-400"
+                                    : expiresSoon
+                                      ? "bg-yellow-200 border-yellow-400"
+                                      : item.reOrderStatus === "Low"
+                                        ? "bg-red-200 border-red-400"
+                                        : "bg-green-200 border-green-400"
+                                }`}
                               >
-                                <AiTwotoneEdit className="w-4 h-4" />
-                              </button>
-                              <div className="absolute right-0 top-full mt-2 w-64 p-3 bg-gray-800 text-white text-sm rounded-lg shadow-xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-10">
-                                <div className="absolute -top-1 right-3 w-3 h-3 bg-gray-800 transform rotate-45"></div>
-                                <p className="font-semibold">Permission Required</p>
-                                <p className="mt-1 text-gray-300">
-                                  You need the <span className="font-bold">Edit Items</span> permission to modify existing inventory items.
+                                <FaBox
+                                  className={`w-4 h-4 ${
+                                    isExpired
+                                      ? "text-red-700"
+                                      : expiresSoon
+                                        ? "text-yellow-700"
+                                        : item.reOrderStatus === "Low"
+                                          ? "text-red-700"
+                                          : "text-green-700"
+                                  }`}
+                                />
+                              </div>
+                              <div>
+                                <span className="font-bold text-black text-sm">
+                                  {item.name}
+                                </span>
+                                <p className="text-xs text-gray-600">
+                                  {item.barCode}
                                 </p>
                               </div>
                             </div>
-                          )}
-                        </td>
-                      </tr>
-                      <tr className="h-3">
-                        <td colSpan={12} className="p-0"></td>
-                      </tr>
-                    </React.Fragment>
-                  );
-                })
-              )}
-            </tbody>
-          </table>
-        </div>
+                          </td>
+                          <td className="px-4 py-4 text-center border-r border-gray-200">
+                            <span className="text-sm font-bold text-black">
+                              {item.buyingPrice.toLocaleString()}
+                            </span>
+                          </td>
+                          <td className="px-4 py-4 text-center border-r border-gray-200">
+                            <span className="text-sm font-bold text-green-700">
+                              {item.price.toLocaleString()}
+                            </span>
+                          </td>
+                          <td className="px-4 py-4 text-center border-r border-gray-200">
+                            <span className="text-sm font-bold text-blue-700">
+                              {(item.wholesalePrice || 0).toLocaleString()}
+                            </span>
+                          </td>
+                          <td className="px-4 py-4 text-center border-r border-gray-200">
+                            <span className="text-sm font-bold text-blue-700">
+                              {(item.wholesaleMinQty || 0).toLocaleString()}
+                            </span>
+                          </td>
+                          <td className="px-4 py-4 text-center border-r border-gray-200">
+                            <span
+                              className={`inline-flex items-center px-3 py-1.5 rounded-full text-xs font-bold border ${getQuantityStyle(item.reOrderStatus)}`}
+                            >
+                              {item.itemQuantity.toLocaleString()}
+                            </span>
+                          </td>
+                          <td className="px-4 py-4 text-center border-r border-gray-200">
+                            <button
+                              onClick={() => handlePrint(item)}
+                              className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-gray-200 hover:bg-gray-300 text-black font-bold rounded-full text-xs transition-all border border-gray-300"
+                            >
+                              <FaPrint className="w-3 h-3" />
+                              Print
+                            </button>
+                          </td>
+                          <td className="px-4 py-4 text-center border-r border-gray-200">
+                            <span className="text-sm font-bold text-black">
+                              {new Date(
+                                item.manufactureDate,
+                              ).toLocaleDateString("en-GB")}
+                            </span>
+                          </td>
+                          <td className="px-4 py-4 text-center border-r border-gray-200">
+                            <span
+                              className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-bold border ${isExpired ? "bg-red-100 text-red-800 border-red-300" : expiresSoon ? "bg-yellow-100 text-yellow-800 border-yellow-300" : "bg-green-100 text-green-800 border-green-300"}`}
+                            >
+                              {new Date(item.expireDate).toLocaleDateString(
+                                "en-GB",
+                              )}
+                              {isExpired && " (Expired)"}
+                              {expiresSoon && " (Soon)"}
+                            </span>
+                          </td>
+                          <td className="px-4 py-4 text-center border-r border-gray-200">
+                            <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-bold bg-gray-200 text-black border border-gray-300">
+                              {category.find((u) => u._id === item.category)
+                                ?.name || "-"}
+                            </span>
+                          </td>
+                          <td className="px-4 py-4 text-center border-r border-gray-200">
+                            <span
+                              className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-bold border ${status.class}`}
+                            >
+                              {status.icon}
+                              {status.label}
+                            </span>
+                          </td>
+                          <td className="px-4 py-4 text-center">
+                            {canEditItem ? (
+                              <button
+                                onClick={() => {
+                                  setShowModalEdit(true);
+                                  setModifiedItem(item);
+                                }}
+                                className="p-2 bg-green-300 hover:bg-green-400 text-black rounded-full transition-all border border-green-400"
+                                title="Edit Item"
+                              >
+                                <AiTwotoneEdit className="w-4 h-4" />
+                              </button>
+                            ) : (
+                              <div className="relative group inline-block">
+                                <button
+                                  disabled
+                                  className="p-2 bg-gray-300 text-gray-500 rounded-full cursor-not-allowed border border-gray-400"
+                                >
+                                  <AiTwotoneEdit className="w-4 h-4" />
+                                </button>
+                                <div className="absolute right-0 top-full mt-2 w-64 p-3 bg-gray-800 text-white text-sm rounded-2xl shadow-xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50">
+                                  <p className="font-bold mb-1">
+                                    Permission Required
+                                  </p>
+                                  <p className="text-gray-300 text-xs">
+                                    You need the{" "}
+                                    <span className="font-bold text-green-300">
+                                      Edit Items
+                                    </span>{" "}
+                                    permission to modify items.
+                                  </p>
+                                </div>
+                              </div>
+                            )}
+                          </td>
+                        </tr>
+                        <tr className="h-2">
+                          <td colSpan={13} className="p-0 bg-gray-50"></td>
+                        </tr>
+                      </React.Fragment>
+                    );
+                  })
+                )}
+              </tbody>
+            </table>
+          </div>
 
-        {/* Compact Pagination */}
-        {totalPages > 1 && (
-          <div className="flex flex-col sm:flex-row items-center justify-between gap-3 p-4 border-t border-gray-300 bg-gray-50">
-            <div className="text-xs text-gray-700">
-              <span className="font-bold text-black">
-                Showing {(currentPage - 1) * itemsPerPage + 1} to{" "}
-                {Math.min(currentPage * itemsPerPage, totalItems)}
-              </span>{" "}
-              of <span className="font-bold text-black">{totalItems}</span>{" "}
-              items
-            </div>
-
-            <div className="flex items-center gap-1">
-              <button
-                onClick={prevPage}
-                disabled={currentPage === 1}
-                className="p-2 bg-gray-200 hover:bg-gray-300 text-black font-bold rounded-full disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
-              >
-                <IoIosArrowBack className="w-4 h-4" />
-              </button>
-
+          {/* Desktop Pagination - Rounded Full */}
+          {totalPages > 1 && (
+            <div className="flex flex-col sm:flex-row items-center justify-between gap-4 px-6 py-4 border-t border-gray-300 bg-gray-100">
+              <p className="text-sm text-gray-600">
+                Showing{" "}
+                <span className="font-bold text-black">
+                  {(currentPage - 1) * itemsPerPage + 1}
+                </span>{" "}
+                to{" "}
+                <span className="font-bold text-black">
+                  {Math.min(currentPage * itemsPerPage, totalItems)}
+                </span>{" "}
+                of <span className="font-bold text-black">{totalItems}</span>{" "}
+                items
+              </p>
               <div className="flex items-center gap-1">
+                <button
+                  onClick={prevPage}
+                  disabled={currentPage === 1}
+                  className="p-2.5 bg-white hover:bg-gray-100 text-black rounded-full border border-gray-300 disabled:opacity-40 disabled:cursor-not-allowed transition-all"
+                >
+                  <IoIosArrowBack className="w-4 h-4" />
+                </button>
                 {[...Array(totalPages)].map((_, i) => {
                   const pageNum = i + 1;
                   const isCurrent = currentPage === pageNum;
@@ -743,17 +1236,12 @@ const Items = () => {
                     pageNum === 1 ||
                     pageNum === totalPages ||
                     (pageNum >= currentPage - 1 && pageNum <= currentPage + 1);
-
                   if (showPage) {
                     return (
                       <button
                         key={i}
                         onClick={() => setCurrentPage(pageNum)}
-                        className={`w-8 h-8 text-xs font-bold rounded-full transition-colors ${
-                          isCurrent
-                            ? "bg-green-300 text-black shadow"
-                            : "text-gray-700 hover:bg-gray-200"
-                        }`}
+                        className={`w-9 h-9 text-sm font-bold rounded-full transition-all ${isCurrent ? "bg-green-300 text-black shadow border border-green-400" : "text-black hover:bg-gray-200 border border-gray-300"}`}
                       >
                         {pageNum}
                       </button>
@@ -764,26 +1252,45 @@ const Items = () => {
                     totalPages > 5
                   ) {
                     return (
-                      <span
-                        key={i}
-                        className="px-2 text-gray-500 font-bold text-xs"
-                      >
+                      <span key={i} className="px-2 text-gray-500 font-bold">
                         ...
                       </span>
                     );
                   }
                   return null;
                 })}
+                <button
+                  onClick={nextPage}
+                  disabled={currentPage === totalPages}
+                  className="p-2.5 bg-white hover:bg-gray-100 text-black rounded-full border border-gray-300 disabled:opacity-40 disabled:cursor-not-allowed transition-all"
+                >
+                  <IoIosArrowForward className="w-4 h-4" />
+                </button>
               </div>
-
-              <button
-                onClick={nextPage}
-                disabled={currentPage === totalPages}
-                className="p-2 bg-gray-200 hover:bg-gray-300 text-black font-bold rounded-full disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
-              >
-                <IoIosArrowForward className="w-4 h-4" />
-              </button>
             </div>
+          )}
+        </div>
+
+        {/* Mobile Pagination - Rounded Full */}
+        {totalPages > 1 && (
+          <div className="lg:hidden flex items-center justify-center gap-2 mt-4">
+            <button
+              onClick={prevPage}
+              disabled={currentPage === 1}
+              className="p-2.5 bg-white hover:bg-gray-100 text-black rounded-full border border-gray-300 disabled:opacity-40 disabled:cursor-not-allowed transition-all"
+            >
+              <IoIosArrowBack className="w-5 h-5" />
+            </button>
+            <span className="px-4 py-2 bg-white border border-gray-300 rounded-full text-sm font-bold text-black">
+              {currentPage} / {totalPages}
+            </span>
+            <button
+              onClick={nextPage}
+              disabled={currentPage === totalPages}
+              className="p-2.5 bg-white hover:bg-gray-100 text-black rounded-full border border-gray-300 disabled:opacity-40 disabled:cursor-not-allowed transition-all"
+            >
+              <IoIosArrowForward className="w-5 h-5" />
+            </button>
           </div>
         )}
       </div>
@@ -797,7 +1304,6 @@ const Items = () => {
           modifiedItem={modifiedItem}
         />
       )}
-      
       {canEditItem && modifiedItem && (
         <EditItem
           showModal={showModalEdit}
