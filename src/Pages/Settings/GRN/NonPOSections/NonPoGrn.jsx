@@ -260,7 +260,7 @@ const NonPoGrn = () => {
       </div>
 
       {/* Main content - only visible on md (768px) and above */}
-      <div className="hidden md:block p-4 lg:p-6 max-w-7xl mx-auto bg-gray-50 min-h-screen">
+      <div className="hidden md:block p-4 lg:p-6 max-w-8xl mx-auto bg-gray-50 min-h-screen">
         {/* Header */}
         <div className="mb-6">
           <h1 className="text-2xl lg:text-3xl font-bold text-black">

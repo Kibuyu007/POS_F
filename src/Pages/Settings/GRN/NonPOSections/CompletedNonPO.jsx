@@ -252,7 +252,7 @@ const CompletedNonPO = () => {
 
       {/* Expandable Filters Panel */}
       {showFilters && (
-        <div className="bg-white rounded-full p-3 sm:p-4 shadow-lg border border-gray-100 mb-3 sm:mb-4 space-y-3">
+        <div className="bg-white rounded-xl p-3 sm:p-4 shadow-lg border border-gray-100 mb-3 sm:mb-4 space-y-3">
           <div className="flex items-center justify-between mb-2">
             <h3 className="text-sm font-bold text-black">Advanced Filters</h3>
             <button

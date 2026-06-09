@@ -683,7 +683,7 @@ const Expenses = () => {
                       </td>
                       <td className="py-3 px-2 text-center bg-yellow-100 border-r border-gray-200">
                         <span className="font-bold text-black text-xs">
-                          Tsh {exp.amount.toLocaleString()}
+                          {exp.amount.toLocaleString()}
                         </span>
                       </td>
                       <td className="py-3 px-2 text-center bg-gray-200 border-r border-gray-200">

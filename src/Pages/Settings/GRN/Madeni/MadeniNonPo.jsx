@@ -1,152 +1,200 @@
+import React from "react";
 import axios from "axios";
-import { useState, useEffect } from "react";
+import { useEffect, useState } from "react";
 import { IoIosArrowBack, IoIosArrowForward } from "react-icons/io";
 import {
   FiSearch,
   FiRefreshCw,
-  FiPackage,
   FiChevronDown,
   FiChevronUp,
-  FiBox,
   FiFilter,
   FiX,
+  FiDollarSign,
 } from "react-icons/fi";
-import { DatePicker } from "@mui/x-date-pickers/DatePicker";
 import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs";
 import { LocalizationProvider } from "@mui/x-date-pickers";
+import { DatePicker } from "@mui/x-date-pickers/DatePicker";
 import dayjs from "dayjs";
 import Loading from "../../../../Components/Shared/Loading";
 import BASE_URL from "../../../../Utils/config";
 import toast from "react-hot-toast";
+import { useSelector } from "react-redux";
 
-const CompletedNonPO = () => {
-  const [grns, setGrns] = useState([]);
-  const [filteredGrns, setFilteredGrns] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [filterSupplier, setFilterSupplier] = useState("");
-  const [filterItem, setFilterItem] = useState("");
-  const [filterFrom, setFilterFrom] = useState(null);
-  const [filterTo, setFilterTo] = useState(null);
-  const [filterStatus, setFilterStatus] = useState("");
+const MadeniNonPo = () => {
+  const user = useSelector((state) => state.user.user);
+  const [supplierBills, setSupplierBills] = useState([]);
   const [load, setLoad] = useState(false);
-  const [expandedGrn, setExpandedGrn] = useState(null);
+  const [expandedSuppliers, setExpandedSuppliers] = useState({});
+  const [supplierFilter, setSupplierFilter] = useState("");
+  const [startDate, setStartDate] = useState(null);
+  const [endDate, setEndDate] = useState(null);
   const [currentPage, setCurrentPage] = useState(1);
+  const [selectedSupplier, setSelectedSupplier] = useState(null);
+  const [paymentDialogOpen, setPaymentDialogOpen] = useState(false);
+  const [bulkPaymentAmount, setBulkPaymentAmount] = useState("");
   const [showFilters, setShowFilters] = useState(false);
+
   const itemsPerPage = 10;
 
   useEffect(() => {
-    const fetchCompletedNonPoGrns = async () => {
-      setLoad(true);
-      try {
-        const res = await axios.get(`${BASE_URL}/api/grn/nonPo`);
-        if (res.data.success) {
-          setGrns(res.data.data);
-        } else {
-          toast.error(res.data.message || "Failed to fetch data");
-        }
-      } catch (err) {
-        toast.error(err.response?.data?.message || "Failed to load GRN data");
-        console.error("Error fetching completed GRNs:", err);
-      } finally {
-        setLoading(false);
-        setLoad(false);
-      }
-    };
-    fetchCompletedNonPoGrns();
+    fetchSupplierBills();
   }, []);
 
   useEffect(() => {
-    const filtered = grns.filter((grn) => {
-      const supplierMatch = filterSupplier
-        ? grn.supplierName?.supplierName
-            ?.toLowerCase()
-            .includes(filterSupplier.toLowerCase())
-        : true;
-
-      const itemMatch = filterItem
-        ? grn.items?.some((item) =>
-            item.name?.name?.toLowerCase().includes(filterItem.toLowerCase()),
-          )
-        : true;
-
-      const date = dayjs(grn.createdAt);
-      const fromMatch = filterFrom
-        ? date.isAfter(dayjs(filterFrom).subtract(1, "day"))
-        : true;
-      const toMatch = filterTo
-        ? date.isBefore(dayjs(filterTo).add(1, "day"))
-        : true;
-
-      let statusMatch = true;
-      if (filterStatus) {
-        statusMatch = grn.items?.some(
-          (item) => item.status.toLowerCase() === filterStatus.toLowerCase(),
-        );
-      }
-
-      return supplierMatch && itemMatch && fromMatch && toMatch && statusMatch;
-    });
-
-    setFilteredGrns(filtered);
     setCurrentPage(1);
-  }, [grns, filterSupplier, filterItem, filterFrom, filterTo, filterStatus]);
+  }, [supplierFilter, startDate, endDate]);
 
-  const totalItems = filteredGrns.length;
-  const totalPages = Math.ceil(totalItems / itemsPerPage);
-  const paginatedGrns = filteredGrns.slice(
-    (currentPage - 1) * itemsPerPage,
-    currentPage * itemsPerPage,
-  );
-
-  const prevPage = () => currentPage > 1 && setCurrentPage(currentPage - 1);
-  const nextPage = () =>
-    currentPage < totalPages && setCurrentPage(currentPage + 1);
-
-  const toggleExpand = (grnId) => {
-    setExpandedGrn(expandedGrn === grnId ? null : grnId);
-  };
-
-  const clearFilters = () => {
-    setFilterSupplier("");
-    setFilterItem("");
-    setFilterFrom(null);
-    setFilterTo(null);
-    setFilterStatus("");
-  };
-
-  const refreshData = async () => {
+  const fetchSupplierBills = async () => {
     setLoad(true);
     try {
-      const res = await axios.get(`${BASE_URL}/api/grn/nonPo`);
+      const res = await axios.get(`${BASE_URL}/api/grn/unpaidNonPo`);
       if (res.data.success) {
-        setGrns(res.data.data);
-        toast.success("Data refreshed!");
+        setSupplierBills(res.data.data);
       }
     } catch (err) {
-      toast.error("Failed to refresh data");
+      console.error(err);
+      toast.error("Failed to load supplier bills.");
     } finally {
       setLoad(false);
     }
   };
 
-  const activeFilterCount = [
-    filterSupplier,
-    filterItem,
-    filterFrom,
-    filterTo,
-    filterStatus,
-  ].filter(Boolean).length;
+  const filteredData = supplierBills.filter((supplier) => {
+    if (
+      supplierFilter &&
+      !supplier.supplierName
+        .toLowerCase()
+        .includes(supplierFilter.toLowerCase())
+    ) {
+      return false;
+    }
 
-  const totalBilledItems = filteredGrns.reduce(
-    (sum, grn) =>
-      sum + grn.items.filter((item) => item.status === "Billed").length,
+    if (startDate || endDate) {
+      const hasItemsInRange = supplier.items.some((item) => {
+        const itemDate = dayjs(item.createdAt);
+        const matchStart = startDate
+          ? itemDate.isSameOrAfter(dayjs(startDate), "day")
+          : true;
+        const matchEnd = endDate
+          ? itemDate.isSameOrBefore(dayjs(endDate), "day")
+          : true;
+        return matchStart && matchEnd;
+      });
+      return hasItemsInRange;
+    }
+
+    return true;
+  });
+
+  const totalDebt = filteredData.reduce(
+    (sum, supplier) => sum + (supplier.totalBilledAmount || 0),
     0,
   );
-  const totalCompletedItems = filteredGrns.reduce(
-    (sum, grn) =>
-      sum + grn.items.filter((item) => item.status === "Completed").length,
+  const totalRemaining = filteredData.reduce(
+    (sum, supplier) => sum + (supplier.totalRemainingBalance || 0),
     0,
   );
+  const totalPaid = totalDebt - totalRemaining;
+
+  const suppliersWithBalance = filteredData.filter(
+    (s) => s.totalRemainingBalance > 0,
+  ).length;
+  const suppliersFullyPaid = filteredData.filter(
+    (s) => s.totalRemainingBalance <= 0,
+  ).length;
+
+  const totalPages = Math.ceil(filteredData.length / itemsPerPage);
+  const totalSuppliers = filteredData.length;
+
+  const currentSuppliers = filteredData.slice(
+    (currentPage - 1) * itemsPerPage,
+    currentPage * itemsPerPage,
+  );
+
+  const toggleSupplierExpansion = (supplierId) => {
+    setExpandedSuppliers((prev) => ({
+      ...prev,
+      [supplierId]: !prev[supplierId],
+    }));
+  };
+
+  const calculateItemRemainingBalance = (item) => {
+    return (item.billedTotalCost || 0) - (item.paidAmount || 0);
+  };
+
+  const isItemFullyPaid = (item) => {
+    return item.isFullyPaid || calculateItemRemainingBalance(item) <= 0;
+  };
+
+  const handleSupplierPayment = async (supplier) => {
+    const amount = parseFloat(bulkPaymentAmount || 0);
+
+    if (!amount || amount <= 0) {
+      toast.error("Please enter a valid payment amount");
+      return;
+    }
+
+    if (amount > supplier.totalRemainingBalance) {
+      toast.error("Payment amount exceeds supplier's remaining balance");
+      return;
+    }
+
+    setLoad(true);
+    try {
+      const res = await axios.post(
+        `${BASE_URL}/api/grn/payNonPoBills`,
+        {
+          supplierId: supplier.supplierId,
+          paymentAmount: amount,
+        },
+        { withCredentials: true },
+      );
+
+      if (res.data.success) {
+        toast.success(
+          `Payment of Tsh ${amount.toLocaleString()} processed successfully!`,
+        );
+        setBulkPaymentAmount("");
+        setPaymentDialogOpen(false);
+        setSelectedSupplier(null);
+        fetchSupplierBills();
+      }
+    } catch (err) {
+      console.error(err);
+      toast.error(err.response?.data?.message || "Failed to process payment.");
+    } finally {
+      setLoad(false);
+    }
+  };
+
+  const openPaymentDialog = (supplier) => {
+    setSelectedSupplier(supplier);
+    setBulkPaymentAmount("");
+    setPaymentDialogOpen(true);
+  };
+
+  const formatNumber = (value) => {
+    if (!value && value !== 0) return "";
+    const num = parseFloat(value);
+    if (isNaN(num)) return "";
+    return num.toLocaleString();
+  };
+
+  const unformatNumber = (value) => {
+    return value.replace(/,/g, "");
+  };
+
+  const canPayBilledGrn = user?.roles?.canPayBilledGrn === true;
+
+  const activeFilterCount = [supplierFilter, startDate, endDate].filter(
+    Boolean,
+  ).length;
+
+  const clearFilters = () => {
+    setSupplierFilter("");
+    setStartDate(null);
+    setEndDate(null);
+  };
 
   return (
     <div className="p-2 sm:p-3 md:p-4 lg:p-5 bg-gray-50 min-h-screen">
@@ -154,14 +202,14 @@ const CompletedNonPO = () => {
       <div className="flex items-center justify-between mb-3 sm:mb-4">
         <div className="min-w-0 flex-1">
           <h1 className="text-lg sm:text-xl md:text-2xl font-bold text-black">
-            Completed Non-PO GRNs
+            Supplier Payments
           </h1>
           <p className="text-gray-600 text-xs hidden sm:block">
-            View all completed Non-Purchase Order GRN records
+            Track and manage supplier bill payments (FIFO)
           </p>
         </div>
         <button
-          onClick={refreshData}
+          onClick={fetchSupplierBills}
           className="px-3 py-2 bg-green-300 hover:bg-green-400 text-black font-bold rounded-full shadow text-xs flex items-center gap-1.5 flex-shrink-0"
         >
           <FiRefreshCw
@@ -175,38 +223,45 @@ const CompletedNonPO = () => {
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mb-3 sm:mb-4">
         <div className="bg-white border border-gray-200 rounded-full p-2.5 sm:p-3 shadow-sm text-center">
           <p className="text-[10px] sm:text-xs text-gray-500 font-medium mb-0.5">
-            Total GRNs
+            Total Billed
           </p>
-          <p className="text-xs sm:text-sm md:text-base font-bold text-black">
-            {totalItems}
+          <p className="text-xs sm:text-sm md:text-base font-bold text-black truncate">
+            {totalDebt.toLocaleString()}
           </p>
+          <p className="text-[9px] text-gray-400">Tsh</p>
         </div>
         <div className="bg-white border border-gray-200 rounded-full p-2.5 sm:p-3 shadow-sm text-center">
           <p className="text-[10px] sm:text-xs text-gray-500 font-medium mb-0.5">
-            Total Items
+            Pending
           </p>
-          <p className="text-xs sm:text-sm md:text-base font-bold text-black">
-            {filteredGrns.reduce(
-              (sum, grn) => sum + (grn.items?.length || 0),
-              0,
-            )}
+          <p className="text-xs sm:text-sm md:text-base font-bold text-red-600 truncate">
+            {totalRemaining.toLocaleString()}
           </p>
+          <p className="text-[9px] text-gray-400">Tsh</p>
         </div>
         <div className="bg-white border border-gray-200 rounded-full p-2.5 sm:p-3 shadow-sm text-center">
           <p className="text-[10px] sm:text-xs text-gray-500 font-medium mb-0.5">
-            Billed
+            Paid
           </p>
-          <p className="text-xs sm:text-sm md:text-base font-bold text-yellow-600">
-            {totalBilledItems}
+          <p className="text-xs sm:text-sm md:text-base font-bold text-green-600 truncate">
+            {totalPaid.toLocaleString()}
           </p>
+          <p className="text-[9px] text-gray-400">Tsh</p>
         </div>
         <div className="bg-white border border-gray-200 rounded-full p-2.5 sm:p-3 shadow-sm text-center">
           <p className="text-[10px] sm:text-xs text-gray-500 font-medium mb-0.5">
-            Completed
+            Suppliers
           </p>
-          <p className="text-xs sm:text-sm md:text-base font-bold text-green-600">
-            {totalCompletedItems}
-          </p>
+          <div className="flex items-center justify-center gap-1.5">
+            <span className="text-xs sm:text-sm font-bold text-yellow-600">
+              {suppliersWithBalance}
+            </span>
+            <span className="text-gray-400 text-[10px]">/</span>
+            <span className="text-xs sm:text-sm font-bold text-green-600">
+              {suppliersFullyPaid}
+            </span>
+          </div>
+          <p className="text-[9px] text-gray-400">pending/paid</p>
         </div>
       </div>
 
@@ -219,13 +274,13 @@ const CompletedNonPO = () => {
           <input
             type="text"
             placeholder="Search supplier..."
-            value={filterSupplier}
-            onChange={(e) => setFilterSupplier(e.target.value)}
+            value={supplierFilter}
+            onChange={(e) => setSupplierFilter(e.target.value)}
             className="w-full pl-9 sm:pl-11 pr-8 py-2.5 sm:py-3 text-sm border border-gray-300 rounded-full bg-white text-black focus:border-green-300 focus:outline-none focus:ring-2 focus:ring-green-100"
           />
-          {filterSupplier && (
+          {supplierFilter && (
             <button
-              onClick={() => setFilterSupplier("")}
+              onClick={() => setSupplierFilter("")}
               className="absolute inset-y-0 right-3 flex items-center text-gray-400"
             >
               <FiX className="w-4 h-4" />
@@ -252,7 +307,7 @@ const CompletedNonPO = () => {
 
       {/* Expandable Filters Panel */}
       {showFilters && (
-        <div className="bg-white rounded-full p-3 sm:p-4 shadow-lg border border-gray-100 mb-3 sm:mb-4 space-y-3">
+        <div className="bg-white rounded-xl p-3 sm:p-4 shadow-lg border border-gray-100 mb-3 sm:mb-4 space-y-3">
           <div className="flex items-center justify-between mb-2">
             <h3 className="text-sm font-bold text-black">Advanced Filters</h3>
             <button
@@ -266,44 +321,12 @@ const CompletedNonPO = () => {
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
               <label className="block text-xs font-bold text-gray-700 mb-1.5">
-                Item Name
-              </label>
-              <div className="relative">
-                <FiBox className="absolute left-3 top-2.5 w-4 h-4 text-gray-400" />
-                <input
-                  type="text"
-                  placeholder="Search item..."
-                  value={filterItem}
-                  onChange={(e) => setFilterItem(e.target.value)}
-                  className="w-full pl-9 pr-3 py-2.5 text-sm border border-gray-300 rounded-full bg-white focus:border-green-300 focus:outline-none"
-                />
-              </div>
-            </div>
-            <div>
-              <label className="block text-xs font-bold text-gray-700 mb-1.5">
-                Status
-              </label>
-              <select
-                value={filterStatus}
-                onChange={(e) => setFilterStatus(e.target.value)}
-                className="w-full px-3 py-2.5 text-sm border border-gray-300 rounded-full bg-white focus:border-green-300 focus:outline-none"
-              >
-                <option value="">All Status</option>
-                <option value="Billed">Billed</option>
-                <option value="Completed">Completed</option>
-              </select>
-            </div>
-          </div>
-
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            <div>
-              <label className="block text-xs font-bold text-gray-700 mb-1.5">
                 From Date
               </label>
               <LocalizationProvider dateAdapter={AdapterDayjs}>
                 <DatePicker
-                  value={filterFrom}
-                  onChange={setFilterFrom}
+                  value={startDate}
+                  onChange={setStartDate}
                   slotProps={{
                     textField: {
                       size: "small",
@@ -325,8 +348,8 @@ const CompletedNonPO = () => {
               </label>
               <LocalizationProvider dateAdapter={AdapterDayjs}>
                 <DatePicker
-                  value={filterTo}
-                  onChange={setFilterTo}
+                  value={endDate}
+                  onChange={setEndDate}
                   slotProps={{
                     textField: {
                       size: "small",
@@ -358,42 +381,26 @@ const CompletedNonPO = () => {
       {/* Active Filter Chips */}
       {activeFilterCount > 0 && !showFilters && (
         <div className="flex flex-wrap gap-1.5 mb-3 sm:mb-4">
-          {filterSupplier && (
+          {supplierFilter && (
             <span className="inline-flex items-center px-2.5 py-1 bg-green-100 text-green-800 text-[10px] font-medium rounded-full">
-              Supplier: {filterSupplier}
-              <button onClick={() => setFilterSupplier("")} className="ml-1">
+              {supplierFilter}
+              <button onClick={() => setSupplierFilter("")} className="ml-1">
                 <FiX className="w-3 h-3" />
               </button>
             </span>
           )}
-          {filterItem && (
+          {startDate && (
             <span className="inline-flex items-center px-2.5 py-1 bg-blue-100 text-blue-800 text-[10px] font-medium rounded-full">
-              Item: {filterItem}
-              <button onClick={() => setFilterItem("")} className="ml-1">
+              From {dayjs(startDate).format("DD/MM")}
+              <button onClick={() => setStartDate(null)} className="ml-1">
                 <FiX className="w-3 h-3" />
               </button>
             </span>
           )}
-          {filterStatus && (
-            <span className="inline-flex items-center px-2.5 py-1 bg-yellow-100 text-yellow-800 text-[10px] font-medium rounded-full">
-              {filterStatus}
-              <button onClick={() => setFilterStatus("")} className="ml-1">
-                <FiX className="w-3 h-3" />
-              </button>
-            </span>
-          )}
-          {filterFrom && (
-            <span className="inline-flex items-center px-2.5 py-1 bg-purple-100 text-purple-800 text-[10px] font-medium rounded-full">
-              From {dayjs(filterFrom).format("DD/MM")}
-              <button onClick={() => setFilterFrom(null)} className="ml-1">
-                <FiX className="w-3 h-3" />
-              </button>
-            </span>
-          )}
-          {filterTo && (
-            <span className="inline-flex items-center px-2.5 py-1 bg-purple-100 text-purple-800 text-[10px] font-medium rounded-full">
-              To {dayjs(filterTo).format("DD/MM")}
-              <button onClick={() => setFilterTo(null)} className="ml-1">
+          {endDate && (
+            <span className="inline-flex items-center px-2.5 py-1 bg-blue-100 text-blue-800 text-[10px] font-medium rounded-full">
+              To {dayjs(endDate).format("DD/MM")}
+              <button onClick={() => setEndDate(null)} className="ml-1">
                 <FiX className="w-3 h-3" />
               </button>
             </span>
@@ -406,8 +413,8 @@ const CompletedNonPO = () => {
       {/* Results Count */}
       <div className="flex items-center justify-between mb-2 px-1">
         <p className="text-xs text-gray-500">
-          <span className="font-bold text-black">{filteredGrns.length}</span>{" "}
-          results
+          <span className="font-bold text-black">{filteredData.length}</span>{" "}
+          suppliers
         </p>
         <p className="text-[10px] text-gray-400">
           Page {currentPage} of {totalPages || 1}
@@ -416,62 +423,54 @@ const CompletedNonPO = () => {
 
       {/* Mobile Card View */}
       <div className="md:hidden space-y-2 mb-4">
-        {loading ? (
-          <div className="bg-white rounded-xl p-6 text-center border border-gray-200">
-            <div className="animate-spin w-8 h-8 border-2 border-green-300 border-t-transparent rounded-full mx-auto mb-3" />
-            <p className="text-sm text-gray-500">Loading...</p>
-          </div>
-        ) : paginatedGrns.length === 0 ? (
+        {currentSuppliers.length === 0 ? (
           <div className="bg-white rounded-xl p-6 text-center border border-gray-200">
             <div className="text-3xl mb-2">📦</div>
-            <p className="text-sm font-bold text-black">No GRNs found</p>
+            <p className="text-sm font-bold text-black">No suppliers found</p>
             <p className="text-xs text-gray-500">Try adjusting filters</p>
           </div>
         ) : (
-          paginatedGrns.map((grn) => {
-            const isExpanded = expandedGrn === grn._id;
-            const billedCount =
-              grn.items?.filter((i) => i.status === "Billed").length || 0;
-            const completedCount =
-              grn.items?.filter((i) => i.status === "Completed").length || 0;
-            const totalCount = grn.items?.length || 0;
+          currentSuppliers.map((supplier, idx) => {
+            const isExpanded = expandedSuppliers[supplier.supplierId];
 
             return (
               <div
-                key={grn._id}
+                key={supplier.supplierId}
                 className="bg-white rounded-xl border border-gray-200 overflow-hidden shadow-sm"
               >
-                {/* Card Header - Click to expand */}
+                {/* Card Header */}
                 <div
                   className="p-3 bg-gradient-to-r from-green-100 to-green-200 cursor-pointer"
-                  onClick={() => toggleExpand(grn._id)}
+                  onClick={() => toggleSupplierExpansion(supplier.supplierId)}
                 >
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2 min-w-0">
                       <div className="w-8 h-8 bg-white rounded-full flex items-center justify-center shadow-sm flex-shrink-0">
-                        <FiPackage className="text-green-600" size={16} />
+                        <span className="text-sm font-bold text-black">
+                          {(currentPage - 1) * itemsPerPage + idx + 1}
+                        </span>
                       </div>
                       <div className="min-w-0">
                         <p className="text-sm font-bold text-black truncate">
-                          {grn.supplierName?.supplierName || "Unknown"}
+                          {supplier.supplierName}
                         </p>
                         <p className="text-[10px] text-gray-600">
-                          {dayjs(grn.receivingDate).format("DD/MM/YY")} •{" "}
-                          {totalCount} items
+                          {supplier.items.length} items • {supplier.createdBy}
                         </p>
                       </div>
                     </div>
                     <div className="flex items-center gap-2 flex-shrink-0">
-                      <div className="flex items-center gap-1">
-                        <div className="w-1.5 h-1.5 bg-yellow-500 rounded-full" />
-                        <span className="text-[10px] font-medium text-gray-700">
-                          {billedCount}
-                        </span>
-                        <div className="w-1.5 h-1.5 bg-green-500 rounded-full" />
-                        <span className="text-[10px] font-medium text-gray-700">
-                          {completedCount}
-                        </span>
-                      </div>
+                      <span
+                        className={`inline-block px-2 py-0.5 rounded-full text-[10px] font-bold ${
+                          supplier.totalRemainingBalance > 0
+                            ? "bg-yellow-100 text-yellow-800"
+                            : "bg-green-300 text-green-900"
+                        }`}
+                      >
+                        {supplier.totalRemainingBalance > 0
+                          ? "Pending"
+                          : "Paid"}
+                      </span>
                       {isExpanded ? (
                         <FiChevronUp className="text-gray-500" size={18} />
                       ) : (
@@ -480,12 +479,34 @@ const CompletedNonPO = () => {
                     </div>
                   </div>
 
+                  {/* Amount Summary */}
+                  <div className="mt-2 grid grid-cols-3 gap-2 text-xs">
+                    <div className="text-center">
+                      <p className="text-gray-500 text-[10px]">Billed</p>
+                      <p className="font-bold text-black">
+                        {supplier.totalBilledAmount.toLocaleString()}
+                      </p>
+                    </div>
+                    <div className="text-center">
+                      <p className="text-gray-500 text-[10px]">Paid</p>
+                      <p className="font-bold text-green-600">
+                        {supplier.totalPaidAmount.toLocaleString()}
+                      </p>
+                    </div>
+                    <div className="text-center">
+                      <p className="text-gray-500 text-[10px]">Remaining</p>
+                      <p className="font-bold text-red-600">
+                        {supplier.totalRemainingBalance.toLocaleString()}
+                      </p>
+                    </div>
+                  </div>
+
                   {/* Progress bar */}
                   <div className="mt-2 h-1.5 bg-white/50 rounded-full overflow-hidden">
                     <div
                       className="h-full bg-gradient-to-r from-yellow-400 to-green-500 rounded-full transition-all"
                       style={{
-                        width: `${totalCount > 0 ? (completedCount / totalCount) * 100 : 0}%`,
+                        width: `${supplier.totalBilledAmount > 0 ? (supplier.totalPaidAmount / supplier.totalBilledAmount) * 100 : 0}%`,
                       }}
                     />
                   </div>
@@ -494,71 +515,54 @@ const CompletedNonPO = () => {
                 {/* Expanded Details */}
                 {isExpanded && (
                   <div className="p-3 space-y-3">
-                    {/* Info Grid */}
-                    <div className="grid grid-cols-2 gap-2 text-xs">
-                      <div className="bg-gray-50 rounded-lg p-2">
-                        <p className="text-gray-500 text-[10px]">Invoice</p>
-                        <p className="font-bold text-black">
-                          {grn.invoiceNumber || "—"}
-                        </p>
-                      </div>
-                      <div className="bg-gray-50 rounded-lg p-2">
-                        <p className="text-gray-500 text-[10px]">LPO</p>
-                        <p className="font-bold text-black">
-                          {grn.lpoNumber || "—"}
-                        </p>
-                      </div>
-                      <div className="bg-gray-50 rounded-lg p-2">
-                        <p className="text-gray-500 text-[10px]">Delivery</p>
-                        <p className="font-bold text-black">
-                          {grn.deliveryPerson || "—"}
-                        </p>
-                      </div>
-                      <div className="bg-gray-50 rounded-lg p-2">
-                        <p className="text-gray-500 text-[10px]">Created</p>
-                        <p className="font-bold text-black">
-                          {dayjs(grn.createdAt).format("DD/MM/YY")}
-                        </p>
-                      </div>
-                    </div>
+                    {/* Payment Button */}
+                    {supplier.totalRemainingBalance > 0 && canPayBilledGrn && (
+                      <button
+                        onClick={() => openPaymentDialog(supplier)}
+                        className="w-full py-2.5 bg-yellow-100 hover:bg-yellow-200 text-black font-bold rounded-full text-sm transition-colors flex items-center justify-center gap-2"
+                      >
+                        <FiDollarSign size={16} />
+                        Make Payment
+                      </button>
+                    )}
 
                     {/* Items List */}
                     <div className="space-y-2">
-                      <p className="text-xs font-bold text-black">Items</p>
-                      {grn.items?.map((item) => {
-                        const billed = item.billedAmount || 0;
-                        const paid = item.quantity || 0;
-                        const totalQty = billed + paid;
-                        const totalCost = totalQty * (item.buyingPrice || 0);
+                      <p className="text-xs font-bold text-black">
+                        Items ({supplier.items.length})
+                      </p>
+                      {supplier.items.map((item, itemIdx) => {
+                        const remaining = calculateItemRemainingBalance(item);
+                        const isPaid = isItemFullyPaid(item);
 
                         return (
                           <div
-                            key={item._id}
+                            key={itemIdx}
                             className="bg-gray-50 rounded-lg p-2.5 space-y-1"
                           >
                             <div className="flex items-center justify-between">
                               <span className="text-xs font-bold text-black">
-                                {item.name?.name || "—"}
+                                {item.name}
                               </span>
                               <span
                                 className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${
-                                  item.status === "Billed"
-                                    ? "bg-yellow-200 text-yellow-800"
-                                    : "bg-green-200 text-green-800"
+                                  isPaid
+                                    ? "bg-green-200 text-green-800"
+                                    : "bg-yellow-200 text-yellow-800"
                                 }`}
                               >
-                                {item.status}
+                                {isPaid ? "Paid" : "Pending"}
                               </span>
                             </div>
                             <div className="grid grid-cols-3 gap-2 text-[10px]">
                               <div>
                                 <span className="text-gray-500">Qty:</span>
                                 <span className="font-medium text-black ml-1">
-                                  {totalQty}
+                                  {item.quantity}
                                 </span>
                               </div>
                               <div>
-                                <span className="text-gray-500">Buy:</span>
+                                <span className="text-gray-500">Price:</span>
                                 <span className="font-medium text-black ml-1">
                                   Tsh {(item.buyingPrice || 0).toLocaleString()}
                                 </span>
@@ -566,9 +570,24 @@ const CompletedNonPO = () => {
                               <div>
                                 <span className="text-gray-500">Total:</span>
                                 <span className="font-medium text-black ml-1">
-                                  Tsh {totalCost.toLocaleString()}
+                                  Tsh{" "}
+                                  {(item.billedTotalCost || 0).toLocaleString()}
                                 </span>
                               </div>
+                            </div>
+                            <div className="flex justify-between text-[10px] pt-1 border-t border-gray-200">
+                              <span className="text-gray-500">
+                                Paid:{" "}
+                                <span className="font-medium text-green-600">
+                                  Tsh {(item.paidAmount || 0).toLocaleString()}
+                                </span>
+                              </span>
+                              <span className="text-gray-500">
+                                Remaining:{" "}
+                                <span className="font-medium text-red-600">
+                                  Tsh {remaining.toLocaleString()}
+                                </span>
+                              </span>
                             </div>
                           </div>
                         );
@@ -582,226 +601,253 @@ const CompletedNonPO = () => {
         )}
       </div>
 
-      {/* Desktop Card View */}
-      <div className="hidden md:block space-y-3">
-        {loading ? (
-          <div className="bg-white rounded-xl p-8 text-center border border-gray-200">
-            <div className="animate-spin w-10 h-10 border-3 border-green-300 border-t-transparent rounded-full mx-auto mb-4" />
-            <p className="text-gray-500">Loading GRNs...</p>
-          </div>
-        ) : paginatedGrns.length === 0 ? (
-          <div className="bg-white rounded-xl p-8 text-center border border-gray-200">
-            <div className="text-4xl mb-3">📦</div>
-            <h3 className="text-lg font-bold text-black mb-2">No GRNs Found</h3>
-            <p className="text-gray-600 text-sm mb-4">
-              {activeFilterCount > 0
-                ? "No GRNs match your current filters"
-                : "No GRNs found in the system"}
-            </p>
-            {activeFilterCount > 0 && (
-              <button
-                onClick={clearFilters}
-                className="px-4 py-2 bg-green-300 hover:bg-green-400 text-black font-bold rounded-full transition-colors text-sm"
-              >
-                Clear All Filters
-              </button>
-            )}
-          </div>
-        ) : (
-          paginatedGrns.map((grn) => {
-            const isExpanded = expandedGrn === grn._id;
-            const billedCount =
-              grn.items?.filter((i) => i.status === "Billed").length || 0;
-            const completedCount =
-              grn.items?.filter((i) => i.status === "Completed").length || 0;
-            const totalCount = grn.items?.length || 0;
+      {/* Desktop Table View */}
+      <div className="hidden md:block rounded-xl shadow bg-white overflow-hidden">
+        <div className="overflow-x-auto">
+          <table className="min-w-full">
+            <thead>
+              <tr className="bg-gray-200">
+                {[
+                  "SN",
+                  "Supplier",
+                  "Created By",
+                  "Billed",
+                  "Paid",
+                  "Remaining",
+                  "Items",
+                  "Status",
+                  "Action",
+                ].map((h) => (
+                  <th
+                    key={h}
+                    className="px-3 py-3 text-center text-xs font-bold text-black uppercase border-r border-gray-300"
+                  >
+                    {h}
+                  </th>
+                ))}
+              </tr>
+            </thead>
 
-            return (
-              <div
-                key={grn._id}
-                className="bg-white rounded-xl border border-gray-200 overflow-hidden shadow-sm hover:shadow-md transition-shadow"
-              >
-                {/* Header */}
-                <div
-                  className="p-4 bg-gradient-to-r from-green-100 to-green-200 cursor-pointer"
-                  onClick={() => toggleExpand(grn._id)}
-                >
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 bg-white rounded-full flex items-center justify-center shadow-sm">
-                        <FiPackage className="text-green-600" size={20} />
-                      </div>
-                      <div>
-                        <p className="font-bold text-black">
-                          {grn.supplierName?.supplierName || "Unknown Supplier"}
-                        </p>
-                        <p className="text-xs text-gray-600">
-                          {dayjs(grn.receivingDate).format("DD/MM/YYYY")} •{" "}
-                          {totalCount} items
-                        </p>
-                      </div>
+            <tr className="h-3" />
+
+            <tbody>
+              {currentSuppliers.length === 0 ? (
+                <tr>
+                  <td colSpan={9} className="text-center py-12">
+                    <div className="space-y-3">
+                      <div className="text-4xl">📦</div>
+                      <p className="text-lg font-bold text-black">
+                        No suppliers found
+                      </p>
+                      <p className="text-gray-600 text-sm">
+                        Try adjusting your search filters
+                      </p>
                     </div>
-                    <div className="flex items-center gap-4">
-                      <div className="flex items-center gap-1.5">
-                        <div className="w-2 h-2 bg-yellow-500 rounded-full" />
-                        <span className="text-xs font-medium text-gray-700">
-                          Billed: {billedCount}
-                        </span>
-                        <div className="w-2 h-2 bg-green-500 rounded-full" />
-                        <span className="text-xs font-medium text-gray-700">
-                          Complete: {completedCount}
-                        </span>
-                      </div>
-                      <div className="w-20 h-2 bg-white/50 rounded-full overflow-hidden">
-                        <div
-                          className="h-full bg-gradient-to-r from-yellow-400 to-green-500 rounded-full"
-                          style={{
-                            width: `${totalCount > 0 ? (completedCount / totalCount) * 100 : 0}%`,
-                          }}
-                        />
-                      </div>
-                      {isExpanded ? (
-                        <FiChevronUp className="text-gray-500" size={20} />
-                      ) : (
-                        <FiChevronDown className="text-gray-500" size={20} />
+                  </td>
+                </tr>
+              ) : (
+                currentSuppliers.map((supplier, idx) => {
+                  const isExpanded = expandedSuppliers[supplier.supplierId];
+
+                  return (
+                    <React.Fragment key={supplier.supplierId}>
+                      <tr className="hover:bg-gray-50 transition-colors shadow-md">
+                        <td className="py-3 px-2 text-center border-r border-gray-300 bg-gray-200">
+                          <button
+                            onClick={() =>
+                              toggleSupplierExpansion(supplier.supplierId)
+                            }
+                            className="w-8 h-8 bg-green-300 hover:bg-green-400 text-black font-bold rounded-full shadow transition-colors flex items-center justify-center"
+                          >
+                            {(currentPage - 1) * itemsPerPage + idx + 1}
+                          </button>
+                        </td>
+                        <td className="py-3 px-2 text-center bg-green-200 border-r border-gray-200">
+                          <button
+                            onClick={() =>
+                              toggleSupplierExpansion(supplier.supplierId)
+                            }
+                            className="font-bold text-black text-xs hover:bg-green-300 px-2 py-1 rounded-full transition-colors"
+                          >
+                            {isExpanded ? "▼" : "▶"} {supplier.supplierName}
+                          </button>
+                        </td>
+                        <td className="py-3 px-2 text-center bg-gray-100 border-r border-gray-200">
+                          <span className="font-bold text-black text-xs">
+                            {supplier.createdBy}
+                          </span>
+                        </td>
+                        <td className="py-3 px-2 text-center bg-yellow-100 border-r border-gray-200">
+                          <span className="font-bold text-black text-xs">
+                            {supplier.totalBilledAmount.toLocaleString()}
+                          </span>
+                        </td>
+                        <td className="py-3 px-2 text-center bg-gray-100 border-r border-gray-200">
+                          <span className="font-bold text-green-700 text-xs">
+                            {supplier.totalPaidAmount.toLocaleString()}
+                          </span>
+                        </td>
+                        <td className="py-3 px-2 text-center bg-green-200 border-r border-gray-200">
+                          <span
+                            className={`inline-block px-3 py-1 font-bold rounded-full text-xs ${
+                              supplier.totalRemainingBalance > 0
+                                ? "bg-red-100 text-red-700"
+                                : "bg-green-300 text-green-900"
+                            }`}
+                          >
+                            {supplier.totalRemainingBalance.toLocaleString()}
+                          </span>
+                        </td>
+                        <td className="py-3 px-2 text-center bg-gray-100 border-r border-gray-200">
+                          <div className="w-8 h-8 bg-green-300 rounded-full flex items-center justify-center mx-auto">
+                            <span className="font-bold text-black text-xs">
+                              {supplier.items.length}
+                            </span>
+                          </div>
+                        </td>
+                        <td className="py-3 px-2 text-center bg-gray-200 border-r border-gray-200">
+                          <span
+                            className={`inline-flex px-3 py-1 rounded-full text-xs font-bold ${
+                              supplier.totalRemainingBalance > 0
+                                ? "bg-yellow-100 text-yellow-800"
+                                : "bg-green-300 text-green-900"
+                            }`}
+                          >
+                            {supplier.totalRemainingBalance > 0
+                              ? "Pending"
+                              : "Fully Paid"}
+                          </span>
+                        </td>
+                        <td className="py-3 px-2 text-center bg-gray-100">
+                          {supplier.totalRemainingBalance > 0 &&
+                          canPayBilledGrn ? (
+                            <button
+                              onClick={() => openPaymentDialog(supplier)}
+                              className="px-3 py-1.5 bg-yellow-100 hover:bg-yellow-200 text-black font-bold rounded-full text-xs transition-colors"
+                            >
+                              Pay
+                            </button>
+                          ) : supplier.totalRemainingBalance <= 0 ? (
+                            <span className="inline-flex px-3 py-1.5 bg-green-300 text-black font-bold rounded-full text-xs">
+                              Paid
+                            </span>
+                          ) : (
+                            <span className="inline-flex px-3 py-1.5 bg-gray-300 text-gray-600 font-bold rounded-full text-xs">
+                              Not Allowed
+                            </span>
+                          )}
+                        </td>
+                      </tr>
+
+                      {/* Expanded Items */}
+                      {isExpanded && (
+                        <tr>
+                          <td colSpan={9} className="p-0">
+                            <div className="p-4 bg-gray-50 border-t border-gray-200">
+                              <div className="overflow-x-auto rounded-lg border border-gray-200 bg-white">
+                                <table className="min-w-full text-sm">
+                                  <thead>
+                                    <tr className="bg-gray-100">
+                                      {[
+                                        "Item",
+                                        "Date",
+                                        "Qty",
+                                        "Price",
+                                        "Total",
+                                        "Paid",
+                                        "Remaining",
+                                        "Status",
+                                      ].map((h) => (
+                                        <th
+                                          key={h}
+                                          className="px-3 py-2 text-left text-xs font-bold text-black uppercase"
+                                        >
+                                          {h}
+                                        </th>
+                                      ))}
+                                    </tr>
+                                  </thead>
+                                  <tbody>
+                                    {supplier.items.map((item, itemIdx) => {
+                                      const remaining =
+                                        calculateItemRemainingBalance(item);
+                                      const isPaid = isItemFullyPaid(item);
+
+                                      return (
+                                        <tr
+                                          key={itemIdx}
+                                          className="border-t border-gray-100 hover:bg-gray-50"
+                                        >
+                                          <td className="px-3 py-2 font-medium text-xs text-black">
+                                            {item.name}
+                                          </td>
+                                          <td className="px-3 py-2 text-xs text-gray-600">
+                                            {item.createdAt
+                                              ? dayjs(item.createdAt).format(
+                                                  "DD/MM/YY",
+                                                )
+                                              : "—"}
+                                          </td>
+                                          <td className="px-3 py-2 text-xs text-black">
+                                            {item.quantity}
+                                          </td>
+                                          <td className="px-3 py-2 text-xs text-black">
+                                            {(
+                                              item.buyingPrice || 0
+                                            ).toLocaleString()}
+                                          </td>
+                                          <td className="px-3 py-2 font-bold text-xs text-black">
+                                            {(
+                                              item.billedTotalCost || 0
+                                            ).toLocaleString()}
+                                          </td>
+                                          <td className="px-3 py-2 text-xs text-green-600">
+                                            {(
+                                              item.paidAmount || 0
+                                            ).toLocaleString()}
+                                          </td>
+                                          <td className="px-3 py-2 font-bold text-xs text-red-600">
+                                            {remaining.toLocaleString()}
+                                          </td>
+                                          <td className="px-3 py-2">
+                                            <span
+                                              className={`inline-flex px-2 py-0.5 rounded-full text-[10px] font-bold ${
+                                                isPaid
+                                                  ? "bg-green-200 text-green-800"
+                                                  : "bg-yellow-200 text-yellow-800"
+                                              }`}
+                                            >
+                                              {isPaid ? "Paid" : "Pending"}
+                                            </span>
+                                          </td>
+                                        </tr>
+                                      );
+                                    })}
+                                  </tbody>
+                                </table>
+                              </div>
+                            </div>
+                          </td>
+                        </tr>
                       )}
-                    </div>
-                  </div>
-                </div>
 
-                {/* Expanded Details */}
-                {isExpanded && (
-                  <div className="p-4 border-t border-gray-200">
-                    <div className="grid grid-cols-4 gap-3 mb-4">
-                      <div className="bg-gray-50 rounded-lg p-3">
-                        <p className="text-xs text-gray-500 font-medium">
-                          Invoice
-                        </p>
-                        <p className="text-sm font-bold text-black">
-                          {grn.invoiceNumber || "—"}
-                        </p>
-                      </div>
-                      <div className="bg-gray-50 rounded-lg p-3">
-                        <p className="text-xs text-gray-500 font-medium">LPO</p>
-                        <p className="text-sm font-bold text-black">
-                          {grn.lpoNumber || "—"}
-                        </p>
-                      </div>
-                      <div className="bg-gray-50 rounded-lg p-3">
-                        <p className="text-xs text-gray-500 font-medium">
-                          Delivery Person
-                        </p>
-                        <p className="text-sm font-bold text-black">
-                          {grn.deliveryPerson || "—"}
-                        </p>
-                      </div>
-                      <div className="bg-gray-50 rounded-lg p-3">
-                        <p className="text-xs text-gray-500 font-medium">
-                          Created
-                        </p>
-                        <p className="text-sm font-bold text-black">
-                          {dayjs(grn.createdAt).format("DD/MM/YYYY HH:mm")}
-                        </p>
-                      </div>
-                    </div>
-
-                    {/* Items Table */}
-                    <div className="overflow-x-auto rounded-lg border border-gray-200">
-                      <table className="min-w-full text-sm">
-                        <thead>
-                          <tr className="bg-gray-100">
-                            {[
-                              "Item",
-                              "Billed",
-                              "Paid",
-                              "Total",
-                              "Buy Price",
-                              "Total Cost",
-                              "Sell Price",
-                              "Est. Sales",
-                              "Est. Profit",
-                              "Status",
-                            ].map((h) => (
-                              <th
-                                key={h}
-                                className="px-3 py-2 text-left text-xs font-bold text-black uppercase"
-                              >
-                                {h}
-                              </th>
-                            ))}
-                          </tr>
-                        </thead>
-                        <tbody>
-                          {grn.items?.map((item) => {
-                            const billed = item.billedAmount || 0;
-                            const paid = item.quantity || 0;
-                            const totalQty = billed + paid;
-                            const totalCost =
-                              totalQty * (item.buyingPrice || 0);
-                            const estimatedSales =
-                              totalQty * (item.sellingPrice || 0);
-                            const estimatedProfit = estimatedSales - totalCost;
-
-                            return (
-                              <tr
-                                key={item._id}
-                                className="border-t border-gray-100 hover:bg-gray-50"
-                              >
-                                <td className="px-3 py-2 font-medium text-black">
-                                  {item.name?.name || "—"}
-                                </td>
-                                <td className="px-3 py-2 text-black">
-                                  {billed}
-                                </td>
-                                <td className="px-3 py-2 text-black">{paid}</td>
-                                <td className="px-3 py-2 font-bold text-black">
-                                  {totalQty}
-                                </td>
-                                <td className="px-3 py-2 text-black">
-                                  {(item.buyingPrice || 0).toLocaleString()}
-                                </td>
-                                <td className="px-3 py-2 font-bold text-black">
-                                  {totalCost.toLocaleString()}
-                                </td>
-                                <td className="px-3 py-2 text-black">
-                                  {(item.sellingPrice || 0).toLocaleString()}
-                                </td>
-                                <td className="px-3 py-2 text-black">
-                                  {estimatedSales.toLocaleString()}
-                                </td>
-                                <td className="px-3 py-2 text-green-600 font-medium">
-                                  {estimatedProfit.toLocaleString()}
-                                </td>
-                                <td className="px-3 py-2">
-                                  <span
-                                    className={`inline-flex px-2.5 py-1 rounded-full text-xs font-bold ${
-                                      item.status === "Billed"
-                                        ? "bg-yellow-200 text-yellow-800"
-                                        : "bg-green-200 text-green-800"
-                                    }`}
-                                  >
-                                    {item.status}
-                                  </span>
-                                </td>
-                              </tr>
-                            );
-                          })}
-                        </tbody>
-                      </table>
-                    </div>
-                  </div>
-                )}
-              </div>
-            );
-          })
-        )}
+                      <tr className="h-3">
+                        <td colSpan={9} className="p-0"></td>
+                      </tr>
+                    </React.Fragment>
+                  );
+                })
+              )}
+            </tbody>
+          </table>
+        </div>
       </div>
 
       {/* Pagination */}
       {totalPages > 1 && (
         <div className="flex items-center justify-between gap-2 mt-3 sm:mt-4 p-3 bg-white rounded-full border border-gray-200 shadow-sm">
           <button
-            onClick={prevPage}
+            onClick={() => currentPage > 1 && setCurrentPage(currentPage - 1)}
             disabled={currentPage === 1}
             className="p-2 bg-gray-100 hover:bg-gray-200 text-black rounded-full disabled:opacity-40"
           >
@@ -834,7 +880,9 @@ const CompletedNonPO = () => {
           </div>
 
           <button
-            onClick={nextPage}
+            onClick={() =>
+              currentPage < totalPages && setCurrentPage(currentPage + 1)
+            }
             disabled={currentPage === totalPages}
             className="p-2 bg-gray-100 hover:bg-gray-200 text-black rounded-full disabled:opacity-40"
           >
@@ -842,8 +890,128 @@ const CompletedNonPO = () => {
           </button>
         </div>
       )}
+
+      {/* Payment Dialog Modal */}
+      {paymentDialogOpen && selectedSupplier && (
+        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl max-w-md w-full shadow-xl overflow-hidden">
+            <div className="p-4 border-b border-gray-100 bg-gray-50 flex items-center justify-between">
+              <h3 className="font-bold text-black text-sm sm:text-base">
+                Payment to {selectedSupplier.supplierName}
+              </h3>
+              <button
+                onClick={() => {
+                  setPaymentDialogOpen(false);
+                  setSelectedSupplier(null);
+                }}
+                className="text-gray-500 hover:text-gray-700 p-2"
+              >
+                <FiX size={20} />
+              </button>
+            </div>
+
+            <div className="p-4 space-y-4">
+              {/* Balance Summary */}
+              <div className="space-y-2">
+                <div className="flex justify-between items-center py-2 px-3 bg-gray-50 rounded-full">
+                  <span className="text-xs text-gray-700 font-medium">
+                    Total Billed
+                  </span>
+                  <span className="text-sm font-bold text-black">
+                    Tsh {selectedSupplier.totalBilledAmount.toLocaleString()}
+                  </span>
+                </div>
+                <div className="flex justify-between items-center py-2 px-3 bg-gray-50 rounded-full">
+                  <span className="text-xs text-gray-700 font-medium">
+                    Amount Paid
+                  </span>
+                  <span className="text-sm font-bold text-green-600">
+                    Tsh {selectedSupplier.totalPaidAmount.toLocaleString()}
+                  </span>
+                </div>
+                <div className="flex justify-between items-center py-2 px-3 bg-gray-50 rounded-full">
+                  <span className="text-xs text-gray-700 font-medium">
+                    Remaining
+                  </span>
+                  <span className="text-sm font-bold text-red-600">
+                    Tsh{" "}
+                    {selectedSupplier.totalRemainingBalance.toLocaleString()}
+                  </span>
+                </div>
+              </div>
+
+              {/* Payment Input */}
+              <div>
+                <label className="block text-xs font-bold text-gray-700 mb-1.5">
+                  Payment Amount
+                </label>
+                <div className="relative">
+                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-xs text-gray-500 font-medium">
+                    Tsh
+                  </span>
+                  <input
+                    type="text"
+                    value={formatNumber(bulkPaymentAmount)}
+                    onChange={(e) => {
+                      const rawValue = unformatNumber(e.target.value);
+                      if (!/^\d*\.?\d*$/.test(rawValue)) return;
+                      setBulkPaymentAmount(rawValue);
+                    }}
+                    className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-full text-base focus:outline-none focus:ring-2 focus:ring-green-200 text-black"
+                    placeholder="0.00"
+                  />
+                </div>
+                <button
+                  onClick={() =>
+                    setBulkPaymentAmount(
+                      selectedSupplier.totalRemainingBalance.toString(),
+                    )
+                  }
+                  className="text-xs text-green-600 font-medium mt-1 hover:text-green-700"
+                >
+                  Pay full balance
+                </button>
+              </div>
+
+              {/* Info Note */}
+              <div className="bg-blue-50 border border-blue-200 rounded-full px-3 py-2 flex items-center gap-2">
+                <span className="text-blue-500 text-xs">ℹ️</span>
+                <p className="text-blue-800 text-xs">
+                  Payment will be applied to oldest items first (FIFO)
+                </p>
+              </div>
+
+              {/* Action Buttons */}
+              <div className="flex gap-3">
+                <button
+                  onClick={() => {
+                    setPaymentDialogOpen(false);
+                    setSelectedSupplier(null);
+                  }}
+                  className="flex-1 py-3 bg-gray-100 hover:bg-gray-200 text-black font-medium rounded-full text-sm transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={() => handleSupplierPayment(selectedSupplier)}
+                  disabled={
+                    !bulkPaymentAmount || parseFloat(bulkPaymentAmount) <= 0
+                  }
+                  className={`flex-1 py-3 font-medium rounded-full text-sm transition-colors ${
+                    bulkPaymentAmount && parseFloat(bulkPaymentAmount) > 0
+                      ? "bg-green-300 hover:bg-green-400 text-black"
+                      : "bg-gray-300 text-gray-500 cursor-not-allowed"
+                  }`}
+                >
+                  Process Payment
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
 
-export default CompletedNonPO;
+export default MadeniNonPo;
