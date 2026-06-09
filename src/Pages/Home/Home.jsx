@@ -238,7 +238,11 @@ const Home = () => {
   }, [grns, from, to]);
 
   const totalSales = useMemo(
-    () => filteredSales.reduce((s, t) => s + (t.totalAmount || 0), 0),
+    () =>
+      filteredSales.reduce(
+        (s, t) => s + (t.totalAmount || 0) + (t.tradeDiscount || 0),
+        0,
+      ),
     [filteredSales],
   );
   const totalPaid = useMemo(
@@ -282,8 +286,8 @@ const Home = () => {
   }, [filteredGrns]);
 
   const profit = useMemo(
-    () => totalSales - (totalBuyingPrice + totalExpenses),
-    [totalSales, totalBuyingPrice, totalExpenses],
+    () => totalSales - (totalBuyingPrice + totalExpenses + totalDiscount),
+    [totalSales, totalBuyingPrice, totalExpenses, totalDiscount],
   );
   const billed = filteredSales.filter((t) => t.status === "Bill");
 

@@ -132,15 +132,11 @@ const Profit = () => {
 
         const salesAmount = qty * sellingPrice;
         const buyingAmount = qty * buyingPrice;
-        const itemDiscount =
-          soldItem.discount &&
-          !isNaN(soldItem.discount) &&
-          soldItem.discount > 0
-            ? Number(soldItem.discount)
-            : Number(tx.tradeDiscount || 0);
+        const grossProfit = salesAmount - buyingAmount;
 
-        const grossProfit = salesAmount - buyingAmount; // before discount
-        const profit = grossProfit - itemDiscount; // after discount
+        // Item-level profit = gross profit (NO discount subtracted here)
+        // Discount is applied at aggregate level only
+        const profit = grossProfit;
 
         rows.push({
           date: tx.createdAt,
@@ -151,9 +147,9 @@ const Profit = () => {
           salesAmount,
           buyingAmount,
           grossProfit,
-          discount: Number(soldItem.discount || 0), // ← table uses this (item level only)
-          cardDiscount: Number(tx.tradeDiscount || 0), // ← table uses this (transaction level only)
-          profit,
+          discount: Number(soldItem.discount || 0), // item discount (display only)
+          cardDiscount: Number(tx.tradeDiscount || 0), // transaction discount (display only)
+          profit, // gross profit per item
           status: tx.status,
           customer: tx.customerDetails?.name || "Walk-in",
           cashier: tx.createdBy
@@ -172,8 +168,8 @@ const Profit = () => {
       (acc, row) => {
         acc.sales += row.salesAmount;
         acc.buying += row.buyingAmount;
-        acc.discount += row.discount;
-        acc.profit += row.profit;
+        acc.discount += row.discount; // sum of item-level discounts (display only)
+        acc.profit += row.profit; // sum of GROSS profits (no discount applied)
         acc.qty += row.qty;
         return acc;
       },
@@ -181,15 +177,17 @@ const Profit = () => {
     );
   }, [reportData]);
 
+  // ==================== TRADE DISCOUNT ====================
   const totalTradeDiscount = useMemo(() => {
     return filteredSales.reduce((acc, tx) => {
       return acc + Number(tx.tradeDiscount || 0);
     }, 0);
   }, [filteredSales]);
 
+  // ==================== NET PROFIT (aggregate level only) ====================
   const finalProfit = useMemo(() => {
-    return totals.profit - totalExpenses;
-  }, [totals.profit, totalExpenses]);
+    return totals.profit - totalExpenses - totalTradeDiscount;
+  }, [totals.profit, totalExpenses, totalTradeDiscount]);
 
   // ==================== PAGINATION ====================
   const indexOfLast = currentPage * itemsPerPage;
@@ -213,8 +211,12 @@ const Profit = () => {
         Quantity: row.qty,
         "Buying Price": row.buyingPrice.toLocaleString(),
         "Selling Price": row.sellingPrice.toLocaleString(),
+        "Gross Profit": row.grossProfit.toLocaleString(),
         Discount: row.discount.toFixed(2),
-        Profit: row.profit.toLocaleString(),
+        "Trade Discount": row.cardDiscount.toFixed(2),
+        "Net Profit (Item)": row.profit.toLocaleString(),
+        Customer: row.customer,
+        Cashier: row.cashier,
       }));
 
       const ws = XLSX.utils.json_to_sheet(wsData);
@@ -246,6 +248,7 @@ const Profit = () => {
         row.qty.toString(),
         row.buyingPrice.toLocaleString(),
         row.sellingPrice.toLocaleString(),
+        row.grossProfit.toLocaleString(),
         row.discount.toFixed(2),
         row.profit.toLocaleString(),
       ]);
@@ -253,11 +256,52 @@ const Profit = () => {
       autoTable(doc, {
         startY: 35,
         head: [
-          ["Date", "Item", "Qty", "Buying", "Selling", "Discount", "Profit"],
+          [
+            "Date",
+            "Item",
+            "Qty",
+            "Buying",
+            "Selling",
+            "Gross Profit",
+            "Discount",
+            "Net Profit",
+          ],
         ],
         body: tableData,
         headStyles: { fillColor: [34, 197, 94], textColor: 255 },
       });
+
+      // Add summary section
+      const finalY = doc.lastAutoTable.finalY + 10;
+      doc.setFontSize(12);
+      doc.text("Summary", 14, finalY);
+      doc.setFontSize(10);
+      doc.text(
+        `Gross Profit: ${totals.profit.toLocaleString()} Tsh`,
+        14,
+        finalY + 7,
+      );
+      doc.text(
+        `Trade Discount: ${totalTradeDiscount.toLocaleString()} Tsh`,
+        14,
+        finalY + 14,
+      );
+      doc.text(
+        `Expenses: ${totalExpenses.toLocaleString()} Tsh`,
+        14,
+        finalY + 21,
+      );
+      doc.setFontSize(12);
+      doc.setTextColor(
+        finalProfit >= 0 ? 0 : 255,
+        finalProfit >= 0 ? 128 : 0,
+        0,
+      );
+      doc.text(
+        `Net Profit: ${finalProfit.toLocaleString()} Tsh`,
+        14,
+        finalY + 30,
+      );
 
       doc.save(`Profit_Report_${dayjs().format("YYYYMMDD")}.pdf`);
       toast.success("PDF report downloaded!");
@@ -355,6 +399,7 @@ const Profit = () => {
             <p className="text-xs sm:text-sm md:text-base font-bold text-yellow-600 truncate">
               {totalTradeDiscount.toLocaleString()}
             </p>
+            <p className="text-[9px] text-gray-400">Tsh</p>
           </div>
           <div className="bg-white border border-gray-200 rounded-full p-2.5 sm:p-3 shadow-sm text-center">
             <p className="text-[10px] sm:text-xs text-gray-500 font-medium mb-0.5">
@@ -648,21 +693,27 @@ const Profit = () => {
                   </span>
                 </div>
                 <div className="flex justify-between text-xs">
-                  <span className="text-gray-600">Profit Before Discount:</span>
+                  <span className="text-gray-600">Gross Profit:</span>
                   <span className="font-bold text-blue-600">
                     {row.grossProfit.toLocaleString()} Tsh
                   </span>
                 </div>
                 <div className="flex justify-between text-xs">
-                  <span className="text-gray-600">Discount:</span>
+                  <span className="text-gray-600">Item Discount:</span>
                   <span className="font-bold text-yellow-600">
                     {row.discount.toLocaleString()} Tsh
+                  </span>
+                </div>
+                <div className="flex justify-between text-xs">
+                  <span className="text-gray-600">Trade Discount:</span>
+                  <span className="font-bold text-orange-600">
+                    {row.cardDiscount.toLocaleString()} Tsh
                   </span>
                 </div>
                 <div
                   className={`flex justify-between text-xs pt-2 border-t border-gray-100 ${getProfitColor(row.profit)}`}
                 >
-                  <span className="font-bold">Profit:</span>
+                  <span className="font-bold">Net Profit (Item):</span>
                   <span className="font-bold">
                     {row.profit.toLocaleString()} Tsh
                   </span>
@@ -690,13 +741,12 @@ const Profit = () => {
                 {[
                   "Date",
                   "Item",
-
                   "Buying Price",
                   "Selling Price",
                   "Qty",
-                  "Profit Before Discount",
-                  "Discount",
-                  "Net Profit",
+                  "Gross Profit",
+                  "Item Discount",
+                  "Net Profit (Item)",
                 ].map((header, idx) => (
                   <th
                     key={idx}
@@ -708,12 +758,14 @@ const Profit = () => {
               </tr>
             </thead>
 
-            <tr className="h-3" />
-
             <tbody>
+              <tr className="h-3">
+                <td colSpan={8} className="p-0"></td>
+              </tr>
+
               {currentData.length === 0 ? (
                 <tr>
-                  <td colSpan={7} className="text-center py-12">
+                  <td colSpan={8} className="text-center py-12">
                     <div className="space-y-3">
                       <div className="text-4xl">📊</div>
                       <p className="text-lg font-bold text-black">
@@ -739,7 +791,6 @@ const Profit = () => {
                           {row.itemName}
                         </span>
                       </td>
-
                       <td className="py-3 px-2 text-center border-r border-gray-200">
                         <span className="font-bold text-red-600 text-xs">
                           {row.buyingPrice.toLocaleString()}
@@ -774,7 +825,7 @@ const Profit = () => {
                       </td>
                     </tr>
                     <tr className="h-3">
-                      <td colSpan={7} className="p-0"></td>
+                      <td colSpan={8} className="p-0"></td>
                     </tr>
                   </React.Fragment>
                 ))
@@ -782,7 +833,9 @@ const Profit = () => {
             </tbody>
 
             <tfoot>
+              {/* Gross Profit Row */}
               <tr className="bg-gradient-to-r from-green-50 to-green-100 text-sm font-semibold text-green-800 border-t border-green-200">
+                <td></td>
                 <td></td>
                 <td></td>
                 <td></td>
@@ -793,7 +846,7 @@ const Profit = () => {
                   {totals.qty}
                 </td>
                 <td
-                  colSpan="2"
+                  colSpan="1"
                   className="text-right p-3 pr-6 uppercase tracking-wider text-xs"
                 >
                   Gross Profit:
@@ -804,6 +857,22 @@ const Profit = () => {
                   {formatCurrency(totals.profit)}
                 </td>
               </tr>
+
+              {/* Trade Discount Row */}
+              <tr className="bg-yellow-50 border-t">
+                <td></td>
+                <td
+                  colSpan="6"
+                  className="text-right p-3 font-bold text-yellow-700 text-xs"
+                >
+                  Trade Discount:
+                </td>
+                <td className="p-3 text-right font-bold text-yellow-700 text-xs">
+                  {formatCurrency(totalTradeDiscount)}
+                </td>
+              </tr>
+
+              {/* Expenses Row */}
               <tr className="bg-orange-50 border-t">
                 <td></td>
                 <td
@@ -816,6 +885,8 @@ const Profit = () => {
                   {formatCurrency(totalExpenses)}
                 </td>
               </tr>
+
+              {/* Net Profit Row */}
               <tr className="bg-blue-50 border-t">
                 <td></td>
                 <td
