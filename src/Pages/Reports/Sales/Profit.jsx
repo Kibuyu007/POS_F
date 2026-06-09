@@ -132,7 +132,12 @@ const Profit = () => {
 
         const salesAmount = qty * sellingPrice;
         const buyingAmount = qty * buyingPrice;
-        const itemDiscount = soldItem.discount || 0;
+        const itemDiscount =
+          soldItem.discount &&
+          !isNaN(soldItem.discount) &&
+          soldItem.discount > 0
+            ? Number(soldItem.discount)
+            : Number(soldItem.tradeDiscount || 0);
 
         const grossProfit = salesAmount - buyingAmount; // before discount
         const profit = grossProfit - itemDiscount; // after discount
@@ -679,9 +684,10 @@ const Profit = () => {
                 {[
                   "Date",
                   "Item",
-                  "Qty",
+
                   "Buying Price",
                   "Selling Price",
+                  "Qty",
                   "Profit Before Discount",
                   "Discount",
                   "Net Profit",
@@ -727,11 +733,7 @@ const Profit = () => {
                           {row.itemName}
                         </span>
                       </td>
-                      <td className="py-3 px-2 text-center bg-green-50 border-r border-gray-200">
-                        <span className="font-bold text-black text-xs">
-                          {row.qty}
-                        </span>
-                      </td>
+
                       <td className="py-3 px-2 text-center border-r border-gray-200">
                         <span className="font-bold text-red-600 text-xs">
                           {row.buyingPrice.toLocaleString()} Tsh
@@ -740,6 +742,11 @@ const Profit = () => {
                       <td className="py-3 px-2 text-center border-r border-gray-200">
                         <span className="font-bold text-black text-xs">
                           {row.sellingPrice.toLocaleString()} Tsh
+                        </span>
+                      </td>
+                      <td className="py-3 px-2 text-center bg-green-50 border-r border-gray-200">
+                        <span className="font-bold text-black text-xs">
+                          {row.qty}
                         </span>
                       </td>
                       <td className="py-3 px-2 text-center bg-blue-50 border-r border-gray-200">
