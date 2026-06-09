@@ -137,7 +137,7 @@ const Profit = () => {
           !isNaN(soldItem.discount) &&
           soldItem.discount > 0
             ? Number(soldItem.discount)
-            : Number(soldItem.tradeDiscount || 0);
+            : Number(tx.tradeDiscount || 0);
 
         const grossProfit = salesAmount - buyingAmount; // before discount
         const profit = grossProfit - itemDiscount; // after discount
@@ -151,7 +151,8 @@ const Profit = () => {
           salesAmount,
           buyingAmount,
           grossProfit,
-          discount: itemDiscount,
+          discount: Number(soldItem.discount || 0), // ← table uses this (item level only)
+          cardDiscount: Number(tx.tradeDiscount || 0), // ← table uses this (transaction level only)
           profit,
           status: tx.status,
           customer: tx.customerDetails?.name || "Walk-in",
@@ -179,6 +180,12 @@ const Profit = () => {
       { sales: 0, buying: 0, discount: 0, profit: 0, qty: 0 },
     );
   }, [reportData]);
+
+  const totalTradeDiscount = useMemo(() => {
+    return filteredSales.reduce((acc, tx) => {
+      return acc + Number(tx.tradeDiscount || 0);
+    }, 0);
+  }, [filteredSales]);
 
   const finalProfit = useMemo(() => {
     return totals.profit - totalExpenses;
@@ -343,12 +350,11 @@ const Profit = () => {
           </div>
           <div className="bg-white border border-gray-200 rounded-full p-2.5 sm:p-3 shadow-sm text-center">
             <p className="text-[10px] sm:text-xs text-gray-500 font-medium mb-0.5">
-              Discount
+              Trade Discount
             </p>
             <p className="text-xs sm:text-sm md:text-base font-bold text-yellow-600 truncate">
-              {totals.discount.toLocaleString()}
+              {totalTradeDiscount.toLocaleString()}
             </p>
-            <p className="text-[9px] text-gray-400">Tsh</p>
           </div>
           <div className="bg-white border border-gray-200 rounded-full p-2.5 sm:p-3 shadow-sm text-center">
             <p className="text-[10px] sm:text-xs text-gray-500 font-medium mb-0.5">
@@ -736,12 +742,12 @@ const Profit = () => {
 
                       <td className="py-3 px-2 text-center border-r border-gray-200">
                         <span className="font-bold text-red-600 text-xs">
-                          {row.buyingPrice.toLocaleString()} Tsh
+                          {row.buyingPrice.toLocaleString()}
                         </span>
                       </td>
                       <td className="py-3 px-2 text-center border-r border-gray-200">
                         <span className="font-bold text-black text-xs">
-                          {row.sellingPrice.toLocaleString()} Tsh
+                          {row.sellingPrice.toLocaleString()}
                         </span>
                       </td>
                       <td className="py-3 px-2 text-center bg-green-50 border-r border-gray-200">
@@ -751,19 +757,19 @@ const Profit = () => {
                       </td>
                       <td className="py-3 px-2 text-center bg-blue-50 border-r border-gray-200">
                         <span className="font-bold text-blue-700 text-xs">
-                          {row.grossProfit.toLocaleString()} Tsh
+                          {row.grossProfit.toLocaleString()}
                         </span>
                       </td>
                       <td className="py-3 px-2 text-center bg-yellow-50 border-r border-gray-200">
                         <span className="font-bold text-yellow-700 text-xs">
-                          {row.discount.toLocaleString()} Tsh
+                          {row.discount.toLocaleString()}
                         </span>
                       </td>
                       <td
                         className={`py-3 px-2 text-center bg-gray-50 ${getProfitColor(row.profit)}`}
                       >
                         <span className="font-bold text-xs">
-                          {row.profit.toLocaleString()} Tsh
+                          {row.profit.toLocaleString()}
                         </span>
                       </td>
                     </tr>
