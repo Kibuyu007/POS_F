@@ -289,24 +289,19 @@ const Home = () => {
 
   const profitSummaryData = useMemo(() => {
     const itemMap = {};
-    filteredSales.forEach((tx) => {
-      const txDiscount = tx.tradeDiscount || 0;
-      const txSubTotal =
-        tx.subTotal ||
-        tx.items.reduce(
-          (sum, item) => sum + (item.price || 0) * (item.quantity || 0),
-          0,
-        );
 
+    filteredSales.forEach((tx) => {
       tx.items.forEach((soldItem) => {
         const qty = soldItem.quantity || 0;
         const sellingPrice = soldItem.price || 0;
         const buyingPrice = soldItem.buyingPrice || 0;
+        const itemDiscount = soldItem.discount || 0;
+
         const itemName = soldItem.item?.name || "Unknown";
+
         const salesAmount = qty * sellingPrice;
         const buyingAmount = qty * buyingPrice;
-        const itemDiscount =
-          txSubTotal > 0 ? (salesAmount / txSubTotal) * txDiscount : 0;
+
         const itemProfit = salesAmount - buyingAmount - itemDiscount;
 
         if (!itemMap[itemName]) {
@@ -315,13 +310,17 @@ const Home = () => {
             qty: 0,
             sellingPrice,
             buyingPrice,
+            discount: 0,
             profit: 0,
           };
         }
+
         itemMap[itemName].qty += qty;
+        itemMap[itemName].discount += itemDiscount;
         itemMap[itemName].profit += itemProfit;
       });
     });
+
     return Object.values(itemMap).sort((a, b) => b.profit - a.profit);
   }, [filteredSales]);
 

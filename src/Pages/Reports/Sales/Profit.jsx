@@ -133,7 +133,9 @@ const Profit = () => {
         const salesAmount = qty * sellingPrice;
         const buyingAmount = qty * buyingPrice;
         const itemDiscount = soldItem.discount || 0;
-        const profit = salesAmount - buyingAmount - itemDiscount;
+
+        const grossProfit = salesAmount - buyingAmount; // before discount
+        const profit = grossProfit - itemDiscount; // after discount
 
         rows.push({
           date: tx.createdAt,
@@ -143,6 +145,7 @@ const Profit = () => {
           buyingPrice,
           salesAmount,
           buyingAmount,
+          grossProfit,
           discount: itemDiscount,
           profit,
           status: tx.status,
@@ -634,6 +637,12 @@ const Profit = () => {
                   </span>
                 </div>
                 <div className="flex justify-between text-xs">
+                  <span className="text-gray-600">Profit Before Discount:</span>
+                  <span className="font-bold text-blue-600">
+                    {row.grossProfit.toLocaleString()} Tsh
+                  </span>
+                </div>
+                <div className="flex justify-between text-xs">
                   <span className="text-gray-600">Discount:</span>
                   <span className="font-bold text-yellow-600">
                     {row.discount.toLocaleString()} Tsh
@@ -673,8 +682,9 @@ const Profit = () => {
                   "Qty",
                   "Buying Price",
                   "Selling Price",
+                  "Profit Before Discount",
                   "Discount",
-                  "Profit",
+                  "Net Profit",
                 ].map((header, idx) => (
                   <th
                     key={idx}
@@ -732,6 +742,11 @@ const Profit = () => {
                           {row.sellingPrice.toLocaleString()} Tsh
                         </span>
                       </td>
+                      <td className="py-3 px-2 text-center bg-blue-50 border-r border-gray-200">
+                        <span className="font-bold text-blue-700 text-xs">
+                          {row.grossProfit.toLocaleString()} Tsh
+                        </span>
+                      </td>
                       <td className="py-3 px-2 text-center bg-yellow-50 border-r border-gray-200">
                         <span className="font-bold text-yellow-700 text-xs">
                           {row.discount.toLocaleString()} Tsh
@@ -757,6 +772,7 @@ const Profit = () => {
               <tr className="bg-gradient-to-r from-green-50 to-green-100 text-sm font-semibold text-green-800 border-t border-green-200">
                 <td></td>
                 <td></td>
+                <td></td>
                 <td className="text-right p-3 pr-6 uppercase tracking-wider text-xs">
                   Total Qty:
                 </td>
@@ -776,6 +792,7 @@ const Profit = () => {
                 </td>
               </tr>
               <tr className="bg-orange-50 border-t">
+                <td></td>
                 <td
                   colSpan="6"
                   className="text-right p-3 font-bold text-orange-700 text-xs"
@@ -787,6 +804,7 @@ const Profit = () => {
                 </td>
               </tr>
               <tr className="bg-blue-50 border-t">
+                <td></td>
                 <td
                   colSpan="6"
                   className="text-right p-3 font-bold text-blue-700 text-xs"
