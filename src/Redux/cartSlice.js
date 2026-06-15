@@ -1,6 +1,6 @@
 import { createSlice } from "@reduxjs/toolkit";
 
-const MAX_DISCOUNT_PERCENT = 0.6; // 60%
+const MAX_DISCOUNT_PERCENT = 0.15; // 30%
 
 const initialState = {
   cart: [],

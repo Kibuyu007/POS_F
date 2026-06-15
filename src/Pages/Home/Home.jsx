@@ -7,7 +7,7 @@ import Chart from "../../Components/Shared/Chart";
 import MostSold from "./MostSold";
 import TableDash from "./TableDash";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, useCallback } from "react";
 import axios from "axios";
 import dayjs from "dayjs";
 import isBetween from "dayjs/plugin/isBetween";
@@ -16,7 +16,6 @@ import BASE_URL from "../../Utils/config";
 
 dayjs.extend(isBetween);
 
-// ==================== PROFIT SUMMARY MODAL COMPONENT ====================
 const ProfitModal = ({
   isOpen,
   onClose,
@@ -32,7 +31,6 @@ const ProfitModal = ({
       onClick={onClose}
     >
       <div className="absolute inset-0 bg-black/60 backdrop-blur-sm transition-opacity" />
-
       <div
         className="relative w-full max-w-2xl bg-white rounded-2xl shadow-2xl overflow-hidden"
         onClick={(e) => e.stopPropagation()}
@@ -54,7 +52,6 @@ const ProfitModal = ({
               <FiX className="w-5 h-5" />
             </button>
           </div>
-
           <div className="mt-4 bg-white/20 rounded-xl p-3 sm:p-4 backdrop-blur-sm">
             <p className="text-green-100 text-xs sm:text-sm font-medium">
               Total Net Profit
@@ -66,7 +63,6 @@ const ProfitModal = ({
             </p>
           </div>
         </div>
-
         <div className="max-h-[60vh] sm:max-h-[65vh] overflow-y-auto">
           {profitData.length === 0 ? (
             <div className="p-8 sm:p-12 text-center">
@@ -84,7 +80,6 @@ const ProfitModal = ({
                   Profit
                 </div>
               </div>
-
               {profitData.map((item, index) => (
                 <div
                   key={item.itemName}
@@ -132,7 +127,6 @@ const ProfitModal = ({
             </div>
           )}
         </div>
-
         <div className="border-t border-gray-200 p-4 sm:p-6 bg-gray-50">
           <div className="flex items-center justify-between">
             <p className="text-xs text-gray-500">
@@ -152,15 +146,14 @@ const ProfitModal = ({
 };
 
 const Home = () => {
-  const [transactions, setTransactions] = useState([]);
-  const [expenses, setExpenses] = useState([]);
-  const [grns, setGrns] = useState([]);
   const [filter, setFilter] = useState("today");
   const [range, setRange] = useState({ from: null, to: null });
-  const [loading, setLoading] = useState(true);
   const [profitModalOpen, setProfitModalOpen] = useState(false);
+  const [dashboardData, setDashboardData] = useState(null);
+  const [loading, setLoading] = useState(true);
 
-  const getDateRange = () => {
+  // FIX: Return null when custom filter doesn't have both dates yet
+  const dateRange = useMemo(() => {
     const now = dayjs();
     switch (filter) {
       case "today":
@@ -175,6 +168,10 @@ const Home = () => {
       case "month":
         return { from: now.startOf("month"), to: now.endOf("month") };
       case "custom":
+        // FIX: Return null instead of falling back to today when dates are incomplete
+        if (!range.from || !range.to) {
+          return null;
+        }
         return {
           from: dayjs(range.from).startOf("day"),
           to: dayjs(range.to).endOf("day"),
@@ -182,174 +179,133 @@ const Home = () => {
       default:
         return { from: now.startOf("day"), to: now.endOf("day") };
     }
-  };
+  }, [filter, range.from, range.to]);
 
-  const { from, to } = getDateRange();
+  // FIX: Safe destructure — will be undefined when dateRange is null
+  const { from, to } = dateRange || {};
 
-  const clearFilter = () => {
+  const clearFilter = useCallback(() => {
     setFilter("today");
     setRange({ from: null, to: null });
-  };
+  }, []);
 
   useEffect(() => {
-    const fetchAll = async () => {
+    // FIX: Skip the API call until both dates are available
+    if (!from || !to) return;
+
+    const controller = new AbortController();
+
+    const fetchDashboard = async () => {
       setLoading(true);
       try {
-        const [txRes, expRes, grnPoRes, grnNonPoRes] = await Promise.all([
-          axios.get(`${BASE_URL}/api/transactions/all`, {
-            withCredentials: true,
-          }),
-          axios.get(`${BASE_URL}/api/manunuzi/matumiziYote`),
-          axios.get(`${BASE_URL}/api/grn/allGrnPo`, { withCredentials: true }),
-          axios.get(`${BASE_URL}/api/grn/nonPo`, { withCredentials: true }),
-        ]);
-
-        setTransactions(txRes.data.data || []);
-        setExpenses(expRes.data || []);
-        setGrns([
-          ...(grnPoRes.data.data || []),
-          ...(grnNonPoRes.data.data || []),
-        ]);
+        const res = await axios.get(
+          `${BASE_URL}/api/transactions/dashboard?from=${from.toISOString()}&to=${to.toISOString()}`,
+          { withCredentials: true, signal: controller.signal },
+        );
+        setDashboardData(res.data.data);
       } catch (err) {
+        if (axios.isCancel(err)) return;
         console.error("Dashboard fetch failed:", err);
       } finally {
         setLoading(false);
       }
     };
-    fetchAll();
+
+    fetchDashboard();
+    return () => controller.abort();
+  }, [from, to]);
+
+  const handleFromDateChange = useCallback((e) => {
+    const newFrom = e.target.value;
+    setRange((prev) => ({ ...prev, from: newFrom }));
+    setFilter("custom");
   }, []);
 
-  const filteredSales = useMemo(() => {
-    return transactions.filter((tx) =>
-      dayjs(tx.createdAt).isBetween(from, to, null, "[]"),
-    );
-  }, [transactions, from, to]);
-
-  const filteredExpenses = useMemo(() => {
-    return expenses.filter((e) =>
-      dayjs(e.createdAt).isBetween(from, to, null, "[]"),
-    );
-  }, [expenses, from, to]);
-
-  const filteredGrns = useMemo(() => {
-    return grns.filter((g) =>
-      dayjs(g.receivingDate).isBetween(from, to, null, "[]"),
-    );
-  }, [grns, from, to]);
-
-  const totalSales = useMemo(
-    () =>
-      filteredSales.reduce(
-        (s, t) => s + (t.totalAmount || 0) + (t.tradeDiscount || 0),
-        0,
-      ),
-    [filteredSales],
-  );
-  const totalPaid = useMemo(
-    () =>
-      filteredSales
-        .filter((t) => t.status === "Paid")
-        .reduce((s, t) => s + (t.totalAmount || 0), 0),
-    [filteredSales],
-  );
-  const totalBills = useMemo(
-    () =>
-      filteredSales
-        .filter((t) => t.status === "Bill")
-        .reduce((s, t) => s + (t.totalAmount || 0), 0),
-    [filteredSales],
-  );
-  const totalDiscount = useMemo(
-    () => filteredSales.reduce((s, t) => s + (t.tradeDiscount || 0), 0),
-    [filteredSales],
-  );
-
-  const totalBuyingPrice = useMemo(() => {
-    return filteredSales.reduce((sum, tx) => {
-      const txBuying = tx.items.reduce(
-        (s, i) => s + (i.quantity || 0) * (i.buyingPrice || 0),
-        0,
-      );
-      return sum + txBuying;
-    }, 0);
-  }, [filteredSales]);
-
-  const totalExpenses = useMemo(
-    () => filteredExpenses.reduce((s, e) => s + Number(e.amount || 0), 0),
-    [filteredExpenses],
-  );
-
-  const totalGrn = useMemo(() => {
-    return filteredGrns
-      .flatMap((g) => g.items || [])
-      .reduce((s, i) => s + (i.totalCost || 0), 0);
-  }, [filteredGrns]);
-
-  const profit = useMemo(
-    () => totalSales - (totalBuyingPrice + totalExpenses + totalDiscount),
-    [totalSales, totalBuyingPrice, totalExpenses, totalDiscount],
-  );
-  const billed = filteredSales.filter((t) => t.status === "Bill");
-
-  const profitSummaryData = useMemo(() => {
-    const itemMap = {};
-
-    filteredSales.forEach((tx) => {
-      tx.items.forEach((soldItem) => {
-        const qty = soldItem.quantity || 0;
-        const sellingPrice = soldItem.price || 0;
-        const buyingPrice = soldItem.buyingPrice || 0;
-        const itemDiscount = soldItem.discount || 0;
-
-        const itemName = soldItem.item?.name || "Unknown";
-
-        const salesAmount = qty * sellingPrice;
-        const buyingAmount = qty * buyingPrice;
-
-        const itemProfit = salesAmount - buyingAmount - itemDiscount;
-
-        if (!itemMap[itemName]) {
-          itemMap[itemName] = {
-            itemName,
-            qty: 0,
-            sellingPrice,
-            buyingPrice,
-            discount: 0,
-            profit: 0,
-          };
-        }
-
-        itemMap[itemName].qty += qty;
-        itemMap[itemName].discount += itemDiscount;
-        itemMap[itemName].profit += itemProfit;
-      });
-    });
-
-    return Object.values(itemMap).sort((a, b) => b.profit - a.profit);
-  }, [filteredSales]);
-
-  const handleRangeSelect = (fromDate, toDate) => {
-    setRange({ from: fromDate, to: toDate });
+  const handleToDateChange = useCallback((e) => {
+    const newTo = e.target.value;
+    setRange((prev) => ({ ...prev, to: newTo }));
     setFilter("custom");
-  };
+  }, []);
 
-  const composedChartData = useMemo(() => {
-    const map = {};
-    filteredSales.forEach((tx) => {
-      const day = dayjs(tx.createdAt).format("YYYY-MM-DD");
-      if (!map[day]) map[day] = { name: day, sales: 0, paid: 0, bills: 0 };
-      map[day].sales += tx.totalAmount || 0;
-      if (tx.status === "Paid") map[day].paid += tx.totalAmount || 0;
-      if (tx.status === "Bill") map[day].bills += tx.totalAmount || 0;
-    });
-    return Object.values(map);
-  }, [filteredSales]);
+  const cardData = useMemo(() => {
+    if (!dashboardData) {
+      return [
+        { title: "Sales", icon: "💰", number: "0 TSh" },
+        { title: "Paid", icon: "✅", number: "0 TSh" },
+        { title: "Bills", icon: "📝", number: "0 TSh" },
+        { title: "GRN", icon: "📦", number: "0 TSh" },
+        { title: "Expenses", icon: "💸", number: "0 TSh" },
+        { title: "Discounts", icon: "🏷️", number: "0 TSh" },
+        { title: "Buying", icon: "🏭", number: "0 TSh" },
+        {
+          title: "Profit",
+          icon: "📈",
+          number: "0 TSh",
+          onClick: () => setProfitModalOpen(true),
+        },
+      ];
+    }
+
+    const {
+      totalSales,
+      totalPaid,
+      totalBills,
+      totalGrn,
+      totalExpenses,
+      totalDiscount,
+      totalBuyingPrice,
+      profit,
+    } = dashboardData;
+
+    return [
+      {
+        title: "Sales",
+        icon: "💰",
+        number: `${totalSales.toLocaleString()} TSh`,
+      },
+      {
+        title: "Paid",
+        icon: "✅",
+        number: `${totalPaid.toLocaleString()} TSh`,
+      },
+      {
+        title: "Bills",
+        icon: "📝",
+        number: `${totalBills.toLocaleString()} TSh`,
+      },
+      { title: "GRN", icon: "📦", number: `${totalGrn.toLocaleString()} TSh` },
+      {
+        title: "Expenses",
+        icon: "💸",
+        number: `${totalExpenses.toLocaleString()} TSh`,
+      },
+      {
+        title: "Discounts",
+        icon: "🏷️",
+        number: `${totalDiscount.toLocaleString()} TSh`,
+      },
+      {
+        title: "Buying",
+        icon: "🏭",
+        number: `${totalBuyingPrice.toLocaleString()} TSh`,
+      },
+      {
+        title: "Profit",
+        icon: "📈",
+        number: `${profit.toLocaleString()} TSh`,
+        onClick: () => setProfitModalOpen(true),
+      },
+    ];
+  }, [dashboardData]);
+
+  const billed = dashboardData?.billed || [];
+  const profitSummaryData = dashboardData?.profitSummaryData || [];
+  const composedChartData = dashboardData?.composedChartData || [];
+  const profit = dashboardData?.profit || 0;
 
   return (
     <>
-      {/* ==================== RESPONSIVE SECTION ==================== */}
       <section className="h-[90vh] flex flex-col lg:flex-row gap-3 pt-20 sm:pt-24 px-3 sm:px-4 lg:px-6 overflow-hidden">
-        {/* Left Panel */}
         <div className="w-full lg:flex-[3] bg-secondary rounded-xl p-3 sm:p-4 lg:p-6 overflow-auto">
           <ShiftDetails />
           <div className="h-4 sm:h-6"></div>
@@ -419,24 +375,14 @@ const Home = () => {
                     <input
                       type="date"
                       value={range.from || ""}
-                      onChange={(e) =>
-                        handleRangeSelect(
-                          e.target.value,
-                          range.to || e.target.value,
-                        )
-                      }
+                      onChange={handleFromDateChange}
                       className="w-28 sm:w-36 bg-transparent focus:outline-none text-xs sm:text-sm"
                     />
                     <span className="text-gray-400">→</span>
                     <input
                       type="date"
                       value={range.to || ""}
-                      onChange={(e) =>
-                        handleRangeSelect(
-                          range.from || e.target.value,
-                          e.target.value,
-                        )
-                      }
+                      onChange={handleToDateChange}
                       className="w-28 sm:w-36 bg-transparent focus:outline-none text-xs sm:text-sm"
                     />
                   </div>
@@ -477,76 +423,40 @@ const Home = () => {
             )}
           </div>
 
-          {/* CARDS - RESPONSIVE GRID */}
+          {/* CARDS */}
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2 sm:gap-3 mt-3 sm:mt-4">
-            <CardOne
-              title="Sales"
-              icon="💰"
-              number={`${totalSales.toLocaleString()} TSh`}
-              loading={loading}
-            />
-            <CardOne
-              title="Paid"
-              icon="✅"
-              number={`${totalPaid.toLocaleString()} TSh`}
-              loading={loading}
-            />
-            <CardOne
-              title="Bills"
-              icon="📝"
-              number={`${totalBills.toLocaleString()} TSh`}
-              loading={loading}
-            />
-            <CardOne
-              title="GRN"
-              icon="📦"
-              number={`${totalGrn.toLocaleString()} TSh`}
-              loading={loading}
-            />
-            <CardOne
-              title="Expenses"
-              icon="💸"
-              number={`${totalExpenses.toLocaleString()} TSh`}
-              loading={loading}
-            />
-            <CardOne
-              title="Discounts"
-              icon="🏷️"
-              number={`${totalDiscount.toLocaleString()} TSh`}
-              loading={loading}
-            />
-            <CardOne
-              title="Buying"
-              icon="🏭"
-              number={`${totalBuyingPrice.toLocaleString()} TSh`}
-              loading={loading}
-            />
-            <CardOne
-              title="Profit"
-              icon="📈"
-              number={`${profit.toLocaleString()} TSh`}
-              loading={loading}
-              onClick={() => setProfitModalOpen(true)}
-            />
+            {cardData.map((card) => (
+              <CardOne
+                key={card.title}
+                title={card.title}
+                icon={card.icon}
+                number={card.number}
+                onClick={card.onClick}
+                loading={loading}
+              />
+            ))}
           </div>
 
           <TableDash list={billed} />
           <Chart composedData={composedChartData} />
         </div>
 
-        {/* Right Panel - Hidden on mobile, shown on lg+ */}
         <div className="hidden lg:block lg:flex-1 bg-secondary rounded-xl p-3 sm:p-4 lg:p-6 overflow-auto">
           <MostSold />
         </div>
       </section>
 
-      {/* ==================== PROFIT MODAL ==================== */}
+      {/* FIX: Only render ProfitModal with dateRange string when both dates exist */}
       <ProfitModal
         isOpen={profitModalOpen}
         onClose={() => setProfitModalOpen(false)}
         profitData={profitSummaryData}
         totalProfit={profit}
-        dateRange={`${from.format("MMM D, YYYY")} - ${to.format("MMM D, YYYY")}`}
+        dateRange={
+          from && to
+            ? `${from.format("MMM D, YYYY")} - ${to.format("MMM D, YYYY")}`
+            : ""
+        }
       />
     </>
   );

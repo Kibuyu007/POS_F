@@ -20,8 +20,18 @@ dayjs.extend(isBetween);
 
 const Profit = () => {
   // ==================== STATE ====================
-  const [transactions, setTransactions] = useState([]);
-  const [expenses, setExpenses] = useState([]);
+  const [reportData, setReportData] = useState([]);
+  const [totals, setTotals] = useState({
+    sales: 0,
+    buying: 0,
+    discount: 0,
+    profit: 0,
+    qty: 0,
+  });
+  const [totalTradeDiscount, setTotalTradeDiscount] = useState(0);
+  const [totalExpenses, setTotalExpenses] = useState(0);
+  const [finalProfit, setFinalProfit] = useState(0);
+  const [expensesCount, setExpensesCount] = useState(0);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [filter, setFilter] = useState("today");
@@ -62,141 +72,61 @@ const Profit = () => {
 
   // ==================== FETCH DATA ====================
   useEffect(() => {
-    const fetchSales = async () => {
+    const controller = new AbortController();
+
+    const fetchProfitData = async () => {
       try {
         setLoading(true);
         setError(null);
 
-        const [salesRes, expensesRes] = await Promise.all([
-          axios.get(`${BASE_URL}/api/transactions/all`, {
-            withCredentials: true,
-          }),
-          axios.get(`${BASE_URL}/api/manunuzi/matumiziYote`, {
-            withCredentials: true,
-          }),
-        ]);
+        const res = await axios.get(
+          `${BASE_URL}/api/transactions/profitReport?from=${from.toISOString()}&to=${to.toISOString()}`,
+          { withCredentials: true, signal: controller.signal },
+        );
 
-        if (salesRes.data.success) {
-          setTransactions(salesRes.data.data || []);
+        if (res.data.success) {
+          const { data } = res.data;
+          setReportData(data.reportData);
+          setTotals(data.totals);
+          setTotalTradeDiscount(data.totalTradeDiscount);
+          setTotalExpenses(data.totalExpenses);
+          setFinalProfit(data.finalProfit);
+          setExpensesCount(data.expensesCount);
         }
-
-        setExpenses(expensesRes.data || []);
-        toast.success("Profit data loaded successfully!");
       } catch (err) {
+        if (axios.isCancel(err)) return;
         console.error("Profit fetch error:", err);
-        setError(err.response?.data?.message || "Failed to load transactions");
+        setError(err.response?.data?.message || "Failed to load profit data");
         toast.error(
-          err.response?.data?.message || "Failed to load transactions",
+          err.response?.data?.message || "Failed to load profit data",
         );
       } finally {
         setLoading(false);
       }
     };
 
-    fetchSales();
-  }, []);
+    fetchProfitData();
+    return () => controller.abort();
+  }, [from, to]);
 
-  // ==================== FILTERED SALES ====================
-  const filteredSales = useMemo(() => {
-    let filtered = transactions.filter((tx) =>
-      dayjs(tx.createdAt).isBetween(from, to, null, "[]"),
+  // ==================== FILTERED DATA (search only) ====================
+  const filteredData = useMemo(() => {
+    if (!searchQuery.trim()) return reportData;
+
+    const query = searchQuery.toLowerCase();
+    return reportData.filter((row) =>
+      row.itemName.toLowerCase().includes(query),
     );
-
-    if (searchQuery.trim()) {
-      const query = searchQuery.toLowerCase();
-      filtered = filtered.filter((tx) =>
-        tx.items.some((item) => item.item?.name?.toLowerCase().includes(query)),
-      );
-    }
-
-    return filtered;
-  }, [transactions, from, to, searchQuery]);
-
-  // ==================== EXPENSES ====================
-  const totalExpenses = useMemo(() => {
-    return expenses
-      .filter((e) => dayjs(e.createdAt).isBetween(from, to, null, "[]"))
-      .reduce((s, e) => s + Number(e.amount || 0), 0);
-  }, [expenses, from, to]);
-
-  // ==================== REPORT DATA ====================
-  const reportData = useMemo(() => {
-    const rows = [];
-
-    filteredSales.forEach((tx) => {
-      tx.items.forEach((soldItem) => {
-        const qty = soldItem.quantity || 0;
-        const sellingPrice = soldItem.price || 0;
-        const buyingPrice = soldItem.buyingPrice || 0;
-        const itemName = soldItem.item?.name || "Unknown";
-
-        const salesAmount = qty * sellingPrice;
-        const buyingAmount = qty * buyingPrice;
-        const grossProfit = salesAmount - buyingAmount;
-
-        // Item-level profit = gross profit (NO discount subtracted here)
-        // Discount is applied at aggregate level only
-        const profit = grossProfit;
-
-        rows.push({
-          date: tx.createdAt,
-          itemName,
-          qty,
-          sellingPrice,
-          buyingPrice,
-          salesAmount,
-          buyingAmount,
-          grossProfit,
-          discount: Number(soldItem.discount || 0), // item discount (display only)
-          cardDiscount: Number(tx.tradeDiscount || 0), // transaction discount (display only)
-          profit, // gross profit per item
-          status: tx.status,
-          customer: tx.customerDetails?.name || "Walk-in",
-          cashier: tx.createdBy
-            ? `${tx.createdBy.firstName} ${tx.createdBy.lastName}`
-            : "-",
-        });
-      });
-    });
-
-    return rows;
-  }, [filteredSales]);
-
-  // ==================== TOTALS ====================
-  const totals = useMemo(() => {
-    return reportData.reduce(
-      (acc, row) => {
-        acc.sales += row.salesAmount;
-        acc.buying += row.buyingAmount;
-        acc.discount += row.discount; // sum of item-level discounts (display only)
-        acc.profit += row.profit; // sum of GROSS profits (no discount applied)
-        acc.qty += row.qty;
-        return acc;
-      },
-      { sales: 0, buying: 0, discount: 0, profit: 0, qty: 0 },
-    );
-  }, [reportData]);
-
-  // ==================== TRADE DISCOUNT ====================
-  const totalTradeDiscount = useMemo(() => {
-    return filteredSales.reduce((acc, tx) => {
-      return acc + Number(tx.tradeDiscount || 0);
-    }, 0);
-  }, [filteredSales]);
-
-  // ==================== NET PROFIT (aggregate level only) ====================
-  const finalProfit = useMemo(() => {
-    return totals.profit - totalExpenses - totalTradeDiscount;
-  }, [totals.profit, totalExpenses, totalTradeDiscount]);
+  }, [reportData, searchQuery]);
 
   // ==================== PAGINATION ====================
   const indexOfLast = currentPage * itemsPerPage;
   const indexOfFirst = indexOfLast - itemsPerPage;
   const currentData = useMemo(
-    () => reportData.slice(indexOfFirst, indexOfLast),
-    [reportData, indexOfFirst, indexOfLast],
+    () => filteredData.slice(indexOfFirst, indexOfLast),
+    [filteredData, indexOfFirst, indexOfLast],
   );
-  const totalPages = Math.ceil(reportData.length / itemsPerPage);
+  const totalPages = Math.ceil(filteredData.length / itemsPerPage);
 
   useEffect(() => {
     setCurrentPage(1);
@@ -205,7 +135,7 @@ const Profit = () => {
   // ==================== EXPORT FUNCTIONS ====================
   const exportToExcel = () => {
     try {
-      const wsData = reportData.map((row) => ({
+      const wsData = filteredData.map((row) => ({
         Date: dayjs(row.date).format("DD/MM/YYYY HH:mm"),
         Item: row.itemName,
         Quantity: row.qty,
@@ -242,7 +172,7 @@ const Profit = () => {
         29,
       );
 
-      const tableData = reportData.map((row) => [
+      const tableData = filteredData.map((row) => [
         dayjs(row.date).format("DD/MM/Y"),
         row.itemName,
         row.qty.toString(),
@@ -371,60 +301,58 @@ const Profit = () => {
         </button>
       </div>
 
-      {/* Stats Cards - Mobile Friendly */}
-      {!loading && !error && reportData.length > 0 && (
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2 mb-3 sm:mb-4">
-          <div className="bg-white border border-gray-200 rounded-full p-2.5 sm:p-3 shadow-sm text-center">
-            <p className="text-[10px] sm:text-xs text-gray-500 font-medium mb-0.5">
-              Sales
-            </p>
-            <p className="text-xs sm:text-sm md:text-base font-bold text-black truncate">
-              {totals.sales.toLocaleString()}
-            </p>
-            <p className="text-[9px] text-gray-400">Tsh</p>
-          </div>
-          <div className="bg-white border border-gray-200 rounded-full p-2.5 sm:p-3 shadow-sm text-center">
-            <p className="text-[10px] sm:text-xs text-gray-500 font-medium mb-0.5">
-              Cost
-            </p>
-            <p className="text-xs sm:text-sm md:text-base font-bold text-red-600 truncate">
-              {totals.buying.toLocaleString()}
-            </p>
-            <p className="text-[9px] text-gray-400">Tsh</p>
-          </div>
-          <div className="bg-white border border-gray-200 rounded-full p-2.5 sm:p-3 shadow-sm text-center">
-            <p className="text-[10px] sm:text-xs text-gray-500 font-medium mb-0.5">
-              Trade Discount
-            </p>
-            <p className="text-xs sm:text-sm md:text-base font-bold text-yellow-600 truncate">
-              {totalTradeDiscount.toLocaleString()}
-            </p>
-            <p className="text-[9px] text-gray-400">Tsh</p>
-          </div>
-          <div className="bg-white border border-gray-200 rounded-full p-2.5 sm:p-3 shadow-sm text-center">
-            <p className="text-[10px] sm:text-xs text-gray-500 font-medium mb-0.5">
-              Expenses
-            </p>
-            <p className="text-xs sm:text-sm md:text-base font-bold text-orange-600 truncate">
-              {totalExpenses.toLocaleString()}
-            </p>
-            <p className="text-[9px] text-gray-400">Tsh</p>
-          </div>
-          <div
-            className={`bg-white border border-gray-200 rounded-full p-2.5 sm:p-3 shadow-sm text-center col-span-2 sm:col-span-1 ${getProfitBg(finalProfit)}`}
-          >
-            <p className="text-[10px] sm:text-xs text-gray-500 font-medium mb-0.5">
-              Net Profit
-            </p>
-            <p
-              className={`text-xs sm:text-sm md:text-base font-bold truncate ${getProfitColor(finalProfit)}`}
-            >
-              {finalProfit.toLocaleString()}
-            </p>
-            <p className="text-[9px] text-gray-400">Tsh</p>
-          </div>
+      {/* Stats Cards - Show even while loading */}
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2 mb-3 sm:mb-4">
+        <div className="bg-white border border-gray-200 rounded-full p-2.5 sm:p-3 shadow-sm text-center">
+          <p className="text-[10px] sm:text-xs text-gray-500 font-medium mb-0.5">
+            Sales
+          </p>
+          <p className="text-xs sm:text-sm md:text-base font-bold text-black truncate">
+            {loading ? "..." : totals.sales.toLocaleString()}
+          </p>
+          <p className="text-[9px] text-gray-400">Tsh</p>
         </div>
-      )}
+        <div className="bg-white border border-gray-200 rounded-full p-2.5 sm:p-3 shadow-sm text-center">
+          <p className="text-[10px] sm:text-xs text-gray-500 font-medium mb-0.5">
+            Cost
+          </p>
+          <p className="text-xs sm:text-sm md:text-base font-bold text-red-600 truncate">
+            {loading ? "..." : totals.buying.toLocaleString()}
+          </p>
+          <p className="text-[9px] text-gray-400">Tsh</p>
+        </div>
+        <div className="bg-white border border-gray-200 rounded-full p-2.5 sm:p-3 shadow-sm text-center">
+          <p className="text-[10px] sm:text-xs text-gray-500 font-medium mb-0.5">
+            Trade Discount
+          </p>
+          <p className="text-xs sm:text-sm md:text-base font-bold text-yellow-600 truncate">
+            {loading ? "..." : totalTradeDiscount.toLocaleString()}
+          </p>
+          <p className="text-[9px] text-gray-400">Tsh</p>
+        </div>
+        <div className="bg-white border border-gray-200 rounded-full p-2.5 sm:p-3 shadow-sm text-center">
+          <p className="text-[10px] sm:text-xs text-gray-500 font-medium mb-0.5">
+            Expenses
+          </p>
+          <p className="text-xs sm:text-sm md:text-base font-bold text-orange-600 truncate">
+            {loading ? "..." : totalExpenses.toLocaleString()}
+          </p>
+          <p className="text-[9px] text-gray-400">Tsh</p>
+        </div>
+        <div
+          className={`bg-white border border-gray-200 rounded-full p-2.5 sm:p-3 shadow-sm text-center col-span-2 sm:col-span-1 ${getProfitBg(totals.profit)}`}
+        >
+          <p className="text-[10px] sm:text-xs text-gray-500 font-medium mb-0.5">
+            Net Profit
+          </p>
+          <p
+            className={`text-xs sm:text-sm md:text-base font-bold truncate ${getProfitColor(finalProfit)}`}
+          >
+            {loading ? "..." : finalProfit.toLocaleString()}
+          </p>
+          <p className="text-[9px] text-gray-400">Tsh</p>
+        </div>
+      </div>
 
       {/* Quick Search + Filter Toggle */}
       <div className="flex gap-2 mb-3 sm:mb-4">
@@ -637,7 +565,7 @@ const Profit = () => {
       {/* Results Count */}
       <div className="flex items-center justify-between mb-2 px-1">
         <p className="text-xs text-gray-500">
-          <span className="font-bold text-black">{reportData.length}</span>{" "}
+          <span className="font-bold text-black">{filteredData.length}</span>{" "}
           results
         </p>
         <p className="text-[10px] text-gray-400">
@@ -659,7 +587,6 @@ const Profit = () => {
               key={`${row.itemName}-${row.date}-${idx}`}
               className="bg-white rounded-xl border border-gray-200 overflow-hidden shadow-sm"
             >
-              {/* Card Header */}
               <div className="flex items-center justify-between p-3 bg-gray-50 border-b border-gray-100">
                 <div className="flex items-center gap-2 min-w-0">
                   <span
@@ -673,8 +600,6 @@ const Profit = () => {
                   {dayjs(row.date).format("DD/MM HH:mm")}
                 </span>
               </div>
-
-              {/* Card Body */}
               <div className="p-3 space-y-2">
                 <div className="flex justify-between text-xs">
                   <span className="text-gray-600">Qty:</span>
@@ -695,7 +620,7 @@ const Profit = () => {
                 <div className="flex justify-between text-xs">
                   <span className="text-gray-600">Gross Profit:</span>
                   <span className="font-bold text-blue-600">
-                    {row.grossProfit.toLocaleString()} Tsh
+                    {row.gross.toLocaleString()} Tsh
                   </span>
                 </div>
                 <div className="flex justify-between text-xs">
@@ -719,8 +644,6 @@ const Profit = () => {
                   </span>
                 </div>
               </div>
-
-              {/* Card Footer */}
               <div className="flex items-center justify-between px-3 py-2 bg-gray-50 border-t border-gray-100">
                 <span className="text-[10px] text-gray-500">{row.cashier}</span>
                 <span className="text-[10px] text-gray-400">
@@ -757,12 +680,10 @@ const Profit = () => {
                 ))}
               </tr>
             </thead>
-
             <tbody>
               <tr className="h-3">
                 <td colSpan={8} className="p-0"></td>
               </tr>
-
               {currentData.length === 0 ? (
                 <tr>
                   <td colSpan={8} className="text-center py-12">
@@ -808,7 +729,7 @@ const Profit = () => {
                       </td>
                       <td className="py-3 px-2 text-center bg-blue-50 border-r border-gray-200">
                         <span className="font-bold text-blue-700 text-xs">
-                          {row.grossProfit.toLocaleString()}
+                          {row.gross.toLocaleString()}
                         </span>
                       </td>
                       <td className="py-3 px-2 text-center bg-yellow-50 border-r border-gray-200">
@@ -831,9 +752,7 @@ const Profit = () => {
                 ))
               )}
             </tbody>
-
             <tfoot>
-              {/* Gross Profit Row */}
               <tr className="bg-gradient-to-r from-green-50 to-green-100 text-sm font-semibold text-green-800 border-t border-green-200">
                 <td></td>
                 <td></td>
@@ -857,8 +776,6 @@ const Profit = () => {
                   {formatCurrency(totals.profit)}
                 </td>
               </tr>
-
-              {/* Trade Discount Row */}
               <tr className="bg-yellow-50 border-t">
                 <td></td>
                 <td
@@ -871,22 +788,18 @@ const Profit = () => {
                   {formatCurrency(totalTradeDiscount)}
                 </td>
               </tr>
-
-              {/* Expenses Row */}
               <tr className="bg-orange-50 border-t">
                 <td></td>
                 <td
                   colSpan="6"
                   className="text-right p-3 font-bold text-orange-700 text-xs"
                 >
-                  Expenses: ({expenses.length} records)
+                  Expenses: ({expensesCount} records)
                 </td>
                 <td className="p-3 text-right font-bold text-orange-700 text-xs">
                   {formatCurrency(totalExpenses)}
                 </td>
               </tr>
-
-              {/* Net Profit Row */}
               <tr className="bg-blue-50 border-t">
                 <td></td>
                 <td
@@ -916,7 +829,6 @@ const Profit = () => {
           >
             <IoIosArrowBack className="w-4 h-4" />
           </button>
-
           <div className="flex items-center gap-1">
             {[...Array(Math.min(totalPages, 5))].map((_, i) => {
               let pageNum;
@@ -925,7 +837,6 @@ const Profit = () => {
               else if (currentPage >= totalPages - 2)
                 pageNum = totalPages - 4 + i;
               else pageNum = currentPage - 2 + i;
-
               return (
                 <button
                   key={i}
@@ -937,7 +848,6 @@ const Profit = () => {
               );
             })}
           </div>
-
           <button
             onClick={() =>
               currentPage < totalPages && setCurrentPage(currentPage + 1)
@@ -951,7 +861,7 @@ const Profit = () => {
       )}
 
       {/* Empty State */}
-      {!loading && !error && reportData.length === 0 && (
+      {!loading && !error && filteredData.length === 0 && (
         <div className="bg-white rounded-xl p-6 text-center border border-gray-200">
           <div className="text-3xl mb-2">📊</div>
           <p className="text-sm font-bold text-black">No profit data found</p>

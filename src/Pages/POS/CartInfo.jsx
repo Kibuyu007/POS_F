@@ -104,7 +104,7 @@ const CartInfo = () => {
                     handleDiscountChange(items.id, e.target.value)
                   }
                   className="w-24 text-center border border-gray-300 rounded-md px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-green-400"
-                  placeholder={`Max ${(items.totalPrice * 0.6).toLocaleString()}`}
+                  placeholder={`Max ${(items.totalPrice * 0.15).toLocaleString()}`}
                 />
               </div>
 
