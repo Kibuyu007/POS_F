@@ -80,7 +80,7 @@ const Profit = () => {
         setError(null);
 
         const res = await axios.get(
-          `${BASE_URL}/api/transactions/profitReport?from=${from.toISOString()}&to=${to.toISOString()}`,
+          `${BASE_URL}/api/transactions/profitReport?from=${from.format("YYYY-MM-DD")}&to=${to.format("YYYY-MM-DD")}`,
           { withCredentials: true, signal: controller.signal },
         );
 
