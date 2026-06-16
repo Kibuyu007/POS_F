@@ -199,7 +199,7 @@ const Home = () => {
       setLoading(true);
       try {
         const res = await axios.get(
-          `${BASE_URL}/api/transactions/dashboard?from=${from.toISOString()}&to=${to.toISOString()}`,
+          `${BASE_URL}/api/transactions/dashboard?from=${from.format("YYYY-MM-DD")}&to=${to.format("YYYY-MM-DD")}`,
           { withCredentials: true, signal: controller.signal },
         );
         setDashboardData(res.data.data);
