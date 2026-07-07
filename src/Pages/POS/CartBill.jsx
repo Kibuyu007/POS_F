@@ -2,7 +2,6 @@ import { useDispatch, useSelector } from "react-redux";
 import {
   clearCart,
   getSubTotal,
-  getGrandTotal,
   setReceiptPrinted,
   getTotalItemDiscount,
 } from "../../Redux/cartSlice";

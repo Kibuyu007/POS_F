@@ -16,8 +16,6 @@ import {
   FaCube,
   FaBars,
   FaTimes,
-  FaChevronDown,
-  FaChevronUp,
 } from "react-icons/fa";
 import {
   MdCategory,

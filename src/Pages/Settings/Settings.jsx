@@ -20,6 +20,7 @@ import WalletList from "./Customers/WalletList";
 import WalletReport from "./Customers/WalletReport";
 import Expenses from "./Procurement/Expenses";
 import Debts from "./Debts/Debts";
+import Orders from "./../Orders/Orders";
 
 const Settings = () => {
   const [selectedSetting, setSelectedSetting] = useState(null);
@@ -76,6 +77,8 @@ const Settings = () => {
         return <WalletList />;
       case "Madeni Binafsi":
         return <Debts />;
+      case "Orders":
+        return <Orders />;
       case "Report":
         return <WalletReport />;
       case null:
@@ -182,7 +185,10 @@ const Settings = () => {
         <SettingsList
           title="Pre-Purchase"
           settings={[
-            { group: "Vendors", items: ["Suppliers", "Madeni Binafsi"] },
+            {
+              group: "Vendors",
+              items: ["Suppliers", "Madeni Binafsi", "Orders"],
+            },
           ]}
           selectedSetting={selectedSetting}
           handleSelect={handleSelect}

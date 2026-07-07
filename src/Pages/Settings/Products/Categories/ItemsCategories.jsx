@@ -17,8 +17,10 @@ import { IoIosArrowBack, IoIosArrowForward } from "react-icons/io";
 import { AiTwotoneEdit } from "react-icons/ai";
 import { useDispatch, useSelector } from "react-redux";
 import { categoriesFetch } from "../../../../Redux/itemsCategories";
-import BASE_URL from "../../../../Utils/config";
 import toast from "react-hot-toast";
+
+//URL
+import BASE_URL from "../../../../Utils/config";
 
 const ItemsCategories = () => {
   const user = useSelector((state) => state.user.user);

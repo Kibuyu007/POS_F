@@ -10,31 +10,38 @@ import {
   Auth,
   Orders,
   MenuList,
-  Navigation,
   Settings,
+  Navigation,
 } from "./Pages/PageIndex";
 import Header from "./Components/Shared/Header";
 import ReportsDashboard from "./Pages/Reports/ReportsDashboard";
 import ProtectedRoute from "./Components/Shared/ProtectedRoute";
-
+import RequestOrder from "./Pages/Orders/ReuestOrder";
 import { Toaster } from "react-hot-toast";
+import Page404 from "./Components/Shared/Page404";
 
 function Layout() {
-  const location = useLocation(); // Get current route
+  const location = useLocation();
+
+  // Hide admin layout on public pages
+  const hideLayout =
+    location.pathname === "/auth" ||
+    location.pathname.startsWith("/request");
 
   return (
     <div className="relative min-h-screen">
-      {/* Render Header and Navigation only if not on /auth route */}
-      {location.pathname !== "/auth" && <Header />}
+      {/* Header */}
+      {!hideLayout && <Header />}
 
       <Routes>
-        {/* Redirect root to login */}
+        {/* Redirect root */}
         <Route path="/" element={<Navigate to="/auth" replace />} />
 
-        {/* Public Route - Only for Login */}
+        {/* Public */}
         <Route path="/auth" element={<Auth />} />
+        <Route path="/request" element={<RequestOrder />} />
 
-        {/* Protected Routes - Require Login */}
+        {/* Protected */}
         <Route element={<ProtectedRoute />}>
           <Route path="/home" element={<Home />} />
           <Route path="/orders" element={<Orders />} />
@@ -43,12 +50,12 @@ function Layout() {
           <Route path="/settings" element={<Settings />} />
         </Route>
 
-        {/* 404 Page */}
-        <Route path="*" element={<div>Page Not Found</div>} />
+        {/* 404 */}
+        <Route path="*" element={<Page404 />} />
       </Routes>
 
-      {/* Render Navigation only if not on /auth route */}
-      {location.pathname !== "/auth" && <Navigation />}
+      {/* Navigation */}
+      {!hideLayout && <Navigation />}
     </div>
   );
 }

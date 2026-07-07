@@ -12,9 +12,11 @@ import { LocalizationProvider } from "@mui/x-date-pickers";
 import * as XLSX from "xlsx";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
-import BASE_URL from "../../../Utils/config";
 import toast from "react-hot-toast";
 import Loading from "../../../Components/Shared/Loading";
+
+//URL
+import BASE_URL from "../../../Utils/config";
 
 dayjs.extend(isBetween);
 
@@ -627,12 +629,6 @@ const Profit = () => {
                   <span className="text-gray-600">Item Discount:</span>
                   <span className="font-bold text-yellow-600">
                     {row.discount.toLocaleString()} Tsh
-                  </span>
-                </div>
-                <div className="flex justify-between text-xs">
-                  <span className="text-gray-600">Trade Discount:</span>
-                  <span className="font-bold text-orange-600">
-                    {row.cardDiscount.toLocaleString()} Tsh
                   </span>
                 </div>
                 <div
