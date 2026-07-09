@@ -641,7 +641,9 @@ const ReuestOrder = () => {
                     <span
                       className={`inline-block px-2 py-1 rounded-full text-xs font-semibold border ${getStatusBadge(requestStatus.status)}`}
                     >
-                      {requestStatus.status}
+                      {requestStatus.status === "Converted"
+                        ? "Received"
+                        : requestStatus.status}
                     </span>
                   </div>
                   <div>
