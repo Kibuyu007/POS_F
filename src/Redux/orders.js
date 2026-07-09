@@ -88,54 +88,92 @@ export const fetchOrders = () => async (dispatch) => {
     const response = await axios.get(`${BASE_URL}/api/orders/orders`);
     dispatch(orderFetchSuccess(response.data.data));
   } catch (error) {
-    dispatch(orderError(error.response?.data?.message || "Failed to fetch orders"));
+    dispatch(
+      orderError(error.response?.data?.message || "Failed to fetch orders"),
+    );
   }
 };
 
 export const createOrder = (orderData) => async (dispatch) => {
   dispatch(orderPending());
   try {
-    const response = await axios.post(`${BASE_URL}/api/orders/addOrder`, orderData,{ withCredentials: true, headers: { "Content-Type": "application/json" } });
+    const response = await axios.post(
+      `${BASE_URL}/api/orders/addOrder`,
+      orderData,
+      {
+        withCredentials: true,
+        headers: { "Content-Type": "application/json" },
+      },
+    );
     dispatch(orderCreateSuccess(response.data.data));
+    return response.data.data;
   } catch (error) {
-    dispatch(orderError(error.response?.data?.message || "Failed to create order"));
+    dispatch(
+      orderError(error.response?.data?.message || "Failed to create order"),
+    );
+    throw error;
   }
 };
 
 export const updateOrderStatus = (id, status) => async (dispatch) => {
   dispatch(orderPending());
   try {
-    const response = await axios.put(`${BASE_URL}/api/orders/updateOrder/${id}`, { status },{ withCredentials: true, headers: { "Content-Type": "application/json" } });
+    const response = await axios.put(
+      `${BASE_URL}/api/orders/updateOrder/${id}`,
+      { status },
+      {
+        withCredentials: true,
+        headers: { "Content-Type": "application/json" },
+      },
+    );
     dispatch(orderUpdateSuccess(response.data.data));
   } catch (error) {
-    dispatch(orderError(error.response?.data?.message || "Failed to update status"));
+    dispatch(
+      orderError(error.response?.data?.message || "Failed to update status"),
+    );
   }
 };
 
 export const deleteOrder = (id) => async (dispatch) => {
   dispatch(orderPending());
   try {
-    await axios.delete(`${BASE_URL}/api/orders/deleteOrder/${id}`,{ withCredentials: true, headers: { "Content-Type": "application/json" } });
+    await axios.delete(`${BASE_URL}/api/orders/deleteOrder/${id}`, {
+      withCredentials: true,
+      headers: { "Content-Type": "application/json" },
+    });
     dispatch(orderDeleteSuccess(id));
   } catch (error) {
-    dispatch(orderError(error.response?.data?.message || "Failed to delete order"));
+    dispatch(
+      orderError(error.response?.data?.message || "Failed to delete order"),
+    );
   }
 };
 
 export const getSingleOrder = (id) => async (dispatch) => {
   dispatch(orderPending());
   try {
-    const response = await axios.get(`${BASE_URL}/api/orders/order/${id}`,{ withCredentials: true, headers: { "Content-Type": "application/json" } });
+    const response = await axios.get(`${BASE_URL}/api/orders/order/${id}`, {
+      withCredentials: true,
+      headers: { "Content-Type": "application/json" },
+    });
     dispatch(orderSingleSuccess(response.data.data));
   } catch (error) {
-    dispatch(orderError(error.response?.data?.message || "Failed to fetch order"));
+    dispatch(
+      orderError(error.response?.data?.message || "Failed to fetch order"),
+    );
   }
 };
 
 export const searchOrders = (query) => async (dispatch) => {
   dispatch(orderPending());
   try {
-    const response = await axios.get(`${BASE_URL}/api/orders/search?q=${query}`,{ withCredentials: true, headers: { "Content-Type": "application/json" } });
+    const response = await axios.get(
+      `${BASE_URL}/api/orders/search?q=${query}`,
+      {
+        withCredentials: true,
+        headers: { "Content-Type": "application/json" },
+      },
+    );
     dispatch(orderFetchSuccess(response.data.data));
   } catch (error) {
     dispatch(orderError(error.response?.data?.message || "Search failed"));
