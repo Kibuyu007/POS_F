@@ -85,7 +85,7 @@ export default orderSlice.reducer;
 export const fetchOrders = () => async (dispatch) => {
   dispatch(orderPending());
   try {
-    const response = await axios.get(`${BASE_URL}/api/orders/orders`);
+    const response = await axios.get(`${BASE_URL}/api/orders/allOrders`);
     dispatch(orderFetchSuccess(response.data.data));
   } catch (error) {
     dispatch(

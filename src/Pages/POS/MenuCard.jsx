@@ -16,6 +16,16 @@ import {
   FaCube,
   FaBars,
   FaTimes,
+  FaList,
+  FaTh,
+  FaClock,
+  FaCheckCircle,
+  FaSpinner,
+  FaChevronDown,
+  FaChevronUp,
+  FaUser,
+  FaPhone,
+  FaCalendar,
 } from "react-icons/fa";
 import {
   MdCategory,
@@ -32,6 +42,7 @@ const MenuCard = ({ refreshTrigger }) => {
   const zuiaAdd = useSelector((state) => state.cart.receiptPrinted);
   const dispatch = useDispatch();
 
+  // ==================== STATE ====================
   const [categories, setCategories] = useState([]);
   const [selected, setSelected] = useState(null);
   const [items, setItems] = useState([]);
@@ -41,6 +52,12 @@ const MenuCard = ({ refreshTrigger }) => {
   const [searchTerm, setSearchTerm] = useState("");
   const [searchQuery, setSearchQuery] = useState("");
   const [barcode, setBarcode] = useState("");
+
+  // Tab state
+  const [activeTab, setActiveTab] = useState("menu");
+  const [orders, setOrders] = useState([]);
+  const [ordersLoading, setOrdersLoading] = useState(false);
+  const [expandedOrders, setExpandedOrders] = useState({});
 
   // Mobile UI states
   const [showCategories, setShowCategories] = useState(false);
@@ -52,7 +69,42 @@ const MenuCard = ({ refreshTrigger }) => {
   const [showPackageSelector, setShowPackageSelector] = useState(false);
   const packageSizes = [1, 2, 4, 6, 8, 10, 12, 14, 16, 18, 20, 22, 24, 32];
 
-  // Filter items based on sale type
+  // ==================== FETCH ORDERS ====================
+  const fetchOrders = async () => {
+    setOrdersLoading(true);
+    try {
+      const response = await axios.get(`${BASE_URL}/api/orders/allOrders`, {
+        withCredentials: true,
+      });
+      if (response.data.success) {
+        const sortedOrders = (response.data.data || []).sort(
+          (a, b) => new Date(b.createdAt) - new Date(a.createdAt)
+        );
+        setOrders(sortedOrders);
+        
+        const initialExpanded = {};
+        sortedOrders.forEach((order) => {
+          initialExpanded[order._id] = false;
+        });
+        setExpandedOrders(initialExpanded);
+      } else {
+        toast.error(response.data.message || "Failed to fetch orders");
+      }
+    } catch (error) {
+      console.error("Failed to fetch orders:", error);
+      toast.error("Failed to load orders");
+    } finally {
+      setOrdersLoading(false);
+    }
+  };
+
+  // ==================== EFFECTS ====================
+  useEffect(() => {
+    if (activeTab === "orders") {
+      fetchOrders();
+    }
+  }, [activeTab]);
+
   useEffect(() => {
     if (saleType === "Wholesale") {
       const wholesaleItems = allItems.filter(
@@ -85,7 +137,6 @@ const MenuCard = ({ refreshTrigger }) => {
     cat.name.toLowerCase().includes(searchTerm.toLowerCase()),
   );
 
-  // Fetch categories
   useEffect(() => {
     const fetchCategories = async () => {
       setIsLoading(true);
@@ -215,7 +266,6 @@ const MenuCard = ({ refreshTrigger }) => {
     }
   };
 
-  // Barcode scanning
   useEffect(() => {
     const handleKeyDown = (e) => {
       if (e.key === "Enter" && barcode) {
@@ -316,15 +366,70 @@ const MenuCard = ({ refreshTrigger }) => {
     );
   };
 
+  const handleAddOrderItemToCart = (order, item) => {
+    const fullItem = allItems.find((i) => i._id === item.itemId);
+    if (!fullItem) {
+      toast.error(`Item ${item.itemName} not found in inventory`);
+      return;
+    }
+
+    const price =
+      saleType === "Wholesale"
+        ? fullItem.wholesalePrice || fullItem.price
+        : fullItem.retailPrice || fullItem.price;
+
+    if (!price || price === 0) {
+      toast.error("Item has no price set");
+      return;
+    }
+
+    const quantityInUnits = item.quantity * packageSize;
+    const cartItem = cartData.find(
+      (ci) => ci.id === item.itemId && ci.priceType === saleType,
+    );
+    const alreadyInCart = cartItem ? cartItem.quantity : 0;
+    const totalIfAdded = alreadyInCart + quantityInUnits;
+
+    if (totalIfAdded > fullItem.itemQuantity) {
+      toast.error(
+        `Stock ya (${fullItem.name}) haitoshi , kwa sasa ipo : (${fullItem.itemQuantity}), unataka : (${totalIfAdded})`,
+      );
+      return;
+    }
+
+    const newObj = {
+      id: fullItem._id,
+      name: fullItem.name,
+      pricePerQuantity: price,
+      quantity: quantityInUnits,
+      totalPrice: price * quantityInUnits,
+      itemQuantity: fullItem.itemQuantity,
+      priceType: saleType,
+      buyingPrice: fullItem.buyingPrice,
+      retailPrice: fullItem.retailPrice || fullItem.price,
+      wholesalePrice: fullItem.wholesalePrice || fullItem.price,
+      packageSize: saleType === "Wholesale" ? packageSize : 1,
+      unitsPerPackage: saleType === "Wholesale" ? packageSize : 1,
+    };
+
+    if (!zuiaAdd) {
+      toast.error("Malizia kuprint receipt kwanza.");
+      return;
+    }
+
+    dispatch(addItems(newObj));
+    toast.success(
+      `✓ ${fullItem.name} added to cart from order #${order.orderNumber}`,
+    );
+  };
+
   const toggleSaleType = () => {
     const newSaleType = saleType === "Retail" ? "Wholesale" : "Retail";
     setSaleType(newSaleType);
     if (newSaleType === "Wholesale") {
-      toast.success(
-        `Switched to Wholesale mode - Showing wholesale items only`,
-      );
+      toast.success(`Switched to Wholesale mode`);
     } else {
-      toast.success(`Switched to Retail mode - Showing all items`);
+      toast.success(`Switched to Retail mode`);
     }
   };
 
@@ -351,6 +456,42 @@ const MenuCard = ({ refreshTrigger }) => {
     return price * quantity * packageSize;
   };
 
+  const getStatusBadge = (status) => {
+    const statusMap = {
+      Pending: "bg-yellow-100 text-yellow-700 border-yellow-200",
+      Confirmed: "bg-blue-100 text-blue-700 border-blue-200",
+      Completed: "bg-green-100 text-green-700 border-green-200",
+      Cancelled: "bg-red-100 text-red-700 border-red-200",
+    };
+    return statusMap[status] || "bg-gray-100 text-gray-700 border-gray-200";
+  };
+
+  const getStatusIcon = (status) => {
+    switch (status) {
+      case "Pending":
+        return <FaClock className="text-yellow-600" />;
+      case "Confirmed":
+        return <FaSpinner className="text-blue-600 animate-spin" />;
+      case "Completed":
+        return <FaCheckCircle className="text-green-600" />;
+      case "Cancelled":
+        return <FaTimes className="text-red-600" />;
+      default:
+        return null;
+    }
+  };
+
+  const formatCurrency = (amount) => {
+    return `TSh ${(amount || 0).toLocaleString()}`;
+  };
+
+  const toggleOrderExpand = (orderId) => {
+    setExpandedOrders((prev) => ({
+      ...prev,
+      [orderId]: !prev[orderId],
+    }));
+  };
+
   // ==================== LOADING STATE ====================
   if (isLoading) {
     return (
@@ -368,9 +509,199 @@ const MenuCard = ({ refreshTrigger }) => {
     );
   }
 
-  return (
-    <div className="space-y-4 sm:space-y-6 px-3 sm:px-4 lg:px-6 pb-6">
-      {/* ==================== MOBILE: TOP BAR ==================== */}
+  // ==================== RENDER ORDERS TAB - LIGHT GREEN GRADIENT ====================
+  const renderOrdersTab = () => {
+    if (ordersLoading) {
+      return (
+        <div className="flex flex-col items-center justify-center py-20 px-4">
+          <div className="relative">
+            <div className="w-16 h-16 border-4 border-emerald-200 border-t-emerald-600 rounded-full animate-spin"></div>
+          </div>
+          <p className="mt-4 text-gray-600 font-medium">Loading orders...</p>
+        </div>
+      );
+    }
+
+    if (orders.length === 0) {
+      return (
+        <div className="flex flex-col items-center justify-center py-16 text-center bg-white rounded-2xl border border-gray-200 px-4">
+          <div className="w-20 h-20 bg-gray-100 rounded-full flex items-center justify-center mb-4">
+            <FaList className="text-gray-400 text-2xl" />
+          </div>
+          <h4 className="font-semibold text-gray-700 text-lg mb-2">
+            No Orders Found
+          </h4>
+          <p className="text-gray-500 text-sm">
+            Orders will appear here once they are created
+          </p>
+        </div>
+      );
+    }
+
+    return (
+      <div className="space-y-4">
+        {/* Header */}
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          <h3 className="font-semibold text-gray-800 text-lg flex items-center gap-2">
+            <FaList className="text-emerald-600" />
+            Recent Orders
+            <span className="text-sm font-normal text-gray-500">
+              ({orders.length})
+            </span>
+          </h3>
+          <button
+            onClick={toggleSaleType}
+            className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-medium transition-all border
+              ${
+                saleType === "Retail"
+                  ? "bg-emerald-500 text-white border-emerald-500"
+                  : "bg-indigo-500 text-white border-indigo-500"
+              }`}
+          >
+            {saleType === "Retail" ? <FaUserTie /> : <FaStore />}
+            {saleType}
+          </button>
+        </div>
+
+        {/* Orders Grid - Light Green Gradient */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+          {orders.map((order) => {
+            const isExpanded = expandedOrders[order._id] || false;
+
+            return (
+              <div
+                key={order._id}
+                className="bg-gradient-to-br from-emerald-50/60 via-emerald-50/30 to-white rounded-xl shadow-sm border border-gray-200/60 overflow-hidden hover:shadow-md transition-all duration-300"
+              >
+                {/* Order Header */}
+                <div 
+                  className="px-3 py-2.5 bg-white/50 backdrop-blur-sm border-b border-gray-200/60 cursor-pointer hover:bg-white/70 transition-colors flex items-center justify-between"
+                  onClick={() => toggleOrderExpand(order._id)}
+                >
+                  <div className="flex items-center gap-2 min-w-0 flex-1">
+                    <span className="font-mono font-bold text-gray-800 text-sm whitespace-nowrap">
+                      #{order.orderNumber || order._id.slice(-6)}
+                    </span>
+                    <span
+                      className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[10px] font-semibold border whitespace-nowrap ${getStatusBadge(order.status)}`}
+                    >
+                      {getStatusIcon(order.status)}
+                      <span className="hidden sm:inline">{order.status}</span>
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-2 flex-shrink-0">
+                    <div className="text-right">
+                      <div className="text-sm font-bold text-green-700">
+                        {formatCurrency(order.grandTotal || 0)}
+                      </div>
+                    </div>
+                    {isExpanded ? (
+                      <FaChevronUp className="w-3 h-3 text-gray-400" />
+                    ) : (
+                      <FaChevronDown className="w-3 h-3 text-gray-400" />
+                    )}
+                  </div>
+                </div>
+
+                {/* Customer Info */}
+                <div className="px-3 py-1.5 bg-white/40 backdrop-blur-sm border-b border-gray-100/60 flex items-center gap-3 text-sm text-gray-600">
+                  <div className="flex items-center gap-1">
+                    <FaUser className="w-3 h-3 text-gray-400" />
+                    <span className="truncate max-w-[80px] sm:max-w-none">{order.customerName}</span>
+                  </div>
+                  <span className="text-gray-300">|</span>
+                  <div className="flex items-center gap-1">
+                    <FaPhone className="w-3 h-3 text-gray-400" />
+                    <span className="text-sm">{order.customerPhone}</span>
+                  </div>
+                  <span className="text-gray-300 hidden sm:inline">|</span>
+                  <div className="hidden sm:flex items-center gap-1">
+                    <FaCalendar className="w-3 h-3 text-gray-400" />
+                    <span className="text-sm">{new Date(order.createdAt).toLocaleDateString()}</span>
+                  </div>
+                  <span className="ml-auto text-[10px] text-gray-400 bg-white/60 px-1.5 py-0.5 rounded-full">
+                    {order.items?.length || 0} items
+                  </span>
+                </div>
+
+                {/* Order Items */}
+                <div className={`overflow-hidden transition-all duration-300 ${isExpanded ? 'max-h-[500px]' : 'max-h-[140px]'}`}>
+                  <div className="divide-y divide-gray-100/60">
+                    {(isExpanded ? order.items : order.items?.slice(0, 3))?.map((item) => {
+                      const fullItem = allItems.find((i) => i._id === item.itemId);
+
+                      return (
+                        <div key={`${order._id}_${item.itemId}`} className="px-3 py-2 flex items-center justify-between gap-2 hover:bg-white/40 transition-colors">
+                          {/* Item Info */}
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center gap-1.5">
+                              <span className="font-medium text-gray-800 text-sm truncate">
+                                {item.itemName}
+                              </span>
+                              {item.priceType === "Wholesale" && (
+                                <span className="text-[9px] bg-indigo-100/80 text-indigo-700 px-1.5 py-0.5 rounded">
+                                  WS
+                                </span>
+                              )}
+                              {fullItem && fullItem.itemQuantity <= 0 && (
+                                <span className="text-[9px] bg-red-100/80 text-red-700 px-1.5 py-0.5 rounded">
+                                  OOS
+                                </span>
+                              )}
+                              <span className="text-sm text-gray-400 ml-auto">
+                                Qty: {item.quantity}
+                              </span>
+                              <span className="text-sm text-gray-400">
+                                {formatCurrency(item.totalPrice || 0)}
+                              </span>
+                            </div>
+                          </div>
+
+                          {/* Add Button */}
+                          <button
+                            onClick={() => handleAddOrderItemToCart(order, item)}
+                            disabled={!fullItem || fullItem.itemQuantity <= 0}
+                            className={`px-3 py-1 rounded-lg text-sm font-medium transition-all whitespace-nowrap flex items-center gap-1.5
+                              ${
+                                !fullItem || fullItem.itemQuantity <= 0
+                                  ? "bg-gray-200/80 text-gray-400 cursor-not-allowed"
+                                  : saleType === "Wholesale"
+                                  ? "bg-indigo-500 text-white hover:bg-indigo-600"
+                                  : "bg-emerald-500 text-white hover:bg-emerald-600"
+                              }`}
+                          >
+                            <FaShoppingCart className="w-3 h-3" />
+                            Add
+                          </button>
+                        </div>
+                      );
+                    })}
+                  </div>
+
+                  {/* Show more */}
+                  {(order.items?.length || 0) > 3 && (
+                    <div className="px-3 py-1.5 bg-white/40 backdrop-blur-sm border-t border-gray-100/60">
+                      <button
+                        onClick={() => toggleOrderExpand(order._id)}
+                        className="text-sm text-emerald-600 hover:text-emerald-700 font-medium"
+                      >
+                        {isExpanded ? "Show less" : `+ ${(order.items?.length || 0) - 3} more`}
+                      </button>
+                    </div>
+                  )}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+    );
+  };
+
+  // ==================== RENDER MENU TAB ====================
+  const renderMenuTab = () => (
+    <div className="space-y-4">
+      {/* Mobile: Top Bar */}
       <div className="lg:hidden flex items-center justify-between bg-white rounded-xl shadow-sm border border-gray-200 p-3">
         <div className="flex items-center gap-2">
           <button
@@ -396,7 +727,7 @@ const MenuCard = ({ refreshTrigger }) => {
         </div>
       </div>
 
-      {/* ==================== MOBILE: COLLAPSIBLE CATEGORIES ==================== */}
+      {/* Mobile: Collapsible Categories */}
       <div className={`lg:hidden ${showCategories ? "block" : "hidden"}`}>
         <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-3 mb-4">
           <div className="flex items-center justify-between mb-3">
@@ -440,7 +771,7 @@ const MenuCard = ({ refreshTrigger }) => {
         </div>
       </div>
 
-      {/* ==================== MOBILE: COLLAPSIBLE FILTERS ==================== */}
+      {/* Mobile: Collapsible Filters */}
       <div className={`lg:hidden ${showFilters ? "block" : "hidden"}`}>
         <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-3 mb-4">
           <div className="flex items-center justify-between mb-3">
@@ -453,7 +784,6 @@ const MenuCard = ({ refreshTrigger }) => {
             </button>
           </div>
 
-          {/* Sale Type Toggle */}
           <div className="flex items-center gap-2 mb-3">
             <span className="text-xs text-gray-600">Mode:</span>
             <button
@@ -470,7 +800,6 @@ const MenuCard = ({ refreshTrigger }) => {
             </button>
           </div>
 
-          {/* Search */}
           <div className="relative mb-3">
             <FaSearch className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
             <input
@@ -487,7 +816,6 @@ const MenuCard = ({ refreshTrigger }) => {
             />
           </div>
 
-          {/* Package Size for Wholesale */}
           {saleType === "Wholesale" && (
             <div className="flex items-center gap-2">
               <span className="text-xs text-gray-600">Package:</span>
@@ -507,7 +835,7 @@ const MenuCard = ({ refreshTrigger }) => {
         </div>
       </div>
 
-      {/* ==================== DESKTOP: FULL HEADER ==================== */}
+      {/* Desktop: Full Header */}
       <div className="hidden lg:block bg-white rounded-2xl shadow-sm border border-gray-200 p-4">
         <div className="flex items-center justify-between gap-4 mb-4">
           <div className="flex items-center gap-3">
@@ -603,7 +931,7 @@ const MenuCard = ({ refreshTrigger }) => {
         </div>
       </div>
 
-      {/* ==================== DESKTOP: CATEGORIES BAR ==================== */}
+      {/* Desktop: Categories Bar */}
       <div className="hidden lg:block bg-white rounded-2xl shadow-sm border border-gray-200 p-4">
         <div className="flex items-center justify-between mb-3">
           <h3 className="font-semibold text-gray-800 flex items-center gap-2">
@@ -655,9 +983,8 @@ const MenuCard = ({ refreshTrigger }) => {
         </div>
       </div>
 
-      {/* ==================== ITEMS GRID ==================== */}
+      {/* Items Grid */}
       <div className="space-y-4">
-        {/* Items Header */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
           <div className="flex items-center gap-3">
             <h3 className="font-semibold text-gray-800 text-base sm:text-lg flex items-center gap-2">
@@ -697,7 +1024,6 @@ const MenuCard = ({ refreshTrigger }) => {
           </div>
         </div>
 
-        {/* No Wholesale Items */}
         {saleType === "Wholesale" && items.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-12 text-center bg-white rounded-2xl border border-gray-200 px-4">
             <div className="w-20 h-20 sm:w-24 sm:h-24 bg-indigo-50 rounded-full flex items-center justify-center mb-4 border border-indigo-100">
@@ -717,7 +1043,6 @@ const MenuCard = ({ refreshTrigger }) => {
             </button>
           </div>
         ) : (
-          /* Items Grid */
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-4">
             {items.map((item) => {
               const currentPrice = getItemPrice(item);
@@ -731,7 +1056,6 @@ const MenuCard = ({ refreshTrigger }) => {
                   className={`bg-white rounded-xl shadow-sm hover:shadow-lg border p-3 sm:p-4 flex flex-col justify-between transition-all duration-300 hover:-translate-y-1
                     ${saleType === "Wholesale" ? "hover:border-indigo-300" : "hover:border-emerald-200"}`}
                 >
-                  {/* Item Header */}
                   <div className="mb-2 sm:mb-3">
                     <div className="flex justify-between items-start mb-1.5 sm:mb-2">
                       <div className="flex-1 min-w-0">
@@ -776,7 +1100,6 @@ const MenuCard = ({ refreshTrigger }) => {
                     </div>
                   </div>
 
-                  {/* Pricing */}
                   <div className="space-y-2 sm:space-y-3 mb-3 sm:mb-4">
                     <div className="grid grid-cols-2 gap-2">
                       <div
@@ -835,7 +1158,6 @@ const MenuCard = ({ refreshTrigger }) => {
                       )}
                     </div>
 
-                    {/* Profit */}
                     <div className="flex items-center justify-between text-xs">
                       <span className="text-gray-500">Profit/unit:</span>
                       <span
@@ -846,7 +1168,6 @@ const MenuCard = ({ refreshTrigger }) => {
                     </div>
                   </div>
 
-                  {/* Quantity Controls */}
                   <div className="space-y-2 sm:space-y-3">
                     <div className="flex items-center justify-between bg-gray-50 rounded-lg p-1 border border-gray-300">
                       <button
@@ -897,7 +1218,6 @@ const MenuCard = ({ refreshTrigger }) => {
                       </button>
                     </div>
 
-                    {/* Add to Cart Button */}
                     <button
                       onClick={() => handleAddCart(item)}
                       className={`w-full py-2.5 sm:py-3 rounded-lg font-semibold transition-all shadow-md hover:shadow-lg flex items-center justify-center gap-2 hover:scale-105 transform text-sm
@@ -920,7 +1240,6 @@ const MenuCard = ({ refreshTrigger }) => {
           </div>
         )}
 
-        {/* No Items */}
         {items.length === 0 && saleType !== "Wholesale" && (
           <div className="flex flex-col items-center justify-center py-12 text-center">
             <div className="w-16 h-16 sm:w-20 sm:h-20 bg-gray-100 rounded-full flex items-center justify-center mb-4">
@@ -935,6 +1254,56 @@ const MenuCard = ({ refreshTrigger }) => {
           </div>
         )}
       </div>
+    </div>
+  );
+
+  // ==================== MAIN RENDER ====================
+  return (
+    <div className="space-y-4 sm:space-y-6 px-3 sm:px-4 lg:px-6 pb-6">
+      {/* Tab Navigation */}
+      <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-1 sm:p-1.5 flex gap-1">
+        <button
+          onClick={() => setActiveTab("menu")}
+          className={`flex-1 flex items-center justify-center gap-2 px-4 py-2.5 sm:py-3 rounded-xl font-semibold text-sm sm:text-base transition-all duration-300
+            ${
+              activeTab === "menu"
+                ? "bg-gradient-to-r from-emerald-500 to-teal-500 text-white shadow-lg shadow-emerald-200"
+                : "text-gray-600 hover:bg-gray-100"
+            }`}
+        >
+          <FaTh className="text-sm sm:text-base" />
+          Menu Items
+          <span className={`text-xs px-2 py-0.5 rounded-full ${
+            activeTab === "menu" 
+              ? "bg-white/20 text-white" 
+              : "bg-gray-200 text-gray-600"
+          }`}>
+            {items.length}
+          </span>
+        </button>
+        <button
+          onClick={() => setActiveTab("orders")}
+          className={`flex-1 flex items-center justify-center gap-2 px-4 py-2.5 sm:py-3 rounded-xl font-semibold text-sm sm:text-base transition-all duration-300
+            ${
+              activeTab === "orders"
+                ? "bg-gradient-to-r from-emerald-500 to-teal-500 text-white shadow-lg shadow-emerald-200"
+                : "text-gray-600 hover:bg-gray-100"
+            }`}
+        >
+          <FaList className="text-sm sm:text-base" />
+          Orders
+          <span className={`text-xs px-2 py-0.5 rounded-full ${
+            activeTab === "orders" 
+              ? "bg-white/20 text-white" 
+              : "bg-gray-200 text-gray-600"
+          }`}>
+            {orders.length}
+          </span>
+        </button>
+      </div>
+
+      {/* Tab Content */}
+      {activeTab === "menu" ? renderMenuTab() : renderOrdersTab()}
     </div>
   );
 };
