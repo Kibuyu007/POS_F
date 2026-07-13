@@ -37,40 +37,33 @@ import {
   FaEdit,
   FaSave,
 } from "react-icons/fa";
-
-// BASE URL
 import BASE_URL from "../../Utils/config";
 
 // Toast Component
 const Toast = ({ message, type, onClose }) => {
   useEffect(() => {
-    const timer = setTimeout(() => {
-      onClose();
-    }, 4000);
+    const timer = setTimeout(onClose, 4000);
     return () => clearTimeout(timer);
   }, [onClose]);
 
-  const bgColor =
-    type === "error"
-      ? "bg-red-500"
-      : type === "success"
-        ? "bg-emerald-500"
-        : "bg-blue-500";
-  const icon =
-    type === "error" ? (
-      <FaExclamationTriangle className="text-white" />
-    ) : type === "success" ? (
-      <FaCheckCircle className="text-white" />
-    ) : (
-      <FaInfoCircle className="text-white" />
-    );
+  const styles = {
+    error: "bg-red-500",
+    success: "bg-emerald-500",
+    info: "bg-blue-500",
+  };
+
+  const icons = {
+    error: <FaExclamationTriangle className="text-white" />,
+    success: <FaCheckCircle className="text-white" />,
+    info: <FaInfoCircle className="text-white" />,
+  };
 
   return (
-    <div className="fixed top-20 right-4 z-50 animate-slide-in">
+    <div className="fixed top-4 right-4 left-4 sm:left-auto z-50 animate-slide-in">
       <div
-        className={`${bgColor} text-white px-6 py-4 rounded-xl shadow-2xl max-w-md flex items-center gap-3`}
+        className={`${styles[type]} text-white px-4 sm:px-6 py-3 sm:py-4 rounded-xl shadow-2xl max-w-md w-full sm:w-auto flex items-center gap-3`}
       >
-        <div className="flex-shrink-0">{icon}</div>
+        <div className="flex-shrink-0">{icons[type]}</div>
         <p className="text-sm font-medium flex-1">{message}</p>
         <button
           onClick={onClose}
@@ -83,17 +76,13 @@ const Toast = ({ message, type, onClose }) => {
   );
 };
 
-// ============================================================================
-// CUSTOMER REQUEST STATUS MODAL
-// ============================================================================
+// Customer Request Status Modal
 const CustomerRequestModal = ({ requestNumber, onClose, onRefresh }) => {
   const [loading, setLoading] = useState(true);
   const [request, setRequest] = useState(null);
   const [error, setError] = useState(null);
   const [actionLoading, setActionLoading] = useState(false);
   const [toast, setToast] = useState(null);
-
-  // Amendment State
   const [isAmending, setIsAmending] = useState(false);
   const [amendmentData, setAmendmentData] = useState({
     items: [],
@@ -103,8 +92,6 @@ const CustomerRequestModal = ({ requestNumber, onClose, onRefresh }) => {
   });
   const [availableItems, setAvailableItems] = useState([]);
   const [newItem, setNewItem] = useState({ itemId: "", quantity: 1 });
-
-  // Expanded sections
   const [expandedSections, setExpandedSections] = useState({
     items: true,
     amendmentHistory: false,
@@ -122,7 +109,7 @@ const CustomerRequestModal = ({ requestNumber, onClose, onRefresh }) => {
     if (isAmending && request) {
       setAmendmentData({
         items: request.items.map((item) => ({
-          itemId: item.itemId, // ← FIX: API sends flat itemId, not item._id
+          itemId: item.itemId,
           itemName: item.itemName,
           quantity: item.quantity,
           status: item.status,
@@ -146,8 +133,6 @@ const CustomerRequestModal = ({ requestNumber, onClose, onRefresh }) => {
       );
       if (response.data.success) {
         setRequest(response.data.data);
-        console.log("Request from API:", response.data.data);
-        console.log("Items:", response.data.data.items);
       } else {
         setError(response.data.message || "Request not found");
       }
@@ -172,31 +157,22 @@ const CustomerRequestModal = ({ requestNumber, onClose, onRefresh }) => {
     setTimeout(() => setToast(null), 4000);
   };
 
-  // Customer Accepts the reviewed request
   const handleAcceptRequest = async () => {
-    if (
-      !window.confirm(
-        "Are you sure you want to accept this request? This action cannot be undone.",
-      )
-    ) {
+    if (!window.confirm("Are you sure you want to accept this request?"))
       return;
-    }
-
     setActionLoading(true);
     try {
       const response = await axios.patch(
         `${BASE_URL}/api/orders/${request._id}/accept`,
       );
-
       if (response.data.success) {
-        showToast(" Request accepted successfully!", "success");
+        showToast("Request accepted successfully!", "success");
         await fetchRequest();
         if (onRefresh) onRefresh();
       } else {
         showToast(response.data.message || "Failed to accept request", "error");
       }
     } catch (error) {
-      console.error("Failed to accept request:", error);
       showToast(
         error.response?.data?.message || "Failed to accept request",
         "error",
@@ -206,38 +182,27 @@ const CustomerRequestModal = ({ requestNumber, onClose, onRefresh }) => {
     }
   };
 
-  // Customer Amends the request
   const handleAmendRequest = async (e) => {
     e.preventDefault();
-
     if (amendmentData.items.length === 0) {
       showToast("At least one item is required", "error");
       return;
     }
-
-    if (!request || !request._id) {
-      showToast("Request ID is missing. Please refresh the page.", "error");
-      return;
-    }
-
     setActionLoading(true);
     try {
-      console.log("Amendment Items:", amendmentData.items);
       const payload = {
         items: amendmentData.items.map((item) => ({
-          itemId: item.itemId, // ← now correctly defined
+          itemId: item.itemId,
           quantity: item.quantity,
         })),
         requestedDeliveryDate: amendmentData.requestedDeliveryDate,
         notes: amendmentData.notes,
         customerComment: amendmentData.customerComment,
       };
-
       const response = await axios.put(
         `${BASE_URL}/api/orders/${request._id}/amend`,
         payload,
       );
-
       if (response.data.success) {
         showToast("Amendments submitted successfully!", "success");
         setIsAmending(false);
@@ -250,7 +215,6 @@ const CustomerRequestModal = ({ requestNumber, onClose, onRefresh }) => {
         );
       }
     } catch (error) {
-      console.error("Failed to amend request:", error);
       showToast(
         error.response?.data?.message || "Failed to submit amendments",
         "error",
@@ -260,13 +224,11 @@ const CustomerRequestModal = ({ requestNumber, onClose, onRefresh }) => {
     }
   };
 
-  // Amendment item management
   const addAmendmentItem = () => {
     if (!newItem.itemId) {
       showToast("Please select an item", "error");
       return;
     }
-
     const selectedItem = availableItems.find(
       (item) => item._id === newItem.itemId,
     );
@@ -274,15 +236,10 @@ const CustomerRequestModal = ({ requestNumber, onClose, onRefresh }) => {
       showToast("Item not found", "error");
       return;
     }
-
-    const existingIndex = amendmentData.items.findIndex(
-      (item) => item.itemId === newItem.itemId,
-    );
-    if (existingIndex !== -1) {
+    if (amendmentData.items.some((item) => item.itemId === newItem.itemId)) {
       showToast(`${selectedItem.name} is already in the list`, "error");
       return;
     }
-
     if (selectedItem.itemQuantity < newItem.quantity) {
       showToast(
         `Only ${selectedItem.itemQuantity} ${selectedItem.name} available`,
@@ -290,7 +247,6 @@ const CustomerRequestModal = ({ requestNumber, onClose, onRefresh }) => {
       );
       return;
     }
-
     setAmendmentData((prev) => ({
       ...prev,
       items: [
@@ -304,9 +260,8 @@ const CustomerRequestModal = ({ requestNumber, onClose, onRefresh }) => {
         },
       ],
     }));
-
     setNewItem({ itemId: "", quantity: 1 });
-    showToast(` ${selectedItem.name} added!`, "success");
+    showToast(`${selectedItem.name} added!`, "success");
   };
 
   const removeAmendmentItem = (index) => {
@@ -320,13 +275,9 @@ const CustomerRequestModal = ({ requestNumber, onClose, onRefresh }) => {
     if (quantity < 1) return;
     const updatedItems = [...amendmentData.items];
     updatedItems[index].quantity = quantity;
-    setAmendmentData((prev) => ({
-      ...prev,
-      items: updatedItems,
-    }));
+    setAmendmentData((prev) => ({ ...prev, items: updatedItems }));
   };
 
-  // Utility functions
   const formatDate = (dateString) => {
     if (!dateString) return "N/A";
     return new Date(dateString).toLocaleDateString("en-US", {
@@ -411,7 +362,6 @@ const CustomerRequestModal = ({ requestNumber, onClose, onRefresh }) => {
     return iconMap[source] || <FaInfoCircle className="w-3 h-3" />;
   };
 
-  // Render loading state
   if (loading) {
     return (
       <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
@@ -454,52 +404,50 @@ const CustomerRequestModal = ({ requestNumber, onClose, onRefresh }) => {
           onClose={() => setToast(null)}
         />
       )}
-
       <div className="bg-white rounded-2xl w-full max-w-3xl shadow-2xl max-h-[90vh] overflow-y-auto">
-        {/* Modal Header */}
-        <div className="sticky top-0 z-10 bg-white px-6 py-4 border-b border-gray-200 rounded-t-2xl">
+        {/* Header */}
+        <div className="sticky top-0 z-10 bg-white px-4 sm:px-6 py-4 border-b border-gray-200 rounded-t-2xl">
           <div className="flex justify-between items-center">
-            <div className="flex items-center gap-3">
-              <div className="p-2 bg-gradient-to-br from-emerald-500 to-teal-500 rounded-xl shadow-lg shadow-emerald-200">
+            <div className="flex items-center gap-3 min-w-0">
+              <div className="p-2 bg-gradient-to-br from-emerald-500 to-teal-500 rounded-xl shadow-lg shadow-emerald-200 flex-shrink-0">
                 <FaStore className="text-white text-lg" />
               </div>
-              <div>
-                <h2 className="text-lg font-bold text-gray-800">
+              <div className="min-w-0">
+                <h2 className="text-lg font-bold text-gray-800 truncate">
                   Request Status
                 </h2>
-                <p className="text-sm text-gray-500 font-mono">
+                <p className="text-sm text-gray-500 font-mono truncate">
                   {request.requestNumber}
                 </p>
               </div>
             </div>
             <button
               onClick={onClose}
-              className="p-2 hover:bg-gray-100 rounded-lg transition-colors text-gray-500 hover:text-gray-700"
+              className="p-2 hover:bg-gray-100 rounded-lg transition-colors text-gray-500 hover:text-gray-700 flex-shrink-0"
             >
               <FaTimes className="w-5 h-5" />
             </button>
           </div>
         </div>
 
-        <div className="p-6 space-y-6">
+        {/* Body */}
+        <div className="p-4 sm:p-6 space-y-6">
           {/* Status Badge */}
-          <div className="flex items-center justify-between flex-wrap gap-3">
-            <div className="flex items-center gap-3">
-              {request.source && (
-                <span
-                  className={`text-xs px-3 py-1 rounded-full font-medium ${getSourceBadge(request.source)} flex items-center gap-1`}
-                >
-                  {getSourceIcon(request.source)}
-                  {request.source}
-                </span>
-              )}
+          <div className="flex flex-wrap items-center gap-3">
+            {request.source && (
               <span
-                className={`inline-flex items-center gap-1.5 px-4 py-2 rounded-full text-sm font-semibold border ${getStatusBadge(request.status)}`}
+                className={`text-xs px-3 py-1 rounded-full font-medium ${getSourceBadge(request.source)} flex items-center gap-1`}
               >
-                {getStatusIcon(request.status)}
-                {getStatusDisplayName(request.status)}
+                {getSourceIcon(request.source)}
+                {request.source}
               </span>
-            </div>
+            )}
+            <span
+              className={`inline-flex items-center gap-1.5 px-4 py-2 rounded-full text-sm font-semibold border ${getStatusBadge(request.status)}`}
+            >
+              {getStatusIcon(request.status)}
+              {getStatusDisplayName(request.status)}
+            </span>
             {request.reviewCycle && request.reviewCycle > 1 && (
               <span className="text-xs bg-purple-100 text-purple-700 px-3 py-1 rounded-full font-medium">
                 Cycle {request.reviewCycle}
@@ -507,23 +455,21 @@ const CustomerRequestModal = ({ requestNumber, onClose, onRefresh }) => {
             )}
           </div>
 
-          {/* Status Message for Awaiting Customer Confirmation */}
+          {/* Status Messages */}
           {request.status === "Awaiting Customer Confirmation" &&
             !isAmending && (
               <div className="bg-blue-50 border-2 border-blue-200 rounded-xl p-4">
-                <div className="flex items-start gap-3">
+                <div className="flex flex-col sm:flex-row items-start gap-3">
                   <div className="p-2 bg-blue-100 rounded-full flex-shrink-0">
                     <FaInfoCircle className="text-blue-600 text-lg" />
                   </div>
-                  <div className="flex-1">
+                  <div className="flex-1 w-full">
                     <h3 className="text-sm font-semibold text-blue-800 mb-1">
                       Your Request Has Been Reviewed!
                     </h3>
                     <p className="text-sm text-blue-700">
                       Please review the changes below. You can either{" "}
-                      <strong>Accept</strong> the request or{" "}
-                      <strong>Amend</strong> it by changing items or delivery
-                      date.
+                      <strong>Accept</strong> or <strong>Amend</strong> it.
                     </p>
                     <div className="flex flex-wrap gap-3 mt-4">
                       <button
@@ -536,7 +482,7 @@ const CustomerRequestModal = ({ requestNumber, onClose, onRefresh }) => {
                         ) : (
                           <FaCheck className="w-4 h-4" />
                         )}
-                        Accept Request
+                        Accept
                       </button>
                       <button
                         onClick={() => setIsAmending(true)}
@@ -544,7 +490,7 @@ const CustomerRequestModal = ({ requestNumber, onClose, onRefresh }) => {
                         className="px-5 py-2 bg-blue-500 text-white font-semibold rounded-lg hover:bg-blue-600 hover:shadow-lg transition-all duration-300 disabled:opacity-50 flex items-center gap-2 text-sm"
                       >
                         <FaEdit className="w-4 h-4" />
-                        Amend Request
+                        Amend
                       </button>
                     </div>
                   </div>
@@ -552,95 +498,26 @@ const CustomerRequestModal = ({ requestNumber, onClose, onRefresh }) => {
               </div>
             )}
 
-          {/* Success/Info Messages */}
-          {request.status === "Accepted" && (
-            <div className="bg-emerald-50 border-2 border-emerald-200 rounded-xl p-4">
-              <div className="flex items-start gap-3">
-                <div className="p-2 bg-emerald-100 rounded-full flex-shrink-0">
-                  <FaCheckCircle className="text-emerald-600 text-lg" />
-                </div>
-                <div>
-                  <h3 className="text-sm font-semibold text-emerald-800">
-                    Request Accepted! ✅
-                  </h3>
-                  <p className="text-sm text-emerald-700">
-                    Your request has been accepted. It will be converted to an
-                    order soon.
-                  </p>
-                </div>
-              </div>
-            </div>
-          )}
-
-          {request.status === "Converted" && (
-            <div className="bg-purple-50 border-2 border-purple-200 rounded-xl p-4">
-              <div className="flex items-start gap-3">
-                <div className="p-2 bg-purple-100 rounded-full flex-shrink-0">
-                  <FaCheckCircle className="text-purple-600 text-lg" />
-                </div>
-                <div>
-                  <h3 className="text-sm font-semibold text-purple-800">
-                    Converted to Order! 🎉
-                  </h3>
-                  <p className="text-sm text-purple-700">
-                    Your request has been converted to an order.
-                    {request.order && typeof request.order === "object" && (
-                      <span className="block mt-1 font-mono font-bold">
-                        Order #: {request.order.orderNumber}
-                      </span>
-                    )}
-                  </p>
-                </div>
-              </div>
-            </div>
-          )}
-
-          {request.status === "Rejected" && (
-            <div className="bg-red-50 border-2 border-red-200 rounded-xl p-4">
-              <div className="flex items-start gap-3">
-                <div className="p-2 bg-red-100 rounded-full flex-shrink-0">
-                  <FaTimesIcon className="text-red-600 text-lg" />
-                </div>
-                <div>
-                  <h3 className="text-sm font-semibold text-red-800">
-                    Request Rejected ❌
-                  </h3>
-                  <p className="text-sm text-red-700">
-                    Your request has been rejected.
-                    {request.reviewNotes && (
-                      <span className="block mt-1">
-                        Reason: {request.reviewNotes}
-                      </span>
-                    )}
-                  </p>
-                </div>
-              </div>
-            </div>
-          )}
-
           {/* Amendment Form */}
           {isAmending && (
             <div className="bg-gray-50 rounded-xl p-4 border border-gray-200">
               <div className="flex items-center justify-between mb-4">
                 <h3 className="text-base font-bold text-gray-800 flex items-center gap-2">
                   <FaEdit className="text-blue-500" />
-                  Amend Your Request
+                  Amend Request
                 </h3>
                 <button
                   onClick={() => setIsAmending(false)}
-                  className="text-gray-400 hover:text-gray-600 transition-colors"
+                  className="text-gray-400 hover:text-gray-600"
                 >
                   <FaTimes className="text-lg" />
                 </button>
               </div>
-
               <form onSubmit={handleAmendRequest}>
-                {/* Items Section */}
                 <div className="mb-4">
                   <label className="block text-sm font-medium text-gray-700 mb-2">
                     Items <span className="text-red-500">*</span>
                   </label>
-
                   <div className="flex flex-col sm:flex-row gap-2 mb-3">
                     <select
                       className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-300 text-sm bg-white"
@@ -652,7 +529,7 @@ const CustomerRequestModal = ({ requestNumber, onClose, onRefresh }) => {
                       <option value="">Select an item</option>
                       {availableItems.map((item) => (
                         <option key={item._id} value={item._id}>
-                          {item.name} — Stock: {item.itemQuantity}
+                          {item.name}
                         </option>
                       ))}
                     </select>
@@ -667,25 +544,23 @@ const CustomerRequestModal = ({ requestNumber, onClose, onRefresh }) => {
                           quantity: parseInt(e.target.value) || 1,
                         })
                       }
-                      placeholder="Qty"
                     />
                     <button
                       type="button"
                       onClick={addAmendmentItem}
-                      className="px-4 py-2 bg-blue-500 text-white font-semibold rounded-lg hover:bg-blue-600 transition-all duration-200 flex items-center gap-2 text-sm"
+                      className="px-4 py-2 bg-blue-500 text-white font-semibold rounded-lg hover:bg-blue-600 transition-all duration-200 flex items-center gap-2 text-sm whitespace-nowrap"
                     >
                       <FaPlus className="w-3 h-3" />
                       Add
                     </button>
                   </div>
-
                   <div className="space-y-2 max-h-40 overflow-y-auto">
                     {amendmentData.items.map((item, index) => (
                       <div
                         key={index}
-                        className="flex items-center justify-between p-2 bg-white rounded-lg border border-gray-200"
+                        className="flex flex-wrap items-center justify-between p-2 bg-white rounded-lg border border-gray-200 gap-2"
                       >
-                        <span className="font-medium text-gray-800 text-sm">
+                        <span className="font-medium text-gray-800 text-sm flex-1 min-w-[100px]">
                           {item.itemName}
                         </span>
                         <div className="flex items-center gap-2">
@@ -734,7 +609,6 @@ const CustomerRequestModal = ({ requestNumber, onClose, onRefresh }) => {
                   </div>
                 </div>
 
-                {/* Delivery Date */}
                 <div className="mb-4">
                   <label className="block text-sm font-medium text-gray-700 mb-1.5">
                     <FaCalendarAlt className="inline mr-1 text-gray-500" />
@@ -761,7 +635,6 @@ const CustomerRequestModal = ({ requestNumber, onClose, onRefresh }) => {
                   )}
                 </div>
 
-                {/* Customer Comment */}
                 <div className="mb-4">
                   <label className="block text-sm font-medium text-gray-700 mb-1.5">
                     <FaStickyNote className="inline mr-1 text-gray-500" />
@@ -781,7 +654,6 @@ const CustomerRequestModal = ({ requestNumber, onClose, onRefresh }) => {
                   />
                 </div>
 
-                {/* Submit Buttons */}
                 <div className="flex flex-col sm:flex-row gap-3 pt-3 border-t border-gray-200">
                   <button
                     type="button"
@@ -810,28 +682,28 @@ const CustomerRequestModal = ({ requestNumber, onClose, onRefresh }) => {
           {/* Customer Info */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 p-4 bg-gray-50 rounded-xl border border-gray-200">
             <div className="flex items-center gap-3">
-              <FaUser className="text-emerald-500" />
-              <div>
+              <FaUser className="text-emerald-500 flex-shrink-0" />
+              <div className="min-w-0">
                 <p className="text-xs text-gray-400">Name</p>
-                <p className="font-medium text-gray-800 text-sm">
+                <p className="font-medium text-gray-800 text-sm truncate">
                   {request.customerName}
                 </p>
               </div>
             </div>
             <div className="flex items-center gap-3">
-              <FaPhone className="text-blue-500" />
-              <div>
+              <FaPhone className="text-blue-500 flex-shrink-0" />
+              <div className="min-w-0">
                 <p className="text-xs text-gray-400">Phone</p>
-                <p className="font-medium text-gray-800 text-sm">
+                <p className="font-medium text-gray-800 text-sm truncate">
                   {request.customerPhone}
                 </p>
               </div>
             </div>
             <div className="flex items-center gap-3">
-              <FaCalendarAlt className="text-amber-500" />
-              <div>
+              <FaCalendarAlt className="text-amber-500 flex-shrink-0" />
+              <div className="min-w-0">
                 <p className="text-xs text-gray-400">Requested Delivery</p>
-                <p className="font-medium text-gray-800 text-sm">
+                <p className="font-medium text-gray-800 text-sm truncate">
                   {request.requestedDeliveryDate
                     ? formatDate(request.requestedDeliveryDate)
                     : "N/A"}
@@ -840,10 +712,10 @@ const CustomerRequestModal = ({ requestNumber, onClose, onRefresh }) => {
             </div>
             {request.approvedDeliveryDate && (
               <div className="flex items-center gap-3 bg-emerald-50 p-2 rounded-lg border border-emerald-200">
-                <FaRegCalendarCheck className="text-emerald-500" />
-                <div>
+                <FaRegCalendarCheck className="text-emerald-500 flex-shrink-0" />
+                <div className="min-w-0">
                   <p className="text-xs text-emerald-600">Approved Delivery</p>
-                  <div className="flex items-center gap-2">
+                  <div className="flex flex-wrap items-center gap-2">
                     <p className="font-medium text-emerald-700 text-sm">
                       {formatDate(request.approvedDeliveryDate)}
                     </p>
@@ -866,34 +738,30 @@ const CustomerRequestModal = ({ requestNumber, onClose, onRefresh }) => {
               }
               className="w-full p-3 flex items-center justify-between hover:bg-gray-50 transition-colors"
             >
-              <div className="flex items-center gap-2">
-                <FaBoxOpen className="text-gray-500" />
+              <div className="flex flex-wrap items-center gap-2">
+                <FaBoxOpen className="text-gray-500 flex-shrink-0" />
                 <span className="font-semibold text-gray-700 text-sm">
                   Items ({request.items?.length || 0})
                 </span>
                 {request.status === "Awaiting Customer Confirmation" && (
                   <div className="flex items-center gap-1 ml-2 text-xs">
-                    {(request.items || []).filter(
-                      (i) => i.status === "Accepted",
-                    ).length > 0 && (
+                    {request.items?.filter((i) => i.status === "Accepted")
+                      .length > 0 && (
                       <span className="text-emerald-600 font-medium flex items-center gap-1">
                         <FaCheck className="w-3 h-3" />
                         {
-                          (request.items || []).filter(
-                            (i) => i.status === "Accepted",
-                          ).length
+                          request.items?.filter((i) => i.status === "Accepted")
+                            .length
                         }
                       </span>
                     )}
-                    {(request.items || []).filter(
-                      (i) => i.status === "Rejected",
-                    ).length > 0 && (
+                    {request.items?.filter((i) => i.status === "Rejected")
+                      .length > 0 && (
                       <span className="text-red-600 font-medium flex items-center gap-1 ml-1">
                         <FaTimesIcon className="w-3 h-3" />
                         {
-                          (request.items || []).filter(
-                            (i) => i.status === "Rejected",
-                          ).length
+                          request.items?.filter((i) => i.status === "Rejected")
+                            .length
                         }
                       </span>
                     )}
@@ -911,7 +779,7 @@ const CustomerRequestModal = ({ requestNumber, onClose, onRefresh }) => {
                 {request.items?.map((item, index) => (
                   <div
                     key={index}
-                    className={`flex justify-between items-center p-2 rounded-lg border ${
+                    className={`flex flex-wrap justify-between items-center p-2 rounded-lg border gap-2 ${
                       item.status === "Accepted"
                         ? "border-emerald-200 bg-emerald-50"
                         : item.status === "Rejected"
@@ -919,16 +787,16 @@ const CustomerRequestModal = ({ requestNumber, onClose, onRefresh }) => {
                           : "border-gray-200 bg-gray-50"
                     }`}
                   >
-                    <div className="flex items-center gap-2">
-                      <FaTag className="text-gray-400 w-3 h-3" />
-                      <span className="font-medium text-gray-800 text-sm">
+                    <div className="flex items-center gap-2 min-w-[100px]">
+                      <FaTag className="text-gray-400 w-3 h-3 flex-shrink-0" />
+                      <span className="font-medium text-gray-800 text-sm truncate">
                         {item.itemName}
                       </span>
-                      <span className="text-xs text-gray-500">
+                      <span className="text-xs text-gray-500 flex-shrink-0">
                         ×{item.quantity}
                       </span>
                     </div>
-                    <div className="flex items-center gap-2">
+                    <div className="flex flex-wrap items-center gap-2">
                       {item.status && (
                         <span
                           className={`text-[10px] px-2 py-0.5 rounded-full font-medium ${getItemStatusBadge(item.status)}`}
@@ -964,7 +832,7 @@ const CustomerRequestModal = ({ requestNumber, onClose, onRefresh }) => {
                 className="w-full p-3 flex items-center justify-between hover:bg-gray-50 transition-colors"
               >
                 <div className="flex items-center gap-2">
-                  <FaFileAlt className="text-gray-500" />
+                  <FaFileAlt className="text-gray-500 flex-shrink-0" />
                   <span className="font-semibold text-gray-700 text-sm">
                     Review Information
                   </span>
@@ -979,7 +847,7 @@ const CustomerRequestModal = ({ requestNumber, onClose, onRefresh }) => {
                 <div className="p-3 pt-0 space-y-2 text-sm">
                   {request.reviewedBy && (
                     <div className="flex items-center gap-2 text-gray-600">
-                      <FaUser className="w-3.5 h-3.5 text-gray-400" />
+                      <FaUser className="w-3.5 h-3.5 text-gray-400 flex-shrink-0" />
                       <span>
                         Reviewed by:{" "}
                         <span className="font-medium text-gray-800">
@@ -992,7 +860,7 @@ const CustomerRequestModal = ({ requestNumber, onClose, onRefresh }) => {
                   )}
                   {request.reviewedAt && (
                     <div className="flex items-center gap-2 text-gray-600">
-                      <FaRegClock className="w-3.5 h-3.5 text-gray-400" />
+                      <FaRegClock className="w-3.5 h-3.5 text-gray-400 flex-shrink-0" />
                       <span>
                         Reviewed on:{" "}
                         <span className="font-medium text-gray-800">
@@ -1027,7 +895,7 @@ const CustomerRequestModal = ({ requestNumber, onClose, onRefresh }) => {
           )}
 
           {/* Amendment History */}
-          {request.amendmentHistory && request.amendmentHistory.length > 0 && (
+          {request.amendmentHistory?.length > 0 && (
             <div className="border border-gray-200 rounded-xl overflow-hidden">
               <button
                 onClick={() =>
@@ -1039,7 +907,7 @@ const CustomerRequestModal = ({ requestNumber, onClose, onRefresh }) => {
                 className="w-full p-3 flex items-center justify-between hover:bg-gray-50 transition-colors"
               >
                 <div className="flex items-center gap-2">
-                  <FaHistory className="text-gray-500" />
+                  <FaHistory className="text-gray-500 flex-shrink-0" />
                   <span className="font-semibold text-gray-700 text-sm">
                     Amendment History ({request.amendmentHistory.length})
                   </span>
@@ -1057,7 +925,7 @@ const CustomerRequestModal = ({ requestNumber, onClose, onRefresh }) => {
                       key={idx}
                       className="bg-gray-50 p-3 rounded-lg border border-gray-200"
                     >
-                      <div className="flex items-center justify-between mb-2">
+                      <div className="flex flex-wrap items-center justify-between mb-2 gap-2">
                         <span className="text-sm font-semibold text-gray-700">
                           Amendment #{amendment.cycle}
                         </span>
@@ -1106,7 +974,7 @@ const CustomerRequestModal = ({ requestNumber, onClose, onRefresh }) => {
                       </div>
                       {amendment.previousRequestedDeliveryDate && (
                         <div className="mt-2 pt-1 border-t border-gray-200 text-xs">
-                          <div className="flex justify-between">
+                          <div className="flex flex-wrap justify-between gap-1">
                             <span className="text-gray-400">
                               Previous Delivery:
                             </span>
@@ -1116,7 +984,7 @@ const CustomerRequestModal = ({ requestNumber, onClose, onRefresh }) => {
                               )}
                             </span>
                           </div>
-                          <div className="flex justify-between">
+                          <div className="flex flex-wrap justify-between gap-1">
                             <span className="text-gray-400">New Delivery:</span>
                             <span className="text-gray-600">
                               {formatDate(amendment.newRequestedDeliveryDate)}
@@ -1136,18 +1004,20 @@ const CustomerRequestModal = ({ requestNumber, onClose, onRefresh }) => {
             <div className="p-3 bg-amber-50 rounded-lg border border-amber-200">
               <div className="flex items-start gap-2">
                 <FaStickyNote className="text-amber-500 flex-shrink-0 mt-0.5" />
-                <div>
+                <div className="min-w-0">
                   <p className="text-xs text-amber-600 uppercase font-medium mb-0.5">
                     Notes
                   </p>
-                  <p className="text-sm text-gray-700">{request.notes}</p>
+                  <p className="text-sm text-gray-700 break-words">
+                    {request.notes}
+                  </p>
                 </div>
               </div>
             </div>
           )}
 
           {/* Timeline */}
-          {request.timeline && request.timeline.length > 0 && (
+          {request.timeline?.length > 0 && (
             <div>
               <h3 className="text-sm font-semibold text-gray-700 mb-3 flex items-center gap-2">
                 <FaList className="text-gray-500" />
@@ -1156,7 +1026,7 @@ const CustomerRequestModal = ({ requestNumber, onClose, onRefresh }) => {
               <div className="space-y-3 max-h-[200px] overflow-y-auto">
                 {request.timeline.map((event, index) => (
                   <div key={index} className="flex items-start gap-3">
-                    <div className="relative">
+                    <div className="relative flex-shrink-0">
                       {index < request.timeline.length - 1 && (
                         <div className="absolute left-2 top-5 bottom-0 w-0.5 bg-gray-200"></div>
                       )}
@@ -1170,7 +1040,7 @@ const CustomerRequestModal = ({ requestNumber, onClose, onRefresh }) => {
                         }`}
                       ></div>
                     </div>
-                    <div className="flex-1 pb-3">
+                    <div className="flex-1 pb-3 min-w-0">
                       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1">
                         <span className="font-medium text-gray-800 text-sm">
                           {event.action}
@@ -1180,7 +1050,7 @@ const CustomerRequestModal = ({ requestNumber, onClose, onRefresh }) => {
                         </span>
                       </div>
                       {event.description && (
-                        <p className="text-sm text-gray-600 mt-0.5">
+                        <p className="text-sm text-gray-600 mt-0.5 break-words">
                           {event.description}
                         </p>
                       )}
@@ -1196,9 +1066,7 @@ const CustomerRequestModal = ({ requestNumber, onClose, onRefresh }) => {
   );
 };
 
-// ============================================================================
-// MAIN REUESTORDER COMPONENT
-// ============================================================================
+// Main ReuestOrder Component
 const ReuestOrder = () => {
   const [items, setItems] = useState([]);
   const [filteredItems, setFilteredItems] = useState([]);
@@ -1214,43 +1082,26 @@ const ReuestOrder = () => {
   const [loading, setLoading] = useState(false);
   const [isCartOpen, setIsCartOpen] = useState(false);
   const [toast, setToast] = useState(null);
-  const [isSearchExpanded, setIsSearchExpanded] = useState(false);
   const [activeTab, setActiveTab] = useState("items");
   const [showOrderPage, setShowOrderPage] = useState(false);
-
-  // Request Modal State
   const [showRequestModal, setShowRequestModal] = useState(false);
   const [modalRequestNumber, setModalRequestNumber] = useState("");
-
-  // Status Checker State
   const [checkNumber, setCheckNumber] = useState("");
   const [statusLoading, setStatusLoading] = useState(false);
   const [statusError, setStatusError] = useState("");
 
-  // Toast helper functions
-  const showToast = (message, type = "error") => {
-    setToast({ message, type });
-  };
-
-  const hideToast = () => {
-    setToast(null);
-  };
-
-  // Fetch available items on load
   useEffect(() => {
     fetchItems();
   }, []);
 
-  // Filter items when search term changes
   useEffect(() => {
-    if (searchTerm.trim() === "") {
-      setFilteredItems(items);
-    } else {
-      const filtered = items.filter((item) =>
-        item.name.toLowerCase().includes(searchTerm.toLowerCase().trim()),
-      );
-      setFilteredItems(filtered);
-    }
+    setFilteredItems(
+      searchTerm.trim() === ""
+        ? items
+        : items.filter((item) =>
+            item.name.toLowerCase().includes(searchTerm.toLowerCase().trim()),
+          ),
+    );
   }, [searchTerm, items]);
 
   const fetchItems = async () => {
@@ -1259,55 +1110,41 @@ const ReuestOrder = () => {
       setItems(res.data.data);
       setFilteredItems(res.data.data);
     } catch (err) {
-      console.error("Error fetching items:", err);
       showToast("Failed to load items. Please refresh the page.", "error");
     }
   };
 
+  const showToast = (message, type = "error") => {
+    setToast({ message, type });
+    setTimeout(() => setToast(null), 4000);
+  };
+
   const addToCart = (item) => {
-    if (item.itemQuantity <= 0) {
-      showToast(`${item.name} is out of stock!`, "error");
-      return;
-    }
-
     setCart((prevCart) => {
-      const existingIndex = prevCart.findIndex((c) => c.itemId === item._id);
-
-      if (existingIndex !== -1) {
-        const updatedCart = [...prevCart];
-        const newQty = updatedCart[existingIndex].quantity + 1;
-        if (newQty > item.itemQuantity) {
-          showToast(
-            `Only ${item.itemQuantity} ${item.name}(s) available in stock.`,
-            "error",
-          );
-          return prevCart;
-        }
-        updatedCart[existingIndex] = {
-          ...updatedCart[existingIndex],
-          quantity: newQty,
-        };
-        return updatedCart;
-      } else {
-        return [
-          ...prevCart,
-          {
-            itemId: item._id,
-            name: item.name,
-            quantity: 1,
-            price: item.price,
-            wholesalePrice: item.wholesalePrice,
-            enableWholesale: item.enableWholesale,
-            wholesaleMinQty: item.wholesaleMinQty,
-            stock: item.itemQuantity,
-          },
-        ];
+      const existing = prevCart.find((c) => c.itemId === item._id);
+      if (existing) {
+        return prevCart.map((c) =>
+          c.itemId === item._id ? { ...c, quantity: c.quantity + 1 } : c,
+        );
       }
+      return [
+        ...prevCart,
+        {
+          itemId: item._id,
+          name: item.name,
+          quantity: 1,
+          price: item.price,
+          wholesalePrice: item.wholesalePrice,
+          enableWholesale: item.enableWholesale,
+          wholesaleMinQty: item.wholesaleMinQty,
+          stock: item.itemQuantity,
+        },
+      ];
     });
   };
 
   const removeFromCart = (itemId) => {
-    setCart((prevCart) => prevCart.filter((c) => c.itemId !== itemId));
+    setCart((prev) => prev.filter((c) => c.itemId !== itemId));
   };
 
   const updateQuantity = (itemId, qty) => {
@@ -1315,48 +1152,38 @@ const ReuestOrder = () => {
       removeFromCart(itemId);
       return;
     }
-
-    setCart((prevCart) => {
-      return prevCart.map((c) => {
+    setCart((prev) =>
+      prev.map((c) => {
         if (c.itemId === itemId) {
           if (qty > c.stock) {
-            showToast(
-              `Only ${c.stock} ${c.name}(s) available in stock.`,
-              "error",
-            );
+            showToast(`Only ${c.stock} ${c.name}(s) available.`, "error");
             return c;
           }
           return { ...c, quantity: qty };
         }
         return c;
-      });
-    });
+      }),
+    );
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-
     if (!customerName.trim()) {
-      showToast("Customer name is required", "error");
+      showToast("Please enter your full name", "error");
       return;
     }
-
     if (!customerPhone.trim()) {
-      showToast("Customer phone is required", "error");
+      showToast("Please enter your phone number", "error");
       return;
     }
-
-    const phoneRegex = /^[0-9+\-\s()]{10,15}$/;
-    if (!phoneRegex.test(customerPhone.trim())) {
+    if (!/^[0-9+\-\s()]{10,15}$/.test(customerPhone.trim())) {
       showToast("Please enter a valid phone number (10-15 digits)", "error");
       return;
     }
-
     if (!requestedDeliveryDate) {
-      showToast("Requested delivery date is required", "error");
+      showToast("Please select a delivery date", "error");
       return;
     }
-
     const selectedDate = new Date(requestedDeliveryDate);
     const today = new Date();
     today.setHours(0, 0, 0, 0);
@@ -1364,12 +1191,10 @@ const ReuestOrder = () => {
       showToast("Delivery date cannot be in the past", "error");
       return;
     }
-
     if (cart.length === 0) {
-      showToast("At least one item is required", "error");
+      showToast("Please add at least one item to your request", "error");
       return;
     }
-
     for (const cartItem of cart) {
       const item = items.find((i) => i._id === cartItem.itemId);
       if (!item) {
@@ -1378,53 +1203,46 @@ const ReuestOrder = () => {
       }
       if (item.itemQuantity < cartItem.quantity) {
         showToast(
-          `Only ${item.itemQuantity} ${item.name}(s) available. Please reduce quantity.`,
+          `Only ${item.itemQuantity} ${item.name}(s) available.`,
           "error",
         );
         return;
       }
     }
-
     setLoading(true);
     try {
       const res = await axios.post(`${BASE_URL}/api/orders/addRequests`, {
         customerName: customerName.trim(),
         customerPhone: customerPhone.trim(),
         requestedDeliveryDate,
-        items: cart.map((c) => ({
-          itemId: c.itemId,
-          quantity: c.quantity,
-        })),
+        items: cart.map((c) => ({ itemId: c.itemId, quantity: c.quantity })),
         notes: notes.trim(),
-        source: source,
+        source,
       });
-
       setRequestNumber(res.data.data.requestNumber);
       setSubmitted(true);
       setCart([]);
       showToast("Request submitted successfully!", "success");
     } catch (error) {
-      const errorMsg =
-        error.response?.data?.message || "Failed to submit request";
-      showToast(errorMsg, "error");
+      showToast(
+        error.response?.data?.message || "Failed to submit request",
+        "error",
+      );
     } finally {
       setLoading(false);
     }
   };
 
-  // Open Request Modal with number
   const openRequestModal = (number) => {
     setModalRequestNumber(number);
     setShowRequestModal(true);
   };
 
-  // Close Request Modal
   const closeRequestModal = () => {
     setShowRequestModal(false);
     setModalRequestNumber("");
   };
 
-  // Check status and open modal
   const checkStatus = () => {
     if (!checkNumber.trim()) {
       setStatusError("Please enter a request number");
@@ -1453,81 +1271,6 @@ const ReuestOrder = () => {
     setRequestedDeliveryDate("");
   };
 
-  const getStatusBadge = (status) => {
-    const statusMap = {
-      "Pending Review": "bg-amber-100 text-amber-800 border-amber-200",
-      "Awaiting Customer Confirmation":
-        "bg-blue-100 text-blue-800 border-blue-200",
-      Accepted: "bg-emerald-100 text-emerald-800 border-emerald-200",
-      Converted: "bg-purple-100 text-purple-800 border-purple-200",
-      Rejected: "bg-red-100 text-red-800 border-red-200",
-      Cancelled: "bg-gray-100 text-gray-700 border-gray-200",
-    };
-    return statusMap[status] || "bg-gray-100 text-gray-700 border-gray-200";
-  };
-
-  const getStatusDisplayName = (status) => {
-    const nameMap = {
-      "Pending Review": "Pending Review",
-      "Awaiting Customer Confirmation": "Awaiting Confirmation",
-      Accepted: "Accepted",
-      Converted: "Converted to Order",
-      Rejected: "Rejected",
-      Cancelled: "Cancelled",
-    };
-    return nameMap[status] || status;
-  };
-
-  const getStatusIcon = (status) => {
-    const iconMap = {
-      "Pending Review": <FaClock className="w-4 h-4" />,
-      "Awaiting Customer Confirmation": <FaHourglassHalf className="w-4 h-4" />,
-      Accepted: <FaCheckCircle className="w-4 h-4" />,
-      Converted: <FaCheckCircle className="w-4 h-4" />,
-      Rejected: <FaTimesIcon className="w-4 h-4" />,
-      Cancelled: <FaTimesIcon className="w-4 h-4" />,
-    };
-    return iconMap[status] || <FaInfoCircle className="w-4 h-4" />;
-  };
-
-  const getItemStatusBadge = (status) => {
-    const statusMap = {
-      Pending: "bg-amber-100 text-amber-800",
-      Accepted: "bg-emerald-100 text-emerald-800",
-      Rejected: "bg-red-100 text-red-800",
-    };
-    return statusMap[status] || "bg-gray-100 text-gray-700";
-  };
-
-  const getItemStatusIcon = (status) => {
-    const iconMap = {
-      Pending: <FaHourglassHalf className="w-3 h-3" />,
-      Accepted: <FaCheck className="w-3 h-3" />,
-      Rejected: <FaTimesIcon className="w-3 h-3" />,
-    };
-    return iconMap[status] || null;
-  };
-
-  const getSourceBadge = (source) => {
-    const sourceMap = {
-      Website: "bg-indigo-100 text-indigo-800",
-      Phone: "bg-purple-100 text-purple-800",
-      "Walk-in": "bg-orange-100 text-orange-800",
-      WhatsApp: "bg-emerald-100 text-emerald-800",
-      Manual: "bg-gray-100 text-gray-700",
-    };
-    return sourceMap[source] || "bg-gray-100 text-gray-700";
-  };
-
-  const getSourceIcon = (source) => {
-    const iconMap = {
-      Website: <FaGlobe className="w-3 h-3" />,
-      WhatsApp: <FaWhatsapp className="w-3 h-3" />,
-      Manual: <FaUser className="w-3 h-3" />,
-    };
-    return iconMap[source] || <FaInfoCircle className="w-3 h-3" />;
-  };
-
   const calculateItemTotal = (cartItem) => {
     let unitPrice = cartItem.price;
     if (
@@ -1550,91 +1293,59 @@ const ReuestOrder = () => {
       style: "currency",
       currency: "TZS",
       minimumFractionDigits: 0,
-      maximumFractionDigits: 0,
     })
       .format(amount)
       .replace("TZS", "TSh");
-  };
-
-  const formatDate = (dateString) => {
-    if (!dateString) return "N/A";
-    return new Date(dateString).toLocaleDateString("en-US", {
-      year: "numeric",
-      month: "long",
-      day: "numeric",
-    });
-  };
-
-  const formatDateTime = (dateString) => {
-    if (!dateString) return "N/A";
-    return new Date(dateString).toLocaleString("en-US", {
-      year: "numeric",
-      month: "long",
-      day: "numeric",
-      hour: "2-digit",
-      minute: "2-digit",
-    });
   };
 
   // Welcome Page
   if (!showOrderPage && !submitted) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 flex items-center justify-center px-4 py-8">
-        {/* Toast Notification */}
         {toast && (
           <Toast
             message={toast.message}
             type={toast.type}
-            onClose={hideToast}
+            onClose={() => setToast(null)}
           />
         )}
-
-        {/* Customer Request Modal */}
         {showRequestModal && (
           <CustomerRequestModal
             requestNumber={modalRequestNumber}
             onClose={closeRequestModal}
-            onRefresh={() => {
-              // Optionally refresh any data
-            }}
+            onRefresh={() => {}}
           />
         )}
-
-        <div className="max-w-2xl w-full relative">
-          <div className="bg-white rounded-3xl shadow-2xl p-8 sm:p-12 text-center border border-gray-100 transform transition-all duration-500 hover:scale-[1.01]">
-            <div className="w-28 h-28 bg-gradient-to-br from-emerald-400 to-teal-400 rounded-2xl flex items-center justify-center mx-auto mb-6 shadow-xl shadow-emerald-200">
-              <FaStore className="text-white text-5xl" />
+        <div className="max-w-2xl w-full">
+          <div className="bg-white rounded-3xl shadow-2xl p-6 sm:p-12 text-center border border-gray-100">
+            <div className="w-24 h-24 sm:w-28 sm:h-28 bg-gradient-to-br from-emerald-400 to-teal-400 rounded-2xl flex items-center justify-center mx-auto mb-6 shadow-xl shadow-emerald-200">
+              <FaStore className="text-white text-4xl sm:text-5xl" />
             </div>
-
-            <h1 className="text-4xl sm:text-5xl font-extrabold text-gray-800 mb-2">
-              UZA
+            <h1 className="text-3xl sm:text-5xl font-extrabold text-gray-800 mb-2">
+              UZA{" "}
               <span className="text-transparent bg-gradient-to-r from-emerald-600 to-teal-600 bg-clip-text">
                 ONLINE SHOP
               </span>
             </h1>
-
             <div className="h-1 w-20 bg-gradient-to-r from-emerald-400 to-teal-400 rounded-full mx-auto mb-4"></div>
-
-            <p className="text-gray-600 text-lg mb-1">
+            <p className="text-gray-600 text-base sm:text-lg mb-1">
               Welcome to your trusted online store
             </p>
             <p className="text-gray-400 text-sm mb-8">
               Quality products, delivered with care
             </p>
-
             <div className="space-y-4">
               <button
                 onClick={() => {
                   setShowOrderPage(true);
                   fetchItems();
                 }}
-                className="w-full bg-gradient-to-r from-emerald-500 to-teal-500 text-white font-semibold py-4 px-6 rounded-xl hover:shadow-xl hover:shadow-emerald-200 transition-all duration-300 hover:scale-[1.02] active:scale-95 flex items-center justify-center gap-3 text-lg"
+                className="w-full bg-gradient-to-r from-emerald-500 to-teal-500 text-white font-semibold py-4 px-6 rounded-xl hover:shadow-xl hover:shadow-emerald-200 transition-all duration-300 hover:scale-[1.02] active:scale-95 flex items-center justify-center gap-3 text-base sm:text-lg"
               >
                 <FaShoppingBag className="text-xl" />
                 Start Your Order Request
                 <FaArrowRight className="text-sm" />
               </button>
-
               <div className="relative">
                 <div className="absolute inset-0 flex items-center">
                   <div className="w-full border-t border-gray-200"></div>
@@ -1645,15 +1356,15 @@ const ReuestOrder = () => {
                   </span>
                 </div>
               </div>
-
-              {/* Status Checker on Welcome Page - Opens Modal */}
-              <div className="bg-gray-50 rounded-xl p-5 border border-gray-200">
-                <div className="flex flex-col sm:flex-row items-center gap-3">
-                  <div className="flex items-center gap-2 text-gray-600 w-full sm:w-auto">
-                    <div className="p-2 bg-emerald-100 rounded-lg">
+              <div className="bg-gray-50 rounded-xl p-4 sm:p-5 border border-gray-200">
+                <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
+                  <div className="flex items-center gap-2 text-gray-600 flex-shrink-0">
+                    <div className="p-2 bg-emerald-100 rounded-lg flex-shrink-0">
                       <FaSearch className="text-emerald-600" />
                     </div>
-                    <span className="text-sm font-medium">Track Request</span>
+                    <span className="text-sm font-medium whitespace-nowrap">
+                      Track Request
+                    </span>
                   </div>
                   <div className="flex-1 w-full flex flex-col sm:flex-row gap-2">
                     <input
@@ -1662,12 +1373,12 @@ const ReuestOrder = () => {
                       value={checkNumber}
                       onChange={(e) => setCheckNumber(e.target.value)}
                       onKeyPress={(e) => e.key === "Enter" && checkStatus()}
-                      className="flex-1 px-4 py-2.5 rounded-lg border border-gray-200 focus:border-emerald-400 focus:ring-2 focus:ring-emerald-200 outline-none transition-all text-sm bg-white"
+                      className="flex-1 w-full px-4 py-2.5 rounded-lg border border-gray-200 focus:border-emerald-400 focus:ring-2 focus:ring-emerald-200 outline-none transition-all text-sm bg-white"
                     />
                     <button
                       onClick={checkStatus}
                       disabled={statusLoading}
-                      className="px-6 py-2.5 bg-gradient-to-r from-emerald-500 to-teal-500 text-white font-medium rounded-lg hover:shadow-lg hover:shadow-emerald-200 transition-all duration-300 hover:scale-[1.02] active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed text-sm whitespace-nowrap flex items-center justify-center gap-2"
+                      className="w-full sm:w-auto px-4 sm:px-6 py-2.5 bg-gradient-to-r from-emerald-500 to-teal-500 text-white font-medium rounded-lg hover:shadow-lg hover:shadow-emerald-200 transition-all duration-300 hover:scale-[1.02] active:scale-95 disabled:opacity-50 text-sm whitespace-nowrap flex items-center justify-center gap-2"
                     >
                       {statusLoading ? (
                         <FaSpinner className="animate-spin" />
@@ -1680,15 +1391,17 @@ const ReuestOrder = () => {
                     </button>
                   </div>
                 </div>
+                <div className="mt-2 text-xs text-gray-400 text-left">
+                  💡 Enter your request number to track its status
+                </div>
                 {statusError && (
-                  <div className="mt-3 text-red-600 text-sm text-left flex items-center gap-2 bg-red-50 p-2 rounded-lg border border-red-200">
+                  <div className="mt-3 text-red-600 text-sm flex items-center gap-2 bg-red-50 p-2 rounded-lg border border-red-200">
                     <FaExclamationTriangle className="w-4 h-4 flex-shrink-0" />
                     {statusError}
                   </div>
                 )}
               </div>
             </div>
-
             <p className="text-xs text-gray-400 mt-6">
               © 2026 UZA ONLINE SHOP. All rights reserved.
             </p>
@@ -1701,24 +1414,22 @@ const ReuestOrder = () => {
   if (submitted) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 flex items-center justify-center px-4 py-8">
-        {/* Toast Notification */}
         {toast && (
           <Toast
             message={toast.message}
             type={toast.type}
-            onClose={hideToast}
+            onClose={() => setToast(null)}
           />
         )}
-
-        <div className="max-w-md w-full bg-white rounded-3xl shadow-2xl p-10 text-center border border-gray-100 transform transition-all duration-500">
+        <div className="max-w-md w-full bg-white rounded-3xl shadow-2xl p-6 sm:p-10 text-center border border-gray-100">
           <div className="w-24 h-24 bg-gradient-to-br from-emerald-400 to-teal-400 rounded-full flex items-center justify-center mx-auto mb-6 shadow-xl shadow-emerald-200 animate-bounce">
             <FaCheckCircle className="text-white text-5xl" />
           </div>
-          <h2 className="text-3xl font-bold text-gray-800 mb-2">
+          <h2 className="text-2xl sm:text-3xl font-bold text-gray-800 mb-2">
             Request Submitted! 🎉
           </h2>
           <p className="text-gray-600 mb-1">Your request number:</p>
-          <p className="text-2xl font-mono font-bold text-transparent bg-gradient-to-r from-emerald-600 to-teal-600 bg-clip-text mb-4">
+          <p className="text-xl sm:text-2xl font-mono font-bold text-transparent bg-gradient-to-r from-emerald-600 to-teal-600 bg-clip-text mb-4 break-all">
             {requestNumber}
           </p>
           <div className="bg-gradient-to-r from-emerald-50 to-teal-50 rounded-xl p-5 mb-8 border border-emerald-200">
@@ -1748,12 +1459,13 @@ const ReuestOrder = () => {
   // Main Order Page
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50">
-      {/* Toast Notification */}
       {toast && (
-        <Toast message={toast.message} type={toast.type} onClose={hideToast} />
+        <Toast
+          message={toast.message}
+          type={toast.type}
+          onClose={() => setToast(null)}
+        />
       )}
-
-      {/* Customer Request Modal */}
       {showRequestModal && (
         <CustomerRequestModal
           requestNumber={modalRequestNumber}
@@ -1761,24 +1473,22 @@ const ReuestOrder = () => {
         />
       )}
 
-      {/* Header Section */}
+      {/* Header */}
       <div className="bg-white border-b border-gray-200 sticky top-0 z-30 shadow-sm">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 py-4 sm:py-5">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 py-3 sm:py-5">
           <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3 sm:gap-4">
+            <div className="flex items-center gap-3 sm:gap-4 min-w-0">
               <button
                 onClick={goBackToWelcome}
-                className="p-2 hover:bg-gray-100 rounded-xl transition-colors text-gray-600 hover:text-gray-800"
-                title="Go back to welcome page"
+                className="p-2 hover:bg-gray-100 rounded-xl transition-colors text-gray-600 hover:text-gray-800 flex-shrink-0"
               >
                 <FaArrowLeft className="text-base sm:text-lg" />
               </button>
-
-              <div className="p-2.5 bg-gradient-to-br from-emerald-500 to-teal-500 rounded-xl shadow-lg shadow-emerald-200">
+              <div className="p-2.5 bg-gradient-to-br from-emerald-500 to-teal-500 rounded-xl shadow-lg shadow-emerald-200 flex-shrink-0">
                 <FaStore className="text-white text-lg sm:text-xl" />
               </div>
-              <div>
-                <h1 className="text-lg sm:text-2xl font-bold text-gray-800">
+              <div className="min-w-0">
+                <h1 className="text-lg sm:text-2xl font-bold text-gray-800 truncate">
                   Order Request
                 </h1>
                 <p className="text-[10px] sm:text-xs text-gray-500 hidden sm:block">
@@ -1786,10 +1496,9 @@ const ReuestOrder = () => {
                 </p>
               </div>
             </div>
-
             <button
               onClick={() => setIsCartOpen(!isCartOpen)}
-              className="lg:hidden relative bg-emerald-50 px-4 py-2 rounded-full border border-emerald-200 flex items-center gap-2 hover:bg-emerald-100 transition-colors"
+              className="lg:hidden relative bg-emerald-50 px-3 sm:px-4 py-2 rounded-full border border-emerald-200 flex items-center gap-2 hover:bg-emerald-100 transition-colors flex-shrink-0"
             >
               <FaShoppingCart className="text-emerald-600" />
               <span className="font-semibold text-emerald-700">
@@ -1799,7 +1508,6 @@ const ReuestOrder = () => {
                 <span className="absolute -top-1 -right-1 w-2.5 h-2.5 bg-red-500 rounded-full animate-pulse"></span>
               )}
             </button>
-
             {cart.length > 0 && (
               <div className="hidden lg:flex items-center gap-3 bg-emerald-50 px-4 py-2 rounded-full border border-emerald-200">
                 <FaShoppingCart className="text-emerald-600" />
@@ -1816,9 +1524,9 @@ const ReuestOrder = () => {
         </div>
       </div>
 
-      {/* Main Content - same as before but with modal trigger in status checker */}
-      <div className="max-w-8xl mx-auto px-4 sm:px-6 py-6 sm:py-8 lg:py-10">
-        {/* Mobile/Tablet: Tab Navigation */}
+      {/* Main Content */}
+      <div className="max-w-8xl mx-auto px-4 sm:px-6 py-4 sm:py-6 lg:py-10">
+        {/* Mobile/Tablet Tabs */}
         <div className="lg:hidden mb-6">
           <div className="bg-white rounded-2xl shadow-md p-1 flex gap-1">
             <button
@@ -1859,75 +1567,30 @@ const ReuestOrder = () => {
           <div
             className={`lg:col-span-2 ${activeTab === "cart" ? "hidden lg:block" : "block"}`}
           >
-            {/* Status Checker - Now opens modal */}
+            {/* Status Checker */}
             <div className="bg-white rounded-2xl shadow-md p-4 sm:p-6 mb-6 border border-gray-100">
               <div className="flex flex-col gap-4">
                 <div className="flex items-center gap-2 text-gray-700">
-                  <div className="p-2 bg-emerald-100 rounded-lg">
+                  <div className="p-2 bg-emerald-100 rounded-lg flex-shrink-0">
                     <FaSearch className="text-emerald-600" />
                   </div>
                   <span className="text-base font-semibold">
                     Track Your Request
                   </span>
                 </div>
-
-                <div className="sm:hidden">
-                  <button
-                    onClick={() => setIsSearchExpanded(!isSearchExpanded)}
-                    className="w-full flex items-center justify-between px-4 py-3 bg-gray-50 rounded-xl border border-gray-200"
-                  >
-                    <span className="text-sm text-gray-600">
-                      {isSearchExpanded
-                        ? "Hide status checker"
-                        : "Check request status"}
-                    </span>
-                    {isSearchExpanded ? (
-                      <FaChevronUp className="text-gray-400" />
-                    ) : (
-                      <FaChevronDown className="text-gray-400" />
-                    )}
-                  </button>
-                  {isSearchExpanded && (
-                    <div className="mt-3 space-y-3">
-                      <input
-                        type="text"
-                        placeholder="Enter request number"
-                        value={checkNumber}
-                        onChange={(e) => setCheckNumber(e.target.value)}
-                        onKeyPress={(e) => e.key === "Enter" && checkStatus()}
-                        className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-emerald-400 focus:ring-2 focus:ring-emerald-200 outline-none transition-all text-sm"
-                      />
-                      <button
-                        onClick={checkStatus}
-                        disabled={statusLoading}
-                        className="w-full px-6 py-3 bg-gradient-to-r from-emerald-500 to-teal-500 text-white font-medium rounded-xl hover:shadow-lg hover:shadow-emerald-200 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed text-sm flex items-center justify-center gap-2"
-                      >
-                        {statusLoading ? (
-                          <FaSpinner className="animate-spin" />
-                        ) : (
-                          <>
-                            <FaSearch className="w-4 h-4" />
-                            Check Status
-                          </>
-                        )}
-                      </button>
-                    </div>
-                  )}
-                </div>
-
-                <div className="hidden sm:flex flex-1 w-full flex-col sm:flex-row gap-3">
+                <div className="flex flex-col sm:flex-row gap-3">
                   <input
                     type="text"
                     placeholder="Enter request number (e.g., REQ-20260115-0001)"
                     value={checkNumber}
                     onChange={(e) => setCheckNumber(e.target.value)}
                     onKeyPress={(e) => e.key === "Enter" && checkStatus()}
-                    className="flex-1 px-4 py-3 rounded-xl border border-gray-200 focus:border-emerald-400 focus:ring-2 focus:ring-emerald-200 outline-none transition-all text-sm bg-white"
+                    className="flex-1 w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-emerald-400 focus:ring-2 focus:ring-emerald-200 outline-none transition-all text-sm bg-white"
                   />
                   <button
                     onClick={checkStatus}
                     disabled={statusLoading}
-                    className="px-8 py-3 bg-gradient-to-r from-emerald-500 to-teal-500 text-white font-medium rounded-xl hover:shadow-lg hover:shadow-emerald-200 transition-all duration-300 hover:scale-[1.02] active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed text-sm whitespace-nowrap flex items-center justify-center gap-2"
+                    className="w-full sm:w-auto px-6 sm:px-8 py-3 bg-gradient-to-r from-emerald-500 to-teal-500 text-white font-medium rounded-xl hover:shadow-lg hover:shadow-emerald-200 transition-all duration-300 hover:scale-[1.02] active:scale-95 disabled:opacity-50 text-sm whitespace-nowrap flex items-center justify-center gap-2"
                   >
                     {statusLoading ? (
                       <FaSpinner className="animate-spin" />
@@ -1939,8 +1602,10 @@ const ReuestOrder = () => {
                     )}
                   </button>
                 </div>
+                <div className="text-xs text-gray-400">
+                  💡 Enter your request number to check its current status
+                </div>
               </div>
-
               {statusError && (
                 <div className="mt-4 text-red-600 text-sm flex items-center gap-2 bg-red-50 p-3 rounded-lg border border-red-200">
                   <FaExclamationTriangle className="w-4 h-4 flex-shrink-0" />
@@ -1949,18 +1614,18 @@ const ReuestOrder = () => {
               )}
             </div>
 
-            {/* Rest of the items grid remains the same */}
+            {/* Items Grid */}
             <div>
               <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-6 gap-3">
                 <div>
-                  <h2 className="text-2xl font-bold text-gray-800">
+                  <h2 className="text-xl sm:text-2xl font-bold text-gray-800">
                     Available Items
                   </h2>
                   <p className="text-sm text-gray-500">
-                    Search and select items to add to your request
+                    Select items to add to your request
                   </p>
                 </div>
-                <span className="text-sm text-gray-400 bg-white px-4 py-1.5 rounded-full border border-gray-200">
+                <span className="text-sm text-gray-400 bg-white px-4 py-1.5 rounded-full border border-gray-200 whitespace-nowrap">
                   {filteredItems.length} items
                 </span>
               </div>
@@ -1970,7 +1635,7 @@ const ReuestOrder = () => {
                   <FaSearch className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" />
                   <input
                     type="text"
-                    placeholder="Search items..."
+                    placeholder="Search items by name..."
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
                     className="w-full pl-12 pr-12 py-3.5 rounded-xl border border-gray-200 focus:border-emerald-400 focus:ring-2 focus:ring-emerald-200 outline-none transition-all bg-white text-sm"
@@ -1986,51 +1651,34 @@ const ReuestOrder = () => {
                 </div>
                 {searchTerm && filteredItems.length === 0 && (
                   <p className="mt-3 text-sm text-gray-500 bg-amber-50 p-3 rounded-lg border border-amber-200">
-                    No items found matching "{searchTerm}"
+                    No items found matching
                   </p>
                 )}
               </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-2 xl:grid-cols-3 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 gap-4">
                 {filteredItems.map((item) => (
                   <div
                     key={item._id}
-                    className={`group bg-white rounded-2xl shadow-sm hover:shadow-xl transition-all duration-300 border ${
-                      item.itemQuantity <= 0
-                        ? "border-red-200 opacity-60"
-                        : "border-gray-200 hover:border-emerald-300"
-                    } overflow-hidden`}
+                    className="group bg-white rounded-2xl shadow-sm hover:shadow-xl transition-all duration-300 border border-gray-200 hover:border-emerald-300 overflow-hidden"
                   >
-                    <div className="p-5">
+                    <div className="p-4 sm:p-5">
                       <div className="flex items-start justify-between mb-3">
                         <div className="flex-1 min-w-0">
                           <h3 className="text-base font-semibold text-gray-800 group-hover:text-emerald-600 transition-colors truncate">
                             {item.name}
                           </h3>
                         </div>
-                        <div
-                          className={`w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 group-hover:scale-110 transition-transform border ${
-                            item.itemQuantity <= 0
-                              ? "bg-red-50 border-red-200"
-                              : "bg-gradient-to-br from-emerald-50 to-teal-50 border-emerald-100"
-                          }`}
-                        >
-                          <FaBoxOpen
-                            className={`text-lg ${
-                              item.itemQuantity <= 0
-                                ? "text-red-400"
-                                : "text-emerald-500"
-                            }`}
-                          />
+                        <div className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 group-hover:scale-110 transition-transform bg-gradient-to-br from-emerald-50 to-teal-50 border border-emerald-100">
+                          <FaBoxOpen className="text-lg text-emerald-500" />
                         </div>
                       </div>
-
                       <div className="mb-4">
                         <p className="text-2xl font-bold text-gray-900">
                           {formatCurrency(item.price)}
                         </p>
                         {item.enableWholesale && item.wholesalePrice > 0 && (
-                          <div className="mt-2 flex items-center gap-2 flex-wrap">
+                          <div className="mt-2 flex flex-wrap items-center gap-2">
                             <span className="text-[10px] bg-emerald-100 text-emerald-700 px-2 py-0.5 rounded-full font-medium">
                               Wholesale
                             </span>
@@ -2040,36 +1688,13 @@ const ReuestOrder = () => {
                             </span>
                           </div>
                         )}
-                        <div className="mt-2 text-xs text-gray-500">
-                          Stock:{" "}
-                          <span
-                            className={`font-medium ${item.itemQuantity <= 5 ? "text-red-500" : item.itemQuantity <= 10 ? "text-amber-500" : "text-emerald-500"}`}
-                          >
-                            {item.itemQuantity} units
-                          </span>
-                        </div>
                       </div>
-
                       <button
                         onClick={() => addToCart(item)}
-                        disabled={item.itemQuantity <= 0}
-                        className={`w-full font-semibold py-3 px-4 rounded-xl transition-all duration-300 flex items-center justify-center gap-2 text-sm ${
-                          item.itemQuantity <= 0
-                            ? "bg-gray-200 text-gray-500 cursor-not-allowed"
-                            : "bg-gradient-to-r from-emerald-500 to-teal-500 text-white hover:shadow-lg hover:shadow-emerald-200 hover:scale-[1.02] active:scale-95"
-                        }`}
+                        className="w-full font-semibold py-3 px-4 rounded-xl transition-all duration-300 bg-gradient-to-r from-emerald-500 to-teal-500 text-white hover:shadow-lg hover:shadow-emerald-200 hover:scale-[1.02] active:scale-95 flex items-center justify-center gap-2 text-sm"
                       >
-                        {item.itemQuantity <= 0 ? (
-                          <>
-                            <FaTimesIcon className="text-xs" />
-                            Out of Stock
-                          </>
-                        ) : (
-                          <>
-                            <FaPlus className="text-xs" />
-                            Add to Request
-                          </>
-                        )}
+                        <FaPlus className="text-xs" />
+                        Add to Request
                       </button>
                     </div>
                   </div>
@@ -2098,27 +1723,10 @@ const ReuestOrder = () => {
                     </button>
                   </div>
                 )}
-
-              {cart.length === 0 &&
-                items.length > 0 &&
-                filteredItems.length > 0 &&
-                !searchTerm && (
-                  <div className="text-center py-16">
-                    <div className="w-24 h-24 bg-gradient-to-br from-gray-100 to-gray-200 rounded-full flex items-center justify-center mx-auto mb-4">
-                      <FaBoxOpen className="text-gray-400 text-4xl" />
-                    </div>
-                    <h3 className="text-lg font-semibold text-gray-600 mb-2">
-                      Your request is empty
-                    </h3>
-                    <p className="text-sm text-gray-400">
-                      Browse items above and add them to your request
-                    </p>
-                  </div>
-                )}
             </div>
           </div>
 
-          {/* Right Column - Cart - Desktop (same as before) */}
+          {/* Right Column - Cart (Desktop) */}
           <div className="hidden lg:block lg:col-span-1">
             <div className="sticky top-24">
               <div className="bg-white rounded-2xl shadow-lg border border-gray-200 p-6">
@@ -2166,7 +1774,7 @@ const ReuestOrder = () => {
                                 <FaTrash className="text-xs" />
                               </button>
                             </div>
-                            <div className="flex items-center justify-between">
+                            <div className="flex flex-wrap items-center justify-between gap-2">
                               <div className="flex items-center gap-1.5">
                                 <button
                                   type="button"
@@ -2227,69 +1835,99 @@ const ReuestOrder = () => {
                     </div>
 
                     <div className="space-y-3.5">
-                      <div className="relative">
-                        <FaUser className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" />
-                        <input
-                          type="text"
-                          placeholder="Full Name *"
-                          value={customerName}
-                          onChange={(e) => setCustomerName(e.target.value)}
-                          required
-                          className="w-full pl-12 pr-4 py-3.5 rounded-xl border border-gray-200 focus:border-emerald-400 focus:ring-2 focus:ring-emerald-200 outline-none transition-all text-sm bg-white"
-                        />
+                      <div>
+                        <label className="block text-xs font-medium text-gray-500 mb-1">
+                          <FaUser className="inline mr-1" /> Full Name{" "}
+                          <span className="text-red-500">*</span>
+                        </label>
+                        <div className="relative">
+                          <FaUser className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" />
+                          <input
+                            type="text"
+                            placeholder="e.g., Kibuyu Shop"
+                            value={customerName}
+                            onChange={(e) => setCustomerName(e.target.value)}
+                            required
+                            className="w-full pl-12 pr-4 py-3.5 rounded-xl border border-gray-200 focus:border-emerald-400 focus:ring-2 focus:ring-emerald-200 outline-none transition-all text-sm bg-white"
+                          />
+                        </div>
                       </div>
-                      <div className="relative">
-                        <FaPhone className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" />
-                        <input
-                          type="tel"
-                          placeholder="Phone Number *"
-                          value={customerPhone}
-                          onChange={(e) => setCustomerPhone(e.target.value)}
-                          required
-                          className="w-full pl-12 pr-4 py-3.5 rounded-xl border border-gray-200 focus:border-emerald-400 focus:ring-2 focus:ring-emerald-200 outline-none transition-all text-sm bg-white"
-                        />
+                      <div>
+                        <label className="block text-xs font-medium text-gray-500 mb-1">
+                          <FaPhone className="inline mr-1" /> Phone Number{" "}
+                          <span className="text-red-500">*</span>
+                        </label>
+                        <div className="relative">
+                          <FaPhone className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" />
+                          <input
+                            type="tel"
+                            placeholder="e.g., 0712345678"
+                            value={customerPhone}
+                            onChange={(e) => setCustomerPhone(e.target.value)}
+                            required
+                            className="w-full pl-12 pr-4 py-3.5 rounded-xl border border-gray-200 focus:border-emerald-400 focus:ring-2 focus:ring-emerald-200 outline-none transition-all text-sm bg-white"
+                          />
+                        </div>
                       </div>
-                      <div className="relative">
-                        <FaCalendarAlt className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" />
-                        <input
-                          type="date"
-                          min={new Date().toISOString().split("T")[0]}
-                          value={requestedDeliveryDate}
-                          onChange={(e) =>
-                            setRequestedDeliveryDate(e.target.value)
-                          }
-                          required
-                          className="w-full pl-12 pr-4 py-3.5 rounded-xl border border-gray-200 focus:border-emerald-400 focus:ring-2 focus:ring-emerald-200 outline-none transition-all text-sm bg-white"
-                        />
+                      <div>
+                        <label className="block text-xs font-medium text-gray-500 mb-1">
+                          <FaCalendarAlt className="inline mr-1" /> Preferred
+                          Delivery Date <span className="text-red-500">*</span>
+                        </label>
+                        <div className="relative">
+                          <FaCalendarAlt className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" />
+                          <input
+                            type="date"
+                            min={new Date().toISOString().split("T")[0]}
+                            value={requestedDeliveryDate}
+                            onChange={(e) =>
+                              setRequestedDeliveryDate(e.target.value)
+                            }
+                            required
+                            className="w-full pl-12 pr-4 py-3.5 rounded-xl border border-gray-200 focus:border-emerald-400 focus:ring-2 focus:ring-emerald-200 outline-none transition-all text-sm bg-white"
+                          />
+                        </div>
                       </div>
-                      <div className="relative">
-                        <FaStickyNote className="absolute left-4 top-4 text-gray-400" />
-                        <textarea
-                          placeholder="Additional notes (optional)"
-                          value={notes}
-                          onChange={(e) => setNotes(e.target.value)}
-                          rows="2"
-                          className="w-full pl-12 pr-4 py-3.5 rounded-xl border border-gray-200 focus:border-emerald-400 focus:ring-2 focus:ring-emerald-200 outline-none transition-all resize-none text-sm bg-white"
-                        />
+                      <div>
+                        <label className="block text-xs font-medium text-gray-500 mb-1">
+                          <FaStickyNote className="inline mr-1" /> Additional
+                          Notes
+                        </label>
+                        <div className="relative">
+                          <FaStickyNote className="absolute left-4 top-4 text-gray-400" />
+                          <textarea
+                            placeholder="Any special instructions or comments..."
+                            value={notes}
+                            onChange={(e) => setNotes(e.target.value)}
+                            rows="2"
+                            className="w-full pl-12 pr-4 py-3.5 rounded-xl border border-gray-200 focus:border-emerald-400 focus:ring-2 focus:ring-emerald-200 outline-none transition-all resize-none text-sm bg-white"
+                          />
+                        </div>
                       </div>
-                      <div className="relative">
-                        <FaInfoCircle className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" />
-                        <select
-                          value={source}
-                          onChange={(e) => setSource(e.target.value)}
-                          className="w-full pl-12 pr-4 py-3.5 rounded-xl border border-gray-200 focus:border-emerald-400 focus:ring-2 focus:ring-emerald-200 outline-none transition-all text-sm appearance-none bg-white"
-                        >
-                          <option value="Website">Website</option>
-                          <option value="WhatsApp">WhatsApp</option>
-                          <option value="Manual">Manual</option>
-                        </select>
+                      <div>
+                        <label className="block text-xs font-medium text-gray-500 mb-1">
+                          <FaInfoCircle className="inline mr-1" /> How did you
+                          find us?
+                        </label>
+                        <div className="relative">
+                          <FaInfoCircle className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" />
+                          <select
+                            value={source}
+                            onChange={(e) => setSource(e.target.value)}
+                            className="w-full pl-12 pr-4 py-3.5 rounded-xl border border-gray-200 focus:border-emerald-400 focus:ring-2 focus:ring-emerald-200 outline-none transition-all text-sm appearance-none bg-white"
+                          >
+                            <option value="Website">Website</option>
+                            <option value="WhatsApp">WhatsApp</option>
+                            <option value="Manual">Manual</option>
+                          </select>
+                        </div>
                       </div>
                     </div>
 
                     <button
                       type="submit"
                       disabled={loading}
-                      className="w-full mt-6 bg-gradient-to-r from-emerald-500 to-teal-500 text-white font-semibold py-4 px-6 rounded-xl hover:shadow-xl hover:shadow-emerald-200 transition-all duration-300 hover:scale-[1.02] active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-3 text-base"
+                      className="w-full mt-6 bg-gradient-to-r from-emerald-500 to-teal-500 text-white font-semibold py-4 px-6 rounded-xl hover:shadow-xl hover:shadow-emerald-200 transition-all duration-300 hover:scale-[1.02] active:scale-95 disabled:opacity-50 flex items-center justify-center gap-3 text-base"
                     >
                       {loading ? (
                         <>
@@ -2298,8 +1936,7 @@ const ReuestOrder = () => {
                         </>
                       ) : (
                         <>
-                          Submit Request
-                          <FaArrowRight className="text-sm" />
+                          Submit Request <FaArrowRight className="text-sm" />
                         </>
                       )}
                     </button>
@@ -2313,34 +1950,26 @@ const ReuestOrder = () => {
 
       {/* Mobile/Tablet Cart Bottom Sheet */}
       <div
-        className={`lg:hidden fixed inset-0 z-50 transition-all duration-400 ${
-          isCartOpen
-            ? "opacity-100 pointer-events-auto"
-            : "opacity-0 pointer-events-none"
-        }`}
+        className={`lg:hidden fixed inset-0 z-50 transition-all duration-400 ${isCartOpen ? "opacity-100 pointer-events-auto" : "opacity-0 pointer-events-none"}`}
       >
         <div
           className="absolute inset-0 bg-black/40 backdrop-blur-sm"
           onClick={() => setIsCartOpen(false)}
         ></div>
-
         <div
-          className={`absolute bottom-0 left-0 right-0 bg-white rounded-t-3xl shadow-2xl transition-transform duration-400 ease-out ${
-            isCartOpen ? "translate-y-0" : "translate-y-full"
-          }`}
+          className={`absolute bottom-0 left-0 right-0 bg-white rounded-t-3xl shadow-2xl transition-transform duration-400 ease-out ${isCartOpen ? "translate-y-0" : "translate-y-full"}`}
           style={{ maxHeight: "92vh" }}
         >
           <div className="flex justify-center pt-4 pb-2">
             <div className="w-12 h-1.5 bg-gray-300 rounded-full"></div>
           </div>
-
           <div
             className="px-4 sm:px-6 pb-6 overflow-y-auto"
             style={{ maxHeight: "calc(92vh - 20px)" }}
           >
             <div className="flex items-center justify-between mb-5">
-              <div className="flex items-center gap-3">
-                <div className="p-2.5 bg-gradient-to-br from-emerald-400 to-teal-400 rounded-xl shadow-lg shadow-emerald-200">
+              <div className="flex items-center gap-3 min-w-0">
+                <div className="p-2.5 bg-gradient-to-br from-emerald-400 to-teal-400 rounded-xl shadow-lg shadow-emerald-200 flex-shrink-0">
                   <FaShoppingCart className="text-white text-xl" />
                 </div>
                 <div>
@@ -2354,7 +1983,7 @@ const ReuestOrder = () => {
               </div>
               <button
                 onClick={() => setIsCartOpen(false)}
-                className="p-2 hover:bg-gray-100 rounded-full transition-colors"
+                className="p-2 hover:bg-gray-100 rounded-full transition-colors flex-shrink-0"
               >
                 <FaTimes className="text-gray-500 text-lg" />
               </button>
@@ -2398,7 +2027,7 @@ const ReuestOrder = () => {
                             <FaTrash className="text-sm" />
                           </button>
                         </div>
-                        <div className="flex items-center justify-between">
+                        <div className="flex flex-wrap items-center justify-between gap-2">
                           <div className="flex items-center gap-2">
                             <button
                               type="button"
@@ -2449,67 +2078,98 @@ const ReuestOrder = () => {
                 </div>
 
                 <div className="space-y-3.5">
-                  <div className="relative">
-                    <FaUser className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" />
-                    <input
-                      type="text"
-                      placeholder="Full Name *"
-                      value={customerName}
-                      onChange={(e) => setCustomerName(e.target.value)}
-                      required
-                      className="w-full pl-12 pr-4 py-3.5 rounded-xl border border-gray-200 focus:border-emerald-400 focus:ring-2 focus:ring-emerald-200 outline-none transition-all text-sm bg-white"
-                    />
+                  <div>
+                    <label className="block text-xs font-medium text-gray-500 mb-1">
+                      <FaUser className="inline mr-1" /> Full Name{" "}
+                      <span className="text-red-500">*</span>
+                    </label>
+                    <div className="relative">
+                      <FaUser className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" />
+                      <input
+                        type="text"
+                        placeholder="e.g., John Doe"
+                        value={customerName}
+                        onChange={(e) => setCustomerName(e.target.value)}
+                        required
+                        className="w-full pl-12 pr-4 py-3.5 rounded-xl border border-gray-200 focus:border-emerald-400 focus:ring-2 focus:ring-emerald-200 outline-none transition-all text-sm bg-white"
+                      />
+                    </div>
                   </div>
-                  <div className="relative">
-                    <FaPhone className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" />
-                    <input
-                      type="tel"
-                      placeholder="Phone Number *"
-                      value={customerPhone}
-                      onChange={(e) => setCustomerPhone(e.target.value)}
-                      required
-                      className="w-full pl-12 pr-4 py-3.5 rounded-xl border border-gray-200 focus:border-emerald-400 focus:ring-2 focus:ring-emerald-200 outline-none transition-all text-sm bg-white"
-                    />
+                  <div>
+                    <label className="block text-xs font-medium text-gray-500 mb-1">
+                      <FaPhone className="inline mr-1" /> Phone Number{" "}
+                      <span className="text-red-500">*</span>
+                    </label>
+                    <div className="relative">
+                      <FaPhone className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" />
+                      <input
+                        type="tel"
+                        placeholder="e.g., 0712345678"
+                        value={customerPhone}
+                        onChange={(e) => setCustomerPhone(e.target.value)}
+                        required
+                        className="w-full pl-12 pr-4 py-3.5 rounded-xl border border-gray-200 focus:border-emerald-400 focus:ring-2 focus:ring-emerald-200 outline-none transition-all text-sm bg-white"
+                      />
+                    </div>
                   </div>
-                  <div className="relative">
-                    <FaCalendarAlt className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" />
-                    <input
-                      type="date"
-                      min={new Date().toISOString().split("T")[0]}
-                      value={requestedDeliveryDate}
-                      onChange={(e) => setRequestedDeliveryDate(e.target.value)}
-                      required
-                      className="w-full pl-12 pr-4 py-3.5 rounded-xl border border-gray-200 focus:border-emerald-400 focus:ring-2 focus:ring-emerald-200 outline-none transition-all text-sm bg-white"
-                    />
+                  <div>
+                    <label className="block text-xs font-medium text-gray-500 mb-1">
+                      <FaCalendarAlt className="inline mr-1" /> Preferred
+                      Delivery Date <span className="text-red-500">*</span>
+                    </label>
+                    <div className="relative">
+                      <FaCalendarAlt className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" />
+                      <input
+                        type="date"
+                        min={new Date().toISOString().split("T")[0]}
+                        value={requestedDeliveryDate}
+                        onChange={(e) =>
+                          setRequestedDeliveryDate(e.target.value)
+                        }
+                        required
+                        className="w-full pl-12 pr-4 py-3.5 rounded-xl border border-gray-200 focus:border-emerald-400 focus:ring-2 focus:ring-emerald-200 outline-none transition-all text-sm bg-white"
+                      />
+                    </div>
                   </div>
-                  <div className="relative">
-                    <FaStickyNote className="absolute left-4 top-4 text-gray-400" />
-                    <textarea
-                      placeholder="Additional notes (optional)"
-                      value={notes}
-                      onChange={(e) => setNotes(e.target.value)}
-                      rows="2"
-                      className="w-full pl-12 pr-4 py-3.5 rounded-xl border border-gray-200 focus:border-emerald-400 focus:ring-2 focus:ring-emerald-200 outline-none transition-all resize-none text-sm bg-white"
-                    />
+                  <div>
+                    <label className="block text-xs font-medium text-gray-500 mb-1">
+                      <FaStickyNote className="inline mr-1" /> Additional Notes
+                    </label>
+                    <div className="relative">
+                      <FaStickyNote className="absolute left-4 top-4 text-gray-400" />
+                      <textarea
+                        placeholder="Any special instructions or comments..."
+                        value={notes}
+                        onChange={(e) => setNotes(e.target.value)}
+                        rows="2"
+                        className="w-full pl-12 pr-4 py-3.5 rounded-xl border border-gray-200 focus:border-emerald-400 focus:ring-2 focus:ring-emerald-200 outline-none transition-all resize-none text-sm bg-white"
+                      />
+                    </div>
                   </div>
-                  <div className="relative">
-                    <FaInfoCircle className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" />
-                    <select
-                      value={source}
-                      onChange={(e) => setSource(e.target.value)}
-                      className="w-full pl-12 pr-4 py-3.5 rounded-xl border border-gray-200 focus:border-emerald-400 focus:ring-2 focus:ring-emerald-200 outline-none transition-all text-sm appearance-none bg-white"
-                    >
-                      <option value="Website">Website</option>
-                      <option value="WhatsApp">WhatsApp</option>
-                      <option value="Manual">Manual</option>
-                    </select>
+                  <div>
+                    <label className="block text-xs font-medium text-gray-500 mb-1">
+                      <FaInfoCircle className="inline mr-1" /> How did you find
+                      us?
+                    </label>
+                    <div className="relative">
+                      <FaInfoCircle className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" />
+                      <select
+                        value={source}
+                        onChange={(e) => setSource(e.target.value)}
+                        className="w-full pl-12 pr-4 py-3.5 rounded-xl border border-gray-200 focus:border-emerald-400 focus:ring-2 focus:ring-emerald-200 outline-none transition-all text-sm appearance-none bg-white"
+                      >
+                        <option value="Website">Website</option>
+                        <option value="WhatsApp">WhatsApp</option>
+                        <option value="Manual">Manual</option>
+                      </select>
+                    </div>
                   </div>
                 </div>
 
                 <button
                   type="submit"
                   disabled={loading}
-                  className="w-full mt-6 bg-gradient-to-r from-emerald-500 to-teal-500 text-white font-semibold py-4 px-6 rounded-xl hover:shadow-xl hover:shadow-emerald-200 transition-all duration-300 hover:scale-[1.02] active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-3 text-base"
+                  className="w-full mt-6 bg-gradient-to-r from-emerald-500 to-teal-500 text-white font-semibold py-4 px-6 rounded-xl hover:shadow-xl hover:shadow-emerald-200 transition-all duration-300 hover:scale-[1.02] active:scale-95 disabled:opacity-50 flex items-center justify-center gap-3 text-base"
                 >
                   {loading ? (
                     <>
@@ -2518,8 +2178,7 @@ const ReuestOrder = () => {
                     </>
                   ) : (
                     <>
-                      Submit Request
-                      <FaArrowRight className="text-sm" />
+                      Submit Request <FaArrowRight className="text-sm" />
                     </>
                   )}
                 </button>

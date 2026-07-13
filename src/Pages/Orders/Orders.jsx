@@ -161,15 +161,16 @@ const Orders = () => {
 
   /**
    * Get filtered requests based on status and search term
-   * Updated to handle new statuses: Pending Review, Awaiting Customer Confirmation, Accepted, Converted, Rejected, Cancelled
    */
   const getFilteredRequests = () => {
     let filtered = requests || [];
 
-    // Filter by status - using new status mapping
+    // Filter by status
     if (requestsFilter === "pending") {
-      filtered = filtered.filter((r) => 
-        r.status === "Pending Review" || r.status === "Awaiting Customer Confirmation"
+      filtered = filtered.filter(
+        (r) =>
+          r.status === "Pending Review" ||
+          r.status === "Awaiting Customer Confirmation",
       );
     } else if (requestsFilter === "accepted") {
       filtered = filtered.filter((r) => r.status === "Accepted");
@@ -198,9 +199,7 @@ const Orders = () => {
    * Filter orders by status - SORTED by createdAt ascending (oldest first)
    */
   const filteredOrders = (
-    filter === "All"
-      ? [...orders]
-      : orders.filter((o) => o.status === filter)
+    filter === "All" ? [...orders] : orders.filter((o) => o.status === filter)
   ).sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt));
 
   // ==========================================================================
@@ -214,8 +213,9 @@ const Orders = () => {
   // ==========================================================================
   // PAGINATION CALCULATIONS - REQUESTS
   // ==========================================================================
-  const filteredRequests = [...getFilteredRequests()]
-    .sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt));
+  const filteredRequests = [...getFilteredRequests()].sort(
+    (a, b) => new Date(a.createdAt) - new Date(b.createdAt),
+  );
   const requestIndexOfLastItem = currentRequestPage * requestItemsPerPage;
   const requestIndexOfFirstItem = requestIndexOfLastItem - requestItemsPerPage;
   const currentRequests = filteredRequests.slice(
@@ -344,7 +344,8 @@ const Orders = () => {
   const getRequestStatusBadge = (status) => {
     const statusMap = {
       "Pending Review": "bg-amber-100 text-amber-700 border-amber-200",
-      "Awaiting Customer Confirmation": "bg-blue-100 text-blue-700 border-blue-200",
+      "Awaiting Customer Confirmation":
+        "bg-blue-100 text-blue-700 border-blue-200",
       Accepted: "bg-emerald-100 text-emerald-700 border-emerald-200",
       Converted: "bg-purple-100 text-purple-700 border-purple-200",
       Rejected: "bg-red-100 text-red-700 border-red-200",
@@ -473,7 +474,7 @@ const Orders = () => {
   };
 
   /**
-   * Fetch customer requests with all new fields
+   * Fetch customer requests
    */
   const fetchRequests = async () => {
     setRequestsLoading(true);
@@ -504,7 +505,6 @@ const Orders = () => {
    */
   const openReviewModal = (request) => {
     setRequestToReview(request);
-    // Initialize review items with current item statuses
     const initialItems = (request.items || []).map((item) => ({
       itemId: item.item?._id || item.item,
       itemName: item.itemName || item.item?.name || "Unknown",
@@ -550,14 +550,12 @@ const Orders = () => {
    * Submit review to backend
    */
   const handleSubmitReview = async () => {
-    // Validate: At least one item should be reviewed
     const allPending = reviewItems.every((item) => item.status === "Pending");
     if (allPending) {
       toast.error("Please review at least one item (Accept or Reject)");
       return;
     }
 
-    // Check if any rejected item has no reason
     const missingReason = reviewItems.some(
       (item) => item.status === "Rejected" && !item.rejectionReason.trim(),
     );
@@ -566,7 +564,6 @@ const Orders = () => {
       return;
     }
 
-    // Validate delivery date
     if (!reviewData.approvedDeliveryDate) {
       toast.error("Please set an approved delivery date");
       return;
@@ -595,7 +592,6 @@ const Orders = () => {
         toast.success("✅ Request reviewed successfully!");
         setShowReviewModal(false);
         await fetchRequests();
-        // Refresh the request detail if it's open
         if (selectedRequest && selectedRequest._id === requestToReview._id) {
           setSelectedRequest(null);
           setShowRequestDetailModal(false);
@@ -618,8 +614,7 @@ const Orders = () => {
   // ==========================================================================
 
   /**
-   * Convert a request to an order
-   * Updated to handle both Pending Review and Awaiting Customer Confirmation
+   * Convert a request to an order - Only for Accepted requests
    */
   const handleConvertRequest = async (requestId) => {
     if (!window.confirm("Convert this request to an order?")) return;
@@ -641,7 +636,8 @@ const Orders = () => {
       }
     } catch (error) {
       console.error("Failed to convert request:", error);
-      const errorMsg = error.response?.data?.message || "Failed to convert request";
+      const errorMsg =
+        error.response?.data?.message || "Failed to convert request";
       toast.error(errorMsg);
     } finally {
       setRequestActionLoading(false);
@@ -649,7 +645,7 @@ const Orders = () => {
   };
 
   /**
-   * Reject a customer request
+   * Reject a customer request - Only for Pending Review
    */
   const handleRejectRequest = async (requestId) => {
     if (!window.confirm("Reject this request?")) return;
@@ -671,35 +667,6 @@ const Orders = () => {
     } catch (error) {
       console.error("Failed to reject request:", error);
       toast.error(error.response?.data?.message || "Failed to reject request");
-    } finally {
-      setRequestActionLoading(false);
-    }
-  };
-
-  /**
-   * Customer Accept Request (for requests awaiting customer confirmation)
-   * This is a staff action to simulate customer acceptance
-   */
-  const handleCustomerAccept = async (requestId) => {
-    if (!window.confirm("Mark this request as accepted by customer?")) return;
-    setRequestActionLoading(true);
-    try {
-      const response = await axios.patch(
-        `${BASE_URL}/api/orders/${requestId}/accept`,
-        {},
-        { withCredentials: true },
-      );
-
-      if (response.data.success) {
-        toast.success("✅ Request accepted by customer!");
-        await fetchRequests();
-        setShowRequestDetailModal(false);
-      } else {
-        toast.error(response.data.message || "Failed to accept request");
-      }
-    } catch (error) {
-      console.error("Failed to accept request:", error);
-      toast.error(error.response?.data?.message || "Failed to accept request");
     } finally {
       setRequestActionLoading(false);
     }
@@ -747,7 +714,6 @@ const Orders = () => {
 
     const selectedItem = validation.item;
 
-    // Check for duplicate items
     const existingIndex = formData.items.findIndex(
       (i) => i.itemId === newItem.itemId && i.priceType === newItem.priceType,
     );
@@ -758,7 +724,6 @@ const Orders = () => {
       return;
     }
 
-    // Determine pricing type
     const isWholesale =
       newItem.priceType === "Wholesale" &&
       selectedItem.enableWholesale &&
@@ -770,7 +735,6 @@ const Orders = () => {
 
     const discount = Math.max(0, Number(newItem.discount || 0));
 
-    // Add item to form
     setFormData((prev) => ({
       ...prev,
       items: [
@@ -877,7 +841,8 @@ const Orders = () => {
 
   const requestStatusColors = {
     "Pending Review": "bg-amber-50 text-amber-700 border-amber-200",
-    "Awaiting Customer Confirmation": "bg-blue-50 text-blue-700 border-blue-200",
+    "Awaiting Customer Confirmation":
+      "bg-blue-50 text-blue-700 border-blue-200",
     Accepted: "bg-emerald-50 text-emerald-700 border-emerald-200",
     Converted: "bg-purple-50 text-purple-700 border-purple-200",
     Rejected: "bg-red-50 text-red-700 border-red-200",
@@ -929,10 +894,11 @@ const Orders = () => {
     "Cancelled",
   ];
 
-  // Updated request stats with new statuses
   const requestStats = {
     pending: (requests || []).filter(
-      (r) => r.status === "Pending Review" || r.status === "Awaiting Customer Confirmation"
+      (r) =>
+        r.status === "Pending Review" ||
+        r.status === "Awaiting Customer Confirmation",
     ).length,
     accepted: (requests || []).filter((r) => r.status === "Accepted").length,
     converted: (requests || []).filter((r) => r.status === "Converted").length,
@@ -1283,16 +1249,41 @@ const Orders = () => {
   // ==========================================================================
 
   /**
-   * Render request status filter pills with new statuses
+   * Render request status filter pills
    */
   const renderRequestFilters = () => (
     <div className="flex flex-wrap gap-2 mb-5">
       {[
-        { key: "pending", label: "Pending", color: "amber", count: requestStats.pending },
-        { key: "accepted", label: "Accepted", color: "emerald", count: requestStats.accepted },
-        { key: "converted", label: "Converted", color: "purple", count: requestStats.converted },
-        { key: "rejected", label: "Rejected", color: "red", count: requestStats.rejected },
-        { key: "cancelled", label: "Cancelled", color: "gray", count: requestStats.cancelled },
+        {
+          key: "pending",
+          label: "Pending",
+          color: "amber",
+          count: requestStats.pending,
+        },
+        {
+          key: "accepted",
+          label: "Accepted",
+          color: "emerald",
+          count: requestStats.accepted,
+        },
+        {
+          key: "converted",
+          label: "Converted",
+          color: "purple",
+          count: requestStats.converted,
+        },
+        {
+          key: "rejected",
+          label: "Rejected",
+          color: "red",
+          count: requestStats.rejected,
+        },
+        {
+          key: "cancelled",
+          label: "Cancelled",
+          color: "gray",
+          count: requestStats.cancelled,
+        },
       ].map((tab) => {
         const isActive = requestsFilter === tab.key;
         const dotColor = {
@@ -1338,13 +1329,12 @@ const Orders = () => {
   );
 
   /**
-   * Render a single request card with enhanced fields
+   * Render a single request card - REMOVED ACCEPT BUTTON, CONVERT ONLY FOR ACCEPTED
    */
   const renderRequestCard = (request) => {
     const StatusIcon = getRequestStatusIcon(request.status);
     const statusDisplay = getStatusDisplayName(request.status);
 
-    // Count item statuses
     const acceptedItems = (request.items || []).filter(
       (i) => i.status === "Accepted",
     ).length;
@@ -1355,10 +1345,11 @@ const Orders = () => {
       (i) => i.status === "Pending",
     ).length;
 
-    // Determine if request can be reviewed or converted
     const canReview = request.status === "Pending Review";
-    const canConvert = request.status === "Accepted" || request.status === "Awaiting Customer Confirmation";
-    const canReject = request.status === "Pending Review" || request.status === "Awaiting Customer Confirmation";
+    const canConvert = request.status === "Accepted"; // ONLY Accepted requests can be converted
+    const canReject =
+      request.status === "Pending Review" ||
+      request.status === "Awaiting Customer Confirmation";
 
     return (
       <div
@@ -1388,12 +1379,14 @@ const Orders = () => {
                     {request.source}
                   </span>
                 )}
-                {/* Show customer action status */}
-                {request.customerAction && request.customerAction !== "Waiting" && (
-                  <span className="text-[10px] bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full font-medium">
-                    {request.customerAction === "Accepted" ? "✓ Accepted" : "✎ Amended"}
-                  </span>
-                )}
+                {request.customerAction &&
+                  request.customerAction !== "Waiting" && (
+                    <span className="text-[10px] bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full font-medium">
+                      {request.customerAction === "Accepted"
+                        ? "✓ Accepted"
+                        : "✎ Amended"}
+                    </span>
+                  )}
               </div>
               <div className="flex items-center gap-3 text-xs text-gray-600 mt-0.5 flex-wrap">
                 <span>{request.customerPhone}</span>
@@ -1408,15 +1401,14 @@ const Orders = () => {
                     </span>
                   </>
                 )}
-                {/* Show review cycle */}
                 {request.reviewCycle && request.reviewCycle > 1 && (
                   <span className="text-[10px] bg-purple-100 text-purple-700 px-2 py-0.5 rounded-full font-medium">
                     Cycle {request.reviewCycle}
                   </span>
                 )}
               </div>
-              {/* Item status summary for reviewed requests */}
-              {(request.status === "Awaiting Customer Confirmation" || request.status === "Accepted") && (
+              {(request.status === "Awaiting Customer Confirmation" ||
+                request.status === "Accepted") && (
                 <div className="flex items-center gap-2 mt-1 text-xs">
                   {acceptedItems > 0 && (
                     <span className="text-emerald-600 font-medium flex items-center gap-1">
@@ -1460,7 +1452,7 @@ const Orders = () => {
               <FileText className="w-4 h-4" />
             </button>
 
-            {/* Pending Review: Review, Convert, Reject */}
+            {/* Pending Review: Review and Reject only (NO ACCEPT BUTTON) */}
             {canReview && (
               <>
                 <button
@@ -1473,14 +1465,6 @@ const Orders = () => {
                   Review
                 </button>
                 <button
-                  onClick={() => handleConvertRequest(request._id)}
-                  disabled={requestActionLoading}
-                  className="flex items-center gap-1 px-3 py-1.5 bg-purple-300 text-purple-800 text-xs font-semibold rounded-lg hover:bg-purple-400 hover:shadow-md transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  <ArrowRight className="w-3.5 h-3.5" />
-                  Convert
-                </button>
-                <button
                   onClick={() => handleRejectRequest(request._id)}
                   disabled={requestActionLoading}
                   className="p-2 text-red-400 hover:text-red-600 hover:bg-red-100 rounded-lg transition-all duration-200 border border-red-200 disabled:opacity-50"
@@ -1491,39 +1475,20 @@ const Orders = () => {
               </>
             )}
 
-            {/* Awaiting Customer Confirmation: Accept, Convert, Reject */}
+            {/* Awaiting Customer Confirmation: Reject only (NO ACCEPT, NO CONVERT) */}
             {request.status === "Awaiting Customer Confirmation" && (
-              <>
-                <button
-                  onClick={() => handleCustomerAccept(request._id)}
-                  disabled={requestActionLoading}
-                  className="flex items-center gap-1 px-3 py-1.5 bg-emerald-300 text-emerald-800 text-xs font-semibold rounded-lg hover:bg-emerald-400 hover:shadow-md transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
-                  title="Mark as Accepted by Customer"
-                >
-                  <Check className="w-3.5 h-3.5" />
-                  Accept
-                </button>
-                <button
-                  onClick={() => handleConvertRequest(request._id)}
-                  disabled={requestActionLoading}
-                  className="flex items-center gap-1 px-3 py-1.5 bg-purple-300 text-purple-800 text-xs font-semibold rounded-lg hover:bg-purple-400 hover:shadow-md transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  <ArrowRight className="w-3.5 h-3.5" />
-                  Convert
-                </button>
-                <button
-                  onClick={() => handleRejectRequest(request._id)}
-                  disabled={requestActionLoading}
-                  className="p-2 text-red-400 hover:text-red-600 hover:bg-red-100 rounded-lg transition-all duration-200 border border-red-200 disabled:opacity-50"
-                  title="Reject Request"
-                >
-                  <XCircle className="w-4 h-4" />
-                </button>
-              </>
+              <button
+                onClick={() => handleRejectRequest(request._id)}
+                disabled={requestActionLoading}
+                className="p-2 text-red-400 hover:text-red-600 hover:bg-red-100 rounded-lg transition-all duration-200 border border-red-200 disabled:opacity-50"
+                title="Reject Request"
+              >
+                <XCircle className="w-4 h-4" />
+              </button>
             )}
 
             {/* Accepted: Convert only */}
-            {request.status === "Accepted" && (
+            {canConvert && (
               <button
                 onClick={() => handleConvertRequest(request._id)}
                 disabled={requestActionLoading}
@@ -1584,7 +1549,6 @@ const Orders = () => {
     return (
       <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
         <div className="bg-white rounded-2xl w-full max-w-4xl shadow-2xl max-h-[90vh] overflow-y-auto">
-          {/* Modal Header */}
           <div className="sticky top-0 z-10 bg-white px-6 sm:px-8 py-5 border-b border-gray-200 rounded-t-2xl">
             <div className="flex justify-between items-center">
               <div className="flex items-center gap-3">
@@ -1613,9 +1577,7 @@ const Orders = () => {
           </div>
 
           <form onSubmit={handleCreateOrder} className="p-6 sm:p-8">
-            {/* Two Column Layout: Customer Details + Order Summary */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              {/* LEFT: Customer Details */}
               <div className="space-y-4">
                 <div className="bg-gray-100 rounded-xl p-4 border border-gray-200">
                   <h4 className="text-sm font-semibold text-gray-700 mb-3 flex items-center gap-2">
@@ -1699,7 +1661,6 @@ const Orders = () => {
                 </div>
               </div>
 
-              {/* RIGHT: Order Summary */}
               <div className="space-y-4">
                 <div className="bg-gradient-to-br from-green-100 to-green-200 rounded-xl p-4 border border-green-300">
                   <h4 className="text-sm font-semibold text-gray-700 mb-3 flex items-center gap-2">
@@ -1761,7 +1722,6 @@ const Orders = () => {
               </div>
             </div>
 
-            {/* Add Items Section */}
             <div className="mt-6">
               <div className="flex items-center justify-between mb-3">
                 <label className="text-sm font-semibold text-gray-700 flex items-center gap-2">
@@ -2104,7 +2064,7 @@ const Orders = () => {
   };
 
   /**
-   * Render Request Detail Modal with Amendment History
+   * Render Request Detail Modal
    */
   const renderRequestDetailModal = () => {
     if (!showRequestDetailModal || !selectedRequest) return null;
@@ -2116,7 +2076,6 @@ const Orders = () => {
       }));
     };
 
-    // Count item statuses
     const acceptedItems = (selectedRequest.items || []).filter(
       (i) => i.status === "Accepted",
     ).length;
@@ -2128,6 +2087,7 @@ const Orders = () => {
     ).length;
 
     const statusDisplay = getStatusDisplayName(selectedRequest.status);
+    const canConvert = selectedRequest.status === "Accepted";
 
     return (
       <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
@@ -2139,7 +2099,8 @@ const Orders = () => {
                   className={`p-2 rounded-xl shadow-lg ${
                     selectedRequest.status === "Pending Review"
                       ? "bg-gradient-to-br from-amber-400 to-amber-500 shadow-amber-200"
-                      : selectedRequest.status === "Awaiting Customer Confirmation"
+                      : selectedRequest.status ===
+                          "Awaiting Customer Confirmation"
                         ? "bg-gradient-to-br from-blue-400 to-blue-500 shadow-blue-200"
                         : selectedRequest.status === "Accepted"
                           ? "bg-gradient-to-br from-emerald-400 to-emerald-500 shadow-emerald-200"
@@ -2171,7 +2132,6 @@ const Orders = () => {
           </div>
 
           <div className="p-6 space-y-6">
-            {/* Customer Info Grid */}
             <div className="grid grid-cols-2 gap-4 p-4 bg-gray-100 rounded-xl border border-gray-200">
               <div>
                 <p className="text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -2198,11 +2158,12 @@ const Orders = () => {
                 >
                   {statusDisplay}
                 </span>
-                {selectedRequest.reviewCycle && selectedRequest.reviewCycle > 1 && (
-                  <span className="ml-2 text-[10px] bg-purple-100 text-purple-700 px-2 py-0.5 rounded-full font-medium">
-                    Cycle {selectedRequest.reviewCycle}
-                  </span>
-                )}
+                {selectedRequest.reviewCycle &&
+                  selectedRequest.reviewCycle > 1 && (
+                    <span className="ml-2 text-[10px] bg-purple-100 text-purple-700 px-2 py-0.5 rounded-full font-medium">
+                      Cycle {selectedRequest.reviewCycle}
+                    </span>
+                  )}
               </div>
               <div>
                 <p className="text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -2264,7 +2225,6 @@ const Orders = () => {
               </div>
             </div>
 
-            {/* Items Section with Status */}
             <div className="border border-gray-200 rounded-xl overflow-hidden">
               <button
                 onClick={() => toggleSection("items")}
@@ -2275,7 +2235,8 @@ const Orders = () => {
                   <span className="font-semibold text-gray-700 text-sm">
                     Items ({selectedRequest.items?.length || 0})
                   </span>
-                  {(selectedRequest.status === "Awaiting Customer Confirmation" || 
+                  {(selectedRequest.status ===
+                    "Awaiting Customer Confirmation" ||
                     selectedRequest.status === "Accepted") && (
                     <div className="flex items-center gap-1 ml-2 text-xs">
                       {acceptedItems > 0 && (
@@ -2330,7 +2291,10 @@ const Orders = () => {
                         )}
                       </div>
                       {item.status === "Rejected" && item.rejectionReason && (
-                        <span className="text-xs text-red-600 max-w-[150px] truncate" title={item.rejectionReason}>
+                        <span
+                          className="text-xs text-red-600 max-w-[150px] truncate"
+                          title={item.rejectionReason}
+                        >
                           ⚠️ {item.rejectionReason}
                         </span>
                       )}
@@ -2340,96 +2304,119 @@ const Orders = () => {
               )}
             </div>
 
-            {/* Amendment History Section */}
-            {selectedRequest.amendmentHistory && selectedRequest.amendmentHistory.length > 0 && (
-              <div className="border border-gray-200 rounded-xl overflow-hidden">
-                <button
-                  onClick={() => toggleSection("amendment")}
-                  className="w-full flex items-center justify-between p-3 bg-gray-50 hover:bg-gray-100 transition-colors"
-                >
-                  <div className="flex items-center gap-2">
-                    <History className="w-4 h-4 text-gray-500" />
-                    <span className="font-semibold text-gray-700 text-sm">
-                      Amendment History ({selectedRequest.amendmentHistory.length})
+            {selectedRequest.amendmentHistory &&
+              selectedRequest.amendmentHistory.length > 0 && (
+                <div className="border border-gray-200 rounded-xl overflow-hidden">
+                  <button
+                    onClick={() => toggleSection("amendment")}
+                    className="w-full flex items-center justify-between p-3 bg-gray-50 hover:bg-gray-100 transition-colors"
+                  >
+                    <div className="flex items-center gap-2">
+                      <History className="w-4 h-4 text-gray-500" />
+                      <span className="font-semibold text-gray-700 text-sm">
+                        Amendment History (
+                        {selectedRequest.amendmentHistory.length})
+                      </span>
+                    </div>
+                    <span className="text-gray-400">
+                      {expandedSections.amendment ? (
+                        <ChevronDown className="w-4 h-4" />
+                      ) : (
+                        <ChevronRight className="w-4 h-4" />
+                      )}
                     </span>
-                  </div>
-                  <span className="text-gray-400">
-                    {expandedSections.amendment ? (
-                      <ChevronDown className="w-4 h-4" />
-                    ) : (
-                      <ChevronRight className="w-4 h-4" />
-                    )}
-                  </span>
-                </button>
-                {expandedSections.amendment && (
-                  <div className="p-3 space-y-3 max-h-[300px] overflow-y-auto">
-                    {selectedRequest.amendmentHistory.map((amendment, idx) => (
-                      <div key={idx} className="bg-gray-50 p-3 rounded-lg border border-gray-200">
-                        <div className="flex items-center justify-between mb-2">
-                          <span className="text-sm font-semibold text-gray-700">
-                            Amendment #{amendment.cycle}
-                          </span>
-                          <span className="text-xs text-gray-500">
-                            {formatDateTime(amendment.amendedAt)}
-                          </span>
-                        </div>
-                        {amendment.customerComment && (
-                          <p className="text-sm text-gray-600 mb-2 bg-white p-2 rounded border border-gray-200">
-                            💬 {amendment.customerComment}
-                          </p>
-                        )}
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
-                          <div>
-                            <p className="text-gray-400 font-medium mb-1">Previous Items</p>
-                            <div className="space-y-0.5">
-                              {amendment.previousItems?.map((i, idx) => (
-                                <p key={idx} className="text-gray-600">
-                                  {i.itemName} (×{i.quantity})
-                                </p>
-                              ))}
-                              {(!amendment.previousItems || amendment.previousItems.length === 0) && (
-                                <p className="text-gray-400 text-xs">No items</p>
-                              )}
-                            </div>
-                          </div>
-                          <div>
-                            <p className="text-gray-400 font-medium mb-1">New Items</p>
-                            <div className="space-y-0.5">
-                              {amendment.newItems?.map((i, idx) => (
-                                <p key={idx} className="text-gray-600">
-                                  {i.itemName} (×{i.quantity})
-                                </p>
-                              ))}
-                              {(!amendment.newItems || amendment.newItems.length === 0) && (
-                                <p className="text-gray-400 text-xs">No items</p>
-                              )}
-                            </div>
-                          </div>
-                        </div>
-                        {amendment.previousRequestedDeliveryDate && (
-                          <div className="mt-2 pt-2 border-t border-gray-200 text-xs">
-                            <div className="flex justify-between">
-                              <span className="text-gray-400">Previous Delivery:</span>
-                              <span className="text-gray-600">
-                                {formatDate(amendment.previousRequestedDeliveryDate)}
+                  </button>
+                  {expandedSections.amendment && (
+                    <div className="p-3 space-y-3 max-h-[300px] overflow-y-auto">
+                      {selectedRequest.amendmentHistory.map(
+                        (amendment, idx) => (
+                          <div
+                            key={idx}
+                            className="bg-gray-50 p-3 rounded-lg border border-gray-200"
+                          >
+                            <div className="flex items-center justify-between mb-2">
+                              <span className="text-sm font-semibold text-gray-700">
+                                Amendment #{amendment.cycle}
+                              </span>
+                              <span className="text-xs text-gray-500">
+                                {formatDateTime(amendment.amendedAt)}
                               </span>
                             </div>
-                            <div className="flex justify-between">
-                              <span className="text-gray-400">New Delivery:</span>
-                              <span className="text-gray-600">
-                                {formatDate(amendment.newRequestedDeliveryDate)}
-                              </span>
+                            {amendment.customerComment && (
+                              <p className="text-sm text-gray-600 mb-2 bg-white p-2 rounded border border-gray-200">
+                                💬 {amendment.customerComment}
+                              </p>
+                            )}
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
+                              <div>
+                                <p className="text-gray-400 font-medium mb-1">
+                                  Previous Items
+                                </p>
+                                <div className="space-y-0.5">
+                                  {amendment.previousItems?.map((i, idx) => (
+                                    <p key={idx} className="text-gray-600">
+                                      {i.itemName} (×{i.quantity})
+                                    </p>
+                                  ))}
+                                  {(!amendment.previousItems ||
+                                    amendment.previousItems.length === 0) && (
+                                    <p className="text-gray-400 text-xs">
+                                      No items
+                                    </p>
+                                  )}
+                                </div>
+                              </div>
+                              <div>
+                                <p className="text-gray-400 font-medium mb-1">
+                                  New Items
+                                </p>
+                                <div className="space-y-0.5">
+                                  {amendment.newItems?.map((i, idx) => (
+                                    <p key={idx} className="text-gray-600">
+                                      {i.itemName} (×{i.quantity})
+                                    </p>
+                                  ))}
+                                  {(!amendment.newItems ||
+                                    amendment.newItems.length === 0) && (
+                                    <p className="text-gray-400 text-xs">
+                                      No items
+                                    </p>
+                                  )}
+                                </div>
+                              </div>
                             </div>
+                            {amendment.previousRequestedDeliveryDate && (
+                              <div className="mt-2 pt-2 border-t border-gray-200 text-xs">
+                                <div className="flex justify-between">
+                                  <span className="text-gray-400">
+                                    Previous Delivery:
+                                  </span>
+                                  <span className="text-gray-600">
+                                    {formatDate(
+                                      amendment.previousRequestedDeliveryDate,
+                                    )}
+                                  </span>
+                                </div>
+                                <div className="flex justify-between">
+                                  <span className="text-gray-400">
+                                    New Delivery:
+                                  </span>
+                                  <span className="text-gray-600">
+                                    {formatDate(
+                                      amendment.newRequestedDeliveryDate,
+                                    )}
+                                  </span>
+                                </div>
+                              </div>
+                            )}
                           </div>
-                        )}
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </div>
-            )}
+                        ),
+                      )}
+                    </div>
+                  )}
+                </div>
+              )}
 
-            {/* Delivery Information Section */}
             <div className="border border-gray-200 rounded-xl overflow-hidden">
               <button
                 onClick={() => toggleSection("delivery")}
@@ -2457,7 +2444,9 @@ const Orders = () => {
               {expandedSections.delivery && (
                 <div className="p-3 space-y-2 text-sm">
                   <div className="flex justify-between py-1 border-b border-gray-100">
-                    <span className="text-gray-500">Requested Delivery Date</span>
+                    <span className="text-gray-500">
+                      Requested Delivery Date
+                    </span>
                     <span className="font-medium text-gray-800">
                       {selectedRequest.requestedDeliveryDate
                         ? formatDate(selectedRequest.requestedDeliveryDate)
@@ -2465,7 +2454,9 @@ const Orders = () => {
                     </span>
                   </div>
                   <div className="flex justify-between py-1 border-b border-gray-100">
-                    <span className="text-gray-500">Approved Delivery Date</span>
+                    <span className="text-gray-500">
+                      Approved Delivery Date
+                    </span>
                     <span className="font-medium text-gray-800">
                       {selectedRequest.approvedDeliveryDate
                         ? formatDate(selectedRequest.approvedDeliveryDate)
@@ -2476,7 +2467,8 @@ const Orders = () => {
                     <div className="flex justify-between py-1">
                       <span className="text-gray-500">Change Reason</span>
                       <span className="font-medium text-gray-800 text-right max-w-[200px]">
-                        {selectedRequest.deliveryDateChangeReason || "No reason provided"}
+                        {selectedRequest.deliveryDateChangeReason ||
+                          "No reason provided"}
                       </span>
                     </div>
                   )}
@@ -2484,7 +2476,6 @@ const Orders = () => {
               )}
             </div>
 
-            {/* Review Information Section */}
             {(selectedRequest.status === "Awaiting Customer Confirmation" ||
               selectedRequest.status === "Accepted" ||
               selectedRequest.status === "Converted" ||
@@ -2514,9 +2505,9 @@ const Orders = () => {
                       <div className="flex justify-between py-1 border-b border-gray-100">
                         <span className="text-gray-500">Reviewed By</span>
                         <span className="font-medium text-gray-800">
-                          {selectedRequest.reviewedBy?.name || 
-                           selectedRequest.reviewedBy?.fullName || 
-                           "Unknown"}
+                          {selectedRequest.reviewedBy?.name ||
+                            selectedRequest.reviewedBy?.fullName ||
+                            "Unknown"}
                         </span>
                       </div>
                     )}
@@ -2551,7 +2542,6 @@ const Orders = () => {
               </div>
             )}
 
-            {/* Notes */}
             {selectedRequest.notes && (
               <div className="p-3 bg-yellow-100 rounded-lg border border-yellow-200">
                 <p className="text-sm text-yellow-800 flex items-start gap-2">
@@ -2561,19 +2551,40 @@ const Orders = () => {
               </div>
             )}
 
-            {/* Action Buttons based on status */}
-            {selectedRequest.status === "Pending Review" && (
-              <div className="flex flex-col sm:flex-row gap-3 pt-4 border-t border-gray-200">
+            <div className="flex flex-col sm:flex-row gap-3 pt-4 border-t border-gray-200">
+              {selectedRequest.status === "Pending Review" && (
+                <>
+                  <button
+                    onClick={() => {
+                      setShowRequestDetailModal(false);
+                      openReviewModal(selectedRequest);
+                    }}
+                    disabled={requestActionLoading}
+                    className="flex-1 bg-blue-300 text-blue-800 font-semibold py-2.5 px-5 rounded-lg hover:bg-blue-400 transition-all duration-300 disabled:opacity-50 flex items-center justify-center gap-2 text-sm"
+                  >
+                    <Edit className="w-4 h-4" /> Review Request
+                  </button>
+                  <button
+                    onClick={() => handleRejectRequest(selectedRequest._id)}
+                    disabled={requestActionLoading}
+                    className="flex-1 bg-white border border-gray-300 text-gray-600 font-semibold py-2.5 px-5 rounded-lg hover:bg-gray-100 hover:border-gray-400 transition-all duration-200 disabled:opacity-50 flex items-center justify-center gap-2 text-sm"
+                  >
+                    <XCircle className="w-4 h-4" /> Reject
+                  </button>
+                </>
+              )}
+
+              {selectedRequest.status === "Awaiting Customer Confirmation" && (
                 <button
-                  onClick={() => {
-                    setShowRequestDetailModal(false);
-                    openReviewModal(selectedRequest);
-                  }}
+                  onClick={() => handleRejectRequest(selectedRequest._id)}
                   disabled={requestActionLoading}
-                  className="flex-1 bg-blue-300 text-blue-800 font-semibold py-2.5 px-5 rounded-lg hover:bg-blue-400 transition-all duration-300 disabled:opacity-50 flex items-center justify-center gap-2 text-sm"
+                  className="flex-1 bg-white border border-gray-300 text-gray-600 font-semibold py-2.5 px-5 rounded-lg hover:bg-gray-100 hover:border-gray-400 transition-all duration-200 disabled:opacity-50 flex items-center justify-center gap-2 text-sm"
                 >
-                  <Edit className="w-4 h-4" /> Review Request
+                  <XCircle className="w-4 h-4" /> Reject
                 </button>
+              )}
+
+              {canConvert && (
                 <button
                   onClick={() => handleConvertRequest(selectedRequest._id)}
                   disabled={requestActionLoading}
@@ -2587,100 +2598,38 @@ const Orders = () => {
                     </>
                   )}
                 </button>
-                <button
-                  onClick={() => handleRejectRequest(selectedRequest._id)}
-                  disabled={requestActionLoading}
-                  className="flex-1 bg-white border border-gray-300 text-gray-600 font-semibold py-2.5 px-5 rounded-lg hover:bg-gray-100 hover:border-gray-400 transition-all duration-200 disabled:opacity-50 flex items-center justify-center gap-2 text-sm"
-                >
-                  <XCircle className="w-4 h-4" /> Reject
-                </button>
-              </div>
-            )}
+              )}
 
-            {selectedRequest.status === "Awaiting Customer Confirmation" && (
-              <div className="flex flex-col sm:flex-row gap-3 pt-4 border-t border-gray-200">
-                <button
-                  onClick={() => handleCustomerAccept(selectedRequest._id)}
-                  disabled={requestActionLoading}
-                  className="flex-1 bg-emerald-300 text-emerald-800 font-semibold py-2.5 px-5 rounded-lg hover:bg-emerald-400 transition-all duration-300 disabled:opacity-50 flex items-center justify-center gap-2 text-sm"
-                >
-                  {requestActionLoading ? (
-                    <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-emerald-800" />
-                  ) : (
-                    <>
-                      <Check className="w-4 h-4" /> Accept as Customer
-                    </>
-                  )}
-                </button>
-                <button
-                  onClick={() => handleConvertRequest(selectedRequest._id)}
-                  disabled={requestActionLoading}
-                  className="flex-1 bg-purple-300 text-purple-800 font-semibold py-2.5 px-5 rounded-lg hover:bg-purple-400 transition-all duration-300 disabled:opacity-50 flex items-center justify-center gap-2 text-sm"
-                >
-                  {requestActionLoading ? (
-                    <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-purple-800" />
-                  ) : (
-                    <>
-                      <ArrowRight className="w-4 h-4" /> Convert to Order
-                    </>
-                  )}
-                </button>
-                <button
-                  onClick={() => handleRejectRequest(selectedRequest._id)}
-                  disabled={requestActionLoading}
-                  className="flex-1 bg-white border border-gray-300 text-gray-600 font-semibold py-2.5 px-5 rounded-lg hover:bg-gray-100 hover:border-gray-400 transition-all duration-200 disabled:opacity-50 flex items-center justify-center gap-2 text-sm"
-                >
-                  <XCircle className="w-4 h-4" /> Reject
-                </button>
-              </div>
-            )}
-
-            {selectedRequest.status === "Accepted" && (
-              <div className="flex flex-col sm:flex-row gap-3 pt-4 border-t border-gray-200">
-                <button
-                  onClick={() => handleConvertRequest(selectedRequest._id)}
-                  disabled={requestActionLoading}
-                  className="w-full bg-purple-300 text-purple-800 font-semibold py-2.5 px-5 rounded-lg hover:bg-purple-400 transition-all duration-300 disabled:opacity-50 flex items-center justify-center gap-2 text-sm"
-                >
-                  {requestActionLoading ? (
-                    <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-purple-800" />
-                  ) : (
-                    <>
-                      <ArrowRight className="w-4 h-4" /> Convert to Order
-                    </>
-                  )}
-                </button>
-              </div>
-            )}
-
-            {selectedRequest.status === "Converted" && selectedRequest.order && (
-              <div className="p-3 bg-purple-100 rounded-lg border border-purple-200">
-                <p className="text-sm text-purple-700 flex items-center gap-2">
-                  <CheckCircle className="w-4 h-4" />
-                  Converted to Order:{" "}
-                  <span className="font-mono font-bold">
-                    {typeof selectedRequest.order === "object"
-                      ? selectedRequest.order.orderNumber
-                      : selectedRequest.order}
-                  </span>
-                  {typeof selectedRequest.order === "object" &&
-                    selectedRequest.order.status && (
-                      <span className="text-[10px] bg-purple-200 text-purple-800 px-2 py-0.5 rounded-full font-medium">
-                        {selectedRequest.order.status}
+              {selectedRequest.status === "Converted" &&
+                selectedRequest.order && (
+                  <div className="w-full p-3 bg-purple-100 rounded-lg border border-purple-200">
+                    <p className="text-sm text-purple-700 flex items-center gap-2">
+                      <CheckCircle className="w-4 h-4" />
+                      Converted to Order:{" "}
+                      <span className="font-mono font-bold">
+                        {typeof selectedRequest.order === "object"
+                          ? selectedRequest.order.orderNumber
+                          : selectedRequest.order}
                       </span>
-                    )}
-                </p>
-              </div>
-            )}
+                      {typeof selectedRequest.order === "object" &&
+                        selectedRequest.order.status && (
+                          <span className="text-[10px] bg-purple-200 text-purple-800 px-2 py-0.5 rounded-full font-medium">
+                            {selectedRequest.order.status}
+                          </span>
+                        )}
+                    </p>
+                  </div>
+                )}
 
-            {selectedRequest.status === "Rejected" && (
-              <div className="p-3 bg-red-100 rounded-lg border border-red-200">
-                <p className="text-sm text-red-700 flex items-center gap-2">
-                  <XCircle className="w-4 h-4" />
-                  This request has been rejected.
-                </p>
-              </div>
-            )}
+              {selectedRequest.status === "Rejected" && (
+                <div className="w-full p-3 bg-red-100 rounded-lg border border-red-200">
+                  <p className="text-sm text-red-700 flex items-center gap-2">
+                    <XCircle className="w-4 h-4" />
+                    This request has been rejected.
+                  </p>
+                </div>
+              )}
+            </div>
           </div>
         </div>
       </div>
@@ -2698,9 +2647,15 @@ const Orders = () => {
     if (!showReviewModal || !requestToReview) return null;
 
     const totalItems = reviewItems.length;
-    const acceptedCount = reviewItems.filter((i) => i.status === "Accepted").length;
-    const rejectedCount = reviewItems.filter((i) => i.status === "Rejected").length;
-    const pendingCount = reviewItems.filter((i) => i.status === "Pending").length;
+    const acceptedCount = reviewItems.filter(
+      (i) => i.status === "Accepted",
+    ).length;
+    const rejectedCount = reviewItems.filter(
+      (i) => i.status === "Rejected",
+    ).length;
+    const pendingCount = reviewItems.filter(
+      (i) => i.status === "Pending",
+    ).length;
 
     return (
       <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
@@ -2716,7 +2671,8 @@ const Orders = () => {
                     Review Request
                   </h2>
                   <p className="text-sm text-gray-500 font-mono">
-                    {requestToReview.requestNumber} - {requestToReview.customerName}
+                    {requestToReview.requestNumber} -{" "}
+                    {requestToReview.customerName}
                   </p>
                 </div>
               </div>
@@ -2734,7 +2690,6 @@ const Orders = () => {
           </div>
 
           <div className="p-6 space-y-6">
-            {/* Review Progress */}
             <div className="grid grid-cols-3 gap-3">
               <div className="bg-gray-100 rounded-lg p-3 text-center border border-gray-200">
                 <p className="text-xs text-gray-500">Total Items</p>
@@ -2742,15 +2697,18 @@ const Orders = () => {
               </div>
               <div className="bg-emerald-100 rounded-lg p-3 text-center border border-emerald-200">
                 <p className="text-xs text-emerald-600">Accepted</p>
-                <p className="text-xl font-bold text-emerald-700">{acceptedCount}</p>
+                <p className="text-xl font-bold text-emerald-700">
+                  {acceptedCount}
+                </p>
               </div>
               <div className="bg-red-100 rounded-lg p-3 text-center border border-red-200">
                 <p className="text-xs text-red-600">Rejected</p>
-                <p className="text-xl font-bold text-red-700">{rejectedCount}</p>
+                <p className="text-xl font-bold text-red-700">
+                  {rejectedCount}
+                </p>
               </div>
             </div>
 
-            {/* Items Review List */}
             <div>
               <h4 className="font-semibold text-gray-700 text-sm mb-3 flex items-center gap-2">
                 <Package className="w-4 h-4 text-gray-500" />
@@ -2786,7 +2744,9 @@ const Orders = () => {
                       </div>
                       <div className="flex items-center gap-2 w-full sm:w-auto">
                         <button
-                          onClick={() => updateReviewItemStatus(index, "Accepted")}
+                          onClick={() =>
+                            updateReviewItemStatus(index, "Accepted")
+                          }
                           className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all duration-200 flex items-center gap-1 ${
                             item.status === "Accepted"
                               ? "bg-emerald-500 text-white shadow-md shadow-emerald-200"
@@ -2797,7 +2757,9 @@ const Orders = () => {
                           Accept
                         </button>
                         <button
-                          onClick={() => updateReviewItemStatus(index, "Rejected")}
+                          onClick={() =>
+                            updateReviewItemStatus(index, "Rejected")
+                          }
                           className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all duration-200 flex items-center gap-1 ${
                             item.status === "Rejected"
                               ? "bg-red-500 text-white shadow-md shadow-red-200"
@@ -2816,7 +2778,10 @@ const Orders = () => {
                           placeholder="Reason for rejection..."
                           value={item.rejectionReason}
                           onChange={(e) =>
-                            updateReviewItemRejectionReason(index, e.target.value)
+                            updateReviewItemRejectionReason(
+                              index,
+                              e.target.value,
+                            )
                           }
                           className="w-full px-3 py-1.5 text-sm border border-red-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-300 focus:border-transparent bg-white"
                         />
@@ -2827,7 +2792,6 @@ const Orders = () => {
               </div>
             </div>
 
-            {/* Delivery Date & Review Notes */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1.5">
@@ -2848,7 +2812,8 @@ const Orders = () => {
                 />
                 {requestToReview.requestedDeliveryDate && (
                   <p className="text-xs text-gray-500 mt-1">
-                    Requested: {formatDate(requestToReview.requestedDeliveryDate)}
+                    Requested:{" "}
+                    {formatDate(requestToReview.requestedDeliveryDate)}
                   </p>
                 )}
               </div>
@@ -2891,22 +2856,29 @@ const Orders = () => {
               />
             </div>
 
-            {/* Summary */}
             <div className="bg-gray-100 rounded-xl p-4 border border-gray-200">
               <div className="flex justify-between text-sm">
                 <span className="text-gray-600">Items Accepted:</span>
-                <span className="font-semibold text-emerald-600">{acceptedCount}</span>
+                <span className="font-semibold text-emerald-600">
+                  {acceptedCount}
+                </span>
               </div>
               <div className="flex justify-between text-sm">
                 <span className="text-gray-600">Items Rejected:</span>
-                <span className="font-semibold text-red-600">{rejectedCount}</span>
+                <span className="font-semibold text-red-600">
+                  {rejectedCount}
+                </span>
               </div>
               <div className="flex justify-between text-sm">
                 <span className="text-gray-600">Pending Review:</span>
-                <span className="font-semibold text-amber-600">{pendingCount}</span>
+                <span className="font-semibold text-amber-600">
+                  {pendingCount}
+                </span>
               </div>
               <div className="flex justify-between text-sm pt-2 border-t border-gray-300 mt-2">
-                <span className="text-gray-700 font-medium">Overall Status:</span>
+                <span className="text-gray-700 font-medium">
+                  Overall Status:
+                </span>
                 <span className="font-semibold">
                   {pendingCount > 0 ? (
                     <span className="text-amber-600">Pending</span>

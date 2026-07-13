@@ -26,6 +26,8 @@ import {
   FaUser,
   FaPhone,
   FaCalendar,
+  FaCalendarAlt,
+  FaExclamationTriangle,
 } from "react-icons/fa";
 import {
   MdCategory,
@@ -59,6 +61,9 @@ const MenuCard = ({ refreshTrigger }) => {
   const [ordersLoading, setOrdersLoading] = useState(false);
   const [expandedOrders, setExpandedOrders] = useState({});
 
+  // Order search
+  const [orderSearchTerm, setOrderSearchTerm] = useState("");
+
   // Mobile UI states
   const [showCategories, setShowCategories] = useState(false);
   const [showFilters, setShowFilters] = useState(false);
@@ -78,10 +83,10 @@ const MenuCard = ({ refreshTrigger }) => {
       });
       if (response.data.success) {
         const sortedOrders = (response.data.data || []).sort(
-          (a, b) => new Date(b.createdAt) - new Date(a.createdAt)
+          (a, b) => new Date(b.createdAt) - new Date(a.createdAt),
         );
         setOrders(sortedOrders);
-        
+
         const initialExpanded = {};
         sortedOrders.forEach((order) => {
           initialExpanded[order._id] = false;
@@ -97,6 +102,17 @@ const MenuCard = ({ refreshTrigger }) => {
       setOrdersLoading(false);
     }
   };
+
+  // Filter orders by search term
+  const filteredOrders = orders.filter((order) => {
+    if (!orderSearchTerm.trim()) return true;
+    const searchLower = orderSearchTerm.toLowerCase().trim();
+    return (
+      order.orderNumber?.toLowerCase().includes(searchLower) ||
+      order.customerName?.toLowerCase().includes(searchLower) ||
+      order.customerPhone?.includes(searchLower)
+    );
+  });
 
   // ==================== EFFECTS ====================
   useEffect(() => {
@@ -310,9 +326,10 @@ const MenuCard = ({ refreshTrigger }) => {
     setItemCounts((prev) => ({ ...prev, [itemId]: qty }));
   };
 
+  // ==================== ADD TO CART - MENU TAB ====================
   const handleAddCart = (item) => {
-    if (saleType === "Wholesale" && !item.enableWholesale) {
-      toast.error(`${item.name} is not available for wholesale`);
+    if (!zuiaAdd) {
+      toast.error("Please complete the current transaction first");
       return;
     }
 
@@ -322,10 +339,16 @@ const MenuCard = ({ refreshTrigger }) => {
         : item.retailPrice || item.price;
 
     if (!price || price === 0) {
-      toast.error("Bidhaa haina Bei, weka bei ndo uendelee na Mauzo ");
+      toast.error(`${item.name} has no price set. Please set price first.`);
       return;
     }
 
+    if (saleType === "Wholesale" && !item.enableWholesale) {
+      toast.error(`${item.name} is not available for wholesale`);
+      return;
+    }
+
+    // Check stock first - this is the only restriction
     const quantityInUnits = (itemCounts[item._id] || 1) * packageSize;
     const cartItem = cartData.find(
       (ci) => ci.id === item._id && ci.priceType === saleType,
@@ -335,9 +358,21 @@ const MenuCard = ({ refreshTrigger }) => {
 
     if (totalIfAdded > item.itemQuantity) {
       toast.error(
-        `Stock ya (${item.name}) haitoshi , kwa sasa ipo : (${item.itemQuantity}), unataka : (${totalIfAdded})`,
+        `Stock of (${item.name}) is insufficient. Available: (${item.itemQuantity}), Requested: (${totalIfAdded})`,
       );
       return;
+    }
+
+    // Allow expired items - show warning with icon
+    const expiryDate = item.expiryDate || item.expirationDate;
+    const isExpired =
+      item.status === "Expired" ||
+      (expiryDate && new Date(expiryDate) < new Date());
+    if (isExpired) {
+      toast.error(`${item.name} is expired. Adding anyway.`, {
+        icon: "⚠️",
+        duration: 3000,
+      });
     }
 
     const newObj = {
@@ -353,12 +388,9 @@ const MenuCard = ({ refreshTrigger }) => {
       wholesalePrice: item.wholesalePrice || item.price,
       packageSize: saleType === "Wholesale" ? packageSize : 1,
       unitsPerPackage: saleType === "Wholesale" ? packageSize : 1,
+      expiryDate: expiryDate || null,
+      isExpired: isExpired,
     };
-
-    if (!zuiaAdd) {
-      toast.error("Malizia kuprint receipt kwanza.");
-      return;
-    }
 
     dispatch(addItems(newObj));
     toast.success(
@@ -366,23 +398,40 @@ const MenuCard = ({ refreshTrigger }) => {
     );
   };
 
+  // ==================== ADD ORDER ITEM TO CART - ORDERS TAB ====================
   const handleAddOrderItemToCart = (order, item) => {
-    const fullItem = allItems.find((i) => i._id === item.itemId);
-    if (!fullItem) {
-      toast.error(`Item ${item.itemName} not found in inventory`);
+    if (!zuiaAdd) {
+      toast.error("Please complete the current transaction first");
+      return;
+    }
+
+    const currentStock =
+      item.currentStock !== undefined ? item.currentStock : 0;
+    const retailPrice = item.retailPrice || 0;
+    const wholesalePrice = item.wholesalePrice || 0;
+    const enableWholesale = item.enableWholesale || false;
+    const expiryDate = item.expiryDate || null;
+    const itemStatus = item.status || "Active";
+
+    if (item.itemExists === false) {
+      toast.error(`Item ${item.itemName} no longer exists in inventory`);
       return;
     }
 
     const price =
-      saleType === "Wholesale"
-        ? fullItem.wholesalePrice || fullItem.price
-        : fullItem.retailPrice || fullItem.price;
+      saleType === "Wholesale" ? wholesalePrice || 0 : retailPrice || 0;
 
     if (!price || price === 0) {
-      toast.error("Item has no price set");
+      toast.error(`${item.itemName} has no price set. Please set price first.`);
       return;
     }
 
+    if (saleType === "Wholesale" && !enableWholesale) {
+      toast.error(`${item.itemName} is not available for wholesale`);
+      return;
+    }
+
+    // Check stock first - this is the only restriction
     const quantityInUnits = item.quantity * packageSize;
     const cartItem = cartData.find(
       (ci) => ci.id === item.itemId && ci.priceType === saleType,
@@ -390,36 +439,44 @@ const MenuCard = ({ refreshTrigger }) => {
     const alreadyInCart = cartItem ? cartItem.quantity : 0;
     const totalIfAdded = alreadyInCart + quantityInUnits;
 
-    if (totalIfAdded > fullItem.itemQuantity) {
+    if (totalIfAdded > currentStock) {
       toast.error(
-        `Stock ya (${fullItem.name}) haitoshi , kwa sasa ipo : (${fullItem.itemQuantity}), unataka : (${totalIfAdded})`,
+        `Stock of (${item.itemName}) is insufficient. Available: (${currentStock}), Requested: (${totalIfAdded})`,
       );
       return;
     }
 
+    // Allow expired items - show warning with icon
+    const isExpired =
+      itemStatus === "Expired" ||
+      (expiryDate && new Date(expiryDate) < new Date());
+    if (isExpired) {
+      toast.error(`${item.itemName} is expired. Adding anyway.`, {
+        icon: "⚠️",
+        duration: 3000,
+      });
+    }
+
     const newObj = {
-      id: fullItem._id,
-      name: fullItem.name,
+      id: item.itemId,
+      name: item.itemName,
       pricePerQuantity: price,
       quantity: quantityInUnits,
       totalPrice: price * quantityInUnits,
-      itemQuantity: fullItem.itemQuantity,
+      itemQuantity: currentStock,
       priceType: saleType,
-      buyingPrice: fullItem.buyingPrice,
-      retailPrice: fullItem.retailPrice || fullItem.price,
-      wholesalePrice: fullItem.wholesalePrice || fullItem.price,
+      buyingPrice: item.buyingPrice || 0,
+      retailPrice: retailPrice,
+      wholesalePrice: wholesalePrice,
       packageSize: saleType === "Wholesale" ? packageSize : 1,
       unitsPerPackage: saleType === "Wholesale" ? packageSize : 1,
+      expiryDate: expiryDate || null,
+      isExpired: isExpired,
     };
-
-    if (!zuiaAdd) {
-      toast.error("Malizia kuprint receipt kwanza.");
-      return;
-    }
 
     dispatch(addItems(newObj));
     toast.success(
-      `✓ ${fullItem.name} added to cart from order #${order.orderNumber}`,
+      `✓ ${item.itemName} added to cart from order #${order.orderNumber}`,
     );
   };
 
@@ -485,6 +542,21 @@ const MenuCard = ({ refreshTrigger }) => {
     return `TSh ${(amount || 0).toLocaleString()}`;
   };
 
+  const formatDate = (dateString) => {
+    if (!dateString) return "N/A";
+    return new Date(dateString).toLocaleDateString("en-US", {
+      year: "numeric",
+      month: "short",
+      day: "numeric",
+    });
+  };
+
+  const isItemExpired = (item) => {
+    const expiryDate = item.expiryDate || item.expirationDate;
+    if (!expiryDate) return false;
+    return new Date(expiryDate) < new Date();
+  };
+
   const toggleOrderExpand = (orderId) => {
     setExpandedOrders((prev) => ({
       ...prev,
@@ -509,7 +581,7 @@ const MenuCard = ({ refreshTrigger }) => {
     );
   }
 
-  // ==================== RENDER ORDERS TAB - LIGHT GREEN GRADIENT ====================
+  // ==================== RENDER ORDERS TAB ====================
   const renderOrdersTab = () => {
     if (ordersLoading) {
       return (
@@ -538,141 +610,323 @@ const MenuCard = ({ refreshTrigger }) => {
       );
     }
 
+    const displayedOrders = filteredOrders;
+
     return (
-      <div className="space-y-4">
-        {/* Header */}
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-          <h3 className="font-semibold text-gray-800 text-lg flex items-center gap-2">
-            <FaList className="text-emerald-600" />
-            Recent Orders
-            <span className="text-sm font-normal text-gray-500">
-              ({orders.length})
-            </span>
-          </h3>
-          <button
-            onClick={toggleSaleType}
-            className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-medium transition-all border
-              ${
-                saleType === "Retail"
-                  ? "bg-emerald-500 text-white border-emerald-500"
-                  : "bg-indigo-500 text-white border-indigo-500"
-              }`}
-          >
-            {saleType === "Retail" ? <FaUserTie /> : <FaStore />}
-            {saleType}
-          </button>
+      <div className="space-y-6">
+        {/* Header with Search */}
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-gradient-to-r from-emerald-50 to-teal-50 rounded-2xl p-5 border border-emerald-200">
+          <div className="flex items-center gap-3">
+            <div className="p-3 bg-gradient-to-br from-emerald-500 to-teal-500 rounded-xl shadow-lg shadow-emerald-200">
+              <FaList className="text-white text-xl" />
+            </div>
+            <div>
+              <h3 className="font-bold text-gray-800 text-xl">Recent Orders</h3>
+              <p className="text-sm text-gray-500">
+                {displayedOrders.length} order
+                {displayedOrders.length !== 1 ? "s" : ""} found
+              </p>
+            </div>
+          </div>
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 w-full sm:w-auto">
+            <div className="relative flex-1 sm:min-w-[200px]">
+              <FaSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 w-4 h-4" />
+              <input
+                type="text"
+                placeholder="Search by order #, name or phone..."
+                value={orderSearchTerm}
+                onChange={(e) => setOrderSearchTerm(e.target.value)}
+                className="w-full pl-10 pr-4 py-2.5 bg-white rounded-xl border border-gray-200 focus:border-emerald-400 focus:ring-2 focus:ring-emerald-200 outline-none transition-all text-sm"
+              />
+            </div>
+            <button
+              onClick={toggleSaleType}
+              className={`flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl text-sm font-semibold transition-all shadow-md hover:shadow-lg whitespace-nowrap
+                ${
+                  saleType === "Retail"
+                    ? "bg-gradient-to-r from-emerald-500 to-teal-500 text-white"
+                    : "bg-gradient-to-r from-indigo-500 to-blue-500 text-white"
+                }`}
+            >
+              {saleType === "Retail" ? <FaUserTie /> : <FaStore />}
+              {saleType} Mode
+            </button>
+          </div>
         </div>
 
-        {/* Orders Grid - Light Green Gradient */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-          {orders.map((order) => {
-            const isExpanded = expandedOrders[order._id] || false;
+        {/* Orders Grid */}
+        {displayedOrders.length === 0 ? (
+          <div className="flex flex-col items-center justify-center py-12 text-center bg-white rounded-2xl border border-gray-200 px-4">
+            <div className="w-20 h-20 bg-gray-100 rounded-full flex items-center justify-center mb-4">
+              <FaSearch className="text-gray-400 text-2xl" />
+            </div>
+            <h4 className="font-semibold text-gray-700 text-lg mb-2">
+              No Orders Found
+            </h4>
+            <p className="text-gray-500 text-sm">
+              No orders match your search "{orderSearchTerm}"
+            </p>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            {displayedOrders.map((order) => {
+              const isExpanded = expandedOrders[order._id] || false;
+              const displayItems = isExpanded
+                ? order.items
+                : order.items?.slice(0, 3);
 
-            return (
-              <div
-                key={order._id}
-                className="bg-gradient-to-br from-emerald-50/60 via-emerald-50/30 to-white rounded-xl shadow-sm border border-gray-200/60 overflow-hidden hover:shadow-md transition-all duration-300"
-              >
-                {/* Order Header */}
-                <div 
-                  className="px-3 py-2.5 bg-white/50 backdrop-blur-sm border-b border-gray-200/60 cursor-pointer hover:bg-white/70 transition-colors flex items-center justify-between"
-                  onClick={() => toggleOrderExpand(order._id)}
+              return (
+                <div
+                  key={order._id}
+                  className="bg-white rounded-2xl shadow-lg border border-gray-200 overflow-hidden hover:shadow-xl transition-all duration-300"
                 >
-                  <div className="flex items-center gap-2 min-w-0 flex-1">
-                    <span className="font-mono font-bold text-gray-800 text-sm whitespace-nowrap">
-                      #{order.orderNumber || order._id.slice(-6)}
-                    </span>
-                    <span
-                      className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[10px] font-semibold border whitespace-nowrap ${getStatusBadge(order.status)}`}
-                    >
-                      {getStatusIcon(order.status)}
-                      <span className="hidden sm:inline">{order.status}</span>
-                    </span>
-                  </div>
-                  <div className="flex items-center gap-2 flex-shrink-0">
-                    <div className="text-right">
-                      <div className="text-sm font-bold text-green-700">
-                        {formatCurrency(order.grandTotal || 0)}
-                      </div>
+                  {/* Order Header */}
+                  <div
+                    className="px-6 py-4 bg-gradient-to-r from-emerald-500 to-teal-500 cursor-pointer hover:from-emerald-600 hover:to-teal-600 transition-colors flex items-center justify-between"
+                    onClick={() => toggleOrderExpand(order._id)}
+                  >
+                    <div className="flex items-center gap-3 min-w-0 flex-1 flex-wrap">
+                      <span className="font-mono font-bold text-white text-sm bg-white/20 px-3 py-1 rounded-lg">
+                        #{order.orderNumber || order._id.slice(-6)}
+                      </span>
+                      <span
+                        className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold ${getStatusBadge(order.status)}`}
+                      >
+                        {getStatusIcon(order.status)}
+                        <span>{order.status}</span>
+                      </span>
+                      <span className="text-xs text-white/80 bg-white/20 px-3 py-1 rounded-full">
+                        {order.items?.length || 0} items
+                      </span>
                     </div>
-                    {isExpanded ? (
-                      <FaChevronUp className="w-3 h-3 text-gray-400" />
-                    ) : (
-                      <FaChevronDown className="w-3 h-3 text-gray-400" />
-                    )}
+                    <div className="flex items-center gap-3 flex-shrink-0">
+                      <div className="text-right text-white">
+                        <div className="text-sm font-bold">
+                          {formatCurrency(order.grandTotal || 0)}
+                        </div>
+                        <div className="text-[10px] text-white/70">
+                          {new Date(order.createdAt).toLocaleDateString()}
+                        </div>
+                      </div>
+                      {isExpanded ? (
+                        <FaChevronUp className="w-5 h-5 text-white/80" />
+                      ) : (
+                        <FaChevronDown className="w-5 h-5 text-white/80" />
+                      )}
+                    </div>
                   </div>
-                </div>
 
-                {/* Customer Info */}
-                <div className="px-3 py-1.5 bg-white/40 backdrop-blur-sm border-b border-gray-100/60 flex items-center gap-3 text-sm text-gray-600">
-                  <div className="flex items-center gap-1">
-                    <FaUser className="w-3 h-3 text-gray-400" />
-                    <span className="truncate max-w-[80px] sm:max-w-none">{order.customerName}</span>
+                  {/* Customer Info */}
+                  <div className="px-6 py-3 bg-gray-50 border-b border-gray-200 flex items-center gap-6 text-sm text-gray-600 flex-wrap">
+                    <div className="flex items-center gap-2">
+                      <div className="p-1.5 bg-emerald-100 rounded-full">
+                        <FaUser className="w-3.5 h-3.5 text-emerald-600" />
+                      </div>
+                      <span className="font-medium">{order.customerName}</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <div className="p-1.5 bg-blue-100 rounded-full">
+                        <FaPhone className="w-3.5 h-3.5 text-blue-600" />
+                      </div>
+                      <span>{order.customerPhone}</span>
+                    </div>
+                    <div className="flex items-center gap-2 ml-auto">
+                      <div className="p-1.5 bg-gray-200 rounded-full">
+                        <FaCalendar className="w-3.5 h-3.5 text-gray-600" />
+                      </div>
+                      <span className="text-xs">
+                        {new Date(order.createdAt).toLocaleDateString()}
+                      </span>
+                    </div>
                   </div>
-                  <span className="text-gray-300">|</span>
-                  <div className="flex items-center gap-1">
-                    <FaPhone className="w-3 h-3 text-gray-400" />
-                    <span className="text-sm">{order.customerPhone}</span>
-                  </div>
-                  <span className="text-gray-300 hidden sm:inline">|</span>
-                  <div className="hidden sm:flex items-center gap-1">
-                    <FaCalendar className="w-3 h-3 text-gray-400" />
-                    <span className="text-sm">{new Date(order.createdAt).toLocaleDateString()}</span>
-                  </div>
-                  <span className="ml-auto text-[10px] text-gray-400 bg-white/60 px-1.5 py-0.5 rounded-full">
-                    {order.items?.length || 0} items
-                  </span>
-                </div>
 
-                {/* Order Items */}
-                <div className={`overflow-hidden transition-all duration-300 ${isExpanded ? 'max-h-[500px]' : 'max-h-[140px]'}`}>
-                  <div className="divide-y divide-gray-100/60">
-                    {(isExpanded ? order.items : order.items?.slice(0, 3))?.map((item) => {
-                      const fullItem = allItems.find((i) => i._id === item.itemId);
+                  {/* Order Items */}
+                  <div className="divide-y divide-gray-100">
+                    {displayItems?.map((item, index) => {
+                      const currentStock =
+                        item.currentStock !== undefined ? item.currentStock : 0;
+                      const retailPrice = item.retailPrice || 0;
+                      const wholesalePrice = item.wholesalePrice || 0;
+                      const enableWholesale = item.enableWholesale || false;
+                      const expiryDate = item.expiryDate || null;
+                      const itemStatus = item.status || "Active";
+                      const itemExists =
+                        item.itemExists !== undefined ? item.itemExists : true;
+
+                      const isInStock = currentStock > 0;
+                      const hasPrice =
+                        saleType === "Retail"
+                          ? retailPrice > 0
+                          : wholesalePrice > 0;
+                      const isExpired =
+                        itemStatus === "Expired" ||
+                        (expiryDate && new Date(expiryDate) < new Date());
+                      const isLowStock = isInStock && currentStock <= 5;
+
+                      // Can add if in stock AND has price (expired items are allowed)
+                      const canAdd =
+                        isInStock && hasPrice && zuiaAdd && itemExists;
 
                       return (
-                        <div key={`${order._id}_${item.itemId}`} className="px-3 py-2 flex items-center justify-between gap-2 hover:bg-white/40 transition-colors">
-                          {/* Item Info */}
-                          <div className="flex-1 min-w-0">
-                            <div className="flex items-center gap-1.5">
-                              <span className="font-medium text-gray-800 text-sm truncate">
-                                {item.itemName}
-                              </span>
-                              {item.priceType === "Wholesale" && (
-                                <span className="text-[9px] bg-indigo-100/80 text-indigo-700 px-1.5 py-0.5 rounded">
-                                  WS
+                        <div
+                          key={`${order._id}_${item.itemId}`}
+                          className={`px-4 py-3 mx-3 my-2 rounded-xl ${index % 2 === 0 ? "bg-gray-100/80" : "bg-gray-50/80"} border border-gray-200/60 hover:border-emerald-300 transition-all duration-200
+                            ${isExpired ? "border-l-4 border-l-yellow-400" : ""}`}
+                        >
+                          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                            {/* Item Info */}
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-center gap-2 flex-wrap">
+                                <span
+                                  className={`font-semibold text-sm ${!isInStock ? "text-gray-400" : "text-gray-800"}`}
+                                >
+                                  {item.itemName}
                                 </span>
-                              )}
-                              {fullItem && fullItem.itemQuantity <= 0 && (
-                                <span className="text-[9px] bg-red-100/80 text-red-700 px-1.5 py-0.5 rounded">
-                                  OOS
+                                {item.priceType === "Wholesale" && (
+                                  <span className="text-[10px] bg-indigo-100 text-indigo-700 px-2 py-0.5 rounded-full">
+                                    WS
+                                  </span>
+                                )}
+                                {!isInStock && (
+                                  <span className="text-[10px] bg-red-100 text-red-700 px-2 py-0.5 rounded-full">
+                                    Out of Stock
+                                  </span>
+                                )}
+                                {isExpired && isInStock && (
+                                  <span className="text-[10px] bg-yellow-100 text-yellow-700 px-2 py-0.5 rounded-full flex items-center gap-1">
+                                    <FaExclamationTriangle className="w-3 h-3" />
+                                    Expired
+                                  </span>
+                                )}
+                                {isLowStock && isInStock && !isExpired && (
+                                  <span className="text-[10px] bg-yellow-100 text-yellow-700 px-2 py-0.5 rounded-full">
+                                    Low Stock: {currentStock}
+                                  </span>
+                                )}
+                                {!itemExists && (
+                                  <span className="text-[10px] bg-gray-100 text-gray-500 px-2 py-0.5 rounded-full">
+                                    Not in inventory
+                                  </span>
+                                )}
+                              </div>
+                              <div className="flex items-center gap-3 mt-1 text-xs text-gray-500 flex-wrap">
+                                <span className="flex items-center gap-1">
+                                  <FaTag className="w-3 h-3 text-gray-400" />
+                                  Qty: {item.quantity}
                                 </span>
-                              )}
-                              <span className="text-sm text-gray-400 ml-auto">
-                                Qty: {item.quantity}
-                              </span>
-                              <span className="text-sm text-gray-400">
-                                {formatCurrency(item.totalPrice || 0)}
-                              </span>
+                                <span className="flex items-center gap-1 font-medium text-gray-700">
+                                  {formatCurrency(item.totalPrice || 0)}
+                                </span>
+                                {itemExists && (
+                                  <>
+                                    <span className="text-gray-300">|</span>
+                                    <span className="flex items-center gap-1">
+                                      <FaWarehouse className="w-3 h-3 text-gray-400" />
+                                      Stock:{" "}
+                                      <span
+                                        className={
+                                          isInStock
+                                            ? "text-green-600 font-medium"
+                                            : "text-red-600 font-medium"
+                                        }
+                                      >
+                                        {currentStock}
+                                      </span>
+                                    </span>
+                                    {retailPrice > 0 && (
+                                      <>
+                                        <span className="text-gray-300">|</span>
+                                        <span className="flex items-center gap-1">
+                                          <FaTag className="w-3 h-3 text-gray-400" />
+                                          Retail: {formatCurrency(retailPrice)}
+                                        </span>
+                                      </>
+                                    )}
+                                    {wholesalePrice > 0 && enableWholesale && (
+                                      <>
+                                        <span className="text-gray-300">|</span>
+                                        <span className="flex items-center gap-1 text-indigo-600">
+                                          <FaStore className="w-3 h-3" />
+                                          WS: {formatCurrency(wholesalePrice)}
+                                        </span>
+                                      </>
+                                    )}
+                                    {expiryDate && (
+                                      <>
+                                        <span className="text-gray-300">|</span>
+                                        <span className="flex items-center gap-1">
+                                          <FaCalendarAlt className="w-3 h-3 text-gray-400" />
+                                          Exp:{" "}
+                                          <span
+                                            className={
+                                              isExpired
+                                                ? "text-yellow-600 font-medium"
+                                                : "text-gray-600"
+                                            }
+                                          >
+                                            {formatDate(expiryDate)}
+                                          </span>
+                                        </span>
+                                      </>
+                                    )}
+                                  </>
+                                )}
+                              </div>
                             </div>
-                          </div>
 
-                          {/* Add Button */}
-                          <button
-                            onClick={() => handleAddOrderItemToCart(order, item)}
-                            disabled={!fullItem || fullItem.itemQuantity <= 0}
-                            className={`px-3 py-1 rounded-lg text-sm font-medium transition-all whitespace-nowrap flex items-center gap-1.5
-                              ${
-                                !fullItem || fullItem.itemQuantity <= 0
-                                  ? "bg-gray-200/80 text-gray-400 cursor-not-allowed"
-                                  : saleType === "Wholesale"
-                                  ? "bg-indigo-500 text-white hover:bg-indigo-600"
-                                  : "bg-emerald-500 text-white hover:bg-emerald-600"
-                              }`}
-                          >
-                            <FaShoppingCart className="w-3 h-3" />
-                            Add
-                          </button>
+                            {/* Add Button */}
+                            <button
+                              onClick={() => {
+                                if (!canAdd) {
+                                  if (!zuiaAdd) {
+                                    toast.error(
+                                      "Please complete the current transaction first",
+                                    );
+                                    return;
+                                  }
+                                  if (!itemExists) {
+                                    toast.error(
+                                      `Item ${item.itemName} no longer exists in inventory`,
+                                    );
+                                    return;
+                                  }
+                                  if (!isInStock) {
+                                    toast.error(
+                                      `${item.itemName} is out of stock (Available: ${currentStock})`,
+                                    );
+                                    return;
+                                  }
+                                  if (!hasPrice) {
+                                    toast.error(
+                                      `${item.itemName} has no price set`,
+                                    );
+                                    return;
+                                  }
+                                  toast.error(`Cannot add ${item.itemName}`);
+                                  return;
+                                }
+                                handleAddOrderItemToCart(order, item);
+                              }}
+                              disabled={!canAdd}
+                              className={`px-4 py-2 rounded-xl text-xs font-semibold transition-all whitespace-nowrap flex items-center gap-1.5 shadow-sm hover:shadow-md flex-shrink-0
+                                ${
+                                  !canAdd
+                                    ? "bg-gray-200 text-gray-400 cursor-not-allowed"
+                                    : saleType === "Wholesale"
+                                      ? "bg-gradient-to-r from-indigo-500 to-blue-500 text-white hover:from-indigo-600 hover:to-blue-600"
+                                      : "bg-gradient-to-r from-emerald-500 to-teal-500 text-white hover:from-emerald-600 hover:to-teal-600"
+                                }`}
+                            >
+                              <FaShoppingCart className="w-3.5 h-3.5" />
+                              {!itemExists
+                                ? "Not Found"
+                                : !isInStock
+                                  ? "Out of Stock"
+                                  : !hasPrice
+                                    ? "No Price"
+                                    : "Add to Cart"}
+                            </button>
+                          </div>
                         </div>
                       );
                     })}
@@ -680,20 +934,29 @@ const MenuCard = ({ refreshTrigger }) => {
 
                   {/* Show more */}
                   {(order.items?.length || 0) > 3 && (
-                    <div className="px-3 py-1.5 bg-white/40 backdrop-blur-sm border-t border-gray-100/60">
+                    <div className="px-6 py-3 bg-gray-50 border-t border-gray-200">
                       <button
                         onClick={() => toggleOrderExpand(order._id)}
-                        className="text-sm text-emerald-600 hover:text-emerald-700 font-medium"
+                        className="text-sm text-emerald-600 hover:text-emerald-700 font-medium flex items-center gap-2"
                       >
-                        {isExpanded ? "Show less" : `+ ${(order.items?.length || 0) - 3} more`}
+                        {isExpanded ? (
+                          <>
+                            Show less <FaChevronUp className="w-4 h-4" />
+                          </>
+                        ) : (
+                          <>
+                            View {order.items.length - 3} more items{" "}
+                            <FaChevronDown className="w-4 h-4" />
+                          </>
+                        )}
                       </button>
                     </div>
                   )}
                 </div>
-              </div>
-            );
-          })}
-        </div>
+              );
+            })}
+          </div>
+        )}
       </div>
     );
   };
@@ -1049,18 +1312,33 @@ const MenuCard = ({ refreshTrigger }) => {
               const profit = getProfitMargin(item);
               const actualQuantity = getActualQuantity(item._id);
               const totalPrice = getTotalPrice(item);
+              const expired = isItemExpired(item);
+              const expiryDate = item.expiryDate || item.expirationDate;
+              const isOutOfStock = item.itemQuantity === 0;
 
               return (
                 <div
                   key={item._id}
                   className={`bg-white rounded-xl shadow-sm hover:shadow-lg border p-3 sm:p-4 flex flex-col justify-between transition-all duration-300 hover:-translate-y-1
-                    ${saleType === "Wholesale" ? "hover:border-indigo-300" : "hover:border-emerald-200"}`}
+                    ${saleType === "Wholesale" ? "hover:border-indigo-300" : "hover:border-emerald-200"}
+                    ${expired ? "border-yellow-300 bg-yellow-50/30" : ""}
+                    ${isOutOfStock ? "opacity-70" : ""}`}
                 >
                   <div className="mb-2 sm:mb-3">
                     <div className="flex justify-between items-start mb-1.5 sm:mb-2">
                       <div className="flex-1 min-w-0">
                         <h3 className="font-bold text-gray-800 text-sm sm:text-base truncate pr-2">
                           {item.name}
+                          {expired && (
+                            <span className="ml-1 text-[10px] bg-yellow-500 text-white px-1.5 py-0.5 rounded-full">
+                              EXPIRED
+                            </span>
+                          )}
+                          {isOutOfStock && (
+                            <span className="ml-1 text-[10px] bg-gray-500 text-white px-1.5 py-0.5 rounded-full">
+                              OUT OF STOCK
+                            </span>
+                          )}
                         </h3>
                         {saleType === "Wholesale" && item.enableWholesale && (
                           <div className="flex flex-wrap items-center gap-1 mt-1">
@@ -1082,18 +1360,30 @@ const MenuCard = ({ refreshTrigger }) => {
                       </span>
                     </div>
 
-                    <div className="flex items-center gap-2 mb-2">
+                    {/* Stock and Expiry Info */}
+                    <div className="flex flex-wrap items-center gap-2 mb-2">
                       <div className="flex items-center gap-1 text-xs text-gray-600">
                         <FaWarehouse className="text-gray-400 text-xs" />
                         <span>Stock:</span>
                         <span
-                          className={`font-bold ${item.itemQuantity === 0 ? "text-red-600" : item.itemQuantity <= (item.reOrder || 5) ? "text-yellow-600" : "text-green-600"}`}
+                          className={`font-bold ${isOutOfStock ? "text-red-600" : item.itemQuantity <= (item.reOrder || 5) ? "text-yellow-600" : "text-green-600"}`}
                         >
                           {item.itemQuantity.toLocaleString()}
                         </span>
                       </div>
-                      {item.status === "Expired" && (
-                        <span className="text-[10px] bg-red-100 text-red-700 px-1.5 py-0.5 rounded-full">
+                      {expiryDate && (
+                        <div className="flex items-center gap-1 text-xs text-gray-600">
+                          <FaCalendarAlt className="text-gray-400 text-xs" />
+                          <span>Expiry:</span>
+                          <span
+                            className={`font-bold ${expired ? "text-yellow-600" : "text-gray-700"}`}
+                          >
+                            {formatDate(expiryDate)}
+                          </span>
+                        </div>
+                      )}
+                      {item.status === "Expired" && !expiryDate && (
+                        <span className="text-[10px] bg-yellow-100 text-yellow-700 px-1.5 py-0.5 rounded-full">
                           Expired
                         </span>
                       )}
@@ -1178,6 +1468,7 @@ const MenuCard = ({ refreshTrigger }) => {
                           )
                         }
                         className="p-2 sm:p-2.5 rounded-lg hover:bg-gray-200 transition-colors"
+                        disabled={isOutOfStock}
                       >
                         <FaMinus className="text-gray-600 text-xs sm:text-sm" />
                       </button>
@@ -1194,6 +1485,7 @@ const MenuCard = ({ refreshTrigger }) => {
                               Number(e.target.value),
                             )
                           }
+                          disabled={isOutOfStock}
                         />
                         <span className="text-[10px] text-gray-500">
                           {saleType === "Wholesale" ? "Packages" : "Qty"}
@@ -1213,6 +1505,7 @@ const MenuCard = ({ refreshTrigger }) => {
                           )
                         }
                         className="p-2 sm:p-2.5 rounded-lg hover:bg-gray-200 transition-colors"
+                        disabled={isOutOfStock}
                       >
                         <FaPlus className="text-gray-600 text-xs sm:text-sm" />
                       </button>
@@ -1220,18 +1513,25 @@ const MenuCard = ({ refreshTrigger }) => {
 
                     <button
                       onClick={() => handleAddCart(item)}
+                      disabled={isOutOfStock}
                       className={`w-full py-2.5 sm:py-3 rounded-lg font-semibold transition-all shadow-md hover:shadow-lg flex items-center justify-center gap-2 hover:scale-105 transform text-sm
                         ${
-                          saleType === "Wholesale"
-                            ? "bg-gradient-to-r from-indigo-400 to-blue-400 text-white hover:from-indigo-500 hover:to-blue-500"
-                            : "bg-gradient-to-r from-emerald-500 to-teal-500 text-white hover:from-emerald-600 hover:to-teal-600"
+                          isOutOfStock
+                            ? "bg-gray-400 text-white cursor-not-allowed"
+                            : saleType === "Wholesale"
+                              ? "bg-gradient-to-r from-indigo-400 to-blue-400 text-white hover:from-indigo-500 hover:to-blue-500"
+                              : "bg-gradient-to-r from-emerald-500 to-teal-500 text-white hover:from-emerald-600 hover:to-teal-600"
                         }`}
                     >
                       <FaShoppingCart />
-                      <span>Add ({saleType})</span>
-                      <span className="text-[10px] sm:text-xs bg-white/20 px-1.5 sm:px-2 py-0.5 rounded">
-                        Tsh {totalPrice.toLocaleString()}
+                      <span>
+                        {isOutOfStock ? "Out of Stock" : `Add (${saleType})`}
                       </span>
+                      {!isOutOfStock && (
+                        <span className="text-[10px] sm:text-xs bg-white/20 px-1.5 sm:px-2 py-0.5 rounded">
+                          Tsh {totalPrice.toLocaleString()}
+                        </span>
+                      )}
                     </button>
                   </div>
                 </div>
@@ -1273,11 +1573,13 @@ const MenuCard = ({ refreshTrigger }) => {
         >
           <FaTh className="text-sm sm:text-base" />
           Menu Items
-          <span className={`text-xs px-2 py-0.5 rounded-full ${
-            activeTab === "menu" 
-              ? "bg-white/20 text-white" 
-              : "bg-gray-200 text-gray-600"
-          }`}>
+          <span
+            className={`text-xs px-2 py-0.5 rounded-full ${
+              activeTab === "menu"
+                ? "bg-white/20 text-white"
+                : "bg-gray-200 text-gray-600"
+            }`}
+          >
             {items.length}
           </span>
         </button>
@@ -1292,11 +1594,13 @@ const MenuCard = ({ refreshTrigger }) => {
         >
           <FaList className="text-sm sm:text-base" />
           Orders
-          <span className={`text-xs px-2 py-0.5 rounded-full ${
-            activeTab === "orders" 
-              ? "bg-white/20 text-white" 
-              : "bg-gray-200 text-gray-600"
-          }`}>
+          <span
+            className={`text-xs px-2 py-0.5 rounded-full ${
+              activeTab === "orders"
+                ? "bg-white/20 text-white"
+                : "bg-gray-200 text-gray-600"
+            }`}
+          >
             {orders.length}
           </span>
         </button>
