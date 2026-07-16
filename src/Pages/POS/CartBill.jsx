@@ -1,9 +1,11 @@
+// components/Cart.jsx
 import { useDispatch, useSelector } from "react-redux";
 import {
   clearCart,
   getSubTotal,
   setReceiptPrinted,
   getTotalItemDiscount,
+  addItems,
 } from "../../Redux/cartSlice";
 import { useEffect, useState } from "react";
 import axios from "axios";
@@ -13,7 +15,17 @@ import toast from "react-hot-toast";
 import BASE_URL from "../../Utils/config";
 import { fetchAllCustomers } from "../../Redux/customerSlice";
 
-const Cart = ({ triggerRefreshMenu }) => {
+// Icons
+import { FaPlusCircle } from "react-icons/fa";
+import { RiDeleteBin5Line } from "react-icons/ri";
+import { IoIosRemoveCircle } from "react-icons/io";
+import { FaTimes, FaCheckCircle, FaShoppingCart, FaBox } from "react-icons/fa";
+
+const Cart = ({
+  triggerRefreshMenu,
+  orderToPay = null,
+  onOrderPaymentComplete = () => {},
+}) => {
   const dispatch = useDispatch();
 
   // Redux Selectors
@@ -30,9 +42,15 @@ const Cart = ({ triggerRefreshMenu }) => {
   const [useLoyal, setUseLoyal] = useState(false);
   const [loyalCustomerId, setLoyalCustomerId] = useState("");
 
-  // FIX: Added missing states for Extra Discount logic
+  // Extra Discount
   const [useExtraDiscount, setUseExtraDiscount] = useState(false);
   const [extraDiscount, setExtraDiscount] = useState(0);
+
+  // Order Payment States
+  const [isOrderPaymentMode, setIsOrderPaymentMode] = useState(false);
+  const [currentOrder, setCurrentOrder] = useState(null);
+  const [selectedOrderItems, setSelectedOrderItems] = useState({});
+  const [showOrderFulfillment, setShowOrderFulfillment] = useState(false);
 
   const [customerDetails, setCustomerDetails] = useState({
     name: "Mteja",
@@ -51,6 +69,14 @@ const Cart = ({ triggerRefreshMenu }) => {
   useEffect(() => {
     dispatch(fetchAllCustomers());
   }, [dispatch]);
+
+  // Effect to handle order payment trigger
+  useEffect(() => {
+    if (orderToPay) {
+      startOrderPayment(orderToPay);
+      onOrderPaymentComplete();
+    }
+  }, [orderToPay]);
 
   // Handlers
   const handleLoyalToggle = (e) => {
@@ -72,39 +98,128 @@ const Cart = ({ triggerRefreshMenu }) => {
     }
   };
 
-  /* ==================================================
-     FINANCIAL CALCULATIONS & LOGIC
-  ================================================== */
-  const taxRate = 0; // Adjust if needed
+  // ==================== ORDER PAYMENT FUNCTIONS ====================
+  const startOrderPayment = (order) => {
+    // Check if order is already completed
+    if (order.status === "Completed") {
+      toast.error(`Order #${order.orderNumber} is already completed!`);
+      return;
+    }
 
-  // Combined discount (Item specific discounts + Global Cart extra discount)
+    // Check if there are pending items
+    const pendingItems = order.items.filter(
+      (item) => item.fulfillmentStatus === "Pending",
+    );
+    if (pendingItems.length === 0) {
+      toast.error(
+        `All items in order #${order.orderNumber} are already fulfilled!`,
+      );
+      return;
+    }
+
+    // Check if this order already has items in cart
+    const existingOrderItems = cartData.filter(
+      (item) => item.orderId === order._id,
+    );
+    if (existingOrderItems.length > 0) {
+      toast.error(
+        `Order #${order.orderNumber} already has items in cart. Complete or clear them first.`,
+      );
+      return;
+    }
+
+    setCurrentOrder(order);
+    setIsOrderPaymentMode(true);
+    setShowOrderFulfillment(true);
+
+    // Pre-select all pending items
+    const initialSelection = {};
+    order.items.forEach((item) => {
+      const itemId = item.item._id || item.item;
+      if (item.fulfillmentStatus === "Pending") {
+        initialSelection[itemId] = true;
+      }
+    });
+    setSelectedOrderItems(initialSelection);
+  };
+
+  const toggleOrderItemSelection = (itemId) => {
+    setSelectedOrderItems((prev) => ({
+      ...prev,
+      [itemId]: !prev[itemId],
+    }));
+  };
+
+  const handleAddSelectedOrderItemsToCart = () => {
+    if (!currentOrder) return;
+
+    const selectedItems = currentOrder.items.filter(
+      (item) =>
+        selectedOrderItems[item.item._id || item.item] &&
+        item.fulfillmentStatus === "Pending",
+    );
+
+    if (selectedItems.length === 0) {
+      toast.error("Please select at least one item to fulfill");
+      return;
+    }
+
+    // Add each selected item to cart
+    selectedItems.forEach((item) => {
+      const itemData = item.item || {};
+      const price = item.unitPrice || 0;
+
+      const newObj = {
+        id: itemData._id || item.item,
+        name: item.itemName,
+        pricePerQuantity: price,
+        quantity: item.quantity,
+        totalPrice: price * item.quantity,
+        itemQuantity: itemData.itemQuantity || 0,
+        priceType: "Retail",
+        buyingPrice: itemData.buyingPrice || 0,
+        retailPrice: itemData.price || item.unitPrice || 0,
+        wholesalePrice: itemData.wholesalePrice || 0,
+        packageSize: 1,
+        unitsPerPackage: 1,
+        expiryDate: itemData.expiryDate || null,
+        isExpired: false,
+        orderId: currentOrder._id,
+        orderNumber: currentOrder.orderNumber,
+        orderItemId: item._id,
+        fulfillmentStatus: item.fulfillmentStatus,
+        isFromOrder: true,
+        discount: 0,
+      };
+
+      dispatch(addItems(newObj));
+    });
+
+    const totalItems = selectedItems.reduce(
+      (sum, item) => sum + item.quantity,
+      0,
+    );
+    toast.success(
+      `${selectedItems.length} items (${totalItems} units) added to cart from order #${currentOrder.orderNumber}`,
+    );
+    setShowOrderFulfillment(false);
+  };
+
+  // ==================== FINANCIAL CALCULATIONS ====================
+  const taxRate = 0;
   const totalDiscount =
     totalItemDiscount + (useExtraDiscount ? extraDiscount : 0);
-
-  // Maximum allowed extra discount so that overall discount ≤ 10% of original total
   const maxExtraDiscount = Math.max(0, originalTotal * 0.1 - totalItemDiscount);
-
-  // Taxable amount after all discounts
   const taxableAmount = Math.max(0, originalTotal - totalDiscount);
   const tax = (taxableAmount * taxRate) / 100;
-
-  // FIX: Removed the duplicate top-level definition, keeping this calculated variable clean
   const finalTotal = taxableAmount + tax;
 
-  /* ==================================================
-     TRANSACTION PROCESSOR
-  ================================================== */
+  // ==================== TRANSACTION PROCESSOR ====================
+  // components/CartBill.jsx - Update the handleTransaction function
+
   const handleTransaction = async (status) => {
     if (cartData.length === 0) {
-      toast.error("Please add items to the cart before proceeding!", {
-        position: "bottom-right",
-        style: {
-          borderRadius: "12px",
-          background: "#e74c3c",
-          color: "#fff",
-          fontSize: "18px",
-        },
-      });
+      toast.error("Please add items to the cart before proceeding!");
       return;
     }
 
@@ -113,14 +228,18 @@ const Cart = ({ triggerRefreshMenu }) => {
     setShowLoadingModal(true);
 
     try {
+      // Prepare items payload
+      const itemsPayload = cartData.map((item) => ({
+        item: item.id,
+        quantity: item.quantity,
+        pricePerQuantity: item.pricePerQuantity,
+        discount: item.discount || 0,
+        totalPrice: item.totalPrice,
+        orderItemId: item.orderItemId || null,
+      }));
+
       const payload = {
-        items: cartData.map((item) => ({
-          item: item.id,
-          quantity: item.quantity,
-          pricePerQuantity: item.pricePerQuantity, // Added for backend integrity
-          discount: item.discount || 0,
-          totalPrice: item.totalPrice,
-        })),
+        items: itemsPayload,
         customerDetails: useLoyal ? {} : customerDetails,
         loyalCustomer: useLoyal ? loyalCustomerId : null,
         totalDiscount,
@@ -128,6 +247,78 @@ const Cart = ({ triggerRefreshMenu }) => {
         finalTotal,
         status,
       };
+
+      // CRITICAL FIX: Always check if cart has order items
+      const orderItemsInCart = cartData.filter(
+        (item) => item.isFromOrder && item.orderId,
+      );
+
+      // If there are order items in cart, find the order ID
+      if (orderItemsInCart.length > 0) {
+        // Get unique order IDs from cart
+        const orderIds = [
+          ...new Set(orderItemsInCart.map((item) => item.orderId)),
+        ];
+
+        // If there's only one order, use it
+        if (orderIds.length === 1) {
+          payload.orderId = orderIds[0];
+
+          // Build orderItemsToFulfill from cart items
+          const itemsToFulfill = orderItemsInCart.map((item) => ({
+            orderItemId: item.orderItemId,
+            itemId: item.id,
+            quantity: item.quantity,
+          }));
+
+          payload.orderItemsToFulfill = itemsToFulfill;
+
+          console.log("Order Payment Detected - Payload:", {
+            orderId: payload.orderId,
+            orderItemsToFulfill: payload.orderItemsToFulfill,
+          });
+        } else if (orderIds.length > 1) {
+          toast.error(
+            "Cannot process multiple orders at once. Please clear cart and try one order at a time.",
+          );
+          setShowLoadingModal(false);
+          setIsProcessing(false);
+          return;
+        }
+      }
+
+      // If this is an explicit order payment mode (from "Pay Order" button)
+      if (isOrderPaymentMode && currentOrder) {
+        payload.orderId = currentOrder._id;
+
+        const itemsToFulfill = currentOrder.items
+          .filter((orderItem) => {
+            const itemId = orderItem.item._id || orderItem.item;
+            return (
+              selectedOrderItems[itemId] &&
+              orderItem.fulfillmentStatus === "Pending"
+            );
+          })
+          .map((orderItem) => ({
+            orderItemId: orderItem._id.toString(),
+            itemId:
+              orderItem.item._id?.toString() || orderItem.item?.toString(),
+            quantity: orderItem.quantity,
+          }));
+
+        payload.orderItemsToFulfill = itemsToFulfill;
+
+        console.log("Explicit Order Payment Payload:", {
+          orderId: payload.orderId,
+          orderItemsToFulfill: payload.orderItemsToFulfill,
+          items: payload.items,
+        });
+      }
+
+      console.log(
+        "Final Payload being sent:",
+        JSON.stringify(payload, null, 2),
+      );
 
       const response = await axios.post(
         `${BASE_URL}/api/transactions/sales`,
@@ -137,17 +328,37 @@ const Cart = ({ triggerRefreshMenu }) => {
 
       if (response.status === 201) {
         const saleId = response.data.data._id;
+
+        if (response.data.orderUpdate) {
+          const { orderUpdate } = response.data;
+
+          if (orderUpdate.isFullyCompleted) {
+            toast.success(
+              `✅ Order #${currentOrder?.orderNumber || ""} COMPLETED successfully!`,
+              {
+                duration: 5000,
+                icon: "🎉",
+              },
+            );
+          } else if (orderUpdate.status === "Partially Completed") {
+            toast.success(
+              `📦 ${orderUpdate.completedItems}/${orderUpdate.totalItems} items fulfilled. Remaining balance: ${orderUpdate.remainingBalance?.toLocaleString() || 0}/=`,
+              { duration: 5000 },
+            );
+          }
+        } else {
+          // If no order update but we had order items, check if order was updated
+          if (payload.orderId) {
+            toast.info("Order is being processed. Refreshing...");
+            // Refresh orders to see updated status
+            setTimeout(() => {
+              triggerRefreshMenu();
+            }, 1000);
+          }
+        }
+
         toast.success(
           `Transaction ${status === "Paid" ? "completed" : "saved as bill"} successfully!`,
-          {
-            position: "bottom-right",
-            style: {
-              borderRadius: "12px",
-              background: "#27ae60",
-              color: "#fff",
-              fontSize: "18px",
-            },
-          },
         );
 
         dispatch(clearCart());
@@ -159,12 +370,23 @@ const Cart = ({ triggerRefreshMenu }) => {
         setShowPrintButton(true);
         setShowLoadingModal(false);
         setErrorMsg("");
-      } else {
-        alert("Transaction failed");
+
+        setIsOrderPaymentMode(false);
+        setCurrentOrder(null);
+        setSelectedOrderItems({});
+        setShowOrderFulfillment(false);
+
+        setTimeout(() => {
+          triggerRefreshMenu();
+        }, 2000);
       }
     } catch (error) {
       setShowLoadingModal(false);
-      setErrorMsg(error.response?.data?.message || "Something went wrong.");
+      console.error("Transaction error:", error);
+      const errorMessage =
+        error.response?.data?.message || "Something went wrong.";
+      setErrorMsg(errorMessage);
+      toast.error(errorMessage);
     } finally {
       setIsProcessing(false);
     }
@@ -181,6 +403,226 @@ const Cart = ({ triggerRefreshMenu }) => {
     setShowPrintButton(false);
   };
 
+  // ==================== RENDER ORDER FULFILLMENT MODAL ====================
+  const renderOrderFulfillmentModal = () => {
+    if (!showOrderFulfillment || !currentOrder) return null;
+
+    const formatCurrency = (amount) => {
+      return `TSh ${(amount || 0).toLocaleString()}`;
+    };
+
+    const getStatusBadge = (status) => {
+      const statusMap = {
+        Pending: "bg-yellow-100 text-yellow-700",
+        "Partially Completed": "bg-blue-100 text-blue-700",
+        Completed: "bg-green-100 text-green-700",
+        Cancelled: "bg-red-100 text-red-700",
+      };
+      return statusMap[status] || "bg-gray-100 text-gray-700";
+    };
+
+    const selectedCount =
+      Object.values(selectedOrderItems).filter(Boolean).length;
+    const pendingItems = currentOrder.items.filter(
+      (item) => item.fulfillmentStatus === "Pending",
+    );
+
+    return (
+      <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 p-4">
+        <div className="bg-white rounded-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto shadow-2xl">
+          <div className="sticky top-0 bg-white z-10 p-6 border-b border-gray-200 rounded-t-2xl">
+            <div className="flex justify-between items-center">
+              <h2 className="text-xl font-bold text-gray-800 flex items-center gap-2">
+                <FaShoppingCart className="text-emerald-500" />
+                Fulfill Order Items
+              </h2>
+              <button
+                onClick={() => {
+                  setShowOrderFulfillment(false);
+                  setIsOrderPaymentMode(false);
+                  setCurrentOrder(null);
+                }}
+                className="p-2 hover:bg-gray-100 rounded-full transition-colors"
+              >
+                <FaTimes className="text-gray-500" />
+              </button>
+            </div>
+          </div>
+
+          <div className="p-6">
+            {/* Order Info */}
+            <div className="mb-6 p-4 bg-gradient-to-r from-emerald-50 to-teal-50 rounded-xl border border-emerald-200">
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <p className="text-xs text-gray-500">Order #</p>
+                  <p className="font-semibold text-gray-800">
+                    {currentOrder.orderNumber}
+                  </p>
+                </div>
+                <div>
+                  <p className="text-xs text-gray-500">Status</p>
+                  <span
+                    className={`inline-block px-3 py-1 rounded-full text-xs font-semibold ${getStatusBadge(currentOrder.status)}`}
+                  >
+                    {currentOrder.status}
+                  </span>
+                </div>
+                <div>
+                  <p className="text-xs text-gray-500">Customer</p>
+                  <p className="font-semibold text-gray-800">
+                    {currentOrder.customerName}
+                  </p>
+                </div>
+                <div>
+                  <p className="text-xs text-gray-500">Total</p>
+                  <p className="font-semibold text-gray-800">
+                    {formatCurrency(currentOrder.grandTotal)}
+                  </p>
+                </div>
+              </div>
+              <div className="mt-2 pt-2 border-t border-emerald-200">
+                <p className="text-xs text-gray-500">
+                  Pending Items:{" "}
+                  <span className="font-semibold">{pendingItems.length}</span>
+                  {currentOrder.paymentStatus && (
+                    <>
+                      {" "}
+                      | Payment:{" "}
+                      <span className="font-semibold">
+                        {currentOrder.paymentStatus}
+                      </span>
+                    </>
+                  )}
+                  {currentOrder.balance > 0 && (
+                    <>
+                      {" "}
+                      | Balance:{" "}
+                      <span className="font-semibold text-red-600">
+                        {formatCurrency(currentOrder.balance)}
+                      </span>
+                    </>
+                  )}
+                </p>
+              </div>
+            </div>
+
+            {/* Items List */}
+            <div className="space-y-3 max-h-[400px] overflow-y-auto pr-2">
+              <div className="flex justify-between items-center mb-3">
+                <p className="text-sm text-gray-600">
+                  Select items to fulfill from this order:
+                </p>
+                <span className="text-xs bg-emerald-100 text-emerald-700 px-2 py-1 rounded-full">
+                  {selectedCount} selected
+                </span>
+              </div>
+
+              {currentOrder.items.map((item) => {
+                const itemId = item.item._id || item.item;
+                const isSelected = selectedOrderItems[itemId] || false;
+                const isCompleted = item.fulfillmentStatus === "Completed";
+                const itemData = item.item || {};
+
+                return (
+                  <div
+                    key={item._id}
+                    className={`flex items-center justify-between p-4 rounded-xl border transition-all ${
+                      isCompleted
+                        ? "bg-green-50 border-green-200 opacity-70"
+                        : isSelected
+                          ? "bg-blue-50 border-blue-300 shadow-sm"
+                          : "bg-gray-50 border-gray-200 hover:border-gray-300"
+                    }`}
+                  >
+                    <div className="flex items-center gap-4 flex-1 min-w-0">
+                      <input
+                        type="checkbox"
+                        checked={isSelected}
+                        onChange={() => toggleOrderItemSelection(itemId)}
+                        disabled={isCompleted}
+                        className="w-5 h-5 text-emerald-600 rounded border-gray-300 focus:ring-emerald-500 disabled:opacity-50"
+                      />
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <p className="font-semibold text-gray-800 truncate">
+                            {item.itemName}
+                          </p>
+                          {isCompleted && (
+                            <span className="text-xs bg-green-100 text-green-700 px-2 py-0.5 rounded-full flex items-center gap-1">
+                              <FaCheckCircle className="w-3 h-3" />
+                              Fulfilled
+                            </span>
+                          )}
+                        </div>
+                        <div className="flex items-center gap-4 text-sm text-gray-600 flex-wrap mt-1">
+                          <span>Qty: {item.quantity}</span>
+                          <span>Price: {formatCurrency(item.unitPrice)}</span>
+                          {itemData.itemQuantity !== undefined &&
+                            !isCompleted && (
+                              <span className="text-xs">
+                                Stock:{" "}
+                                <span
+                                  className={
+                                    itemData.itemQuantity > 0
+                                      ? "text-green-600"
+                                      : "text-red-600"
+                                  }
+                                >
+                                  {itemData.itemQuantity}
+                                </span>
+                              </span>
+                            )}
+                        </div>
+                      </div>
+                    </div>
+                    <div className="text-right flex-shrink-0 ml-3">
+                      <p className="font-bold text-gray-800">
+                        {formatCurrency(item.totalPrice)}
+                      </p>
+                      {!isCompleted && isSelected && (
+                        <span className="text-xs text-blue-600 font-medium">
+                          Selected
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+
+            {/* Action Buttons */}
+            <div className="mt-6 flex flex-col sm:flex-row gap-3 pt-4 border-t border-gray-200">
+              <button
+                onClick={handleAddSelectedOrderItemsToCart}
+                disabled={selectedCount === 0}
+                className={`flex-1 py-3 rounded-xl font-semibold transition flex items-center justify-center gap-2
+                  ${
+                    selectedCount === 0
+                      ? "bg-gray-300 text-gray-500 cursor-not-allowed"
+                      : "bg-gradient-to-r from-emerald-500 to-teal-500 text-white hover:shadow-lg hover:scale-[1.02] transform"
+                  }`}
+              >
+                <FaShoppingCart className="w-4 h-4" />
+                Add Selected ({selectedCount} items) to Cart
+              </button>
+              <button
+                onClick={() => {
+                  setShowOrderFulfillment(false);
+                  setIsOrderPaymentMode(false);
+                  setCurrentOrder(null);
+                }}
+                className="px-6 py-3 bg-gray-200 text-gray-700 rounded-xl font-semibold hover:bg-gray-300 transition"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
+  // ==================== MAIN RENDER ====================
   return (
     <>
       <div className="mt-6 space-y-6">
@@ -250,7 +692,7 @@ const Cart = ({ triggerRefreshMenu }) => {
                   Phone Number
                 </label>
                 <input
-                  type="text" // Switched to text to handle string formatting safely
+                  type="text"
                   name="phone"
                   value={customerDetails.phone}
                   onChange={handleInput}
@@ -266,8 +708,49 @@ const Cart = ({ triggerRefreshMenu }) => {
           )}
         </div>
 
+        {/* Cart Items Display */}
+        <div className="bg-white rounded-xl shadow px-4 py-3">
+          <div className="flex justify-between items-center mb-2">
+            <h3 className="font-semibold text-gray-700">Cart Items</h3>
+            <span className="text-sm bg-gray-100 px-3 py-1 rounded-full">
+              {cartData.length} items
+            </span>
+          </div>
+
+          {cartData.length === 0 ? (
+            <div className="text-center py-8 text-gray-500">
+              <FaBox className="text-3xl mx-auto mb-2 text-gray-300" />
+              <p>No items in cart</p>
+            </div>
+          ) : (
+            <div className="space-y-2 max-h-60 overflow-y-auto">
+              {cartData.map((item, index) => (
+                <div
+                  key={index}
+                  className="text-sm flex justify-between py-1 border-b border-gray-100 last:border-0"
+                >
+                  <span className="truncate">
+                    {item.isFromOrder && (
+                      <span className="text-xs text-blue-500 mr-1">📦</span>
+                    )}
+                    {item.name}
+                    {item.isFromOrder && (
+                      <span className="text-xs text-gray-400 ml-1">
+                        (Order #{item.orderNumber})
+                      </span>
+                    )}
+                  </span>
+                  <span className="font-semibold">
+                    {item.quantity} × {item.pricePerQuantity.toLocaleString()}
+                  </span>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+
         {/* Trade Discount Section */}
-        <div className="bg-white rounded-xl shadow px-6 py-4 space-y-3 mt-4">
+        <div className="bg-white rounded-xl shadow px-6 py-4 space-y-3">
           <label className="flex items-center justify-between p-4 border rounded-xl bg-gray-50 hover:bg-gray-100 transition cursor-pointer">
             <div>
               <p className="text-gray-900 font-semibold">Extra Discount</p>
@@ -338,7 +821,7 @@ const Cart = ({ triggerRefreshMenu }) => {
 
         {/* Error message */}
         {errorMsg && (
-          <div className="text-red-600 font-semibold text-center">
+          <div className="text-red-600 font-semibold text-center bg-red-50 p-3 rounded-lg border border-red-200">
             {errorMsg}
           </div>
         )}
@@ -446,6 +929,9 @@ const Cart = ({ triggerRefreshMenu }) => {
         )}
         <hr className="border-gray-400 mt-2" />
       </div>
+
+      {/* Order Fulfillment Modal */}
+      {renderOrderFulfillmentModal()}
     </>
   );
 };

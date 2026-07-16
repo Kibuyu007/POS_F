@@ -134,10 +134,10 @@ const CustomerRequestModal = ({ requestNumber, onClose, onRefresh }) => {
       if (response.data.success) {
         setRequest(response.data.data);
       } else {
-        setError(response.data.message || "Request not found");
+        setError(response.data.message || "Ombi halikupatikana");
       }
     } catch (error) {
-      setError(error.response?.data?.message || "Failed to fetch request");
+      setError(error.response?.data?.message || "Imeshindwa kupata ombi");
     } finally {
       setLoading(false);
     }
@@ -148,7 +148,7 @@ const CustomerRequestModal = ({ requestNumber, onClose, onRefresh }) => {
       const response = await axios.get(`${BASE_URL}/api/items/public/items`);
       setAvailableItems(response.data.data || []);
     } catch (error) {
-      console.error("Failed to fetch items:", error);
+      console.error("Imeshindwa kupata bidhaa:", error);
     }
   };
 
@@ -158,23 +158,22 @@ const CustomerRequestModal = ({ requestNumber, onClose, onRefresh }) => {
   };
 
   const handleAcceptRequest = async () => {
-    if (!window.confirm("Are you sure you want to accept this request?"))
-      return;
+    if (!window.confirm("Je, una uhakika unataka kukubali ombi hili?")) return;
     setActionLoading(true);
     try {
       const response = await axios.patch(
         `${BASE_URL}/api/orders/${request._id}/accept`,
       );
       if (response.data.success) {
-        showToast("Request accepted successfully!", "success");
+        showToast("Ombi limekubaliwa kikamilifu!", "success");
         await fetchRequest();
         if (onRefresh) onRefresh();
       } else {
-        showToast(response.data.message || "Failed to accept request", "error");
+        showToast(response.data.message || "Imeshindwa kukubali ombi", "error");
       }
     } catch (error) {
       showToast(
-        error.response?.data?.message || "Failed to accept request",
+        error.response?.data?.message || "Imeshindwa kukubali ombi",
         "error",
       );
     } finally {
@@ -185,7 +184,7 @@ const CustomerRequestModal = ({ requestNumber, onClose, onRefresh }) => {
   const handleAmendRequest = async (e) => {
     e.preventDefault();
     if (amendmentData.items.length === 0) {
-      showToast("At least one item is required", "error");
+      showToast("Angalau bidhaa moja inahitajika", "error");
       return;
     }
     setActionLoading(true);
@@ -204,19 +203,19 @@ const CustomerRequestModal = ({ requestNumber, onClose, onRefresh }) => {
         payload,
       );
       if (response.data.success) {
-        showToast("Amendments submitted successfully!", "success");
+        showToast("Marekebisho yametumwa kikamilifu!", "success");
         setIsAmending(false);
         await fetchRequest();
         if (onRefresh) onRefresh();
       } else {
         showToast(
-          response.data.message || "Failed to submit amendments",
+          response.data.message || "Imeshindwa kutuma marekebisho",
           "error",
         );
       }
     } catch (error) {
       showToast(
-        error.response?.data?.message || "Failed to submit amendments",
+        error.response?.data?.message || "Imeshindwa kutuma marekebisho",
         "error",
       );
     } finally {
@@ -226,23 +225,23 @@ const CustomerRequestModal = ({ requestNumber, onClose, onRefresh }) => {
 
   const addAmendmentItem = () => {
     if (!newItem.itemId) {
-      showToast("Please select an item", "error");
+      showToast("Tafadhali chagua bidhaa", "error");
       return;
     }
     const selectedItem = availableItems.find(
       (item) => item._id === newItem.itemId,
     );
     if (!selectedItem) {
-      showToast("Item not found", "error");
+      showToast("Bidhaa haikupatikana", "error");
       return;
     }
     if (amendmentData.items.some((item) => item.itemId === newItem.itemId)) {
-      showToast(`${selectedItem.name} is already in the list`, "error");
+      showToast(`${selectedItem.name} tayari imeorodheshwa`, "error");
       return;
     }
     if (selectedItem.itemQuantity < newItem.quantity) {
       showToast(
-        `Only ${selectedItem.itemQuantity} ${selectedItem.name} available`,
+        `${selectedItem.name} zilizobaki ni ${selectedItem.itemQuantity} tu`,
         "error",
       );
       return;
@@ -255,13 +254,13 @@ const CustomerRequestModal = ({ requestNumber, onClose, onRefresh }) => {
           itemId: selectedItem._id,
           itemName: selectedItem.name,
           quantity: newItem.quantity,
-          status: "Pending",
+          status: "Inasubiriwa",
           rejectionReason: "",
         },
       ],
     }));
     setNewItem({ itemId: "", quantity: 1 });
-    showToast(`${selectedItem.name} added!`, "success");
+    showToast(`${selectedItem.name} imeongezwa!`, "success");
   };
 
   const removeAmendmentItem = (index) => {
@@ -280,7 +279,7 @@ const CustomerRequestModal = ({ requestNumber, onClose, onRefresh }) => {
 
   const formatDate = (dateString) => {
     if (!dateString) return "N/A";
-    return new Date(dateString).toLocaleDateString("en-US", {
+    return new Date(dateString).toLocaleDateString("sw-TZ", {
       year: "numeric",
       month: "long",
       day: "numeric",
@@ -289,7 +288,7 @@ const CustomerRequestModal = ({ requestNumber, onClose, onRefresh }) => {
 
   const formatDateTime = (dateString) => {
     if (!dateString) return "N/A";
-    return new Date(dateString).toLocaleString("en-US", {
+    return new Date(dateString).toLocaleString("sw-TZ", {
       year: "numeric",
       month: "long",
       day: "numeric",
@@ -313,12 +312,12 @@ const CustomerRequestModal = ({ requestNumber, onClose, onRefresh }) => {
 
   const getStatusDisplayName = (status) => {
     const nameMap = {
-      "Pending Review": "Pending Review",
-      "Awaiting Customer Confirmation": "Awaiting Your Confirmation",
-      Accepted: "Accepted",
-      Converted: "Converted to Order",
-      Rejected: "Rejected",
-      Cancelled: "Cancelled",
+      "Pending Review": "Inakaguliwa",
+      "Awaiting Customer Confirmation": "Inasubiri Uthibitisho Wako",
+      Accepted: "Imekubaliwa",
+      Converted: "Imegeuzwa Kuwa Agizo",
+      Rejected: "Imekataliwa",
+      Cancelled: "Imefutwa",
     };
     return nameMap[status] || status;
   };
@@ -367,7 +366,7 @@ const CustomerRequestModal = ({ requestNumber, onClose, onRefresh }) => {
       <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
         <div className="bg-white rounded-2xl w-full max-w-2xl shadow-2xl p-8 text-center">
           <div className="w-12 h-12 border-4 border-emerald-300 border-t-emerald-500 rounded-full animate-spin mx-auto mb-4"></div>
-          <p className="text-gray-600">Loading your request...</p>
+          <p className="text-gray-600">Inapakua Order yako...</p>
         </div>
       </div>
     );
@@ -381,14 +380,14 @@ const CustomerRequestModal = ({ requestNumber, onClose, onRefresh }) => {
             <FaExclamationTriangle className="text-red-500 text-3xl" />
           </div>
           <h3 className="text-lg font-bold text-gray-800 mb-2">
-            Request Not Found
+            Order Haijapatikana
           </h3>
           <p className="text-gray-600 mb-4">{error}</p>
           <button
             onClick={onClose}
             className="w-full bg-gradient-to-r from-emerald-500 to-teal-500 text-white font-semibold py-2.5 px-6 rounded-xl hover:shadow-xl transition-all duration-300"
           >
-            Close
+            Funga
           </button>
         </div>
       </div>
@@ -414,7 +413,7 @@ const CustomerRequestModal = ({ requestNumber, onClose, onRefresh }) => {
               </div>
               <div className="min-w-0">
                 <h2 className="text-lg font-bold text-gray-800 truncate">
-                  Request Status
+                  Hali ya Order
                 </h2>
                 <p className="text-sm text-gray-500 font-mono truncate">
                   {request.requestNumber}
@@ -439,7 +438,11 @@ const CustomerRequestModal = ({ requestNumber, onClose, onRefresh }) => {
                 className={`text-xs px-3 py-1 rounded-full font-medium ${getSourceBadge(request.source)} flex items-center gap-1`}
               >
                 {getSourceIcon(request.source)}
-                {request.source}
+                {request.source === "Website"
+                  ? "Tovuti"
+                  : request.source === "WhatsApp"
+                    ? "WhatsApp"
+                    : "Mkono"}
               </span>
             )}
             <span
@@ -450,7 +453,7 @@ const CustomerRequestModal = ({ requestNumber, onClose, onRefresh }) => {
             </span>
             {request.reviewCycle && request.reviewCycle > 1 && (
               <span className="text-xs bg-purple-100 text-purple-700 px-3 py-1 rounded-full font-medium">
-                Cycle {request.reviewCycle}
+                Mzunguko {request.reviewCycle}
               </span>
             )}
           </div>
@@ -465,11 +468,11 @@ const CustomerRequestModal = ({ requestNumber, onClose, onRefresh }) => {
                   </div>
                   <div className="flex-1 w-full">
                     <h3 className="text-sm font-semibold text-blue-800 mb-1">
-                      Your Request Has Been Reviewed!
+                      Order Yako Limekaguliwa!
                     </h3>
                     <p className="text-sm text-blue-700">
-                      Please review the changes below. You can either{" "}
-                      <strong>Accept</strong> or <strong>Amend</strong> it.
+                      Tafadhali kagua mabadiliko hapa chini. Unaweza
+                      <strong> Kubali</strong> au <strong>Rekebisha</strong>.
                     </p>
                     <div className="flex flex-wrap gap-3 mt-4">
                       <button
@@ -482,7 +485,7 @@ const CustomerRequestModal = ({ requestNumber, onClose, onRefresh }) => {
                         ) : (
                           <FaCheck className="w-4 h-4" />
                         )}
-                        Accept
+                        Kubali
                       </button>
                       <button
                         onClick={() => setIsAmending(true)}
@@ -490,7 +493,7 @@ const CustomerRequestModal = ({ requestNumber, onClose, onRefresh }) => {
                         className="px-5 py-2 bg-blue-500 text-white font-semibold rounded-lg hover:bg-blue-600 hover:shadow-lg transition-all duration-300 disabled:opacity-50 flex items-center gap-2 text-sm"
                       >
                         <FaEdit className="w-4 h-4" />
-                        Amend
+                        Rekebisha
                       </button>
                     </div>
                   </div>
@@ -504,7 +507,7 @@ const CustomerRequestModal = ({ requestNumber, onClose, onRefresh }) => {
               <div className="flex items-center justify-between mb-4">
                 <h3 className="text-base font-bold text-gray-800 flex items-center gap-2">
                   <FaEdit className="text-blue-500" />
-                  Amend Request
+                  Rekebisha Order
                 </h3>
                 <button
                   onClick={() => setIsAmending(false)}
@@ -516,7 +519,7 @@ const CustomerRequestModal = ({ requestNumber, onClose, onRefresh }) => {
               <form onSubmit={handleAmendRequest}>
                 <div className="mb-4">
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Items <span className="text-red-500">*</span>
+                    Bidhaa <span className="text-red-500">*</span>
                   </label>
                   <div className="flex flex-col sm:flex-row gap-2 mb-3">
                     <select
@@ -526,7 +529,7 @@ const CustomerRequestModal = ({ requestNumber, onClose, onRefresh }) => {
                         setNewItem({ ...newItem, itemId: e.target.value })
                       }
                     >
-                      <option value="">Select an item</option>
+                      <option value="">Chagua bidhaa</option>
                       {availableItems.map((item) => (
                         <option key={item._id} value={item._id}>
                           {item.name}
@@ -551,7 +554,7 @@ const CustomerRequestModal = ({ requestNumber, onClose, onRefresh }) => {
                       className="px-4 py-2 bg-blue-500 text-white font-semibold rounded-lg hover:bg-blue-600 transition-all duration-200 flex items-center gap-2 text-sm whitespace-nowrap"
                     >
                       <FaPlus className="w-3 h-3" />
-                      Add
+                      Ongeza
                     </button>
                   </div>
                   <div className="space-y-2 max-h-40 overflow-y-auto">
@@ -603,7 +606,7 @@ const CustomerRequestModal = ({ requestNumber, onClose, onRefresh }) => {
                     ))}
                     {amendmentData.items.length === 0 && (
                       <p className="text-sm text-gray-400 text-center py-2">
-                        No items added yet.
+                        Hakuna bidhaa zilizoongezwa bado.
                       </p>
                     )}
                   </div>
@@ -612,7 +615,7 @@ const CustomerRequestModal = ({ requestNumber, onClose, onRefresh }) => {
                 <div className="mb-4">
                   <label className="block text-sm font-medium text-gray-700 mb-1.5">
                     <FaCalendarAlt className="inline mr-1 text-gray-500" />
-                    Requested Delivery Date{" "}
+                    Tarehe Inayotakiwa ya Uwasilishaji{" "}
                     <span className="text-red-500">*</span>
                   </label>
                   <input
@@ -630,7 +633,7 @@ const CustomerRequestModal = ({ requestNumber, onClose, onRefresh }) => {
                   />
                   {request.requestedDeliveryDate && (
                     <p className="text-xs text-gray-500 mt-1">
-                      Previous: {formatDate(request.requestedDeliveryDate)}
+                      Iliyopita: {formatDate(request.requestedDeliveryDate)}
                     </p>
                   )}
                 </div>
@@ -638,12 +641,12 @@ const CustomerRequestModal = ({ requestNumber, onClose, onRefresh }) => {
                 <div className="mb-4">
                   <label className="block text-sm font-medium text-gray-700 mb-1.5">
                     <FaStickyNote className="inline mr-1 text-gray-500" />
-                    Comment to Staff
+                    Maoni kwa Wafanyakazi
                   </label>
                   <textarea
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-300 resize-none text-sm bg-white"
                     rows="2"
-                    placeholder="Add any comments about your amendments..."
+                    placeholder="Andika maoni yako kuhusu marekebisho..."
                     value={amendmentData.customerComment}
                     onChange={(e) =>
                       setAmendmentData((prev) => ({
@@ -660,7 +663,7 @@ const CustomerRequestModal = ({ requestNumber, onClose, onRefresh }) => {
                     onClick={() => setIsAmending(false)}
                     className="flex-1 px-4 py-2 border border-gray-300 text-gray-600 font-semibold rounded-lg hover:bg-gray-100 text-sm"
                   >
-                    Cancel
+                    Ghairi
                   </button>
                   <button
                     type="submit"
@@ -672,7 +675,7 @@ const CustomerRequestModal = ({ requestNumber, onClose, onRefresh }) => {
                     ) : (
                       <FaSave className="w-4 h-4" />
                     )}
-                    Submit Amendments
+                    Tuma Marekebisho
                   </button>
                 </div>
               </form>
@@ -684,7 +687,7 @@ const CustomerRequestModal = ({ requestNumber, onClose, onRefresh }) => {
             <div className="flex items-center gap-3">
               <FaUser className="text-emerald-500 flex-shrink-0" />
               <div className="min-w-0">
-                <p className="text-xs text-gray-400">Name</p>
+                <p className="text-xs text-gray-400">Jina</p>
                 <p className="font-medium text-gray-800 text-sm truncate">
                   {request.customerName}
                 </p>
@@ -693,7 +696,7 @@ const CustomerRequestModal = ({ requestNumber, onClose, onRefresh }) => {
             <div className="flex items-center gap-3">
               <FaPhone className="text-blue-500 flex-shrink-0" />
               <div className="min-w-0">
-                <p className="text-xs text-gray-400">Phone</p>
+                <p className="text-xs text-gray-400">Simu</p>
                 <p className="font-medium text-gray-800 text-sm truncate">
                   {request.customerPhone}
                 </p>
@@ -702,7 +705,7 @@ const CustomerRequestModal = ({ requestNumber, onClose, onRefresh }) => {
             <div className="flex items-center gap-3">
               <FaCalendarAlt className="text-amber-500 flex-shrink-0" />
               <div className="min-w-0">
-                <p className="text-xs text-gray-400">Requested Delivery</p>
+                <p className="text-xs text-gray-400">Tarehe Inayotakiwa</p>
                 <p className="font-medium text-gray-800 text-sm truncate">
                   {request.requestedDeliveryDate
                     ? formatDate(request.requestedDeliveryDate)
@@ -714,14 +717,16 @@ const CustomerRequestModal = ({ requestNumber, onClose, onRefresh }) => {
               <div className="flex items-center gap-3 bg-emerald-50 p-2 rounded-lg border border-emerald-200">
                 <FaRegCalendarCheck className="text-emerald-500 flex-shrink-0" />
                 <div className="min-w-0">
-                  <p className="text-xs text-emerald-600">Approved Delivery</p>
+                  <p className="text-xs text-emerald-600">
+                    Tarehe Iliyokubaliwa
+                  </p>
                   <div className="flex flex-wrap items-center gap-2">
                     <p className="font-medium text-emerald-700 text-sm">
                       {formatDate(request.approvedDeliveryDate)}
                     </p>
                     {request.deliveryDateChanged && (
                       <span className="text-[10px] bg-amber-100 text-amber-700 px-2 py-0.5 rounded-full font-medium">
-                        Changed
+                        Imebadilishwa
                       </span>
                     )}
                   </div>
@@ -741,7 +746,7 @@ const CustomerRequestModal = ({ requestNumber, onClose, onRefresh }) => {
               <div className="flex flex-wrap items-center gap-2">
                 <FaBoxOpen className="text-gray-500 flex-shrink-0" />
                 <span className="font-semibold text-gray-700 text-sm">
-                  Items ({request.items?.length || 0})
+                  Bidhaa ({request.items?.length || 0})
                 </span>
                 {request.status === "Awaiting Customer Confirmation" && (
                   <div className="flex items-center gap-1 ml-2 text-xs">
@@ -801,7 +806,13 @@ const CustomerRequestModal = ({ requestNumber, onClose, onRefresh }) => {
                         <span
                           className={`text-[10px] px-2 py-0.5 rounded-full font-medium ${getItemStatusBadge(item.status)}`}
                         >
-                          {item.status}
+                          {item.status === "Pending"
+                            ? "Inasubiriwa"
+                            : item.status === "Accepted"
+                              ? "Imekubaliwa"
+                              : item.status === "Rejected"
+                                ? "Imekataliwa"
+                                : item.status}
                         </span>
                       )}
                       {item.status === "Rejected" && item.rejectionReason && (
@@ -834,7 +845,7 @@ const CustomerRequestModal = ({ requestNumber, onClose, onRefresh }) => {
                 <div className="flex items-center gap-2">
                   <FaFileAlt className="text-gray-500 flex-shrink-0" />
                   <span className="font-semibold text-gray-700 text-sm">
-                    Review Information
+                    Maelezo ya Ukaguzi
                   </span>
                 </div>
                 {expandedSections.reviewInfo ? (
@@ -849,11 +860,11 @@ const CustomerRequestModal = ({ requestNumber, onClose, onRefresh }) => {
                     <div className="flex items-center gap-2 text-gray-600">
                       <FaUser className="w-3.5 h-3.5 text-gray-400 flex-shrink-0" />
                       <span>
-                        Reviewed by:{" "}
+                        Imekaguliwa na:{" "}
                         <span className="font-medium text-gray-800">
                           {request.reviewedBy?.name ||
                             request.reviewedBy?.fullName ||
-                            "Staff"}
+                            "Wafanyakazi"}
                         </span>
                       </span>
                     </div>
@@ -862,7 +873,7 @@ const CustomerRequestModal = ({ requestNumber, onClose, onRefresh }) => {
                     <div className="flex items-center gap-2 text-gray-600">
                       <FaRegClock className="w-3.5 h-3.5 text-gray-400 flex-shrink-0" />
                       <span>
-                        Reviewed on:{" "}
+                        Ime kaguliwa tarehe:{" "}
                         <span className="font-medium text-gray-800">
                           {formatDateTime(request.reviewedAt)}
                         </span>
@@ -872,7 +883,7 @@ const CustomerRequestModal = ({ requestNumber, onClose, onRefresh }) => {
                   {request.reviewNotes && (
                     <div className="mt-1 p-2 bg-gray-50 rounded-lg border border-gray-200">
                       <p className="text-xs text-gray-400 uppercase font-medium mb-0.5">
-                        Notes
+                        Maelezo
                       </p>
                       <p className="text-sm text-gray-700">
                         {request.reviewNotes}
@@ -882,7 +893,7 @@ const CustomerRequestModal = ({ requestNumber, onClose, onRefresh }) => {
                   {request.deliveryDateChangeReason && (
                     <div className="mt-1 p-2 bg-amber-50 rounded-lg border border-amber-200">
                       <p className="text-xs text-amber-600 uppercase font-medium mb-0.5">
-                        Delivery Date Change Reason
+                        Sababu ya Mabadiliko ya Tarehe
                       </p>
                       <p className="text-sm text-amber-700">
                         {request.deliveryDateChangeReason}
@@ -909,7 +920,7 @@ const CustomerRequestModal = ({ requestNumber, onClose, onRefresh }) => {
                 <div className="flex items-center gap-2">
                   <FaHistory className="text-gray-500 flex-shrink-0" />
                   <span className="font-semibold text-gray-700 text-sm">
-                    Amendment History ({request.amendmentHistory.length})
+                    Historia ya Marekebisho ({request.amendmentHistory.length})
                   </span>
                 </div>
                 {expandedSections.amendmentHistory ? (
@@ -927,7 +938,7 @@ const CustomerRequestModal = ({ requestNumber, onClose, onRefresh }) => {
                     >
                       <div className="flex flex-wrap items-center justify-between mb-2 gap-2">
                         <span className="text-sm font-semibold text-gray-700">
-                          Amendment #{amendment.cycle}
+                          Marekebisho #{amendment.cycle}
                         </span>
                         <span className="text-xs text-gray-500">
                           {formatDateTime(amendment.amendedAt)}
@@ -941,7 +952,7 @@ const CustomerRequestModal = ({ requestNumber, onClose, onRefresh }) => {
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
                         <div>
                           <p className="text-gray-400 font-medium mb-0.5">
-                            Previous Items
+                            Bidhaa Zilizopita
                           </p>
                           <div className="space-y-0.5">
                             {amendment.previousItems?.map((i, idx) => (
@@ -951,13 +962,13 @@ const CustomerRequestModal = ({ requestNumber, onClose, onRefresh }) => {
                             ))}
                             {(!amendment.previousItems ||
                               amendment.previousItems.length === 0) && (
-                              <p className="text-gray-400">No items</p>
+                              <p className="text-gray-400">Hakuna bidhaa</p>
                             )}
                           </div>
                         </div>
                         <div>
                           <p className="text-gray-400 font-medium mb-0.5">
-                            New Items
+                            Bidhaa Mpya
                           </p>
                           <div className="space-y-0.5">
                             {amendment.newItems?.map((i, idx) => (
@@ -967,7 +978,7 @@ const CustomerRequestModal = ({ requestNumber, onClose, onRefresh }) => {
                             ))}
                             {(!amendment.newItems ||
                               amendment.newItems.length === 0) && (
-                              <p className="text-gray-400">No items</p>
+                              <p className="text-gray-400">Hakuna bidhaa</p>
                             )}
                           </div>
                         </div>
@@ -976,7 +987,7 @@ const CustomerRequestModal = ({ requestNumber, onClose, onRefresh }) => {
                         <div className="mt-2 pt-1 border-t border-gray-200 text-xs">
                           <div className="flex flex-wrap justify-between gap-1">
                             <span className="text-gray-400">
-                              Previous Delivery:
+                              Tarehe Iliyopita:
                             </span>
                             <span className="text-gray-600">
                               {formatDate(
@@ -985,7 +996,7 @@ const CustomerRequestModal = ({ requestNumber, onClose, onRefresh }) => {
                             </span>
                           </div>
                           <div className="flex flex-wrap justify-between gap-1">
-                            <span className="text-gray-400">New Delivery:</span>
+                            <span className="text-gray-400">Tarehe Mpya:</span>
                             <span className="text-gray-600">
                               {formatDate(amendment.newRequestedDeliveryDate)}
                             </span>
@@ -1006,7 +1017,7 @@ const CustomerRequestModal = ({ requestNumber, onClose, onRefresh }) => {
                 <FaStickyNote className="text-amber-500 flex-shrink-0 mt-0.5" />
                 <div className="min-w-0">
                   <p className="text-xs text-amber-600 uppercase font-medium mb-0.5">
-                    Notes
+                    Maelezo
                   </p>
                   <p className="text-sm text-gray-700 break-words">
                     {request.notes}
@@ -1021,7 +1032,7 @@ const CustomerRequestModal = ({ requestNumber, onClose, onRefresh }) => {
             <div>
               <h3 className="text-sm font-semibold text-gray-700 mb-3 flex items-center gap-2">
                 <FaList className="text-gray-500" />
-                Timeline
+                Muda
               </h3>
               <div className="space-y-3 max-h-[200px] overflow-y-auto">
                 {request.timeline.map((event, index) => (
@@ -1066,8 +1077,8 @@ const CustomerRequestModal = ({ requestNumber, onClose, onRefresh }) => {
   );
 };
 
-// Main ReuestOrder Component
-const ReuestOrder = () => {
+// Main RequestOrder Component
+const RequestOrder = () => {
   const [items, setItems] = useState([]);
   const [filteredItems, setFilteredItems] = useState([]);
   const [searchTerm, setSearchTerm] = useState("");
@@ -1110,7 +1121,10 @@ const ReuestOrder = () => {
       setItems(res.data.data);
       setFilteredItems(res.data.data);
     } catch (err) {
-      showToast("Failed to load items. Please refresh the page.", "error");
+      showToast(
+        "Imeshindwa kupakia bidhaa. Tafadhali onyesha upya ukurasa.",
+        "error",
+      );
     }
   };
 
@@ -1156,7 +1170,7 @@ const ReuestOrder = () => {
       prev.map((c) => {
         if (c.itemId === itemId) {
           if (qty > c.stock) {
-            showToast(`Only ${c.stock} ${c.name}(s) available.`, "error");
+            showToast(`${c.name} zilizobaki ni ${c.stock} tu.`, "error");
             return c;
           }
           return { ...c, quantity: qty };
@@ -1169,41 +1183,47 @@ const ReuestOrder = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!customerName.trim()) {
-      showToast("Please enter your full name", "error");
+      showToast("Tafadhali ingiza jina lako kamili", "error");
       return;
     }
     if (!customerPhone.trim()) {
-      showToast("Please enter your phone number", "error");
+      showToast("Tafadhali ingiza namba yako ya simu", "error");
       return;
     }
     if (!/^[0-9+\-\s()]{10,15}$/.test(customerPhone.trim())) {
-      showToast("Please enter a valid phone number (10-15 digits)", "error");
+      showToast(
+        "Tafadhali ingiza namba halali ya simu (10-15 tarakimu)",
+        "error",
+      );
       return;
     }
     if (!requestedDeliveryDate) {
-      showToast("Please select a delivery date", "error");
+      showToast("Tafadhali chagua tarehe ya uwasilishaji", "error");
       return;
     }
     const selectedDate = new Date(requestedDeliveryDate);
     const today = new Date();
     today.setHours(0, 0, 0, 0);
     if (selectedDate < today) {
-      showToast("Delivery date cannot be in the past", "error");
+      showToast("Tarehe ya uwasilishaji haiwezi kuwa ya nyuma", "error");
       return;
     }
     if (cart.length === 0) {
-      showToast("Please add at least one item to your request", "error");
+      showToast(
+        "Tafadhali ongeza angalau bidhaa moja kwenye ombi lako",
+        "error",
+      );
       return;
     }
     for (const cartItem of cart) {
       const item = items.find((i) => i._id === cartItem.itemId);
       if (!item) {
-        showToast(`Item ${cartItem.name} no longer exists.`, "error");
+        showToast(`Bidhaa ${cartItem.name} haipo tena.`, "error");
         return;
       }
       if (item.itemQuantity < cartItem.quantity) {
         showToast(
-          `Only ${item.itemQuantity} ${item.name}(s) available.`,
+          `${item.name} zilizobaki ni ${item.itemQuantity} tu.`,
           "error",
         );
         return;
@@ -1222,10 +1242,10 @@ const ReuestOrder = () => {
       setRequestNumber(res.data.data.requestNumber);
       setSubmitted(true);
       setCart([]);
-      showToast("Request submitted successfully!", "success");
+      showToast("Ombi limetumwa kikamilifu!", "success");
     } catch (error) {
       showToast(
-        error.response?.data?.message || "Failed to submit request",
+        error.response?.data?.message || "Imeshindwa kutuma ombi",
         "error",
       );
     } finally {
@@ -1245,7 +1265,7 @@ const ReuestOrder = () => {
 
   const checkStatus = () => {
     if (!checkNumber.trim()) {
-      setStatusError("Please enter a request number");
+      setStatusError("Tafadhali ingiza namba ya Order");
       return;
     }
     setStatusError("");
@@ -1289,7 +1309,7 @@ const ReuestOrder = () => {
   );
 
   const formatCurrency = (amount) => {
-    return new Intl.NumberFormat("en-US", {
+    return new Intl.NumberFormat("sw-TZ", {
       style: "currency",
       currency: "TZS",
       minimumFractionDigits: 0,
@@ -1329,10 +1349,10 @@ const ReuestOrder = () => {
             </h1>
             <div className="h-1 w-20 bg-gradient-to-r from-emerald-400 to-teal-400 rounded-full mx-auto mb-4"></div>
             <p className="text-gray-600 text-base sm:text-lg mb-1">
-              Welcome to your trusted online store
+              Karibu kwenye duka lako la mtandaoni
             </p>
             <p className="text-gray-400 text-sm mb-8">
-              Quality products, delivered with care
+              Bidhaa bora, zinawasilishwa kwa uangalifu
             </p>
             <div className="space-y-4">
               <button
@@ -1343,7 +1363,7 @@ const ReuestOrder = () => {
                 className="w-full bg-gradient-to-r from-emerald-500 to-teal-500 text-white font-semibold py-4 px-6 rounded-xl hover:shadow-xl hover:shadow-emerald-200 transition-all duration-300 hover:scale-[1.02] active:scale-95 flex items-center justify-center gap-3 text-base sm:text-lg"
               >
                 <FaShoppingBag className="text-xl" />
-                Start Your Order Request
+                Anza Ombi Lako
                 <FaArrowRight className="text-sm" />
               </button>
               <div className="relative">
@@ -1352,7 +1372,7 @@ const ReuestOrder = () => {
                 </div>
                 <div className="relative flex justify-center text-xs">
                   <span className="px-4 bg-white text-gray-400">
-                    or track your request
+                    au fukilia ombi lako
                   </span>
                 </div>
               </div>
@@ -1363,13 +1383,13 @@ const ReuestOrder = () => {
                       <FaSearch className="text-emerald-600" />
                     </div>
                     <span className="text-sm font-medium whitespace-nowrap">
-                      Track Request
+                      Fukilia Ombi
                     </span>
                   </div>
                   <div className="flex-1 w-full flex flex-col sm:flex-row gap-2">
                     <input
                       type="text"
-                      placeholder="Enter request number (e.g., REQ-20260115-0001)"
+                      placeholder="Ingiza namba ya Order (mfano: REQ-20260115-0001)"
                       value={checkNumber}
                       onChange={(e) => setCheckNumber(e.target.value)}
                       onKeyPress={(e) => e.key === "Enter" && checkStatus()}
@@ -1385,14 +1405,14 @@ const ReuestOrder = () => {
                       ) : (
                         <>
                           <FaSearch className="w-4 h-4" />
-                          Check Status
+                          Angalia Hali
                         </>
                       )}
                     </button>
                   </div>
                 </div>
                 <div className="mt-2 text-xs text-gray-400 text-left">
-                  💡 Enter your request number to track its status
+                  💡 Ingiza namba yako ya ombi ili kuangalia hali yake
                 </div>
                 {statusError && (
                   <div className="mt-3 text-red-600 text-sm flex items-center gap-2 bg-red-50 p-2 rounded-lg border border-red-200">
@@ -1403,7 +1423,7 @@ const ReuestOrder = () => {
               </div>
             </div>
             <p className="text-xs text-gray-400 mt-6">
-              © 2026 UZA ONLINE SHOP. All rights reserved.
+              © 2026 UZA ONLINE SHOP. Haki zote zimehifadhiwa.
             </p>
           </div>
         </div>
@@ -1426,22 +1446,22 @@ const ReuestOrder = () => {
             <FaCheckCircle className="text-white text-5xl" />
           </div>
           <h2 className="text-2xl sm:text-3xl font-bold text-gray-800 mb-2">
-            Request Submitted! 🎉
+            Ombi Limetumwa! 🎉
           </h2>
-          <p className="text-gray-600 mb-1">Your request number:</p>
+          <p className="text-gray-600 mb-1">Namba yako ya ombi:</p>
           <p className="text-xl sm:text-2xl font-mono font-bold text-transparent bg-gradient-to-r from-emerald-600 to-teal-600 bg-clip-text mb-4 break-all">
             {requestNumber}
           </p>
           <div className="bg-gradient-to-r from-emerald-50 to-teal-50 rounded-xl p-5 mb-8 border border-emerald-200">
             <p className="text-sm text-gray-700">
-              📌 Save this number to check your order status later.
+              📌 Hifadhi namba hii ili kuangalia hali ya ombi lako baadaye.
             </p>
             <button
               onClick={() => openRequestModal(requestNumber)}
               className="mt-3 text-sm text-emerald-600 font-medium hover:text-emerald-700 transition-colors flex items-center gap-2 mx-auto"
             >
               <FaSearch className="w-4 h-4" />
-              Track this request
+              Fukilia ombi hili
             </button>
           </div>
           <button
@@ -1449,7 +1469,7 @@ const ReuestOrder = () => {
             className="w-full bg-gradient-to-r from-emerald-500 to-teal-500 text-white font-semibold py-3.5 px-6 rounded-xl hover:shadow-xl hover:shadow-emerald-200 transition-all duration-300 hover:scale-[1.02] active:scale-95 flex items-center justify-center gap-2"
           >
             <FaPlus className="w-4 h-4" />
-            Place Another Request
+            Weka Ombi Lingine
           </button>
         </div>
       </div>
@@ -1489,10 +1509,10 @@ const ReuestOrder = () => {
               </div>
               <div className="min-w-0">
                 <h1 className="text-lg sm:text-2xl font-bold text-gray-800 truncate">
-                  Order Request
+                  Weka Order
                 </h1>
                 <p className="text-[10px] sm:text-xs text-gray-500 hidden sm:block">
-                  Submit your request for review
+                  Tuma Order yako kwa ukaguzi
                 </p>
               </div>
             </div>
@@ -1512,7 +1532,7 @@ const ReuestOrder = () => {
               <div className="hidden lg:flex items-center gap-3 bg-emerald-50 px-4 py-2 rounded-full border border-emerald-200">
                 <FaShoppingCart className="text-emerald-600" />
                 <span className="font-semibold text-emerald-700">
-                  {cart.length} item{cart.length !== 1 ? "s" : ""}
+                  {cart.length} bidhaa
                 </span>
                 <span className="w-px h-4 bg-emerald-300"></span>
                 <span className="font-bold text-emerald-700">
@@ -1539,7 +1559,7 @@ const ReuestOrder = () => {
             >
               <div className="flex items-center justify-center gap-2">
                 <FaBoxOpen className="text-sm" />
-                Items
+                Bidhaa
                 <span className="text-xs opacity-75">
                   ({filteredItems.length})
                 </span>
@@ -1555,7 +1575,7 @@ const ReuestOrder = () => {
             >
               <div className="flex items-center justify-center gap-2">
                 <FaShoppingCart className="text-sm" />
-                Cart
+                Order
                 <span className="text-xs opacity-75">({cart.length})</span>
               </div>
             </button>
@@ -1575,13 +1595,13 @@ const ReuestOrder = () => {
                     <FaSearch className="text-emerald-600" />
                   </div>
                   <span className="text-base font-semibold">
-                    Track Your Request
+                    Fuatilia Order Yako
                   </span>
                 </div>
                 <div className="flex flex-col sm:flex-row gap-3">
                   <input
                     type="text"
-                    placeholder="Enter request number (e.g., REQ-20260115-0001)"
+                    placeholder="Ingiza namba ya Order (mfano: REQ-20260115-0001)"
                     value={checkNumber}
                     onChange={(e) => setCheckNumber(e.target.value)}
                     onKeyPress={(e) => e.key === "Enter" && checkStatus()}
@@ -1597,13 +1617,13 @@ const ReuestOrder = () => {
                     ) : (
                       <>
                         <FaSearch className="w-4 h-4" />
-                        Check Status
+                        Search Order
                       </>
                     )}
                   </button>
                 </div>
                 <div className="text-xs text-gray-400">
-                  💡 Enter your request number to check its current status
+                  💡 Ingiza namba yako ya Order ili kuangalia hali yake
                 </div>
               </div>
               {statusError && (
@@ -1619,14 +1639,14 @@ const ReuestOrder = () => {
               <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-6 gap-3">
                 <div>
                   <h2 className="text-xl sm:text-2xl font-bold text-gray-800">
-                    Available Items
+                    Bidhaa Zilizopo
                   </h2>
                   <p className="text-sm text-gray-500">
-                    Select items to add to your request
+                    Chagua bidhaa kuongeza kwenye Order yako
                   </p>
                 </div>
                 <span className="text-sm text-gray-400 bg-white px-4 py-1.5 rounded-full border border-gray-200 whitespace-nowrap">
-                  {filteredItems.length} items
+                  {filteredItems.length} bidhaa
                 </span>
               </div>
 
@@ -1635,7 +1655,7 @@ const ReuestOrder = () => {
                   <FaSearch className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" />
                   <input
                     type="text"
-                    placeholder="Search items by name..."
+                    placeholder="Tafuta bidhaa kwa jina..."
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
                     className="w-full pl-12 pr-12 py-3.5 rounded-xl border border-gray-200 focus:border-emerald-400 focus:ring-2 focus:ring-emerald-200 outline-none transition-all bg-white text-sm"
@@ -1651,7 +1671,7 @@ const ReuestOrder = () => {
                 </div>
                 {searchTerm && filteredItems.length === 0 && (
                   <p className="mt-3 text-sm text-gray-500 bg-amber-50 p-3 rounded-lg border border-amber-200">
-                    No items found matching
+                    Hakuna bidhaa zinazolingana
                   </p>
                 )}
               </div>
@@ -1680,11 +1700,11 @@ const ReuestOrder = () => {
                         {item.enableWholesale && item.wholesalePrice > 0 && (
                           <div className="mt-2 flex flex-wrap items-center gap-2">
                             <span className="text-[10px] bg-emerald-100 text-emerald-700 px-2 py-0.5 rounded-full font-medium">
-                              Wholesale
+                              Jumla
                             </span>
                             <span className="text-xs text-gray-500">
-                              {formatCurrency(item.wholesalePrice)} (min{" "}
-                              {item.wholesaleMinQty})
+                              {formatCurrency(item.wholesalePrice)} (kiwango cha
+                              chini {item.wholesaleMinQty})
                             </span>
                           </div>
                         )}
@@ -1694,7 +1714,7 @@ const ReuestOrder = () => {
                         className="w-full font-semibold py-3 px-4 rounded-xl transition-all duration-300 bg-gradient-to-r from-emerald-500 to-teal-500 text-white hover:shadow-lg hover:shadow-emerald-200 hover:scale-[1.02] active:scale-95 flex items-center justify-center gap-2 text-sm"
                       >
                         <FaPlus className="text-xs" />
-                        Add to Request
+                        Weka kwenye Order
                       </button>
                     </div>
                   </div>
@@ -1710,16 +1730,16 @@ const ReuestOrder = () => {
                       <FaSearch className="text-gray-400 text-4xl" />
                     </div>
                     <h3 className="text-lg font-semibold text-gray-600 mb-2">
-                      No items found
+                      Hakuna bidhaa zilizopatikana
                     </h3>
                     <p className="text-sm text-gray-400">
-                      Try adjusting your search term
+                      Jaribu kubadilisha maneno ya utafutaji
                     </p>
                     <button
                       onClick={() => setSearchTerm("")}
                       className="mt-4 text-emerald-600 font-medium hover:text-emerald-700 transition-colors text-sm"
                     >
-                      Clear search
+                      Futa utafutaji
                     </button>
                   </div>
                 )}
@@ -1735,7 +1755,7 @@ const ReuestOrder = () => {
                     <FaShoppingCart className="text-white text-xl" />
                   </div>
                   <h2 className="text-xl font-bold text-gray-800">
-                    Your Request
+                    Order Yako
                   </h2>
                   <span className="ml-auto bg-emerald-100 text-emerald-700 px-3 py-1 rounded-full text-sm font-semibold">
                     {cart.length}
@@ -1746,10 +1766,10 @@ const ReuestOrder = () => {
                   <div className="text-center py-12">
                     <FaShoppingCart className="text-gray-300 text-5xl mx-auto mb-4" />
                     <p className="text-gray-400 font-medium">
-                      Your cart is empty
+                      Hakuna bidhaa kwenye Order
                     </p>
                     <p className="text-gray-400 text-sm mt-1">
-                      Add items from the list
+                      Ongeza bidhaa kutoka kwenye orodha
                     </p>
                   </div>
                 ) : (
@@ -1818,7 +1838,7 @@ const ReuestOrder = () => {
                               </span>
                             </div>
                             <div className="mt-2 text-[10px] text-gray-400 flex justify-end">
-                              Stock: {c.stock} units
+                              Zilizobaki: {c.stock}
                             </div>
                           </div>
                         );
@@ -1827,7 +1847,7 @@ const ReuestOrder = () => {
 
                     <div className="bg-gradient-to-r from-emerald-50 to-teal-50 rounded-xl p-4 mb-4 border border-emerald-200">
                       <div className="flex justify-between items-center">
-                        <span className="text-gray-700 font-medium">Total</span>
+                        <span className="text-gray-700 font-medium">Jumla</span>
                         <span className="text-2xl font-bold text-transparent bg-gradient-to-r from-emerald-600 to-teal-600 bg-clip-text">
                           {formatCurrency(cartTotal)}
                         </span>
@@ -1837,14 +1857,14 @@ const ReuestOrder = () => {
                     <div className="space-y-3.5">
                       <div>
                         <label className="block text-xs font-medium text-gray-500 mb-1">
-                          <FaUser className="inline mr-1" /> Full Name{" "}
+                          <FaUser className="inline mr-1" /> Jina Kamili{" "}
                           <span className="text-red-500">*</span>
                         </label>
                         <div className="relative">
                           <FaUser className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" />
                           <input
                             type="text"
-                            placeholder="e.g., Kibuyu Shop"
+                            placeholder="Mfano: Kibuyu Shop"
                             value={customerName}
                             onChange={(e) => setCustomerName(e.target.value)}
                             required
@@ -1854,14 +1874,14 @@ const ReuestOrder = () => {
                       </div>
                       <div>
                         <label className="block text-xs font-medium text-gray-500 mb-1">
-                          <FaPhone className="inline mr-1" /> Phone Number{" "}
+                          <FaPhone className="inline mr-1" /> Namba ya Simu{" "}
                           <span className="text-red-500">*</span>
                         </label>
                         <div className="relative">
                           <FaPhone className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" />
                           <input
                             type="tel"
-                            placeholder="e.g., 0712345678"
+                            placeholder="Mfano: 0712345678"
                             value={customerPhone}
                             onChange={(e) => setCustomerPhone(e.target.value)}
                             required
@@ -1871,8 +1891,9 @@ const ReuestOrder = () => {
                       </div>
                       <div>
                         <label className="block text-xs font-medium text-gray-500 mb-1">
-                          <FaCalendarAlt className="inline mr-1" /> Preferred
-                          Delivery Date <span className="text-red-500">*</span>
+                          <FaCalendarAlt className="inline mr-1" /> Tarehe
+                          Inayotakiwa ya Uwasilishaji{" "}
+                          <span className="text-red-500">*</span>
                         </label>
                         <div className="relative">
                           <FaCalendarAlt className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" />
@@ -1890,13 +1911,12 @@ const ReuestOrder = () => {
                       </div>
                       <div>
                         <label className="block text-xs font-medium text-gray-500 mb-1">
-                          <FaStickyNote className="inline mr-1" /> Additional
-                          Notes
+                          <FaStickyNote className="inline mr-1" /> Maelezo Zaidi
                         </label>
                         <div className="relative">
                           <FaStickyNote className="absolute left-4 top-4 text-gray-400" />
                           <textarea
-                            placeholder="Any special instructions or comments..."
+                            placeholder="Maagizo maalum au maelezo yoyote..."
                             value={notes}
                             onChange={(e) => setNotes(e.target.value)}
                             rows="2"
@@ -1906,8 +1926,7 @@ const ReuestOrder = () => {
                       </div>
                       <div>
                         <label className="block text-xs font-medium text-gray-500 mb-1">
-                          <FaInfoCircle className="inline mr-1" /> How did you
-                          find us?
+                          <FaInfoCircle className="inline mr-1" /> Ulitupataje?
                         </label>
                         <div className="relative">
                           <FaInfoCircle className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" />
@@ -1916,9 +1935,9 @@ const ReuestOrder = () => {
                             onChange={(e) => setSource(e.target.value)}
                             className="w-full pl-12 pr-4 py-3.5 rounded-xl border border-gray-200 focus:border-emerald-400 focus:ring-2 focus:ring-emerald-200 outline-none transition-all text-sm appearance-none bg-white"
                           >
-                            <option value="Website">Website</option>
+                            <option value="Website">Tovuti</option>
                             <option value="WhatsApp">WhatsApp</option>
-                            <option value="Manual">Manual</option>
+                            <option value="Manual">Mkono</option>
                           </select>
                         </div>
                       </div>
@@ -1932,11 +1951,11 @@ const ReuestOrder = () => {
                       {loading ? (
                         <>
                           <FaSpinner className="animate-spin" />
-                          Submitting...
+                          Inatuma...
                         </>
                       ) : (
                         <>
-                          Submit Request <FaArrowRight className="text-sm" />
+                          Tuma Order <FaArrowRight className="text-sm" />
                         </>
                       )}
                     </button>
@@ -1974,11 +1993,9 @@ const ReuestOrder = () => {
                 </div>
                 <div>
                   <h2 className="text-xl font-bold text-gray-800">
-                    Your Request
+                    Order Yako
                   </h2>
-                  <p className="text-xs text-gray-500">
-                    {cart.length} item{cart.length !== 1 ? "s" : ""}
-                  </p>
+                  <p className="text-xs text-gray-500">{cart.length} bidhaa</p>
                 </div>
               </div>
               <button
@@ -1994,15 +2011,17 @@ const ReuestOrder = () => {
                 <div className="w-20 h-20 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
                   <FaShoppingCart className="text-gray-300 text-4xl" />
                 </div>
-                <p className="text-gray-400 font-medium">Your cart is empty</p>
+                <p className="text-gray-400 font-medium">
+                  Hakuna bidhaa kwenye Order yako
+                </p>
                 <p className="text-gray-400 text-sm mt-1">
-                  Add items from the list below
+                  Ongeza bidhaa kutoka kwenye orodha
                 </p>
                 <button
                   onClick={() => setIsCartOpen(false)}
                   className="mt-4 text-emerald-600 font-medium hover:text-emerald-700 transition-colors"
                 >
-                  Browse items
+                  Tazama bidhaa
                 </button>
               </div>
             ) : (
@@ -2061,7 +2080,7 @@ const ReuestOrder = () => {
                           </span>
                         </div>
                         <div className="mt-1 text-[10px] text-gray-400 text-right">
-                          Stock: {c.stock} units
+                          Zilizobaki: {c.stock}
                         </div>
                       </div>
                     );
@@ -2070,7 +2089,7 @@ const ReuestOrder = () => {
 
                 <div className="bg-gradient-to-r from-emerald-50 to-teal-50 rounded-xl p-4 mb-4 border border-emerald-200">
                   <div className="flex justify-between items-center">
-                    <span className="text-gray-700 font-medium">Total</span>
+                    <span className="text-gray-700 font-medium">Jumla</span>
                     <span className="text-2xl font-bold text-transparent bg-gradient-to-r from-emerald-600 to-teal-600 bg-clip-text">
                       {formatCurrency(cartTotal)}
                     </span>
@@ -2080,14 +2099,14 @@ const ReuestOrder = () => {
                 <div className="space-y-3.5">
                   <div>
                     <label className="block text-xs font-medium text-gray-500 mb-1">
-                      <FaUser className="inline mr-1" /> Full Name{" "}
+                      <FaUser className="inline mr-1" /> Jina Kamili{" "}
                       <span className="text-red-500">*</span>
                     </label>
                     <div className="relative">
                       <FaUser className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" />
                       <input
                         type="text"
-                        placeholder="e.g., John Doe"
+                        placeholder="Mfano: Kibuyu Shop"
                         value={customerName}
                         onChange={(e) => setCustomerName(e.target.value)}
                         required
@@ -2097,14 +2116,14 @@ const ReuestOrder = () => {
                   </div>
                   <div>
                     <label className="block text-xs font-medium text-gray-500 mb-1">
-                      <FaPhone className="inline mr-1" /> Phone Number{" "}
+                      <FaPhone className="inline mr-1" /> Namba ya Simu{" "}
                       <span className="text-red-500">*</span>
                     </label>
                     <div className="relative">
                       <FaPhone className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" />
                       <input
                         type="tel"
-                        placeholder="e.g., 0712345678"
+                        placeholder="Mfano: 0712345678"
                         value={customerPhone}
                         onChange={(e) => setCustomerPhone(e.target.value)}
                         required
@@ -2114,8 +2133,9 @@ const ReuestOrder = () => {
                   </div>
                   <div>
                     <label className="block text-xs font-medium text-gray-500 mb-1">
-                      <FaCalendarAlt className="inline mr-1" /> Preferred
-                      Delivery Date <span className="text-red-500">*</span>
+                      <FaCalendarAlt className="inline mr-1" /> Tarehe
+                      Inayotakiwa ya Uwasilishaji{" "}
+                      <span className="text-red-500">*</span>
                     </label>
                     <div className="relative">
                       <FaCalendarAlt className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" />
@@ -2133,12 +2153,12 @@ const ReuestOrder = () => {
                   </div>
                   <div>
                     <label className="block text-xs font-medium text-gray-500 mb-1">
-                      <FaStickyNote className="inline mr-1" /> Additional Notes
+                      <FaStickyNote className="inline mr-1" /> Maelezo Zaidi
                     </label>
                     <div className="relative">
                       <FaStickyNote className="absolute left-4 top-4 text-gray-400" />
                       <textarea
-                        placeholder="Any special instructions or comments..."
+                        placeholder="Maagizo maalum au maelezo yoyote..."
                         value={notes}
                         onChange={(e) => setNotes(e.target.value)}
                         rows="2"
@@ -2148,8 +2168,7 @@ const ReuestOrder = () => {
                   </div>
                   <div>
                     <label className="block text-xs font-medium text-gray-500 mb-1">
-                      <FaInfoCircle className="inline mr-1" /> How did you find
-                      us?
+                      <FaInfoCircle className="inline mr-1" /> Ulitupataje?
                     </label>
                     <div className="relative">
                       <FaInfoCircle className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" />
@@ -2158,9 +2177,9 @@ const ReuestOrder = () => {
                         onChange={(e) => setSource(e.target.value)}
                         className="w-full pl-12 pr-4 py-3.5 rounded-xl border border-gray-200 focus:border-emerald-400 focus:ring-2 focus:ring-emerald-200 outline-none transition-all text-sm appearance-none bg-white"
                       >
-                        <option value="Website">Website</option>
+                        <option value="Website">Tovuti</option>
                         <option value="WhatsApp">WhatsApp</option>
-                        <option value="Manual">Manual</option>
+                        <option value="Manual">Mkono</option>
                       </select>
                     </div>
                   </div>
@@ -2174,11 +2193,11 @@ const ReuestOrder = () => {
                   {loading ? (
                     <>
                       <FaSpinner className="animate-spin" />
-                      Submitting...
+                      Inatuma...
                     </>
                   ) : (
                     <>
-                      Submit Request <FaArrowRight className="text-sm" />
+                      Tuma Order <FaArrowRight className="text-sm" />
                     </>
                   )}
                 </button>
@@ -2206,4 +2225,4 @@ const ReuestOrder = () => {
   );
 };
 
-export default ReuestOrder;
+export default RequestOrder;

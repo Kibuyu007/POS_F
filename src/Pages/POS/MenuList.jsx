@@ -1,3 +1,4 @@
+// components/MenuList.jsx
 import { useEffect, useState } from "react";
 import MenuCard from "./MenuCard";
 import CartInfo from "./CartInfo";
@@ -15,6 +16,9 @@ const MenuList = () => {
   const [refreshMenu, setRefreshMenu] = useState(false);
   const [showCart, setShowCart] = useState(false);
   const [showBill, setShowBill] = useState(false);
+
+  // NEW: Order payment states
+  const [orderToPay, setOrderToPay] = useState(null);
 
   const formatDate = (date) => {
     const months = [
@@ -48,6 +52,22 @@ const MenuList = () => {
     return () => clearInterval(interval);
   }, []);
 
+  // NEW: Handle refresh menu
+  const handleRefreshMenu = () => {
+    setRefreshMenu((prev) => !prev);
+  };
+
+  // NEW: Handle order payment complete
+  const handleOrderPaymentComplete = () => {
+    setOrderToPay(null);
+    handleRefreshMenu(); // Refresh orders after payment
+  };
+
+  // NEW: Handle order pay from MenuCard
+  const handleOrderPay = (order) => {
+    setOrderToPay(order);
+  };
+
   return (
     <section className="h-[90vh] flex flex-col md:flex-row gap-3 pt-20 sm:pt-24 px-3 sm:px-4 md:px-5 overflow-hidden">
       {/* ==================== LEFT: MENU ITEMS (Products) ==================== */}
@@ -65,7 +85,8 @@ const MenuList = () => {
           </div>
         </div>
 
-        <MenuCard refreshTrigger={refreshMenu} />
+        {/* UPDATED: Pass onOrderPay prop to MenuCard */}
+        <MenuCard refreshTrigger={refreshMenu} onOrderPay={handleOrderPay} />
 
         {/* Mobile: Floating Cart Toggle */}
         <div className="md:hidden fixed bottom-4 right-4 z-40 flex flex-col gap-2">
@@ -97,8 +118,11 @@ const MenuList = () => {
           <CartInfo />
           <hr className="border-gray-800 border-t-2" />
           <hr className="border-gray-800 border-t-2" />
+          {/* UPDATED: Pass orderToPay and handlers to CartBill */}
           <CartBill
-            triggerRefreshMenu={() => setRefreshMenu((prev) => !prev)}
+            triggerRefreshMenu={handleRefreshMenu}
+            orderToPay={orderToPay}
+            onOrderPaymentComplete={handleOrderPaymentComplete}
           />
         </div>
       </div>
@@ -141,8 +165,11 @@ const MenuList = () => {
               <FaChevronDown className="w-5 h-5" />
             </button>
           </div>
+          {/* UPDATED: Pass orderToPay and handlers to CartBill */}
           <CartBill
-            triggerRefreshMenu={() => setRefreshMenu((prev) => !prev)}
+            triggerRefreshMenu={handleRefreshMenu}
+            orderToPay={orderToPay}
+            onOrderPaymentComplete={handleOrderPaymentComplete}
           />
         </div>
       </div>

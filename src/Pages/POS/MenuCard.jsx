@@ -1,3 +1,4 @@
+// components/MenuCard.jsx
 import { useEffect, useState, useCallback } from "react";
 import axios from "axios";
 import { useDispatch, useSelector } from "react-redux";
@@ -28,6 +29,7 @@ import {
   FaCalendar,
   FaCalendarAlt,
   FaExclamationTriangle,
+  FaMoneyBillWave,
 } from "react-icons/fa";
 import {
   MdCategory,
@@ -39,7 +41,7 @@ import toast from "react-hot-toast";
 
 import BASE_URL from "../../Utils/config";
 
-const MenuCard = ({ refreshTrigger }) => {
+const MenuCard = ({ refreshTrigger, onOrderPay }) => {
   const cartData = useSelector((state) => state.cart.cart);
   const zuiaAdd = useSelector((state) => state.cart.receiptPrinted);
   const dispatch = useDispatch();
@@ -119,7 +121,7 @@ const MenuCard = ({ refreshTrigger }) => {
     if (activeTab === "orders") {
       fetchOrders();
     }
-  }, [activeTab]);
+  }, [activeTab, refreshTrigger]);
 
   useEffect(() => {
     if (saleType === "Wholesale") {
@@ -348,7 +350,6 @@ const MenuCard = ({ refreshTrigger }) => {
       return;
     }
 
-    // Check stock first - this is the only restriction
     const quantityInUnits = (itemCounts[item._id] || 1) * packageSize;
     const cartItem = cartData.find(
       (ci) => ci.id === item._id && ci.priceType === saleType,
@@ -363,7 +364,6 @@ const MenuCard = ({ refreshTrigger }) => {
       return;
     }
 
-    // Allow expired items - show warning with icon
     const expiryDate = item.expiryDate || item.expirationDate;
     const isExpired =
       item.status === "Expired" ||
@@ -390,6 +390,11 @@ const MenuCard = ({ refreshTrigger }) => {
       unitsPerPackage: saleType === "Wholesale" ? packageSize : 1,
       expiryDate: expiryDate || null,
       isExpired: isExpired,
+      orderId: null,
+      orderNumber: null,
+      orderItemId: null,
+      fulfillmentStatus: null,
+      isFromOrder: false,
     };
 
     dispatch(addItems(newObj));
@@ -399,6 +404,7 @@ const MenuCard = ({ refreshTrigger }) => {
   };
 
   // ==================== ADD ORDER ITEM TO CART - ORDERS TAB ====================
+  // In MenuCard.jsx - Update handleAddOrderItemToCart
   const handleAddOrderItemToCart = (order, item) => {
     if (!zuiaAdd) {
       toast.error("Please complete the current transaction first");
@@ -410,8 +416,6 @@ const MenuCard = ({ refreshTrigger }) => {
     const retailPrice = item.retailPrice || 0;
     const wholesalePrice = item.wholesalePrice || 0;
     const enableWholesale = item.enableWholesale || false;
-    const expiryDate = item.expiryDate || null;
-    const itemStatus = item.status || "Active";
 
     if (item.itemExists === false) {
       toast.error(`Item ${item.itemName} no longer exists in inventory`);
@@ -422,7 +426,7 @@ const MenuCard = ({ refreshTrigger }) => {
       saleType === "Wholesale" ? wholesalePrice || 0 : retailPrice || 0;
 
     if (!price || price === 0) {
-      toast.error(`${item.itemName} has no price set. Please set price first.`);
+      toast.error(`${item.itemName} has no price set.`);
       return;
     }
 
@@ -431,10 +435,12 @@ const MenuCard = ({ refreshTrigger }) => {
       return;
     }
 
-    // Check stock first - this is the only restriction
     const quantityInUnits = item.quantity * packageSize;
     const cartItem = cartData.find(
-      (ci) => ci.id === item.itemId && ci.priceType === saleType,
+      (ci) =>
+        ci.id === item.itemId &&
+        ci.priceType === saleType &&
+        ci.orderId === order._id,
     );
     const alreadyInCart = cartItem ? cartItem.quantity : 0;
     const totalIfAdded = alreadyInCart + quantityInUnits;
@@ -446,19 +452,9 @@ const MenuCard = ({ refreshTrigger }) => {
       return;
     }
 
-    // Allow expired items - show warning with icon
-    const isExpired =
-      itemStatus === "Expired" ||
-      (expiryDate && new Date(expiryDate) < new Date());
-    if (isExpired) {
-      toast.error(`${item.itemName} is expired. Adding anyway.`, {
-        icon: "⚠️",
-        duration: 3000,
-      });
-    }
-
+    // CRITICAL: Make sure all order fields are set
     const newObj = {
-      id: item.itemId,
+      id: item.itemId || item.item,
       name: item.itemName,
       pricePerQuantity: price,
       quantity: quantityInUnits,
@@ -470,10 +466,18 @@ const MenuCard = ({ refreshTrigger }) => {
       wholesalePrice: wholesalePrice,
       packageSize: saleType === "Wholesale" ? packageSize : 1,
       unitsPerPackage: saleType === "Wholesale" ? packageSize : 1,
-      expiryDate: expiryDate || null,
-      isExpired: isExpired,
+      expiryDate: item.expiryDate || null,
+      isExpired: false,
+      // CRITICAL: These must be set for order tracking
+      orderId: order._id,
+      orderNumber: order.orderNumber,
+      orderItemId: item._id,
+      fulfillmentStatus: item.fulfillmentStatus,
+      isFromOrder: true,
+      discount: 0,
     };
 
+    console.log("Adding order item to cart:", newObj);
     dispatch(addItems(newObj));
     toast.success(
       `✓ ${item.itemName} added to cart from order #${order.orderNumber}`,
@@ -516,7 +520,7 @@ const MenuCard = ({ refreshTrigger }) => {
   const getStatusBadge = (status) => {
     const statusMap = {
       Pending: "bg-yellow-100 text-yellow-700 border-yellow-200",
-      Confirmed: "bg-blue-100 text-blue-700 border-blue-200",
+      "Partially Completed": "bg-blue-100 text-blue-700 border-blue-200",
       Completed: "bg-green-100 text-green-700 border-green-200",
       Cancelled: "bg-red-100 text-red-700 border-red-200",
     };
@@ -527,7 +531,7 @@ const MenuCard = ({ refreshTrigger }) => {
     switch (status) {
       case "Pending":
         return <FaClock className="text-yellow-600" />;
-      case "Confirmed":
+      case "Partially Completed":
         return <FaSpinner className="text-blue-600 animate-spin" />;
       case "Completed":
         return <FaCheckCircle className="text-green-600" />;
@@ -562,6 +566,31 @@ const MenuCard = ({ refreshTrigger }) => {
       ...prev,
       [orderId]: !prev[orderId],
     }));
+  };
+
+  // ==================== HANDLE PAY ORDER ====================
+  const handlePayOrder = (order) => {
+    if (order.status === "Completed") {
+      toast.error("This order is already completed");
+      return;
+    }
+
+    const hasPendingItems = order.items.some(
+      (item) => item.fulfillmentStatus === "Pending",
+    );
+
+    if (!hasPendingItems) {
+      toast.error("All items in this order are already fulfilled");
+      return;
+    }
+
+    if (onOrderPay) {
+      onOrderPay(order);
+    } else {
+      window.dispatchEvent(
+        new CustomEvent("startOrderPayment", { detail: order }),
+      );
+    }
   };
 
   // ==================== LOADING STATE ====================
@@ -674,6 +703,9 @@ const MenuCard = ({ refreshTrigger }) => {
               const displayItems = isExpanded
                 ? order.items
                 : order.items?.slice(0, 3);
+              const hasPendingItems = order.items?.some(
+                (item) => item.fulfillmentStatus === "Pending",
+              );
 
               return (
                 <div
@@ -682,62 +714,97 @@ const MenuCard = ({ refreshTrigger }) => {
                 >
                   {/* Order Header */}
                   <div
-                    className="px-6 py-4 bg-gradient-to-r from-emerald-500 to-teal-500 cursor-pointer hover:from-emerald-600 hover:to-teal-600 transition-colors flex items-center justify-between"
+                    className="px-6 py-4 bg-gradient-to-r from-emerald-500 to-teal-500 cursor-pointer hover:from-emerald-600 hover:to-teal-600 transition-colors"
                     onClick={() => toggleOrderExpand(order._id)}
                   >
-                    <div className="flex items-center gap-3 min-w-0 flex-1 flex-wrap">
-                      <span className="font-mono font-bold text-white text-sm bg-white/20 px-3 py-1 rounded-lg">
-                        #{order.orderNumber || order._id.slice(-6)}
-                      </span>
-                      <span
-                        className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold ${getStatusBadge(order.status)}`}
-                      >
-                        {getStatusIcon(order.status)}
-                        <span>{order.status}</span>
-                      </span>
-                      <span className="text-xs text-white/80 bg-white/20 px-3 py-1 rounded-full">
-                        {order.items?.length || 0} items
-                      </span>
-                    </div>
-                    <div className="flex items-center gap-3 flex-shrink-0">
-                      <div className="text-right text-white">
-                        <div className="text-sm font-bold">
-                          {formatCurrency(order.grandTotal || 0)}
-                        </div>
-                        <div className="text-[10px] text-white/70">
-                          {new Date(order.createdAt).toLocaleDateString()}
-                        </div>
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-3 min-w-0 flex-1 flex-wrap">
+                        <span className="font-mono font-bold text-white text-sm bg-white/20 px-3 py-1 rounded-lg">
+                          #{order.orderNumber || order._id.slice(-6)}
+                        </span>
+                        <span
+                          className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold ${getStatusBadge(order.status)}`}
+                        >
+                          {getStatusIcon(order.status)}
+                          <span>{order.status}</span>
+                        </span>
+                        <span className="text-xs text-white/80 bg-white/20 px-3 py-1 rounded-full">
+                          {order.items?.length || 0} items
+                        </span>
                       </div>
-                      {isExpanded ? (
-                        <FaChevronUp className="w-5 h-5 text-white/80" />
-                      ) : (
-                        <FaChevronDown className="w-5 h-5 text-white/80" />
-                      )}
+                      <div className="flex items-center gap-3 flex-shrink-0">
+                        <div className="text-right text-white">
+                          <div className="text-sm font-bold">
+                            {formatCurrency(order.grandTotal || 0)}
+                          </div>
+                          <div className="text-[10px] text-white/70">
+                            {new Date(order.createdAt).toLocaleDateString()}
+                          </div>
+                        </div>
+                        {isExpanded ? (
+                          <FaChevronUp className="w-5 h-5 text-white/80" />
+                        ) : (
+                          <FaChevronDown className="w-5 h-5 text-white/80" />
+                        )}
+                      </div>
                     </div>
                   </div>
 
-                  {/* Customer Info */}
-                  <div className="px-6 py-3 bg-gray-50 border-b border-gray-200 flex items-center gap-6 text-sm text-gray-600 flex-wrap">
-                    <div className="flex items-center gap-2">
-                      <div className="p-1.5 bg-emerald-100 rounded-full">
-                        <FaUser className="w-3.5 h-3.5 text-emerald-600" />
+                  {/* Customer Info & Pay Button */}
+                  <div className="px-6 py-3 bg-gray-50 border-b border-gray-200 flex flex-wrap items-center justify-between gap-2">
+                    <div className="flex items-center gap-4 text-sm text-gray-600 flex-wrap">
+                      <div className="flex items-center gap-2">
+                        <div className="p-1.5 bg-emerald-100 rounded-full">
+                          <FaUser className="w-3.5 h-3.5 text-emerald-600" />
+                        </div>
+                        <span className="font-medium">
+                          {order.customerName}
+                        </span>
                       </div>
-                      <span className="font-medium">{order.customerName}</span>
+                      <div className="flex items-center gap-2">
+                        <div className="p-1.5 bg-blue-100 rounded-full">
+                          <FaPhone className="w-3.5 h-3.5 text-blue-600" />
+                        </div>
+                        <span>{order.customerPhone}</span>
+                      </div>
+                      {order.paymentStatus && (
+                        <div className="flex items-center gap-2">
+                          <span className="text-xs px-2 py-1 rounded-full bg-gray-200 text-gray-700">
+                            {order.paymentStatus}
+                          </span>
+                          {order.balance > 0 && (
+                            <span className="text-xs font-semibold text-red-600">
+                              Balance: {formatCurrency(order.balance)}
+                            </span>
+                          )}
+                        </div>
+                      )}
                     </div>
-                    <div className="flex items-center gap-2">
-                      <div className="p-1.5 bg-blue-100 rounded-full">
-                        <FaPhone className="w-3.5 h-3.5 text-blue-600" />
-                      </div>
-                      <span>{order.customerPhone}</span>
-                    </div>
-                    <div className="flex items-center gap-2 ml-auto">
-                      <div className="p-1.5 bg-gray-200 rounded-full">
-                        <FaCalendar className="w-3.5 h-3.5 text-gray-600" />
-                      </div>
-                      <span className="text-xs">
-                        {new Date(order.createdAt).toLocaleDateString()}
+
+                    {/* PAY ORDER BUTTON */}
+                    {order.status !== "Completed" && hasPendingItems && (
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handlePayOrder(order);
+                        }}
+                        className="px-4 py-2 bg-gradient-to-r from-emerald-500 to-teal-500 text-white rounded-lg text-sm font-semibold hover:shadow-lg transition flex items-center gap-2 hover:scale-105 transform"
+                      >
+                        <FaMoneyBillWave className="w-4 h-4" />
+                        Pay Order
+                      </button>
+                    )}
+                    {order.status === "Completed" && (
+                      <span className="text-xs bg-green-100 text-green-700 px-3 py-1.5 rounded-full font-semibold flex items-center gap-1">
+                        <FaCheckCircle className="w-3.5 h-3.5" />
+                        Completed
                       </span>
-                    </div>
+                    )}
+                    {!hasPendingItems && order.status !== "Completed" && (
+                      <span className="text-xs bg-blue-100 text-blue-700 px-3 py-1.5 rounded-full font-semibold">
+                        All Fulfilled
+                      </span>
+                    )}
                   </div>
 
                   {/* Order Items */}
@@ -748,8 +815,8 @@ const MenuCard = ({ refreshTrigger }) => {
                       const retailPrice = item.retailPrice || 0;
                       const wholesalePrice = item.wholesalePrice || 0;
                       const enableWholesale = item.enableWholesale || false;
-                      const expiryDate = item.expiryDate || null;
-                      const itemStatus = item.status || "Active";
+                      const isFulfilled =
+                        item.fulfillmentStatus === "Completed";
                       const itemExists =
                         item.itemExists !== undefined ? item.itemExists : true;
 
@@ -758,27 +825,30 @@ const MenuCard = ({ refreshTrigger }) => {
                         saleType === "Retail"
                           ? retailPrice > 0
                           : wholesalePrice > 0;
-                      const isExpired =
-                        itemStatus === "Expired" ||
-                        (expiryDate && new Date(expiryDate) < new Date());
-                      const isLowStock = isInStock && currentStock <= 5;
-
-                      // Can add if in stock AND has price (expired items are allowed)
                       const canAdd =
-                        isInStock && hasPrice && zuiaAdd && itemExists;
+                        isInStock &&
+                        hasPrice &&
+                        zuiaAdd &&
+                        itemExists &&
+                        !isFulfilled;
 
                       return (
                         <div
-                          key={`${order._id}_${item.itemId}`}
-                          className={`px-4 py-3 mx-3 my-2 rounded-xl ${index % 2 === 0 ? "bg-gray-100/80" : "bg-gray-50/80"} border border-gray-200/60 hover:border-emerald-300 transition-all duration-200
-                            ${isExpired ? "border-l-4 border-l-yellow-400" : ""}`}
+                          key={`${order._id}_${item._id}`}
+                          className={`px-4 py-3 mx-3 my-2 rounded-xl ${
+                            isFulfilled
+                              ? "bg-green-50/80 border-green-200"
+                              : index % 2 === 0
+                                ? "bg-gray-100/80"
+                                : "bg-gray-50/80"
+                          } border ${isFulfilled ? "border-green-200" : "border-gray-200/60"} hover:border-emerald-300 transition-all duration-200`}
                         >
                           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                             {/* Item Info */}
                             <div className="flex-1 min-w-0">
                               <div className="flex items-center gap-2 flex-wrap">
                                 <span
-                                  className={`font-semibold text-sm ${!isInStock ? "text-gray-400" : "text-gray-800"}`}
+                                  className={`font-semibold text-sm ${isFulfilled ? "text-green-700" : !isInStock ? "text-gray-400" : "text-gray-800"}`}
                                 >
                                   {item.itemName}
                                 </span>
@@ -787,23 +857,18 @@ const MenuCard = ({ refreshTrigger }) => {
                                     WS
                                   </span>
                                 )}
-                                {!isInStock && (
+                                {isFulfilled && (
+                                  <span className="text-[10px] bg-green-100 text-green-700 px-2 py-0.5 rounded-full flex items-center gap-1">
+                                    <FaCheckCircle className="w-3 h-3" />
+                                    Fulfilled
+                                  </span>
+                                )}
+                                {!isFulfilled && !isInStock && (
                                   <span className="text-[10px] bg-red-100 text-red-700 px-2 py-0.5 rounded-full">
                                     Out of Stock
                                   </span>
                                 )}
-                                {isExpired && isInStock && (
-                                  <span className="text-[10px] bg-yellow-100 text-yellow-700 px-2 py-0.5 rounded-full flex items-center gap-1">
-                                    <FaExclamationTriangle className="w-3 h-3" />
-                                    Expired
-                                  </span>
-                                )}
-                                {isLowStock && isInStock && !isExpired && (
-                                  <span className="text-[10px] bg-yellow-100 text-yellow-700 px-2 py-0.5 rounded-full">
-                                    Low Stock: {currentStock}
-                                  </span>
-                                )}
-                                {!itemExists && (
+                                {!itemExists && !isFulfilled && (
                                   <span className="text-[10px] bg-gray-100 text-gray-500 px-2 py-0.5 rounded-full">
                                     Not in inventory
                                   </span>
@@ -817,7 +882,7 @@ const MenuCard = ({ refreshTrigger }) => {
                                 <span className="flex items-center gap-1 font-medium text-gray-700">
                                   {formatCurrency(item.totalPrice || 0)}
                                 </span>
-                                {itemExists && (
+                                {itemExists && !isFulfilled && (
                                   <>
                                     <span className="text-gray-300">|</span>
                                     <span className="flex items-center gap-1">
@@ -833,99 +898,70 @@ const MenuCard = ({ refreshTrigger }) => {
                                         {currentStock}
                                       </span>
                                     </span>
-                                    {retailPrice > 0 && (
-                                      <>
-                                        <span className="text-gray-300">|</span>
-                                        <span className="flex items-center gap-1">
-                                          <FaTag className="w-3 h-3 text-gray-400" />
-                                          Retail: {formatCurrency(retailPrice)}
-                                        </span>
-                                      </>
-                                    )}
-                                    {wholesalePrice > 0 && enableWholesale && (
-                                      <>
-                                        <span className="text-gray-300">|</span>
-                                        <span className="flex items-center gap-1 text-indigo-600">
-                                          <FaStore className="w-3 h-3" />
-                                          WS: {formatCurrency(wholesalePrice)}
-                                        </span>
-                                      </>
-                                    )}
-                                    {expiryDate && (
-                                      <>
-                                        <span className="text-gray-300">|</span>
-                                        <span className="flex items-center gap-1">
-                                          <FaCalendarAlt className="w-3 h-3 text-gray-400" />
-                                          Exp:{" "}
-                                          <span
-                                            className={
-                                              isExpired
-                                                ? "text-yellow-600 font-medium"
-                                                : "text-gray-600"
-                                            }
-                                          >
-                                            {formatDate(expiryDate)}
-                                          </span>
-                                        </span>
-                                      </>
-                                    )}
                                   </>
                                 )}
                               </div>
                             </div>
 
                             {/* Add Button */}
-                            <button
-                              onClick={() => {
-                                if (!canAdd) {
-                                  if (!zuiaAdd) {
-                                    toast.error(
-                                      "Please complete the current transaction first",
-                                    );
+                            {!isFulfilled && (
+                              <button
+                                onClick={() => {
+                                  if (!canAdd) {
+                                    if (!zuiaAdd) {
+                                      toast.error(
+                                        "Please complete the current transaction first",
+                                      );
+                                      return;
+                                    }
+                                    if (!itemExists) {
+                                      toast.error(
+                                        `Item ${item.itemName} no longer exists in inventory`,
+                                      );
+                                      return;
+                                    }
+                                    if (!isInStock) {
+                                      toast.error(
+                                        `${item.itemName} is out of stock (Available: ${currentStock})`,
+                                      );
+                                      return;
+                                    }
+                                    if (!hasPrice) {
+                                      toast.error(
+                                        `${item.itemName} has no price set`,
+                                      );
+                                      return;
+                                    }
                                     return;
                                   }
-                                  if (!itemExists) {
-                                    toast.error(
-                                      `Item ${item.itemName} no longer exists in inventory`,
-                                    );
-                                    return;
-                                  }
-                                  if (!isInStock) {
-                                    toast.error(
-                                      `${item.itemName} is out of stock (Available: ${currentStock})`,
-                                    );
-                                    return;
-                                  }
-                                  if (!hasPrice) {
-                                    toast.error(
-                                      `${item.itemName} has no price set`,
-                                    );
-                                    return;
-                                  }
-                                  toast.error(`Cannot add ${item.itemName}`);
-                                  return;
-                                }
-                                handleAddOrderItemToCart(order, item);
-                              }}
-                              disabled={!canAdd}
-                              className={`px-4 py-2 rounded-xl text-xs font-semibold transition-all whitespace-nowrap flex items-center gap-1.5 shadow-sm hover:shadow-md flex-shrink-0
-                                ${
-                                  !canAdd
-                                    ? "bg-gray-200 text-gray-400 cursor-not-allowed"
-                                    : saleType === "Wholesale"
-                                      ? "bg-gradient-to-r from-indigo-500 to-blue-500 text-white hover:from-indigo-600 hover:to-blue-600"
-                                      : "bg-gradient-to-r from-emerald-500 to-teal-500 text-white hover:from-emerald-600 hover:to-teal-600"
-                                }`}
-                            >
-                              <FaShoppingCart className="w-3.5 h-3.5" />
-                              {!itemExists
-                                ? "Not Found"
-                                : !isInStock
-                                  ? "Out of Stock"
-                                  : !hasPrice
-                                    ? "No Price"
-                                    : "Add to Cart"}
-                            </button>
+                                  handleAddOrderItemToCart(order, item);
+                                }}
+                                disabled={!canAdd}
+                                className={`px-4 py-2 rounded-xl text-xs font-semibold transition-all whitespace-nowrap flex items-center gap-1.5 shadow-sm hover:shadow-md flex-shrink-0
+                                  ${
+                                    !canAdd
+                                      ? "bg-gray-200 text-gray-400 cursor-not-allowed"
+                                      : saleType === "Wholesale"
+                                        ? "bg-gradient-to-r from-indigo-500 to-blue-500 text-white hover:from-indigo-600 hover:to-blue-600"
+                                        : "bg-gradient-to-r from-emerald-500 to-teal-500 text-white hover:from-emerald-600 hover:to-teal-600"
+                                  }`}
+                              >
+                                <FaShoppingCart className="w-3.5 h-3.5" />
+                                {!itemExists
+                                  ? "Not Found"
+                                  : !isInStock
+                                    ? "Out of Stock"
+                                    : !hasPrice
+                                      ? "No Price"
+                                      : "Add to Cart"}
+                              </button>
+                            )}
+                            {isFulfilled && (
+                              <span className="text-xs text-green-600 font-medium flex items-center gap-1">
+                                <FaCheckCircle className="w-4 h-4" />
+                                Fulfilled
+                              </span>
+                            )}
                           </div>
                         </div>
                       );
@@ -1382,11 +1418,6 @@ const MenuCard = ({ refreshTrigger }) => {
                           </span>
                         </div>
                       )}
-                      {item.status === "Expired" && !expiryDate && (
-                        <span className="text-[10px] bg-yellow-100 text-yellow-700 px-1.5 py-0.5 rounded-full">
-                          Expired
-                        </span>
-                      )}
                     </div>
                   </div>
 
@@ -1537,20 +1568,6 @@ const MenuCard = ({ refreshTrigger }) => {
                 </div>
               );
             })}
-          </div>
-        )}
-
-        {items.length === 0 && saleType !== "Wholesale" && (
-          <div className="flex flex-col items-center justify-center py-12 text-center">
-            <div className="w-16 h-16 sm:w-20 sm:h-20 bg-gray-100 rounded-full flex items-center justify-center mb-4">
-              <FaBox className="text-gray-400 text-xl sm:text-2xl" />
-            </div>
-            <h4 className="font-semibold text-gray-700 text-base sm:text-lg mb-2">
-              No Items Found
-            </h4>
-            <p className="text-gray-500 text-sm">
-              Try changing your search or select a different category
-            </p>
           </div>
         )}
       </div>
