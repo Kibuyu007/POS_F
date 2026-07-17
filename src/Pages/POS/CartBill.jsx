@@ -16,9 +16,6 @@ import BASE_URL from "../../Utils/config";
 import { fetchAllCustomers } from "../../Redux/customerSlice";
 
 // Icons
-import { FaPlusCircle } from "react-icons/fa";
-import { RiDeleteBin5Line } from "react-icons/ri";
-import { IoIosRemoveCircle } from "react-icons/io";
 import { FaTimes, FaCheckCircle, FaShoppingCart, FaBox } from "react-icons/fa";
 
 const Cart = ({
