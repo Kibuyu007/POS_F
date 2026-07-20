@@ -134,16 +134,16 @@ const Orders = () => {
   const [isPhoneValid, setIsPhoneValid] = useState(false);
 
   // ==========================================================================
-  // STATE - PAGINATION (ORDERS)
+  // STATE - PAGINATION (ORDERS) - SEPARATE
   // ==========================================================================
-  const [currentPage, setCurrentPage] = useState(1);
-  const [itemsPerPage] = useState(5);
+  const [ordersCurrentPage, setOrdersCurrentPage] = useState(1);
+  const [ordersItemsPerPage] = useState(5);
 
   // ==========================================================================
-  // STATE - PAGINATION (REQUESTS)
+  // STATE - PAGINATION (REQUESTS) - SEPARATE
   // ==========================================================================
-  const [currentRequestPage, setCurrentRequestPage] = useState(1);
-  const [requestItemsPerPage] = useState(5);
+  const [requestsCurrentPage, setRequestsCurrentPage] = useState(1);
+  const [requestsItemsPerPage] = useState(5);
 
   // ==========================================================================
   // STATE - REQUEST DETAIL EXPANDED SECTIONS
@@ -203,27 +203,30 @@ const Orders = () => {
   ).sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt));
 
   // ==========================================================================
-  // PAGINATION CALCULATIONS - ORDERS
+  // PAGINATION CALCULATIONS - ORDERS (SEPARATE)
   // ==========================================================================
-  const indexOfLastItem = currentPage * itemsPerPage;
-  const indexOfFirstItem = indexOfLastItem - itemsPerPage;
-  const currentOrders = filteredOrders.slice(indexOfFirstItem, indexOfLastItem);
-  const totalPages = Math.ceil(filteredOrders.length / itemsPerPage);
+  const ordersIndexOfLastItem = ordersCurrentPage * ordersItemsPerPage;
+  const ordersIndexOfFirstItem = ordersIndexOfLastItem - ordersItemsPerPage;
+  const currentOrders = filteredOrders.slice(
+    ordersIndexOfFirstItem,
+    ordersIndexOfLastItem,
+  );
+  const ordersTotalPages = Math.ceil(filteredOrders.length / ordersItemsPerPage);
 
   // ==========================================================================
-  // PAGINATION CALCULATIONS - REQUESTS
+  // PAGINATION CALCULATIONS - REQUESTS (SEPARATE)
   // ==========================================================================
   const filteredRequests = [...getFilteredRequests()].sort(
     (a, b) => new Date(a.createdAt) - new Date(b.createdAt),
   );
-  const requestIndexOfLastItem = currentRequestPage * requestItemsPerPage;
-  const requestIndexOfFirstItem = requestIndexOfLastItem - requestItemsPerPage;
+  const requestsIndexOfLastItem = requestsCurrentPage * requestsItemsPerPage;
+  const requestsIndexOfFirstItem = requestsIndexOfLastItem - requestsItemsPerPage;
   const currentRequests = filteredRequests.slice(
-    requestIndexOfFirstItem,
-    requestIndexOfLastItem,
+    requestsIndexOfFirstItem,
+    requestsIndexOfLastItem,
   );
-  const requestTotalPages = Math.ceil(
-    filteredRequests.length / requestItemsPerPage,
+  const requestsTotalPages = Math.ceil(
+    filteredRequests.length / requestsItemsPerPage,
   );
 
   // ==========================================================================
@@ -402,24 +405,25 @@ const Orders = () => {
   };
 
   // ==========================================================================
-  // EVENT HANDLERS - PAGINATION
+  // EVENT HANDLERS - PAGINATION (SEPARATE)
   // ==========================================================================
-  const paginate = (pageNumber) => setCurrentPage(pageNumber);
-  const requestPaginate = (pageNumber) => setCurrentRequestPage(pageNumber);
+  const ordersPaginate = (pageNumber) => setOrdersCurrentPage(pageNumber);
+  const requestsPaginate = (pageNumber) => setRequestsCurrentPage(pageNumber);
 
-  const nextPage = () => {
-    if (currentPage < totalPages) setCurrentPage(currentPage + 1);
+  const ordersNextPage = () => {
+    if (ordersCurrentPage < ordersTotalPages)
+      setOrdersCurrentPage(ordersCurrentPage + 1);
   };
-  const prevPage = () => {
-    if (currentPage > 1) setCurrentPage(currentPage - 1);
+  const ordersPrevPage = () => {
+    if (ordersCurrentPage > 1) setOrdersCurrentPage(ordersCurrentPage - 1);
   };
 
-  const requestNextPage = () => {
-    if (currentRequestPage < requestTotalPages)
-      setCurrentRequestPage(currentRequestPage + 1);
+  const requestsNextPage = () => {
+    if (requestsCurrentPage < requestsTotalPages)
+      setRequestsCurrentPage(requestsCurrentPage + 1);
   };
-  const requestPrevPage = () => {
-    if (currentRequestPage > 1) setCurrentRequestPage(currentRequestPage - 1);
+  const requestsPrevPage = () => {
+    if (requestsCurrentPage > 1) setRequestsCurrentPage(requestsCurrentPage - 1);
   };
 
   // ==========================================================================
@@ -438,7 +442,10 @@ const Orders = () => {
    * Fetch requests when switching to requests view
    */
   useEffect(() => {
-    if (activeView === "requests") fetchRequests();
+    if (activeView === "requests") {
+      fetchRequests();
+      setRequestsCurrentPage(1);
+    }
   }, [activeView]);
 
   /**
@@ -454,6 +461,20 @@ const Orders = () => {
     }, 500);
     return () => clearTimeout(timer);
   }, [searchTerm, dispatch]);
+
+  /**
+   * Reset orders pagination when filter changes
+   */
+  useEffect(() => {
+    setOrdersCurrentPage(1);
+  }, [filter]);
+
+  /**
+   * Reset requests pagination when filter changes
+   */
+  useEffect(() => {
+    setRequestsCurrentPage(1);
+  }, [requestsFilter, requestsSearch]);
 
   // ==========================================================================
   // API CALLS
@@ -484,7 +505,7 @@ const Orders = () => {
       });
       if (response.data.success) {
         setRequests(response.data.data || []);
-        setCurrentRequestPage(1);
+        setRequestsCurrentPage(1);
       } else {
         toast.error(response.data.message || "Failed to fetch requests");
       }
@@ -849,43 +870,6 @@ const Orders = () => {
     Cancelled: "bg-gray-50 text-gray-700 border-gray-200",
   };
 
-  const statsData = [
-    {
-      label: "Total Orders",
-      value: orders.length,
-      icon: ShoppingCart,
-      bg: "bg-green-50",
-      iconColor: "text-green-600",
-      border: "border-green-100",
-    },
-    {
-      label: "Revenue",
-      value: `TSh ${orders.reduce((sum, o) => sum + (o.grandTotal || 0), 0).toLocaleString()}`,
-      icon: Banknote,
-      bg: "bg-blue-50",
-      iconColor: "text-blue-600",
-      border: "border-blue-100",
-    },
-    {
-      label: "Active Orders",
-      value: orders.filter(
-        (o) => o.status === "Pending" || o.status === "Confirmed",
-      ).length,
-      icon: Activity,
-      bg: "bg-yellow-50",
-      iconColor: "text-yellow-600",
-      border: "border-yellow-100",
-    },
-    {
-      label: "Completion Rate",
-      value: `${orders.length > 0 ? Math.round((orders.filter((o) => o.status === "Completed").length / orders.length) * 100) : 0}%`,
-      icon: BarChart3,
-      bg: "bg-violet-50",
-      iconColor: "text-violet-600",
-      border: "border-violet-100",
-    },
-  ];
-
   const statusOptions = [
     "All",
     "Pending",
@@ -905,6 +889,51 @@ const Orders = () => {
     rejected: (requests || []).filter((r) => r.status === "Rejected").length,
     cancelled: (requests || []).filter((r) => r.status === "Cancelled").length,
   };
+
+  const statsData = [
+    {
+      label: "Total Orders",
+      value: orders.length,
+      icon: ShoppingCart,
+      bg: "bg-emerald-50",
+      iconBg: "bg-emerald-100",
+      iconColor: "text-emerald-600",
+      border: "border-emerald-200",
+      textColor: "text-emerald-700",
+    },
+    {
+      label: "Revenue",
+      value: `TSh ${orders.reduce((sum, o) => sum + (o.grandTotal || 0), 0).toLocaleString()}`,
+      icon: Banknote,
+      bg: "bg-blue-50",
+      iconBg: "bg-blue-100",
+      iconColor: "text-blue-600",
+      border: "border-blue-200",
+      textColor: "text-blue-700",
+    },
+    {
+      label: "Active Orders",
+      value: orders.filter(
+        (o) => o.status === "Pending" || o.status === "Confirmed",
+      ).length,
+      icon: Activity,
+      bg: "bg-amber-50",
+      iconBg: "bg-amber-100",
+      iconColor: "text-amber-600",
+      border: "border-amber-200",
+      textColor: "text-amber-700",
+    },
+    {
+      label: "Completion Rate",
+      value: `${orders.length > 0 ? Math.round((orders.filter((o) => o.status === "Completed").length / orders.length) * 100) : 0}%`,
+      icon: BarChart3,
+      bg: "bg-purple-50",
+      iconBg: "bg-purple-100",
+      iconColor: "text-purple-600",
+      border: "border-purple-200",
+      textColor: "text-purple-700",
+    },
+  ];
 
   // ==========================================================================
   // RENDER HELPERS - PAGINATION
@@ -947,7 +976,7 @@ const Orders = () => {
           className={`px-3 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
             currentPageNum === 1
               ? "bg-gray-100 text-gray-300 cursor-not-allowed"
-              : "bg-white border border-gray-300 text-gray-600 hover:bg-gray-100 hover:border-gray-400 shadow-sm"
+              : "bg-white border-2 border-gray-300 text-gray-600 hover:bg-gray-100 hover:border-gray-400 shadow-sm"
           }`}
         >
           <ChevronLeft className="w-4 h-4" />
@@ -957,7 +986,7 @@ const Orders = () => {
           <>
             <button
               onClick={() => paginateFn(1)}
-              className="px-3.5 py-2 rounded-lg text-sm font-medium bg-white border border-gray-300 text-gray-600 hover:bg-gray-100 hover:border-gray-400 transition-all duration-200 shadow-sm"
+              className="px-3.5 py-2 rounded-lg text-sm font-medium bg-white border-2 border-gray-300 text-gray-600 hover:bg-gray-100 hover:border-gray-400 transition-all duration-200 shadow-sm"
             >
               1
             </button>
@@ -971,10 +1000,10 @@ const Orders = () => {
           <button
             key={number}
             onClick={() => paginateFn(number)}
-            className={`px-3.5 py-2 rounded-lg text-sm font-medium transition-all duration-200 shadow-sm ${
+            className={`px-3.5 py-2 rounded-lg text-sm font-medium transition-all duration-200 shadow-sm border-2 ${
               currentPageNum === number
-                ? "bg-green-300 text-green-800 border border-green-400 hover:bg-green-400"
-                : "bg-white border border-gray-300 text-gray-600 hover:bg-gray-100 hover:border-gray-400"
+                ? "bg-emerald-500 text-white border-emerald-500 hover:bg-emerald-600"
+                : "bg-white border-gray-300 text-gray-600 hover:bg-gray-100 hover:border-gray-400"
             }`}
           >
             {number}
@@ -988,7 +1017,7 @@ const Orders = () => {
             )}
             <button
               onClick={() => paginateFn(totalPagesNum)}
-              className="px-3.5 py-2 rounded-lg text-sm font-medium bg-white border border-gray-300 text-gray-600 hover:bg-gray-100 hover:border-gray-400 transition-all duration-200 shadow-sm"
+              className="px-3.5 py-2 rounded-lg text-sm font-medium bg-white border-2 border-gray-300 text-gray-600 hover:bg-gray-100 hover:border-gray-400 transition-all duration-200 shadow-sm"
             >
               {totalPagesNum}
             </button>
@@ -1001,7 +1030,7 @@ const Orders = () => {
           className={`px-3 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
             currentPageNum === totalPagesNum
               ? "bg-gray-100 text-gray-300 cursor-not-allowed"
-              : "bg-white border border-gray-300 text-gray-600 hover:bg-gray-100 hover:border-gray-400 shadow-sm"
+              : "bg-white border-2 border-gray-300 text-gray-600 hover:bg-gray-100 hover:border-gray-400 shadow-sm"
           }`}
         >
           <ChevronRight className="w-4 h-4" />
@@ -1019,12 +1048,12 @@ const Orders = () => {
    */
   const renderViewToggle = () => (
     <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-5">
-      <div className="flex bg-white rounded-xl p-1 border border-gray-200 shadow-sm">
+      <div className="flex bg-white rounded-xl p-1 border-2 border-gray-200 shadow-sm">
         <button
           onClick={() => setActiveView("orders")}
           className={`flex items-center gap-2 px-4 sm:px-5 py-2 rounded-lg text-sm font-semibold transition-all duration-200 ${
             activeView === "orders"
-              ? "bg-green-300 text-green-800 shadow-md shadow-green-200"
+              ? "bg-emerald-500 text-white shadow-md shadow-emerald-200"
               : "text-gray-500 hover:text-gray-700 hover:bg-gray-100"
           }`}
         >
@@ -1033,7 +1062,7 @@ const Orders = () => {
           <span
             className={`text-xs px-2 py-0.5 rounded-full ${
               activeView === "orders"
-                ? "bg-green-400 text-green-800"
+                ? "bg-white/20 text-white"
                 : "bg-gray-200 text-gray-500"
             }`}
           >
@@ -1047,7 +1076,7 @@ const Orders = () => {
           }}
           className={`flex items-center gap-2 px-4 sm:px-5 py-2 rounded-lg text-sm font-semibold transition-all duration-200 ${
             activeView === "requests"
-              ? "bg-green-300 text-green-800 shadow-md shadow-green-200"
+              ? "bg-emerald-500 text-white shadow-md shadow-emerald-200"
               : "text-gray-500 hover:text-gray-700 hover:bg-gray-100"
           }`}
         >
@@ -1057,7 +1086,7 @@ const Orders = () => {
             <span
               className={`text-xs px-2 py-0.5 rounded-full ${
                 activeView === "requests"
-                  ? "bg-green-400 text-green-800"
+                  ? "bg-white/20 text-white"
                   : "bg-amber-200 text-amber-700"
               }`}
             >
@@ -1073,7 +1102,7 @@ const Orders = () => {
           placeholder={
             activeView === "orders" ? "Search orders..." : "Search requests..."
           }
-          className="w-full pl-9 pr-4 py-2.5 bg-white border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-300 focus:border-transparent transition-all duration-200 text-sm text-black placeholder-gray-400 shadow-sm"
+          className="w-full pl-9 pr-4 py-2.5 bg-white border-2 border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-300 focus:border-transparent transition-all duration-200 text-sm text-black placeholder-gray-400 shadow-sm"
           value={activeView === "orders" ? searchTerm : requestsSearch}
           onChange={(e) =>
             activeView === "orders"
@@ -1098,9 +1127,9 @@ const Orders = () => {
         <button
           key={s}
           onClick={() => setFilter(s)}
-          className={`flex items-center gap-2 px-4 py-1.5 rounded-full text-xs font-semibold transition-all duration-200 border ${
+          className={`flex items-center gap-2 px-4 py-1.5 rounded-full text-xs font-semibold transition-all duration-200 border-2 ${
             filter === s
-              ? "bg-green-300 border-green-400 text-green-800 shadow-md shadow-green-200"
+              ? "bg-emerald-500 border-emerald-500 text-white shadow-md shadow-emerald-200"
               : "bg-white border-gray-300 text-gray-500 hover:border-gray-400 hover:text-gray-700 hover:bg-gray-100"
           }`}
         >
@@ -1108,7 +1137,7 @@ const Orders = () => {
             <span
               className={`w-1.5 h-1.5 rounded-full ${
                 filter === s
-                  ? "bg-green-600"
+                  ? "bg-white"
                   : s === "Pending"
                     ? "bg-yellow-400"
                     : s === "Confirmed"
@@ -1122,7 +1151,7 @@ const Orders = () => {
           {s}
           {s !== "All" && (
             <span
-              className={`text-xs ${filter === s ? "text-green-700" : "text-gray-400"}`}
+              className={`text-xs ${filter === s ? "text-white/80" : "text-gray-400"}`}
             >
               {orders.filter((o) => o.status === s).length}
             </span>
@@ -1133,18 +1162,18 @@ const Orders = () => {
   );
 
   /**
-   * Render a single order card
+   * Render a single order card - LIGHT GREY BG
    */
   const renderOrderCard = (order) => {
     const StatusIcon = statusIcons[order.status] || Clock;
     return (
       <div
         key={order._id}
-        className="bg-gray-200 rounded-2xl border border-gray-300 shadow-sm p-4 sm:p-5 hover:shadow-md hover:border-green-300 transition-all duration-300"
+        className="bg-gray-100 rounded-2xl border-2 border-gray-300 shadow-sm p-4 sm:p-5 hover:shadow-md hover:border-emerald-300 transition-all duration-300"
       >
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
           <div className="flex items-center gap-4 w-full sm:w-auto">
-            <div className="w-11 h-11 rounded-full bg-green-300 flex items-center justify-center text-green-800 text-sm font-bold flex-shrink-0 shadow-sm">
+            <div className="w-11 h-11 rounded-full bg-emerald-200 flex items-center justify-center text-emerald-700 text-sm font-bold flex-shrink-0 border-2 border-emerald-300">
               <User className="w-5 h-5" />
             </div>
             <div className="min-w-0 flex-1">
@@ -1152,14 +1181,14 @@ const Orders = () => {
                 <span className="text-sm font-semibold text-gray-800">
                   {order.customerName}
                 </span>
-                <span className="font-mono text-xs text-gray-600 bg-gray-300 px-2 py-0.5 rounded-md">
+                <span className="font-mono text-xs text-gray-600 bg-white px-2 py-0.5 rounded-md border border-gray-300">
                   {order.orderNumber}
                 </span>
-                <span className="text-xs text-gray-600 bg-gray-300 px-2 py-0.5 rounded-full">
+                <span className="text-xs text-gray-600 bg-white px-2 py-0.5 rounded-full border border-gray-300">
                   {order.items?.length || 0} items
                 </span>
               </div>
-              <div className="flex items-center gap-3 text-xs text-gray-600 mt-0.5">
+              <div className="flex items-center gap-3 text-xs text-gray-500 mt-0.5">
                 <span>{order.customerPhone}</span>
                 <span className="w-1 h-1 bg-gray-400 rounded-full" />
                 <span>{new Date(order.createdAt).toLocaleDateString()}</span>
@@ -1173,14 +1202,14 @@ const Orders = () => {
                 {formatCurrency(order.grandTotal)}
               </div>
               {order.totalDiscount > 0 && (
-                <span className="text-[10px] text-green-700 font-medium bg-green-200 px-2 py-0.5 rounded-full">
+                <span className="text-[10px] text-emerald-700 font-medium bg-emerald-100 px-2 py-0.5 rounded-full border border-emerald-200">
                   -{formatCurrency(order.totalDiscount)}
                 </span>
               )}
             </div>
 
             <span
-              className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold border ${statusColors[order.status]}`}
+              className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold border-2 ${statusColors[order.status]}`}
             >
               <StatusIcon className="w-3 h-3" />
               {order.status}
@@ -1191,7 +1220,7 @@ const Orders = () => {
                 setSelectedOrder(order);
                 setShowDetailModal(true);
               }}
-              className="p-2 text-blue-600 hover:text-blue-800 hover:bg-blue-100 rounded-lg transition-all duration-200"
+              className="p-2 text-blue-600 hover:text-blue-800 hover:bg-blue-100 rounded-lg transition-all duration-200 border border-transparent hover:border-blue-200"
               title="View Details"
             >
               <FileText className="w-4 h-4" />
@@ -1200,7 +1229,7 @@ const Orders = () => {
             {order.status !== "Completed" && (
               <button
                 onClick={() => handleDeleteOrder(order._id)}
-                className="p-2 text-red-400 hover:text-red-600 hover:bg-red-100 rounded-lg transition-all duration-200"
+                className="p-2 text-red-400 hover:text-red-600 hover:bg-red-100 rounded-lg transition-all duration-200 border border-transparent hover:border-red-200"
                 title="Delete Order"
               >
                 <Trash2 className="w-4 h-4" />
@@ -1218,22 +1247,24 @@ const Orders = () => {
   const renderOrdersList = () => {
     if (loading) {
       return (
-        <div className="flex flex-col items-center justify-center py-20 bg-gray-200 rounded-2xl border border-gray-300 shadow-sm">
-          <div className="w-12 h-12 border-4 border-green-300 border-t-green-500 rounded-full animate-spin" />
-          <p className="text-sm text-gray-600 mt-4">Loading orders...</p>
+        <div className="flex flex-col items-center justify-center py-20 bg-gray-100 rounded-2xl border-2 border-gray-300 shadow-sm">
+          <div className="w-12 h-12 border-4 border-emerald-300 border-t-emerald-500 rounded-full animate-spin" />
+          <p className="text-sm text-gray-500 mt-4">Loading orders...</p>
         </div>
       );
     }
 
     if (currentOrders.length === 0) {
       return (
-        <div className="bg-gray-200 rounded-2xl border border-gray-300 shadow-sm py-20 text-center">
-          <div className="w-20 h-20 bg-gray-300 rounded-full flex items-center justify-center mx-auto mb-4">
-            <Package className="w-10 h-10 text-gray-500" />
+        <div className="bg-gray-100 rounded-2xl border-2 border-gray-300 shadow-sm py-20 text-center">
+          <div className="w-20 h-20 bg-gray-200 rounded-full flex items-center justify-center mx-auto mb-4 border-2 border-gray-300">
+            <Package className="w-10 h-10 text-gray-400" />
           </div>
           <p className="text-gray-700 font-medium">No orders found</p>
           <p className="text-sm text-gray-500 mt-1">
-            Create your first order to get started
+            {filter === "All"
+              ? "Create your first order to get started"
+              : `No ${filter.toLowerCase()} orders`}
           </p>
         </div>
       );
@@ -1294,18 +1325,18 @@ const Orders = () => {
           gray: "bg-gray-400",
         }[tab.color];
         const activeBg = {
-          amber: "bg-amber-300 border-amber-400 text-amber-800",
-          emerald: "bg-emerald-300 border-emerald-400 text-emerald-800",
-          purple: "bg-purple-300 border-purple-400 text-purple-800",
-          red: "bg-red-300 border-red-400 text-red-800",
-          gray: "bg-gray-300 border-gray-400 text-gray-800",
+          amber: "bg-amber-500 border-amber-500 text-white",
+          emerald: "bg-emerald-500 border-emerald-500 text-white",
+          purple: "bg-purple-500 border-purple-500 text-white",
+          red: "bg-red-500 border-red-500 text-white",
+          gray: "bg-gray-500 border-gray-500 text-white",
         }[tab.color];
 
         return (
           <button
             key={tab.key}
             onClick={() => setRequestsFilter(tab.key)}
-            className={`flex items-center gap-2 px-4 py-1.5 rounded-full text-xs font-semibold transition-all duration-200 border shadow-sm ${
+            className={`flex items-center gap-2 px-4 py-1.5 rounded-full text-xs font-semibold transition-all duration-200 border-2 shadow-sm ${
               isActive
                 ? activeBg
                 : "bg-white border-gray-300 text-gray-500 hover:border-gray-400 hover:text-gray-700 hover:bg-gray-100"
@@ -1316,9 +1347,7 @@ const Orders = () => {
             />
             {tab.label}
             {tab.count > 0 && (
-              <span
-                className={`text-xs ${isActive ? "text-opacity-80" : "text-gray-400"}`}
-              >
+              <span className={`text-xs ${isActive ? "text-white/80" : "text-gray-400"}`}>
                 ({tab.count})
               </span>
             )}
@@ -1329,7 +1358,7 @@ const Orders = () => {
   );
 
   /**
-   * Render a single request card - REMOVED ACCEPT BUTTON, CONVERT ONLY FOR ACCEPTED
+   * Render a single request card - LIGHT GREY BG
    */
   const renderRequestCard = (request) => {
     const StatusIcon = getRequestStatusIcon(request.status);
@@ -1346,7 +1375,7 @@ const Orders = () => {
     ).length;
 
     const canReview = request.status === "Pending Review";
-    const canConvert = request.status === "Accepted"; // ONLY Accepted requests can be converted
+    const canConvert = request.status === "Accepted";
     const canReject =
       request.status === "Pending Review" ||
       request.status === "Awaiting Customer Confirmation";
@@ -1354,11 +1383,11 @@ const Orders = () => {
     return (
       <div
         key={request._id}
-        className="bg-gray-200 rounded-2xl border border-gray-300 shadow-sm p-4 sm:p-5 hover:shadow-md hover:border-green-300 transition-all duration-300"
+        className="bg-gray-100 rounded-2xl border-2 border-gray-300 shadow-sm p-4 sm:p-5 hover:shadow-md hover:border-emerald-300 transition-all duration-300"
       >
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
           <div className="flex items-center gap-4 w-full sm:w-auto">
-            <div className="w-11 h-11 rounded-full bg-green-300 flex items-center justify-center text-green-800 text-sm font-bold flex-shrink-0 shadow-sm">
+            <div className="w-11 h-11 rounded-full bg-emerald-200 flex items-center justify-center text-emerald-700 text-sm font-bold flex-shrink-0 border-2 border-emerald-300">
               <User className="w-5 h-5" />
             </div>
             <div className="min-w-0 flex-1">
@@ -1366,29 +1395,29 @@ const Orders = () => {
                 <span className="text-sm font-semibold text-gray-800">
                   {request.customerName}
                 </span>
-                <span className="font-mono text-xs text-gray-600 bg-gray-300 px-2 py-0.5 rounded-md">
+                <span className="font-mono text-xs text-gray-600 bg-white px-2 py-0.5 rounded-md border border-gray-300">
                   {request.requestNumber}
                 </span>
-                <span className="text-xs text-gray-600 bg-gray-300 px-2 py-0.5 rounded-full">
+                <span className="text-xs text-gray-600 bg-white px-2 py-0.5 rounded-full border border-gray-300">
                   {request.items?.length || 0} items
                 </span>
                 {request.source && (
                   <span
-                    className={`text-[10px] px-2 py-0.5 rounded-full font-medium ${getSourceBadge(request.source)}`}
+                    className={`text-[10px] px-2 py-0.5 rounded-full font-medium border ${getSourceBadge(request.source)}`}
                   >
                     {request.source}
                   </span>
                 )}
                 {request.customerAction &&
                   request.customerAction !== "Waiting" && (
-                    <span className="text-[10px] bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full font-medium">
+                    <span className="text-[10px] bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full font-medium border border-blue-200">
                       {request.customerAction === "Accepted"
                         ? "✓ Accepted"
                         : "✎ Amended"}
                     </span>
                   )}
               </div>
-              <div className="flex items-center gap-3 text-xs text-gray-600 mt-0.5 flex-wrap">
+              <div className="flex items-center gap-3 text-xs text-gray-500 mt-0.5 flex-wrap">
                 <span>{request.customerPhone}</span>
                 <span className="w-1 h-1 bg-gray-400 rounded-full" />
                 <span>{new Date(request.createdAt).toLocaleDateString()}</span>
@@ -1402,7 +1431,7 @@ const Orders = () => {
                   </>
                 )}
                 {request.reviewCycle && request.reviewCycle > 1 && (
-                  <span className="text-[10px] bg-purple-100 text-purple-700 px-2 py-0.5 rounded-full font-medium">
+                  <span className="text-[10px] bg-purple-100 text-purple-700 px-2 py-0.5 rounded-full font-medium border border-purple-200">
                     Cycle {request.reviewCycle}
                   </span>
                 )}
@@ -1435,7 +1464,7 @@ const Orders = () => {
 
           <div className="flex items-center gap-2 w-full sm:w-auto justify-end">
             <span
-              className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold border ${requestStatusColors[request.status]}`}
+              className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold border-2 ${requestStatusColors[request.status]}`}
             >
               <StatusIcon className="w-3 h-3" />
               {statusDisplay}
@@ -1446,19 +1475,18 @@ const Orders = () => {
                 setSelectedRequest(request);
                 setShowRequestDetailModal(true);
               }}
-              className="p-2 text-blue-600 hover:text-blue-800 hover:bg-blue-100 rounded-lg transition-all duration-200"
+              className="p-2 text-blue-600 hover:text-blue-800 hover:bg-blue-100 rounded-lg transition-all duration-200 border border-transparent hover:border-blue-200"
               title="View Details"
             >
               <FileText className="w-4 h-4" />
             </button>
 
-            {/* Pending Review: Review and Reject only (NO ACCEPT BUTTON) */}
             {canReview && (
               <>
                 <button
                   onClick={() => openReviewModal(request)}
                   disabled={requestActionLoading}
-                  className="flex items-center gap-1 px-3 py-1.5 bg-blue-300 text-blue-800 text-xs font-semibold rounded-lg hover:bg-blue-400 hover:shadow-md transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="flex items-center gap-1 px-3 py-1.5 bg-blue-500 text-white text-xs font-semibold rounded-lg hover:bg-blue-600 hover:shadow-md transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
                   title="Review Request"
                 >
                   <Edit className="w-3.5 h-3.5" />
@@ -1467,7 +1495,7 @@ const Orders = () => {
                 <button
                   onClick={() => handleRejectRequest(request._id)}
                   disabled={requestActionLoading}
-                  className="p-2 text-red-400 hover:text-red-600 hover:bg-red-100 rounded-lg transition-all duration-200 border border-red-200 disabled:opacity-50"
+                  className="p-2 text-red-400 hover:text-red-600 hover:bg-red-100 rounded-lg transition-all duration-200 border border-transparent hover:border-red-200 disabled:opacity-50"
                   title="Reject Request"
                 >
                   <XCircle className="w-4 h-4" />
@@ -1475,24 +1503,22 @@ const Orders = () => {
               </>
             )}
 
-            {/* Awaiting Customer Confirmation: Reject only (NO ACCEPT, NO CONVERT) */}
             {request.status === "Awaiting Customer Confirmation" && (
               <button
                 onClick={() => handleRejectRequest(request._id)}
                 disabled={requestActionLoading}
-                className="p-2 text-red-400 hover:text-red-600 hover:bg-red-100 rounded-lg transition-all duration-200 border border-red-200 disabled:opacity-50"
+                className="p-2 text-red-400 hover:text-red-600 hover:bg-red-100 rounded-lg transition-all duration-200 border border-transparent hover:border-red-200 disabled:opacity-50"
                 title="Reject Request"
               >
                 <XCircle className="w-4 h-4" />
               </button>
             )}
 
-            {/* Accepted: Convert only */}
             {canConvert && (
               <button
                 onClick={() => handleConvertRequest(request._id)}
                 disabled={requestActionLoading}
-                className="flex items-center gap-1 px-3 py-1.5 bg-purple-300 text-purple-800 text-xs font-semibold rounded-lg hover:bg-purple-400 hover:shadow-md transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                className="flex items-center gap-1 px-3 py-1.5 bg-purple-500 text-white text-xs font-semibold rounded-lg hover:bg-purple-600 hover:shadow-md transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 <ArrowRight className="w-3.5 h-3.5" />
                 Convert
@@ -1510,22 +1536,24 @@ const Orders = () => {
   const renderRequestsList = () => {
     if (requestsLoading) {
       return (
-        <div className="flex flex-col items-center justify-center py-20 bg-gray-200 rounded-2xl border border-gray-300 shadow-sm">
-          <div className="w-12 h-12 border-4 border-green-300 border-t-green-500 rounded-full animate-spin" />
-          <p className="text-sm text-gray-600 mt-4">Loading requests...</p>
+        <div className="flex flex-col items-center justify-center py-20 bg-gray-100 rounded-2xl border-2 border-gray-300 shadow-sm">
+          <div className="w-12 h-12 border-4 border-emerald-300 border-t-emerald-500 rounded-full animate-spin" />
+          <p className="text-sm text-gray-500 mt-4">Loading requests...</p>
         </div>
       );
     }
 
     if (currentRequests.length === 0) {
       return (
-        <div className="bg-gray-200 rounded-2xl border border-gray-300 shadow-sm py-20 text-center">
-          <div className="w-20 h-20 bg-gray-300 rounded-full flex items-center justify-center mx-auto mb-4">
-            <ClipboardList className="w-10 h-10 text-gray-500" />
+        <div className="bg-gray-100 rounded-2xl border-2 border-gray-300 shadow-sm py-20 text-center">
+          <div className="w-20 h-20 bg-gray-200 rounded-full flex items-center justify-center mx-auto mb-4 border-2 border-gray-300">
+            <ClipboardList className="w-10 h-10 text-gray-400" />
           </div>
           <p className="text-gray-700 font-medium">No requests found</p>
           <p className="text-sm text-gray-500 mt-1">
-            Customer requests will appear here
+            {requestsFilter === "pending"
+              ? "No pending requests"
+              : `No ${requestsFilter} requests`}
           </p>
         </div>
       );
@@ -1552,7 +1580,7 @@ const Orders = () => {
           <div className="sticky top-0 z-10 bg-white px-6 sm:px-8 py-5 border-b border-gray-200 rounded-t-2xl">
             <div className="flex justify-between items-center">
               <div className="flex items-center gap-3">
-                <div className="p-2 bg-gradient-to-br from-green-400 to-green-500 rounded-xl shadow-lg shadow-green-200">
+                <div className="p-2 bg-gradient-to-br from-emerald-400 to-emerald-500 rounded-xl shadow-lg shadow-emerald-200">
                   <Plus className="w-5 h-5 text-white" />
                 </div>
                 <div>
@@ -1579,7 +1607,7 @@ const Orders = () => {
           <form onSubmit={handleCreateOrder} className="p-6 sm:p-8">
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
               <div className="space-y-4">
-                <div className="bg-gray-100 rounded-xl p-4 border border-gray-200">
+                <div className="bg-gray-100 rounded-xl p-4 border-2 border-gray-200">
                   <h4 className="text-sm font-semibold text-gray-700 mb-3 flex items-center gap-2">
                     <User className="w-4 h-4 text-gray-500" />
                     Customer Details
@@ -1593,7 +1621,7 @@ const Orders = () => {
                       <input
                         type="text"
                         required
-                        className="w-full px-3.5 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-300 focus:border-transparent transition-all duration-200 text-black bg-white text-sm"
+                        className="w-full px-3.5 py-2.5 border-2 border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-300 focus:border-transparent transition-all duration-200 text-black bg-white text-sm"
                         value={formData.customerName}
                         onChange={(e) =>
                           setFormData({
@@ -1614,7 +1642,7 @@ const Orders = () => {
                         <input
                           type="tel"
                           required
-                          className={`w-full pl-9 pr-4 py-2.5 border rounded-lg focus:outline-none focus:ring-2 focus:ring-green-300 focus:border-transparent transition-all duration-200 text-black bg-white text-sm ${
+                          className={`w-full pl-9 pr-4 py-2.5 border-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-300 focus:border-transparent transition-all duration-200 text-black bg-white text-sm ${
                             formData.customerPhone && !isPhoneValid
                               ? "border-red-300 bg-red-50"
                               : formData.customerPhone && isPhoneValid
@@ -1647,7 +1675,7 @@ const Orders = () => {
                       <div className="relative">
                         <StickyNote className="absolute left-3 top-3 text-gray-400 w-4 h-4" />
                         <textarea
-                          className="w-full pl-9 pr-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-300 focus:border-transparent transition-all duration-200 resize-none text-black bg-white text-sm"
+                          className="w-full pl-9 pr-4 py-2.5 border-2 border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-300 focus:border-transparent transition-all duration-200 resize-none text-black bg-white text-sm"
                           rows="3"
                           value={formData.notes}
                           onChange={(e) =>
@@ -1662,13 +1690,13 @@ const Orders = () => {
               </div>
 
               <div className="space-y-4">
-                <div className="bg-gradient-to-br from-green-100 to-green-200 rounded-xl p-4 border border-green-300">
+                <div className="bg-gradient-to-br from-emerald-100 to-emerald-200 rounded-xl p-4 border-2 border-emerald-300">
                   <h4 className="text-sm font-semibold text-gray-700 mb-3 flex items-center gap-2">
-                    <Layers className="w-4 h-4 text-green-600" />
+                    <Layers className="w-4 h-4 text-emerald-600" />
                     Order Summary
                   </h4>
                   <div className="space-y-2 text-sm">
-                    <div className="flex justify-between py-1.5 border-b border-green-300/50">
+                    <div className="flex justify-between py-1.5 border-b border-emerald-300/50">
                       <span className="text-gray-600">Items:</span>
                       <span className="font-semibold text-gray-800">
                         {formData.items.length}
@@ -1683,11 +1711,11 @@ const Orders = () => {
                         )}
                       </span>
                     </div>
-                    <div className="flex justify-between pt-2 border-t-2 border-green-400">
+                    <div className="flex justify-between pt-2 border-t-2 border-emerald-400">
                       <span className="text-gray-700 font-semibold">
                         Grand Total:
                       </span>
-                      <span className="text-xl font-bold text-green-700">
+                      <span className="text-xl font-bold text-emerald-700">
                         TSh {calculateTotal(formData.items).toLocaleString()}
                       </span>
                     </div>
@@ -1695,7 +1723,7 @@ const Orders = () => {
                 </div>
 
                 <div className="grid grid-cols-2 gap-2">
-                  <div className="bg-blue-100 rounded-lg p-3 border border-blue-200">
+                  <div className="bg-blue-100 rounded-lg p-3 border-2 border-blue-200">
                     <p className="text-[10px] text-blue-600 font-medium uppercase tracking-wider">
                       Retail Items
                     </p>
@@ -1706,7 +1734,7 @@ const Orders = () => {
                       }
                     </p>
                   </div>
-                  <div className="bg-purple-100 rounded-lg p-3 border border-purple-200">
+                  <div className="bg-purple-100 rounded-lg p-3 border-2 border-purple-200">
                     <p className="text-[10px] text-purple-600 font-medium uppercase tracking-wider">
                       Wholesale Items
                     </p>
@@ -1728,16 +1756,16 @@ const Orders = () => {
                   <Tag className="w-4 h-4 text-gray-500" />
                   Add Items <span className="text-red-500">*</span>
                 </label>
-                <span className="text-xs text-gray-500 bg-gray-200 px-3 py-1 rounded-full border border-gray-300">
+                <span className="text-xs text-gray-500 bg-gray-100 px-3 py-1 rounded-full border-2 border-gray-200">
                   {formData.items.length} items added
                 </span>
               </div>
 
-              <div className="bg-gray-100 rounded-xl p-4 border border-gray-200">
+              <div className="bg-gray-100 rounded-xl p-4 border-2 border-gray-200">
                 <div className="grid grid-cols-1 sm:grid-cols-12 gap-2">
                   <div className="sm:col-span-4 relative">
                     <select
-                      className="w-full px-3.5 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-300 focus:border-transparent transition-all duration-200 text-black bg-white text-sm appearance-none pr-10 max-h-[200px] overflow-y-auto"
+                      className="w-full px-3.5 py-2.5 border-2 border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-300 focus:border-transparent transition-all duration-200 text-black bg-white text-sm appearance-none pr-10 max-h-[200px] overflow-y-auto"
                       value={newItem.itemId}
                       onChange={(e) =>
                         setNewItem({ ...newItem, itemId: e.target.value })
@@ -1766,7 +1794,7 @@ const Orders = () => {
                   </div>
 
                   <select
-                    className="sm:col-span-2 px-3.5 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-300 focus:border-transparent transition-all duration-200 text-black bg-white text-sm"
+                    className="sm:col-span-2 px-3.5 py-2.5 border-2 border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-300 focus:border-transparent transition-all duration-200 text-black bg-white text-sm"
                     value={newItem.priceType}
                     onChange={(e) =>
                       setNewItem({ ...newItem, priceType: e.target.value })
@@ -1779,7 +1807,7 @@ const Orders = () => {
                   <input
                     type="number"
                     min="1"
-                    className="sm:col-span-2 px-3.5 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-300 focus:border-transparent transition-all duration-200 text-black bg-white text-sm"
+                    className="sm:col-span-2 px-3.5 py-2.5 border-2 border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-300 focus:border-transparent transition-all duration-200 text-black bg-white text-sm"
                     value={newItem.quantity}
                     onChange={(e) =>
                       setNewItem({
@@ -1795,7 +1823,7 @@ const Orders = () => {
                     <input
                       type="number"
                       min="0"
-                      className="w-full pl-9 pr-3.5 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-300 focus:border-transparent transition-all duration-200 text-black bg-white text-sm"
+                      className="w-full pl-9 pr-3.5 py-2.5 border-2 border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-300 focus:border-transparent transition-all duration-200 text-black bg-white text-sm"
                       value={newItem.discount}
                       onChange={(e) =>
                         setNewItem({
@@ -1810,7 +1838,7 @@ const Orders = () => {
                   <button
                     type="button"
                     onClick={handleAddItem}
-                    className="sm:col-span-2 px-4 py-2.5 bg-green-300 text-green-800 font-semibold rounded-lg hover:bg-green-400 transition-all duration-300 hover:shadow-lg hover:shadow-green-200 hover:scale-[1.02] active:scale-95 text-sm shadow-sm flex items-center justify-center gap-2"
+                    className="sm:col-span-2 px-4 py-2.5 bg-emerald-500 text-white font-semibold rounded-lg hover:bg-emerald-600 transition-all duration-300 hover:shadow-lg hover:shadow-emerald-200 hover:scale-[1.02] active:scale-95 text-sm shadow-sm flex items-center justify-center gap-2 border-2 border-emerald-400"
                   >
                     <Plus className="w-4 h-4" />
                     Add
@@ -1824,15 +1852,15 @@ const Orders = () => {
             </div>
 
             {formData.items.length > 0 && (
-              <div className="mt-4 bg-white rounded-xl p-4 border border-gray-200">
+              <div className="mt-4 bg-white rounded-xl p-4 border-2 border-gray-200">
                 <div className="space-y-2 max-h-48 overflow-y-auto pr-1">
                   {formData.items.map((item, index) => (
                     <div
                       key={index}
-                      className={`flex items-center justify-between p-3 rounded-lg border transition-all ${
+                      className={`flex items-center justify-between p-3 rounded-lg border-2 transition-all ${
                         item.isExpired
                           ? "border-yellow-300 bg-yellow-100/50"
-                          : "border-gray-200 hover:border-green-300 bg-gray-100/50"
+                          : "border-gray-200 hover:border-emerald-300 bg-gray-100/50"
                       }`}
                     >
                       <div className="flex items-center gap-3 flex-wrap">
@@ -1846,7 +1874,7 @@ const Orders = () => {
                           TSh {item.unitPrice?.toLocaleString()}
                         </span>
                         {item.priceType === "Wholesale" && (
-                          <span className="text-[10px] bg-green-200 text-green-700 px-2 py-0.5 rounded-full font-semibold">
+                          <span className="text-[10px] bg-emerald-200 text-emerald-700 px-2 py-0.5 rounded-full font-semibold">
                             Wholesale
                           </span>
                         )}
@@ -1885,7 +1913,7 @@ const Orders = () => {
               </div>
             )}
 
-            <div className="mt-6 pt-4 border-t border-gray-200 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+            <div className="mt-6 pt-4 border-t-2 border-gray-200 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
               <div className="flex items-center gap-2 text-xs text-gray-500">
                 <AlertCircle className="w-4 h-4 text-yellow-500" />
                 <span>
@@ -1901,14 +1929,14 @@ const Orders = () => {
                     setShowCreateModal(false);
                     resetForm();
                   }}
-                  className="flex-1 sm:flex-none px-6 py-2.5 border border-gray-300 text-gray-600 font-semibold rounded-lg hover:bg-gray-100 hover:border-gray-400 transition-all duration-200 text-sm"
+                  className="flex-1 sm:flex-none px-6 py-2.5 border-2 border-gray-300 text-gray-600 font-semibold rounded-lg hover:bg-gray-100 hover:border-gray-400 transition-all duration-200 text-sm"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
                   disabled={formData.items.length === 0 || !isPhoneValid}
-                  className="flex-1 sm:flex-none px-6 py-2.5 bg-green-300 text-green-800 font-semibold rounded-lg hover:bg-green-400 transition-all duration-300 hover:shadow-lg hover:shadow-green-200 hover:scale-[1.02] active:scale-95 text-sm flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed shadow-md"
+                  className="flex-1 sm:flex-none px-6 py-2.5 bg-emerald-500 text-white font-semibold rounded-lg hover:bg-emerald-600 transition-all duration-300 hover:shadow-lg hover:shadow-emerald-200 hover:scale-[1.02] active:scale-95 text-sm flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed shadow-md border-2 border-emerald-400"
                 >
                   <CheckCircle className="w-4 h-4" />
                   Create Order
@@ -1955,7 +1983,7 @@ const Orders = () => {
           </div>
 
           <div className="p-6 space-y-6">
-            <div className="grid grid-cols-2 gap-4 p-4 bg-gray-100 rounded-xl border border-gray-200">
+            <div className="grid grid-cols-2 gap-4 p-4 bg-gray-100 rounded-xl border-2 border-gray-200">
               <div>
                 <p className="text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Customer
@@ -1977,7 +2005,7 @@ const Orders = () => {
                   Status
                 </p>
                 <span
-                  className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold border mt-1 ${statusColors[selectedOrder.status]}`}
+                  className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold border-2 mt-1 ${statusColors[selectedOrder.status]}`}
                 >
                   {selectedOrder.status}
                 </span>
@@ -2001,7 +2029,7 @@ const Orders = () => {
                 {selectedOrder.items?.map((item, index) => (
                   <div
                     key={index}
-                    className="flex justify-between items-center p-3 bg-gray-100 rounded-lg border border-gray-200"
+                    className="flex justify-between items-center p-3 bg-gray-100 rounded-lg border-2 border-gray-200"
                   >
                     <div className="flex items-center gap-3">
                       <span className="font-medium text-gray-800 text-sm">
@@ -2011,7 +2039,7 @@ const Orders = () => {
                         ×{item.quantity}
                       </span>
                       {item.priceType === "Wholesale" && (
-                        <span className="text-[10px] bg-green-200 text-green-700 px-2 py-0.5 rounded-full font-semibold">
+                        <span className="text-[10px] bg-emerald-200 text-emerald-700 px-2 py-0.5 rounded-full font-semibold">
                           Wholesale
                         </span>
                       )}
@@ -2024,7 +2052,7 @@ const Orders = () => {
               </div>
             </div>
 
-            <div className="border-t border-gray-200 pt-4">
+            <div className="border-t-2 border-gray-200 pt-4">
               <div className="space-y-1.5">
                 <div className="flex justify-between text-sm">
                   <span className="text-gray-500">Subtotal</span>
@@ -2035,14 +2063,14 @@ const Orders = () => {
                 {selectedOrder.totalDiscount > 0 && (
                   <div className="flex justify-between text-sm">
                     <span className="text-gray-500">Discount</span>
-                    <span className="font-medium text-green-700">
+                    <span className="font-medium text-emerald-700">
                       -{formatCurrency(selectedOrder.totalDiscount)}
                     </span>
                   </div>
                 )}
-                <div className="flex justify-between text-base font-bold pt-2 border-t border-gray-200">
+                <div className="flex justify-between text-base font-bold pt-2 border-t-2 border-gray-200">
                   <span className="text-gray-800">Total</span>
-                  <span className="text-green-700">
+                  <span className="text-emerald-700">
                     {formatCurrency(selectedOrder.grandTotal)}
                   </span>
                 </div>
@@ -2050,7 +2078,7 @@ const Orders = () => {
             </div>
 
             {selectedOrder.notes && (
-              <div className="p-3 bg-yellow-100 rounded-lg border border-yellow-200">
+              <div className="p-3 bg-yellow-100 rounded-lg border-2 border-yellow-200">
                 <p className="text-sm text-yellow-800 flex items-start gap-2">
                   <StickyNote className="w-4 h-4 text-yellow-500 flex-shrink-0 mt-0.5" />
                   {selectedOrder.notes}
@@ -2132,7 +2160,7 @@ const Orders = () => {
           </div>
 
           <div className="p-6 space-y-6">
-            <div className="grid grid-cols-2 gap-4 p-4 bg-gray-100 rounded-xl border border-gray-200">
+            <div className="grid grid-cols-2 gap-4 p-4 bg-gray-100 rounded-xl border-2 border-gray-200">
               <div>
                 <p className="text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Customer
@@ -2154,13 +2182,13 @@ const Orders = () => {
                   Status
                 </p>
                 <span
-                  className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold border mt-1 ${requestStatusColors[selectedRequest.status]}`}
+                  className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold border-2 mt-1 ${requestStatusColors[selectedRequest.status]}`}
                 >
                   {statusDisplay}
                 </span>
                 {selectedRequest.reviewCycle &&
                   selectedRequest.reviewCycle > 1 && (
-                    <span className="ml-2 text-[10px] bg-purple-100 text-purple-700 px-2 py-0.5 rounded-full font-medium">
+                    <span className="ml-2 text-[10px] bg-purple-100 text-purple-700 px-2 py-0.5 rounded-full font-medium border border-purple-200">
                       Cycle {selectedRequest.reviewCycle}
                     </span>
                   )}
@@ -2170,7 +2198,7 @@ const Orders = () => {
                   Source
                 </p>
                 <span
-                  className={`inline-block px-2 py-1 rounded-full text-xs font-semibold mt-1 ${getSourceBadge(selectedRequest.source)}`}
+                  className={`inline-block px-2 py-1 rounded-full text-xs font-semibold mt-1 border ${getSourceBadge(selectedRequest.source)}`}
                 >
                   {selectedRequest.source || "Website"}
                 </span>
@@ -2208,7 +2236,7 @@ const Orders = () => {
                       {formatDate(selectedRequest.approvedDeliveryDate)}
                     </span>
                     {selectedRequest.deliveryDateChanged && (
-                      <span className="text-[10px] bg-amber-100 text-amber-700 px-2 py-0.5 rounded-full font-medium">
+                      <span className="text-[10px] bg-amber-100 text-amber-700 px-2 py-0.5 rounded-full font-medium border border-amber-200">
                         Changed
                       </span>
                     )}
@@ -2225,7 +2253,7 @@ const Orders = () => {
               </div>
             </div>
 
-            <div className="border border-gray-200 rounded-xl overflow-hidden">
+            <div className="border-2 border-gray-200 rounded-xl overflow-hidden">
               <button
                 onClick={() => toggleSection("items")}
                 className="w-full flex items-center justify-between p-3 bg-gray-50 hover:bg-gray-100 transition-colors"
@@ -2273,7 +2301,7 @@ const Orders = () => {
                   {selectedRequest.items?.map((item, index) => (
                     <div
                       key={index}
-                      className="flex justify-between items-center p-2 bg-gray-100 rounded-lg border border-gray-200"
+                      className="flex justify-between items-center p-2 bg-gray-100 rounded-lg border-2 border-gray-200"
                     >
                       <div className="flex items-center gap-2 flex-wrap">
                         <span className="font-medium text-gray-800 text-sm">
@@ -2284,7 +2312,7 @@ const Orders = () => {
                         </span>
                         {item.status && (
                           <span
-                            className={`text-[10px] px-2 py-0.5 rounded-full font-medium ${getItemStatusBadge(item.status)}`}
+                            className={`text-[10px] px-2 py-0.5 rounded-full font-medium border ${getItemStatusBadge(item.status)}`}
                           >
                             {item.status}
                           </span>
@@ -2306,7 +2334,7 @@ const Orders = () => {
 
             {selectedRequest.amendmentHistory &&
               selectedRequest.amendmentHistory.length > 0 && (
-                <div className="border border-gray-200 rounded-xl overflow-hidden">
+                <div className="border-2 border-gray-200 rounded-xl overflow-hidden">
                   <button
                     onClick={() => toggleSection("amendment")}
                     className="w-full flex items-center justify-between p-3 bg-gray-50 hover:bg-gray-100 transition-colors"
@@ -2332,7 +2360,7 @@ const Orders = () => {
                         (amendment, idx) => (
                           <div
                             key={idx}
-                            className="bg-gray-50 p-3 rounded-lg border border-gray-200"
+                            className="bg-gray-50 p-3 rounded-lg border-2 border-gray-200"
                           >
                             <div className="flex items-center justify-between mb-2">
                               <span className="text-sm font-semibold text-gray-700">
@@ -2343,7 +2371,7 @@ const Orders = () => {
                               </span>
                             </div>
                             {amendment.customerComment && (
-                              <p className="text-sm text-gray-600 mb-2 bg-white p-2 rounded border border-gray-200">
+                              <p className="text-sm text-gray-600 mb-2 bg-white p-2 rounded border-2 border-gray-200">
                                 💬 {amendment.customerComment}
                               </p>
                             )}
@@ -2386,7 +2414,7 @@ const Orders = () => {
                               </div>
                             </div>
                             {amendment.previousRequestedDeliveryDate && (
-                              <div className="mt-2 pt-2 border-t border-gray-200 text-xs">
+                              <div className="mt-2 pt-2 border-t-2 border-gray-200 text-xs">
                                 <div className="flex justify-between">
                                   <span className="text-gray-400">
                                     Previous Delivery:
@@ -2417,7 +2445,7 @@ const Orders = () => {
                 </div>
               )}
 
-            <div className="border border-gray-200 rounded-xl overflow-hidden">
+            <div className="border-2 border-gray-200 rounded-xl overflow-hidden">
               <button
                 onClick={() => toggleSection("delivery")}
                 className="w-full flex items-center justify-between p-3 bg-gray-50 hover:bg-gray-100 transition-colors"
@@ -2428,7 +2456,7 @@ const Orders = () => {
                     Delivery Information
                   </span>
                   {selectedRequest.deliveryDateChanged && (
-                    <span className="text-xs text-amber-600 bg-amber-100 px-2 py-0.5 rounded-full font-medium">
+                    <span className="text-xs text-amber-600 bg-amber-100 px-2 py-0.5 rounded-full font-medium border border-amber-200">
                       Changed
                     </span>
                   )}
@@ -2480,7 +2508,7 @@ const Orders = () => {
               selectedRequest.status === "Accepted" ||
               selectedRequest.status === "Converted" ||
               selectedRequest.status === "Rejected") && (
-              <div className="border border-gray-200 rounded-xl overflow-hidden">
+              <div className="border-2 border-gray-200 rounded-xl overflow-hidden">
                 <button
                   onClick={() => toggleSection("review")}
                   className="w-full flex items-center justify-between p-3 bg-gray-50 hover:bg-gray-100 transition-colors"
@@ -2522,7 +2550,7 @@ const Orders = () => {
                     {selectedRequest.reviewNotes && (
                       <div className="py-1">
                         <p className="text-gray-500 mb-1">Review Notes</p>
-                        <p className="font-medium text-gray-800 bg-gray-50 p-2 rounded border border-gray-200">
+                        <p className="font-medium text-gray-800 bg-gray-50 p-2 rounded border-2 border-gray-200">
                           {selectedRequest.reviewNotes}
                         </p>
                       </div>
@@ -2532,7 +2560,7 @@ const Orders = () => {
                         <p className="text-gray-500 mb-1 text-red-600 font-medium">
                           Rejection Reason
                         </p>
-                        <p className="font-medium text-red-700 bg-red-50 p-2 rounded border border-red-200">
+                        <p className="font-medium text-red-700 bg-red-50 p-2 rounded border-2 border-red-200">
                           {selectedRequest.reviewNotes || "No reason provided"}
                         </p>
                       </div>
@@ -2543,7 +2571,7 @@ const Orders = () => {
             )}
 
             {selectedRequest.notes && (
-              <div className="p-3 bg-yellow-100 rounded-lg border border-yellow-200">
+              <div className="p-3 bg-yellow-100 rounded-lg border-2 border-yellow-200">
                 <p className="text-sm text-yellow-800 flex items-start gap-2">
                   <StickyNote className="w-4 h-4 text-yellow-500 flex-shrink-0 mt-0.5" />
                   {selectedRequest.notes}
@@ -2551,7 +2579,7 @@ const Orders = () => {
               </div>
             )}
 
-            <div className="flex flex-col sm:flex-row gap-3 pt-4 border-t border-gray-200">
+            <div className="flex flex-col sm:flex-row gap-3 pt-4 border-t-2 border-gray-200">
               {selectedRequest.status === "Pending Review" && (
                 <>
                   <button
@@ -2560,14 +2588,14 @@ const Orders = () => {
                       openReviewModal(selectedRequest);
                     }}
                     disabled={requestActionLoading}
-                    className="flex-1 bg-blue-300 text-blue-800 font-semibold py-2.5 px-5 rounded-lg hover:bg-blue-400 transition-all duration-300 disabled:opacity-50 flex items-center justify-center gap-2 text-sm"
+                    className="flex-1 bg-blue-500 text-white font-semibold py-2.5 px-5 rounded-lg hover:bg-blue-600 transition-all duration-300 disabled:opacity-50 flex items-center justify-center gap-2 text-sm border-2 border-blue-400"
                   >
                     <Edit className="w-4 h-4" /> Review Request
                   </button>
                   <button
                     onClick={() => handleRejectRequest(selectedRequest._id)}
                     disabled={requestActionLoading}
-                    className="flex-1 bg-white border border-gray-300 text-gray-600 font-semibold py-2.5 px-5 rounded-lg hover:bg-gray-100 hover:border-gray-400 transition-all duration-200 disabled:opacity-50 flex items-center justify-center gap-2 text-sm"
+                    className="flex-1 bg-white border-2 border-gray-300 text-gray-600 font-semibold py-2.5 px-5 rounded-lg hover:bg-gray-100 hover:border-gray-400 transition-all duration-200 disabled:opacity-50 flex items-center justify-center gap-2 text-sm"
                   >
                     <XCircle className="w-4 h-4" /> Reject
                   </button>
@@ -2578,7 +2606,7 @@ const Orders = () => {
                 <button
                   onClick={() => handleRejectRequest(selectedRequest._id)}
                   disabled={requestActionLoading}
-                  className="flex-1 bg-white border border-gray-300 text-gray-600 font-semibold py-2.5 px-5 rounded-lg hover:bg-gray-100 hover:border-gray-400 transition-all duration-200 disabled:opacity-50 flex items-center justify-center gap-2 text-sm"
+                  className="flex-1 bg-white border-2 border-gray-300 text-gray-600 font-semibold py-2.5 px-5 rounded-lg hover:bg-gray-100 hover:border-gray-400 transition-all duration-200 disabled:opacity-50 flex items-center justify-center gap-2 text-sm"
                 >
                   <XCircle className="w-4 h-4" /> Reject
                 </button>
@@ -2588,10 +2616,10 @@ const Orders = () => {
                 <button
                   onClick={() => handleConvertRequest(selectedRequest._id)}
                   disabled={requestActionLoading}
-                  className="flex-1 bg-purple-300 text-purple-800 font-semibold py-2.5 px-5 rounded-lg hover:bg-purple-400 transition-all duration-300 disabled:opacity-50 flex items-center justify-center gap-2 text-sm"
+                  className="flex-1 bg-purple-500 text-white font-semibold py-2.5 px-5 rounded-lg hover:bg-purple-600 transition-all duration-300 disabled:opacity-50 flex items-center justify-center gap-2 text-sm border-2 border-purple-400"
                 >
                   {requestActionLoading ? (
-                    <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-purple-800" />
+                    <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white" />
                   ) : (
                     <>
                       <ArrowRight className="w-4 h-4" /> Convert to Order
@@ -2602,7 +2630,7 @@ const Orders = () => {
 
               {selectedRequest.status === "Converted" &&
                 selectedRequest.order && (
-                  <div className="w-full p-3 bg-purple-100 rounded-lg border border-purple-200">
+                  <div className="w-full p-3 bg-purple-100 rounded-lg border-2 border-purple-200">
                     <p className="text-sm text-purple-700 flex items-center gap-2">
                       <CheckCircle className="w-4 h-4" />
                       Converted to Order:{" "}
@@ -2613,7 +2641,7 @@ const Orders = () => {
                       </span>
                       {typeof selectedRequest.order === "object" &&
                         selectedRequest.order.status && (
-                          <span className="text-[10px] bg-purple-200 text-purple-800 px-2 py-0.5 rounded-full font-medium">
+                          <span className="text-[10px] bg-purple-200 text-purple-800 px-2 py-0.5 rounded-full font-medium border border-purple-300">
                             {selectedRequest.order.status}
                           </span>
                         )}
@@ -2622,7 +2650,7 @@ const Orders = () => {
                 )}
 
               {selectedRequest.status === "Rejected" && (
-                <div className="w-full p-3 bg-red-100 rounded-lg border border-red-200">
+                <div className="w-full p-3 bg-red-100 rounded-lg border-2 border-red-200">
                   <p className="text-sm text-red-700 flex items-center gap-2">
                     <XCircle className="w-4 h-4" />
                     This request has been rejected.
@@ -2635,10 +2663,6 @@ const Orders = () => {
       </div>
     );
   };
-
-  // ==========================================================================
-  // RENDER REVIEW MODAL
-  // ==========================================================================
 
   /**
    * Render Review Request Modal
@@ -2691,17 +2715,17 @@ const Orders = () => {
 
           <div className="p-6 space-y-6">
             <div className="grid grid-cols-3 gap-3">
-              <div className="bg-gray-100 rounded-lg p-3 text-center border border-gray-200">
+              <div className="bg-gray-100 rounded-lg p-3 text-center border-2 border-gray-200">
                 <p className="text-xs text-gray-500">Total Items</p>
                 <p className="text-xl font-bold text-gray-800">{totalItems}</p>
               </div>
-              <div className="bg-emerald-100 rounded-lg p-3 text-center border border-emerald-200">
+              <div className="bg-emerald-100 rounded-lg p-3 text-center border-2 border-emerald-200">
                 <p className="text-xs text-emerald-600">Accepted</p>
                 <p className="text-xl font-bold text-emerald-700">
                   {acceptedCount}
                 </p>
               </div>
-              <div className="bg-red-100 rounded-lg p-3 text-center border border-red-200">
+              <div className="bg-red-100 rounded-lg p-3 text-center border-2 border-red-200">
                 <p className="text-xs text-red-600">Rejected</p>
                 <p className="text-xl font-bold text-red-700">
                   {rejectedCount}
@@ -2714,7 +2738,7 @@ const Orders = () => {
                 <Package className="w-4 h-4 text-gray-500" />
                 Review Each Item
                 {pendingCount > 0 && (
-                  <span className="text-xs text-amber-600 bg-amber-100 px-2 py-0.5 rounded-full font-medium">
+                  <span className="text-xs text-amber-600 bg-amber-100 px-2 py-0.5 rounded-full font-medium border border-amber-200">
                     {pendingCount} pending
                   </span>
                 )}
@@ -2723,7 +2747,7 @@ const Orders = () => {
                 {reviewItems.map((item, index) => (
                   <div
                     key={index}
-                    className={`p-3 rounded-lg border transition-all ${
+                    className={`p-3 rounded-lg border-2 transition-all ${
                       item.status === "Accepted"
                         ? "border-emerald-300 bg-emerald-50"
                         : item.status === "Rejected"
@@ -2747,10 +2771,10 @@ const Orders = () => {
                           onClick={() =>
                             updateReviewItemStatus(index, "Accepted")
                           }
-                          className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all duration-200 flex items-center gap-1 ${
+                          className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all duration-200 flex items-center gap-1 border-2 ${
                             item.status === "Accepted"
-                              ? "bg-emerald-500 text-white shadow-md shadow-emerald-200"
-                              : "bg-gray-200 text-gray-600 hover:bg-emerald-100 hover:text-emerald-700"
+                              ? "bg-emerald-500 text-white border-emerald-500 shadow-md shadow-emerald-200"
+                              : "bg-gray-200 text-gray-600 border-gray-300 hover:bg-emerald-100 hover:text-emerald-700 hover:border-emerald-300"
                           }`}
                         >
                           <CheckCircle className="w-3.5 h-3.5" />
@@ -2760,10 +2784,10 @@ const Orders = () => {
                           onClick={() =>
                             updateReviewItemStatus(index, "Rejected")
                           }
-                          className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all duration-200 flex items-center gap-1 ${
+                          className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all duration-200 flex items-center gap-1 border-2 ${
                             item.status === "Rejected"
-                              ? "bg-red-500 text-white shadow-md shadow-red-200"
-                              : "bg-gray-200 text-gray-600 hover:bg-red-100 hover:text-red-700"
+                              ? "bg-red-500 text-white border-red-500 shadow-md shadow-red-200"
+                              : "bg-gray-200 text-gray-600 border-gray-300 hover:bg-red-100 hover:text-red-700 hover:border-red-300"
                           }`}
                         >
                           <XCircle className="w-3.5 h-3.5" />
@@ -2783,7 +2807,7 @@ const Orders = () => {
                               e.target.value,
                             )
                           }
-                          className="w-full px-3 py-1.5 text-sm border border-red-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-300 focus:border-transparent bg-white"
+                          className="w-full px-3 py-1.5 text-sm border-2 border-red-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-300 focus:border-transparent bg-white"
                         />
                       </div>
                     )}
@@ -2807,7 +2831,7 @@ const Orders = () => {
                       approvedDeliveryDate: e.target.value,
                     })
                   }
-                  className="w-full px-3.5 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-300 focus:border-transparent transition-all duration-200 text-black bg-white text-sm"
+                  className="w-full px-3.5 py-2.5 border-2 border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-300 focus:border-transparent transition-all duration-200 text-black bg-white text-sm"
                   required
                 />
                 {requestToReview.requestedDeliveryDate && (
@@ -2832,7 +2856,7 @@ const Orders = () => {
                       deliveryDateChangeReason: e.target.value,
                     })
                   }
-                  className="w-full px-3.5 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-300 focus:border-transparent transition-all duration-200 text-black bg-white text-sm"
+                  className="w-full px-3.5 py-2.5 border-2 border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-300 focus:border-transparent transition-all duration-200 text-black bg-white text-sm"
                 />
               </div>
             </div>
@@ -2852,11 +2876,11 @@ const Orders = () => {
                     reviewNotes: e.target.value,
                   })
                 }
-                className="w-full px-3.5 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-300 focus:border-transparent transition-all duration-200 resize-none text-black bg-white text-sm"
+                className="w-full px-3.5 py-2.5 border-2 border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-300 focus:border-transparent transition-all duration-200 resize-none text-black bg-white text-sm"
               />
             </div>
 
-            <div className="bg-gray-100 rounded-xl p-4 border border-gray-200">
+            <div className="bg-gray-100 rounded-xl p-4 border-2 border-gray-200">
               <div className="flex justify-between text-sm">
                 <span className="text-gray-600">Items Accepted:</span>
                 <span className="font-semibold text-emerald-600">
@@ -2875,7 +2899,7 @@ const Orders = () => {
                   {pendingCount}
                 </span>
               </div>
-              <div className="flex justify-between text-sm pt-2 border-t border-gray-300 mt-2">
+              <div className="flex justify-between text-sm pt-2 border-t-2 border-gray-300 mt-2">
                 <span className="text-gray-700 font-medium">
                   Overall Status:
                 </span>
@@ -2895,21 +2919,21 @@ const Orders = () => {
               </div>
             </div>
 
-            <div className="flex flex-col sm:flex-row gap-3 pt-4 border-t border-gray-200">
+            <div className="flex flex-col sm:flex-row gap-3 pt-4 border-t-2 border-gray-200">
               <button
                 onClick={() => {
                   setShowReviewModal(false);
                   setRequestToReview(null);
                   setReviewItems([]);
                 }}
-                className="flex-1 px-6 py-2.5 border border-gray-300 text-gray-600 font-semibold rounded-lg hover:bg-gray-100 hover:border-gray-400 transition-all duration-200 text-sm"
+                className="flex-1 px-6 py-2.5 border-2 border-gray-300 text-gray-600 font-semibold rounded-lg hover:bg-gray-100 hover:border-gray-400 transition-all duration-200 text-sm"
               >
                 Cancel
               </button>
               <button
                 onClick={handleSubmitReview}
                 disabled={reviewLoading || pendingCount > 0}
-                className="flex-1 px-6 py-2.5 bg-blue-300 text-blue-800 font-semibold rounded-lg hover:bg-blue-400 transition-all duration-300 hover:shadow-lg hover:shadow-blue-200 hover:scale-[1.02] active:scale-95 text-sm flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed shadow-md"
+                className="flex-1 px-6 py-2.5 bg-blue-500 text-white font-semibold rounded-lg hover:bg-blue-600 transition-all duration-300 hover:shadow-lg hover:shadow-blue-200 hover:scale-[1.02] active:scale-95 text-sm flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed shadow-md border-2 border-blue-400"
               >
                 {reviewLoading ? (
                   <>
@@ -2945,7 +2969,7 @@ const Orders = () => {
         {/* Header */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
           <div className="flex items-center gap-4">
-            <div className="w-12 h-12 bg-gradient-to-br from-green-400 to-green-500 rounded-xl flex items-center justify-center shadow-lg shadow-green-200">
+            <div className="w-12 h-12 bg-gradient-to-br from-emerald-400 to-emerald-500 rounded-xl flex items-center justify-center shadow-lg shadow-emerald-200 border-2 border-emerald-300">
               <Package className="w-6 h-6 text-white" />
             </div>
             <div>
@@ -2959,7 +2983,7 @@ const Orders = () => {
           </div>
           <button
             onClick={() => setShowCreateModal(true)}
-            className="flex items-center gap-2 px-5 py-2.5 bg-green-300 text-green-800 rounded-xl hover:bg-green-400 transition-all duration-300 hover:shadow-lg hover:shadow-green-200 hover:scale-[1.02] active:scale-95 text-sm font-semibold shadow-md"
+            className="flex items-center gap-2 px-5 py-2.5 bg-emerald-500 text-white rounded-xl hover:bg-emerald-600 transition-all duration-300 hover:shadow-lg hover:shadow-emerald-200 hover:scale-[1.02] active:scale-95 text-sm font-semibold shadow-md border-2 border-emerald-400"
           >
             <Plus className="w-4 h-4" />
             New Order
@@ -2973,18 +2997,18 @@ const Orders = () => {
             return (
               <div
                 key={index}
-                className={`bg-white p-4 sm:p-5 rounded-xl border ${stat.border} shadow-sm hover:shadow-md transition-all duration-300 hover:scale-[1.02]`}
+                className={`bg-white p-4 sm:p-5 rounded-xl border-2 ${stat.border} shadow-md hover:shadow-lg transition-all duration-300 hover:scale-[1.02]`}
               >
                 <div className="flex items-center justify-between">
                   <div>
                     <p className="text-xs font-medium text-gray-500 uppercase tracking-wider">
                       {stat.label}
                     </p>
-                    <p className="text-lg sm:text-xl font-bold text-gray-800 mt-1">
+                    <p className={`text-lg sm:text-xl font-bold ${stat.textColor} mt-1`}>
                       {stat.value}
                     </p>
                   </div>
-                  <div className={`${stat.bg} p-2.5 rounded-lg`}>
+                  <div className={`${stat.iconBg} p-2.5 rounded-lg border-2 ${stat.border}`}>
                     <Icon className={`w-5 h-5 ${stat.iconColor}`} />
                   </div>
                 </div>
@@ -3004,15 +3028,15 @@ const Orders = () => {
 
             {/* Orders Pagination */}
             {filteredOrders.length > 0 && (
-              <div className="mt-4 bg-white px-4 sm:px-5 py-3 sm:py-4 rounded-xl border border-gray-200 shadow-sm flex flex-col sm:flex-row justify-between items-center gap-3">
+              <div className="mt-4 bg-white px-4 sm:px-5 py-3 sm:py-4 rounded-xl border-2 border-gray-200 shadow-sm flex flex-col sm:flex-row justify-between items-center gap-3">
                 <span className="text-xs text-gray-500">
                   Showing{" "}
                   <span className="font-semibold text-gray-700">
-                    {indexOfFirstItem + 1}
+                    {ordersIndexOfFirstItem + 1}
                   </span>{" "}
                   to{" "}
                   <span className="font-semibold text-gray-700">
-                    {Math.min(indexOfLastItem, filteredOrders.length)}
+                    {Math.min(ordersIndexOfLastItem, filteredOrders.length)}
                   </span>{" "}
                   of{" "}
                   <span className="font-semibold text-gray-700">
@@ -3021,11 +3045,11 @@ const Orders = () => {
                   orders
                 </span>
                 {renderPagination(
-                  currentPage,
-                  totalPages,
-                  paginate,
-                  nextPage,
-                  prevPage,
+                  ordersCurrentPage,
+                  ordersTotalPages,
+                  ordersPaginate,
+                  ordersNextPage,
+                  ordersPrevPage,
                 )}
               </div>
             )}
@@ -3035,17 +3059,17 @@ const Orders = () => {
             {renderRequestFilters()}
             {renderRequestsList()}
 
-            {/* Requests Pagination */}
+            {/* Requests Pagination - SEPARATE */}
             {filteredRequests.length > 0 && (
-              <div className="mt-4 bg-white px-4 sm:px-5 py-3 sm:py-4 rounded-xl border border-gray-200 shadow-sm flex flex-col sm:flex-row justify-between items-center gap-3">
+              <div className="mt-4 bg-white px-4 sm:px-5 py-3 sm:py-4 rounded-xl border-2 border-gray-200 shadow-sm flex flex-col sm:flex-row justify-between items-center gap-3">
                 <span className="text-xs text-gray-500">
                   Showing{" "}
                   <span className="font-semibold text-gray-700">
-                    {requestIndexOfFirstItem + 1}
+                    {requestsIndexOfFirstItem + 1}
                   </span>{" "}
                   to{" "}
                   <span className="font-semibold text-gray-700">
-                    {Math.min(requestIndexOfLastItem, filteredRequests.length)}
+                    {Math.min(requestsIndexOfLastItem, filteredRequests.length)}
                   </span>{" "}
                   of{" "}
                   <span className="font-semibold text-gray-700">
@@ -3054,11 +3078,11 @@ const Orders = () => {
                   requests
                 </span>
                 {renderPagination(
-                  currentRequestPage,
-                  requestTotalPages,
-                  requestPaginate,
-                  requestNextPage,
-                  requestPrevPage,
+                  requestsCurrentPage,
+                  requestsTotalPages,
+                  requestsPaginate,
+                  requestsNextPage,
+                  requestsPrevPage,
                 )}
               </div>
             )}

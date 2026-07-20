@@ -315,7 +315,7 @@ const CustomerRequestModal = ({ requestNumber, onClose, onRefresh }) => {
       "Pending Review": "Inakaguliwa",
       "Awaiting Customer Confirmation": "Inasubiri Uthibitisho Wako",
       Accepted: "Imekubaliwa",
-      Converted: "Imegeuzwa Kuwa Agizo",
+      Converted: "Order Inaandaliwa",
       Rejected: "Imekataliwa",
       Cancelled: "Imefutwa",
     };
