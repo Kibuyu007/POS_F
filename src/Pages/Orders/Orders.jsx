@@ -9,6 +9,7 @@
  * - Reviewing requests (accept/reject items, change delivery date)
  * - Deleting orders
  * - Pagination for both orders and requests
+ * - Marking requests as collected (when ready for pickup)
  */
 
 import { useState, useEffect } from "react";
@@ -56,6 +57,7 @@ import {
   Check,
   X as XIcon,
   Hourglass,
+  PackageCheck,
 } from "lucide-react";
 
 import BASE_URL from "../../Utils/config";
@@ -180,6 +182,10 @@ const Orders = () => {
       filtered = filtered.filter((r) => r.status === "Rejected");
     } else if (requestsFilter === "cancelled") {
       filtered = filtered.filter((r) => r.status === "Cancelled");
+    } else if (requestsFilter === "ready") {
+      filtered = filtered.filter((r) => r.status === "Ready For Pickup");
+    } else if (requestsFilter === "collected") {
+      filtered = filtered.filter((r) => r.status === "Collected");
     }
 
     // Filter by search term
@@ -311,6 +317,8 @@ const Orders = () => {
       Converted: "Converted",
       Rejected: "Rejected",
       Cancelled: "Cancelled",
+      "Ready For Pickup": "Ready For Pickup",
+      Collected: "Collected",
     };
     return nameMap[status] || status;
   };
@@ -353,6 +361,8 @@ const Orders = () => {
       Converted: "bg-purple-100 text-purple-700 border-purple-200",
       Rejected: "bg-red-100 text-red-700 border-red-200",
       Cancelled: "bg-gray-100 text-gray-700 border-gray-200",
+      "Ready For Pickup": "bg-cyan-100 text-cyan-700 border-cyan-200",
+      Collected: "bg-emerald-100 text-emerald-700 border-emerald-200",
     };
     return statusMap[status] || "bg-gray-100 text-gray-700 border-gray-200";
   };
@@ -368,6 +378,8 @@ const Orders = () => {
       Converted: CheckCircle,
       Rejected: XCircle,
       Cancelled: XCircle,
+      "Ready For Pickup": PackageCheck,
+      Collected: PackageCheck,
     };
     return iconMap[status] || Info;
   };
@@ -635,6 +647,36 @@ const Orders = () => {
   // ==========================================================================
 
   /**
+   * Mark request as collected - NEW FUNCTION
+   */
+  const handleMarkCollected = async (requestId) => {
+    if (!window.confirm("Mark this request as collected? This action cannot be undone.")) return;
+    
+    setRequestActionLoading(true);
+    try {
+      const response = await axios.put(
+        `${BASE_URL}/api/orders/requests/${requestId}/collect`,
+        {},
+        { withCredentials: true },
+      );
+
+      if (response.data.success) {
+        toast.success("✅ Request marked as collected successfully!");
+        await fetchRequests();
+        setShowRequestDetailModal(false);
+      } else {
+        toast.error(response.data.message || "Failed to mark request as collected");
+      }
+    } catch (error) {
+      console.error("Failed to mark request as collected:", error);
+      const errorMsg = error.response?.data?.message || "Failed to mark request as collected";
+      toast.error(errorMsg);
+    } finally {
+      setRequestActionLoading(false);
+    }
+  };
+
+  /**
    * Convert a request to an order - Only for Accepted requests
    */
   const handleConvertRequest = async (requestId) => {
@@ -868,6 +910,8 @@ const Orders = () => {
     Converted: "bg-purple-50 text-purple-700 border-purple-200",
     Rejected: "bg-red-50 text-red-700 border-red-200",
     Cancelled: "bg-gray-50 text-gray-700 border-gray-200",
+    "Ready For Pickup": "bg-cyan-50 text-cyan-700 border-cyan-200",
+    Collected: "bg-emerald-50 text-emerald-700 border-emerald-200",
   };
 
   const statusOptions = [
@@ -888,6 +932,8 @@ const Orders = () => {
     converted: (requests || []).filter((r) => r.status === "Converted").length,
     rejected: (requests || []).filter((r) => r.status === "Rejected").length,
     cancelled: (requests || []).filter((r) => r.status === "Cancelled").length,
+    ready: (requests || []).filter((r) => r.status === "Ready For Pickup").length,
+    collected: (requests || []).filter((r) => r.status === "Collected").length,
   };
 
   const statsData = [
@@ -1093,6 +1139,17 @@ const Orders = () => {
               {requestStats.pending}
             </span>
           )}
+          {requestStats.ready > 0 && (
+            <span
+              className={`text-xs px-2 py-0.5 rounded-full ${
+                activeView === "requests"
+                  ? "bg-white/20 text-white"
+                  : "bg-cyan-200 text-cyan-700"
+              }`}
+            >
+              {requestStats.ready}
+            </span>
+          )}
         </button>
       </div>
 
@@ -1280,7 +1337,7 @@ const Orders = () => {
   // ==========================================================================
 
   /**
-   * Render request status filter pills
+   * Render request status filter pills - ADDED "Ready For Pickup" and "Collected"
    */
   const renderRequestFilters = () => (
     <div className="flex flex-wrap gap-2 mb-5">
@@ -1315,6 +1372,18 @@ const Orders = () => {
           color: "gray",
           count: requestStats.cancelled,
         },
+        {
+          key: "ready",
+          label: "Ready",
+          color: "cyan",
+          count: requestStats.ready,
+        },
+        {
+          key: "collected",
+          label: "Collected",
+          color: "emerald",
+          count: requestStats.collected,
+        },
       ].map((tab) => {
         const isActive = requestsFilter === tab.key;
         const dotColor = {
@@ -1323,6 +1392,7 @@ const Orders = () => {
           purple: "bg-purple-400",
           red: "bg-red-400",
           gray: "bg-gray-400",
+          cyan: "bg-cyan-400",
         }[tab.color];
         const activeBg = {
           amber: "bg-amber-500 border-amber-500 text-white",
@@ -1330,6 +1400,7 @@ const Orders = () => {
           purple: "bg-purple-500 border-purple-500 text-white",
           red: "bg-red-500 border-red-500 text-white",
           gray: "bg-gray-500 border-gray-500 text-white",
+          cyan: "bg-cyan-500 border-cyan-500 text-white",
         }[tab.color];
 
         return (
@@ -1358,7 +1429,7 @@ const Orders = () => {
   );
 
   /**
-   * Render a single request card - LIGHT GREY BG
+   * Render a single request card - LIGHT GREY BG with Collect button
    */
   const renderRequestCard = (request) => {
     const StatusIcon = getRequestStatusIcon(request.status);
@@ -1379,6 +1450,7 @@ const Orders = () => {
     const canReject =
       request.status === "Pending Review" ||
       request.status === "Awaiting Customer Confirmation";
+    const canCollect = request.status === "Ready For Pickup";
 
     return (
       <div
@@ -1486,7 +1558,7 @@ const Orders = () => {
                 <button
                   onClick={() => openReviewModal(request)}
                   disabled={requestActionLoading}
-                  className="flex items-center gap-1 px-3 py-1.5 bg-blue-500 text-white text-xs font-semibold rounded-lg hover:bg-blue-600 hover:shadow-md transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="flex items-center gap-1 px-3 py-1.5 bg-blue-500 text-white text-xs font-semibold rounded-lg hover:bg-blue-600 hover:shadow-md transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed border-2 border-blue-400"
                   title="Review Request"
                 >
                   <Edit className="w-3.5 h-3.5" />
@@ -1518,10 +1590,22 @@ const Orders = () => {
               <button
                 onClick={() => handleConvertRequest(request._id)}
                 disabled={requestActionLoading}
-                className="flex items-center gap-1 px-3 py-1.5 bg-purple-500 text-white text-xs font-semibold rounded-lg hover:bg-purple-600 hover:shadow-md transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                className="flex items-center gap-1 px-3 py-1.5 bg-purple-500 text-white text-xs font-semibold rounded-lg hover:bg-purple-600 hover:shadow-md transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed border-2 border-purple-400"
               >
                 <ArrowRight className="w-3.5 h-3.5" />
                 Convert
+              </button>
+            )}
+
+            {canCollect && (
+              <button
+                onClick={() => handleMarkCollected(request._id)}
+                disabled={requestActionLoading}
+                className="flex items-center gap-1 px-3 py-1.5 bg-cyan-500 text-white text-xs font-semibold rounded-lg hover:bg-cyan-600 hover:shadow-md transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed border-2 border-cyan-400"
+                title="Mark as Collected"
+              >
+                <PackageCheck className="w-3.5 h-3.5" />
+                Collect
               </button>
             )}
           </div>
@@ -1553,7 +1637,11 @@ const Orders = () => {
           <p className="text-sm text-gray-500 mt-1">
             {requestsFilter === "pending"
               ? "No pending requests"
-              : `No ${requestsFilter} requests`}
+              : requestsFilter === "ready"
+                ? "No requests ready for pickup"
+                : requestsFilter === "collected"
+                  ? "No collected requests"
+                  : `No ${requestsFilter} requests`}
           </p>
         </div>
       );
@@ -2116,6 +2204,7 @@ const Orders = () => {
 
     const statusDisplay = getStatusDisplayName(selectedRequest.status);
     const canConvert = selectedRequest.status === "Accepted";
+    const canCollect = selectedRequest.status === "Ready For Pickup";
 
     return (
       <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
@@ -2136,7 +2225,11 @@ const Orders = () => {
                             ? "bg-gradient-to-br from-purple-400 to-purple-500 shadow-purple-200"
                             : selectedRequest.status === "Rejected"
                               ? "bg-gradient-to-br from-red-400 to-red-500 shadow-red-200"
-                              : "bg-gradient-to-br from-gray-400 to-gray-500 shadow-gray-200"
+                              : selectedRequest.status === "Ready For Pickup"
+                                ? "bg-gradient-to-br from-cyan-400 to-cyan-500 shadow-cyan-200"
+                                : selectedRequest.status === "Collected"
+                                  ? "bg-gradient-to-br from-emerald-400 to-emerald-500 shadow-emerald-200"
+                                  : "bg-gradient-to-br from-gray-400 to-gray-500 shadow-gray-200"
                   }`}
                 >
                   <ClipboardList className="w-5 h-5 text-white" />
@@ -2628,6 +2721,22 @@ const Orders = () => {
                 </button>
               )}
 
+              {canCollect && (
+                <button
+                  onClick={() => handleMarkCollected(selectedRequest._id)}
+                  disabled={requestActionLoading}
+                  className="flex-1 bg-cyan-500 text-white font-semibold py-2.5 px-5 rounded-lg hover:bg-cyan-600 transition-all duration-300 disabled:opacity-50 flex items-center justify-center gap-2 text-sm border-2 border-cyan-400"
+                >
+                  {requestActionLoading ? (
+                    <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white" />
+                  ) : (
+                    <>
+                      <PackageCheck className="w-4 h-4" /> Mark as Collected
+                    </>
+                  )}
+                </button>
+              )}
+
               {selectedRequest.status === "Converted" &&
                 selectedRequest.order && (
                   <div className="w-full p-3 bg-purple-100 rounded-lg border-2 border-purple-200">
@@ -2654,6 +2763,15 @@ const Orders = () => {
                   <p className="text-sm text-red-700 flex items-center gap-2">
                     <XCircle className="w-4 h-4" />
                     This request has been rejected.
+                  </p>
+                </div>
+              )}
+
+              {selectedRequest.status === "Collected" && (
+                <div className="w-full p-3 bg-emerald-100 rounded-lg border-2 border-emerald-200">
+                  <p className="text-sm text-emerald-700 flex items-center gap-2">
+                    <PackageCheck className="w-4 h-4" />
+                    This request has been collected.
                   </p>
                 </div>
               )}
