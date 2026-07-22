@@ -9,7 +9,7 @@
  * - Reviewing requests (accept/reject items, change delivery date)
  * - Deleting orders
  * - Pagination for both orders and requests
- * - Marking requests as collected (when ready for pickup)
+ * - Marking requests as collected (from Completed to Collected)
  */
 
 import { useState, useEffect } from "react";
@@ -58,6 +58,7 @@ import {
   X as XIcon,
   Hourglass,
   PackageCheck,
+  Truck,
 } from "lucide-react";
 
 import BASE_URL from "../../Utils/config";
@@ -163,11 +164,13 @@ const Orders = () => {
 
   /**
    * Get filtered requests based on status and search term
+   * UPDATED: Completed shows only orders with status "Completed"
+   * Collected shows only requests with status "Collected"
    */
   const getFilteredRequests = () => {
     let filtered = requests || [];
 
-    // Filter by status
+    // Filter by status - REORDERED: Pending -> Accepted -> Converted -> Rejected -> Cancelled -> Completed -> Collected
     if (requestsFilter === "pending") {
       filtered = filtered.filter(
         (r) =>
@@ -182,9 +185,21 @@ const Orders = () => {
       filtered = filtered.filter((r) => r.status === "Rejected");
     } else if (requestsFilter === "cancelled") {
       filtered = filtered.filter((r) => r.status === "Cancelled");
-    } else if (requestsFilter === "ready") {
-      filtered = filtered.filter((r) => r.status === "Ready For Pickup");
+    } else if (requestsFilter === "completed") {
+      // FIXED: Show ONLY requests where associated order status is "Completed"
+      // AND request status is NOT "Collected"
+      filtered = filtered.filter((r) => {
+        // Check if request has an associated order that is Completed
+        if (r.order) {
+          const orderStatus =
+            typeof r.order === "object" ? r.order.status : r.order?.status;
+          // Only show if order is Completed AND request is NOT Collected
+          return orderStatus === "Completed" && r.status !== "Collected";
+        }
+        return false;
+      });
     } else if (requestsFilter === "collected") {
+      // FIXED: Show ONLY requests with status "Collected"
       filtered = filtered.filter((r) => r.status === "Collected");
     }
 
@@ -217,7 +232,9 @@ const Orders = () => {
     ordersIndexOfFirstItem,
     ordersIndexOfLastItem,
   );
-  const ordersTotalPages = Math.ceil(filteredOrders.length / ordersItemsPerPage);
+  const ordersTotalPages = Math.ceil(
+    filteredOrders.length / ordersItemsPerPage,
+  );
 
   // ==========================================================================
   // PAGINATION CALCULATIONS - REQUESTS (SEPARATE)
@@ -226,7 +243,8 @@ const Orders = () => {
     (a, b) => new Date(a.createdAt) - new Date(b.createdAt),
   );
   const requestsIndexOfLastItem = requestsCurrentPage * requestsItemsPerPage;
-  const requestsIndexOfFirstItem = requestsIndexOfLastItem - requestsItemsPerPage;
+  const requestsIndexOfFirstItem =
+    requestsIndexOfLastItem - requestsItemsPerPage;
   const currentRequests = filteredRequests.slice(
     requestsIndexOfFirstItem,
     requestsIndexOfLastItem,
@@ -317,8 +335,8 @@ const Orders = () => {
       Converted: "Converted",
       Rejected: "Rejected",
       Cancelled: "Cancelled",
-      "Ready For Pickup": "Ready For Pickup",
       Collected: "Collected",
+      Completed: "Completed",
     };
     return nameMap[status] || status;
   };
@@ -361,8 +379,8 @@ const Orders = () => {
       Converted: "bg-purple-100 text-purple-700 border-purple-200",
       Rejected: "bg-red-100 text-red-700 border-red-200",
       Cancelled: "bg-gray-100 text-gray-700 border-gray-200",
-      "Ready For Pickup": "bg-cyan-100 text-cyan-700 border-cyan-200",
       Collected: "bg-emerald-100 text-emerald-700 border-emerald-200",
+      Completed: "bg-green-100 text-green-700 border-green-200",
     };
     return statusMap[status] || "bg-gray-100 text-gray-700 border-gray-200";
   };
@@ -378,8 +396,8 @@ const Orders = () => {
       Converted: CheckCircle,
       Rejected: XCircle,
       Cancelled: XCircle,
-      "Ready For Pickup": PackageCheck,
       Collected: PackageCheck,
+      Completed: CheckCircle,
     };
     return iconMap[status] || Info;
   };
@@ -435,7 +453,8 @@ const Orders = () => {
       setRequestsCurrentPage(requestsCurrentPage + 1);
   };
   const requestsPrevPage = () => {
-    if (requestsCurrentPage > 1) setRequestsCurrentPage(requestsCurrentPage - 1);
+    if (requestsCurrentPage > 1)
+      setRequestsCurrentPage(requestsCurrentPage - 1);
   };
 
   // ==========================================================================
@@ -647,11 +666,11 @@ const Orders = () => {
   // ==========================================================================
 
   /**
-   * Mark request as collected - NEW FUNCTION
+   * Mark request as collected - Using the correct endpoint
    */
   const handleMarkCollected = async (requestId) => {
-    if (!window.confirm("Mark this request as collected? This action cannot be undone.")) return;
-    
+    if (!window.confirm("Mark this request as collected?")) return;
+
     setRequestActionLoading(true);
     try {
       const response = await axios.put(
@@ -665,11 +684,14 @@ const Orders = () => {
         await fetchRequests();
         setShowRequestDetailModal(false);
       } else {
-        toast.error(response.data.message || "Failed to mark request as collected");
+        toast.error(
+          response.data.message || "Failed to mark request as collected",
+        );
       }
     } catch (error) {
       console.error("Failed to mark request as collected:", error);
-      const errorMsg = error.response?.data?.message || "Failed to mark request as collected";
+      const errorMsg =
+        error.response?.data?.message || "Failed to mark request as collected";
       toast.error(errorMsg);
     } finally {
       setRequestActionLoading(false);
@@ -910,8 +932,8 @@ const Orders = () => {
     Converted: "bg-purple-50 text-purple-700 border-purple-200",
     Rejected: "bg-red-50 text-red-700 border-red-200",
     Cancelled: "bg-gray-50 text-gray-700 border-gray-200",
-    "Ready For Pickup": "bg-cyan-50 text-cyan-700 border-cyan-200",
     Collected: "bg-emerald-50 text-emerald-700 border-emerald-200",
+    Completed: "bg-green-50 text-green-700 border-green-200",
   };
 
   const statusOptions = [
@@ -922,6 +944,9 @@ const Orders = () => {
     "Cancelled",
   ];
 
+  // ==========================================================================
+  // REQUEST STATS - UPDATED: Completed = order status "Completed" & NOT Collected
+  // ==========================================================================
   const requestStats = {
     pending: (requests || []).filter(
       (r) =>
@@ -932,7 +957,15 @@ const Orders = () => {
     converted: (requests || []).filter((r) => r.status === "Converted").length,
     rejected: (requests || []).filter((r) => r.status === "Rejected").length,
     cancelled: (requests || []).filter((r) => r.status === "Cancelled").length,
-    ready: (requests || []).filter((r) => r.status === "Ready For Pickup").length,
+    completed: (requests || []).filter((r) => {
+      // Only count if order is Completed AND request is NOT Collected
+      if (r.order) {
+        const orderStatus =
+          typeof r.order === "object" ? r.order.status : r.order?.status;
+        return orderStatus === "Completed" && r.status !== "Collected";
+      }
+      return false;
+    }).length,
     collected: (requests || []).filter((r) => r.status === "Collected").length,
   };
 
@@ -1139,15 +1172,15 @@ const Orders = () => {
               {requestStats.pending}
             </span>
           )}
-          {requestStats.ready > 0 && (
+          {requestStats.completed > 0 && (
             <span
               className={`text-xs px-2 py-0.5 rounded-full ${
                 activeView === "requests"
                   ? "bg-white/20 text-white"
-                  : "bg-cyan-200 text-cyan-700"
+                  : "bg-green-200 text-green-700"
               }`}
             >
-              {requestStats.ready}
+              {requestStats.completed}
             </span>
           )}
         </button>
@@ -1337,7 +1370,7 @@ const Orders = () => {
   // ==========================================================================
 
   /**
-   * Render request status filter pills - ADDED "Ready For Pickup" and "Collected"
+   * Render request status filter pills - REORDERED: Pending -> Accepted -> Converted -> Rejected -> Cancelled -> Completed -> Collected
    */
   const renderRequestFilters = () => (
     <div className="flex flex-wrap gap-2 mb-5">
@@ -1373,10 +1406,10 @@ const Orders = () => {
           count: requestStats.cancelled,
         },
         {
-          key: "ready",
-          label: "Ready",
-          color: "cyan",
-          count: requestStats.ready,
+          key: "completed",
+          label: "Completed",
+          color: "green",
+          count: requestStats.completed,
         },
         {
           key: "collected",
@@ -1392,7 +1425,7 @@ const Orders = () => {
           purple: "bg-purple-400",
           red: "bg-red-400",
           gray: "bg-gray-400",
-          cyan: "bg-cyan-400",
+          green: "bg-green-400",
         }[tab.color];
         const activeBg = {
           amber: "bg-amber-500 border-amber-500 text-white",
@@ -1400,7 +1433,7 @@ const Orders = () => {
           purple: "bg-purple-500 border-purple-500 text-white",
           red: "bg-red-500 border-red-500 text-white",
           gray: "bg-gray-500 border-gray-500 text-white",
-          cyan: "bg-cyan-500 border-cyan-500 text-white",
+          green: "bg-green-500 border-green-500 text-white",
         }[tab.color];
 
         return (
@@ -1418,7 +1451,9 @@ const Orders = () => {
             />
             {tab.label}
             {tab.count > 0 && (
-              <span className={`text-xs ${isActive ? "text-white/80" : "text-gray-400"}`}>
+              <span
+                className={`text-xs ${isActive ? "text-white/80" : "text-gray-400"}`}
+              >
                 ({tab.count})
               </span>
             )}
@@ -1429,7 +1464,7 @@ const Orders = () => {
   );
 
   /**
-   * Render a single request card - LIGHT GREY BG with Collect button
+   * Render a single request card - LIGHT GREY BG
    */
   const renderRequestCard = (request) => {
     const StatusIcon = getRequestStatusIcon(request.status);
@@ -1450,7 +1485,15 @@ const Orders = () => {
     const canReject =
       request.status === "Pending Review" ||
       request.status === "Awaiting Customer Confirmation";
-    const canCollect = request.status === "Ready For Pickup";
+
+    // Check if the associated order is Completed
+    const isOrderCompleted =
+      request.order &&
+      (typeof request.order === "object"
+        ? request.order.status
+        : request.order?.status) === "Completed";
+
+    const canMarkCollected = isOrderCompleted;
 
     return (
       <div
@@ -1531,6 +1574,29 @@ const Orders = () => {
                   )}
                 </div>
               )}
+              {request.order && (
+                <div className="mt-1 text-xs">
+                  <span className="text-purple-600 font-medium flex items-center gap-1">
+                    <ArrowRight className="w-3 h-3" />
+                    Order:{" "}
+                    {typeof request.order === "object"
+                      ? request.order.orderNumber
+                      : request.order}
+                    {typeof request.order === "object" &&
+                      request.order.status && (
+                        <span
+                          className={`ml-1 px-1.5 py-0.5 rounded-full text-[10px] font-medium border ${
+                            request.order.status === "Completed"
+                              ? "bg-green-100 text-green-700 border-green-200"
+                              : "bg-yellow-100 text-yellow-700 border-yellow-200"
+                          }`}
+                        >
+                          {request.order.status}
+                        </span>
+                      )}
+                  </span>
+                </div>
+              )}
             </div>
           </div>
 
@@ -1597,15 +1663,15 @@ const Orders = () => {
               </button>
             )}
 
-            {canCollect && (
+            {canMarkCollected && (
               <button
                 onClick={() => handleMarkCollected(request._id)}
                 disabled={requestActionLoading}
-                className="flex items-center gap-1 px-3 py-1.5 bg-cyan-500 text-white text-xs font-semibold rounded-lg hover:bg-cyan-600 hover:shadow-md transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed border-2 border-cyan-400"
+                className="flex items-center gap-1 px-3 py-1.5 bg-emerald-500 text-white text-xs font-semibold rounded-lg hover:bg-emerald-600 hover:shadow-md transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed border-2 border-emerald-400"
                 title="Mark as Collected"
               >
                 <PackageCheck className="w-3.5 h-3.5" />
-                Collect
+                Mark Collected
               </button>
             )}
           </div>
@@ -1637,10 +1703,10 @@ const Orders = () => {
           <p className="text-sm text-gray-500 mt-1">
             {requestsFilter === "pending"
               ? "No pending requests"
-              : requestsFilter === "ready"
-                ? "No requests ready for pickup"
-                : requestsFilter === "collected"
-                  ? "No collected requests"
+              : requestsFilter === "collected"
+                ? "No collected requests"
+                : requestsFilter === "completed"
+                  ? "No completed requests"
                   : `No ${requestsFilter} requests`}
           </p>
         </div>
@@ -2204,7 +2270,13 @@ const Orders = () => {
 
     const statusDisplay = getStatusDisplayName(selectedRequest.status);
     const canConvert = selectedRequest.status === "Accepted";
-    const canCollect = selectedRequest.status === "Ready For Pickup";
+
+    const isOrderCompleted =
+      selectedRequest.order &&
+      (typeof selectedRequest.order === "object"
+        ? selectedRequest.order.status
+        : selectedRequest.order?.status) === "Completed";
+    const canMarkCollected = isOrderCompleted;
 
     return (
       <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
@@ -2225,10 +2297,10 @@ const Orders = () => {
                             ? "bg-gradient-to-br from-purple-400 to-purple-500 shadow-purple-200"
                             : selectedRequest.status === "Rejected"
                               ? "bg-gradient-to-br from-red-400 to-red-500 shadow-red-200"
-                              : selectedRequest.status === "Ready For Pickup"
-                                ? "bg-gradient-to-br from-cyan-400 to-cyan-500 shadow-cyan-200"
-                                : selectedRequest.status === "Collected"
-                                  ? "bg-gradient-to-br from-emerald-400 to-emerald-500 shadow-emerald-200"
+                              : selectedRequest.status === "Collected"
+                                ? "bg-gradient-to-br from-emerald-400 to-emerald-500 shadow-emerald-200"
+                                : selectedRequest.status === "Completed"
+                                  ? "bg-gradient-to-br from-green-400 to-green-500 shadow-green-200"
                                   : "bg-gradient-to-br from-gray-400 to-gray-500 shadow-gray-200"
                   }`}
                 >
@@ -2721,17 +2793,17 @@ const Orders = () => {
                 </button>
               )}
 
-              {canCollect && (
+              {canMarkCollected && (
                 <button
                   onClick={() => handleMarkCollected(selectedRequest._id)}
                   disabled={requestActionLoading}
-                  className="flex-1 bg-cyan-500 text-white font-semibold py-2.5 px-5 rounded-lg hover:bg-cyan-600 transition-all duration-300 disabled:opacity-50 flex items-center justify-center gap-2 text-sm border-2 border-cyan-400"
+                  className="flex-1 bg-emerald-500 text-white font-semibold py-2.5 px-5 rounded-lg hover:bg-emerald-600 transition-all duration-300 disabled:opacity-50 flex items-center justify-center gap-2 text-sm border-2 border-emerald-400"
                 >
                   {requestActionLoading ? (
                     <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white" />
                   ) : (
                     <>
-                      <PackageCheck className="w-4 h-4" /> Mark as Collected
+                      <PackageCheck className="w-4 h-4" /> Mark Collected
                     </>
                   )}
                 </button>
@@ -2772,6 +2844,15 @@ const Orders = () => {
                   <p className="text-sm text-emerald-700 flex items-center gap-2">
                     <PackageCheck className="w-4 h-4" />
                     This request has been collected.
+                  </p>
+                </div>
+              )}
+
+              {selectedRequest.status === "Completed" && (
+                <div className="w-full p-3 bg-green-100 rounded-lg border-2 border-green-200">
+                  <p className="text-sm text-green-700 flex items-center gap-2">
+                    <CheckCircle className="w-4 h-4" />
+                    This request has been completed.
                   </p>
                 </div>
               )}
@@ -3122,11 +3203,15 @@ const Orders = () => {
                     <p className="text-xs font-medium text-gray-500 uppercase tracking-wider">
                       {stat.label}
                     </p>
-                    <p className={`text-lg sm:text-xl font-bold ${stat.textColor} mt-1`}>
+                    <p
+                      className={`text-lg sm:text-xl font-bold ${stat.textColor} mt-1`}
+                    >
                       {stat.value}
                     </p>
                   </div>
-                  <div className={`${stat.iconBg} p-2.5 rounded-lg border-2 ${stat.border}`}>
+                  <div
+                    className={`${stat.iconBg} p-2.5 rounded-lg border-2 ${stat.border}`}
+                  >
                     <Icon className={`w-5 h-5 ${stat.iconColor}`} />
                   </div>
                 </div>

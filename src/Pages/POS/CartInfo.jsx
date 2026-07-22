@@ -32,29 +32,35 @@ const CartInfo = () => {
 
   // Remove Item Functionality - FIXED: pass proper object
   const removeDish = (item) => {
-    dispatch(removeItems({
-      id: item.id,
-      priceType: item.priceType,
-      orderId: item.orderId
-    }));
+    dispatch(
+      removeItems({
+        id: item.id,
+        priceType: item.priceType,
+        orderId: item.orderId,
+      }),
+    );
   };
 
   // Increase Quantity Functionality - FIXED: pass proper object
   const increaseDishQuantity = (item) => {
-    dispatch(increaseQuantity({
-      id: item.id,
-      priceType: item.priceType,
-      orderId: item.orderId
-    }));
+    dispatch(
+      increaseQuantity({
+        id: item.id,
+        priceType: item.priceType,
+        orderId: item.orderId,
+      }),
+    );
   };
 
   // Decrease Quantity Functionality - FIXED: pass proper object
   const decreaseDishQuantity = (item) => {
-    dispatch(decreaseQuantity({
-      id: item.id,
-      priceType: item.priceType,
-      orderId: item.orderId
-    }));
+    dispatch(
+      decreaseQuantity({
+        id: item.id,
+        priceType: item.priceType,
+        orderId: item.orderId,
+      }),
+    );
   };
 
   const handleDiscountChange = (item, value) => {
@@ -62,12 +68,14 @@ const CartInfo = () => {
     const rawValue = value.replace(/[^0-9.]/g, "");
     const numericValue = rawValue === "" ? 0 : parseFloat(rawValue);
     if (isNaN(numericValue)) return;
-    dispatch(updateItemDiscount({ 
-      id: item.id, 
-      discount: numericValue,
-      priceType: item.priceType,
-      orderId: item.orderId
-    }));
+    dispatch(
+      updateItemDiscount({
+        id: item.id,
+        discount: numericValue,
+        priceType: item.priceType,
+        orderId: item.orderId,
+      }),
+    );
   };
 
   return (
@@ -92,7 +100,7 @@ const CartInfo = () => {
         ) : (
           cartData.map((item) => (
             <div
-              key={`${item.id}_${item.priceType || 'Retail'}_${item.orderId || 'regular'}`}
+              key={`${item.id}_${item.priceType || "Retail"}_${item.orderId || "regular"}`}
               className="bg-gray-100 rounded-xl shadow-sm p-4 hover:shadow-md transition-all"
             >
               <div className="flex justify-between items-center mb-2">
@@ -116,9 +124,7 @@ const CartInfo = () => {
                       ? item.discount.toLocaleString("en-US")
                       : ""
                   }
-                  onChange={(e) =>
-                    handleDiscountChange(item, e.target.value)
-                  }
+                  onChange={(e) => handleDiscountChange(item, e.target.value)}
                   className="w-24 text-center border border-gray-300 rounded-md px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-green-400"
                   placeholder={`Max ${(item.totalPrice * 0.15).toLocaleString()}`}
                 />
@@ -128,7 +134,7 @@ const CartInfo = () => {
                 <div className="flex gap-4 text-gray-700">
                   <IoIosRemoveCircle
                     onClick={() => decreaseDishQuantity(item)}
-                    className={`cursor-pointer hover:text-red-600 ${item.quantity <= 1 ? 'opacity-40 cursor-not-allowed' : ''}`}
+                    className={`cursor-pointer hover:text-red-600 ${item.quantity <= 1 ? "opacity-40 cursor-not-allowed" : ""}`}
                     size={22}
                   />
                   <RiDeleteBin5Line
@@ -138,7 +144,7 @@ const CartInfo = () => {
                   />
                   <FaPlusCircle
                     onClick={() => increaseDishQuantity(item)}
-                    className={`cursor-pointer hover:text-green-600 ${item.quantity >= item.itemQuantity ? 'opacity-40 cursor-not-allowed' : ''}`}
+                    className={`cursor-pointer hover:text-green-600 ${item.quantity >= item.itemQuantity ? "opacity-40 cursor-not-allowed" : ""}`}
                     size={22}
                   />
                 </div>
