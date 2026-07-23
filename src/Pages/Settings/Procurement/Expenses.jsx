@@ -14,13 +14,24 @@ import {
   IoMdDownload,
   IoMdRefresh,
 } from "react-icons/io";
-import { FiX } from "react-icons/fi";
-import { FiDollarSign, FiEdit2, FiFilter, FiUser } from "react-icons/fi";
+import { FiX, FiEdit2, FiFilter, FiUser } from "react-icons/fi";
 import Loading from "../../../Components/Shared/Loading";
 import BASE_URL from "../../../Utils/config";
 import toast from "react-hot-toast";
 import EditExpense from "./EditExpense";
 import { useSelector } from "react-redux";
+import {
+  Search,
+  X,
+  Package,
+  Clock,
+  CheckCircle,
+  User,
+  Calendar,
+  DollarSign,
+  Edit,
+  Download,
+} from "lucide-react";
 
 const Expenses = () => {
   const user = useSelector((state) => state.user.user);
@@ -221,587 +232,613 @@ const Expenses = () => {
     Boolean,
   ).length;
 
-  return (
-    <div className="p-2 sm:p-3 md:p-4 lg:p-5 bg-gray-50 min-h-screen">
-      {/* Header */}
-      <div className="flex items-center justify-between mb-3 sm:mb-4">
-        <div className="min-w-0 flex-1">
-          <h1 className="text-lg sm:text-xl md:text-2xl font-bold text-black">
-            Expenses Management
-          </h1>
-          <p className="text-gray-600 text-xs hidden sm:block">
-            Track and manage all company expenses
-          </p>
-        </div>
+  const formatCurrency = (amount) => {
+    return `TSh ${(amount || 0).toLocaleString()}`;
+  };
+
+  const formatDate = (dateString) => {
+    if (!dateString) return "N/A";
+    return new Date(dateString).toLocaleDateString("en-US", {
+      year: "numeric",
+      month: "short",
+      day: "numeric",
+    });
+  };
+
+  const renderPagination = (currentPageNum, totalPagesNum, setPageFn) => {
+    if (totalPagesNum === 0 || totalPagesNum === 1) return null;
+
+    const pageNumbers = [];
+    const maxVisiblePages = 5;
+
+    let startPage = Math.max(
+      1,
+      currentPageNum - Math.floor(maxVisiblePages / 2),
+    );
+    let endPage = Math.min(totalPagesNum, startPage + maxVisiblePages - 1);
+
+    if (endPage - startPage + 1 < maxVisiblePages) {
+      startPage = Math.max(1, endPage - maxVisiblePages + 1);
+    }
+
+    for (let i = startPage; i <= endPage; i++) {
+      pageNumbers.push(i);
+    }
+
+    return (
+      <div className="flex items-center gap-1.5 flex-wrap justify-center">
         <button
-          onClick={getExpenses}
-          className="px-3 py-2 bg-green-300 hover:bg-green-400 text-black font-bold rounded-full shadow text-xs flex items-center gap-1.5 flex-shrink-0"
-        >
-          <IoMdRefresh
-            className={`w-3.5 h-3.5 ${loading ? "animate-spin" : ""}`}
-          />
-          <span className="hidden sm:inline">Refresh</span>
-        </button>
-      </div>
-
-      {/* Stats Cards - Green/Yellow/Gray Theme */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 mb-3 sm:mb-4">
-        <div className="bg-white border border-gray-200 rounded-full p-2.5 sm:p-3 shadow-sm text-center">
-          <p className="text-[10px] sm:text-xs text-gray-500 font-medium mb-0.5">
-            Total Expenses
-          </p>
-          <p className="text-xs sm:text-sm md:text-base font-bold text-black truncate">
-            {totalAmount.toLocaleString()}
-          </p>
-          <p className="text-[9px] text-gray-400">Tsh</p>
-        </div>
-        <div className="bg-white border border-gray-200 rounded-full p-2.5 sm:p-3 shadow-sm text-center">
-          <p className="text-[10px] sm:text-xs text-gray-500 font-medium mb-0.5">
-            Records
-          </p>
-          <p className="text-xs sm:text-sm md:text-base font-bold text-black">
-            {filtered.length}
-          </p>
-        </div>
-        <div className="bg-white border border-gray-200 rounded-full p-2.5 sm:p-3 shadow-sm text-center col-span-2 sm:col-span-1">
-          <p className="text-[10px] sm:text-xs text-gray-500 font-medium mb-0.5">
-            Average
-          </p>
-          <p className="text-xs sm:text-sm md:text-base font-bold text-green-600 truncate">
-            {avgAmount.toLocaleString()}
-          </p>
-          <p className="text-[9px] text-gray-400">Tsh</p>
-        </div>
-      </div>
-
-      {/* Add New Expense - Green Theme */}
-      <div className="bg-white rounded-xl border border-gray-200 shadow-sm mb-3 sm:mb-4 overflow-hidden">
-        <div className="p-3 sm:p-4 border-b border-gray-100 bg-gray-50">
-          <div className="flex items-center gap-2">
-            <div className="w-8 h-8 bg-green-300 rounded-lg flex items-center justify-center">
-              <IoMdAdd className="text-black" size={18} />
-            </div>
-            <div>
-              <h2 className="font-bold text-black text-sm sm:text-base">
-                Add New Expense
-              </h2>
-              <p className="text-gray-500 text-xs">Fill required fields</p>
-            </div>
-          </div>
-        </div>
-
-        <div className="p-3 sm:p-4 space-y-3">
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
-            <div>
-              <label className="block text-xs font-bold text-gray-700 mb-1.5">
-                Title
-              </label>
-              <input
-                type="text"
-                placeholder="Expense title..."
-                value={input.title}
-                onChange={(e) => setInput({ ...input, title: e.target.value })}
-                className="w-full px-3 py-2.5 text-sm border border-gray-300 rounded-lg bg-white text-black focus:border-green-300 focus:outline-none focus:ring-2 focus:ring-green-100"
-              />
-            </div>
-
-            <div>
-              <label className="block text-xs font-bold text-gray-700 mb-1.5">
-                Amount
-              </label>
-              <div className="relative">
-                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 text-xs font-bold">
-                  Tsh
-                </span>
-                <input
-                  type="number"
-                  placeholder="0.00"
-                  value={input.amount}
-                  onChange={(e) =>
-                    setInput({ ...input, amount: e.target.value })
-                  }
-                  className="w-full pl-10 pr-3 py-2.5 text-sm border border-gray-300 rounded-lg bg-white text-black focus:border-green-300 focus:outline-none focus:ring-2 focus:ring-green-100"
-                />
-              </div>
-            </div>
-
-            <div>
-              <label className="block text-xs font-bold text-gray-700 mb-1.5">
-                Details
-              </label>
-              <input
-                type="text"
-                placeholder="Additional details..."
-                value={input.details}
-                onChange={(e) =>
-                  setInput({ ...input, details: e.target.value })
-                }
-                className="w-full px-3 py-2.5 text-sm border border-gray-300 rounded-lg bg-white text-black focus:border-green-300 focus:outline-none focus:ring-2 focus:ring-green-100"
-              />
-            </div>
-
-            <div>
-              <label className="block text-xs font-bold text-gray-700 mb-1.5">
-                Date
-              </label>
-              <LocalizationProvider dateAdapter={AdapterDayjs}>
-                <DatePicker
-                  value={input.date}
-                  onChange={(newValue) =>
-                    setInput({ ...input, date: newValue })
-                  }
-                  maxDate={dayjs()}
-                  slotProps={{
-                    textField: {
-                      size: "small",
-                      fullWidth: true,
-                      sx: {
-                        "& .MuiOutlinedInput-root": {
-                          borderRadius: "0.5rem",
-                          height: "42px",
-                          fontSize: "14px",
-                        },
-                      },
-                    },
-                  }}
-                />
-              </LocalizationProvider>
-            </div>
-          </div>
-
-          <div className="flex justify-end">
-            <button
-              onClick={addExpense}
-              className="px-4 py-2.5 bg-green-300 hover:bg-green-400 text-black font-bold rounded-full shadow-sm transition-colors text-sm flex items-center gap-2"
-            >
-              <IoMdAdd size={18} />
-              Add Expense
-            </button>
-          </div>
-        </div>
-      </div>
-
-      {/* Search Bar + Filter Toggle + Export */}
-      <div className="flex gap-2 mb-3 sm:mb-4">
-        <div className="flex-1 relative">
-          <div className="absolute inset-y-0 left-3 flex items-center">
-            <FiUser className="w-3.5 h-3.5 text-gray-400" />
-          </div>
-          <select
-            value={filterCreatedBy}
-            onChange={(e) => setFilterCreatedBy(e.target.value)}
-            className="w-full pl-9 pr-8 py-2.5 text-sm border border-gray-300 rounded-full bg-white text-black focus:border-green-300 focus:outline-none focus:ring-2 focus:ring-green-100 appearance-none"
-          >
-            <option value="">All Users</option>
-            {uniqueCreators.map((user) => (
-              <option key={user} value={user}>
-                {user}
-              </option>
-            ))}
-          </select>
-        </div>
-        <button
-          onClick={() => setShowFilters(!showFilters)}
-          className={`px-3 sm:px-4 py-2.5 rounded-full border font-bold text-sm flex items-center gap-1.5 flex-shrink-0 transition-all ${
-            showFilters || activeFilterCount > 0
-              ? "bg-green-300 border-green-400 text-black"
-              : "bg-white border-gray-300 text-gray-700"
+          onClick={() => currentPageNum > 1 && setPageFn(currentPageNum - 1)}
+          disabled={currentPageNum === 1}
+          className={`px-3 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
+            currentPageNum === 1
+              ? "bg-gray-100 text-gray-300 cursor-not-allowed"
+              : "bg-white border-2 border-gray-300 text-gray-600 hover:bg-gray-100 hover:border-gray-400 shadow-sm"
           }`}
         >
-          <FiFilter className="w-3.5 h-3.5" />
-          <span className="hidden sm:inline">Filters</span>
-          {activeFilterCount > 0 && (
-            <span className="bg-black text-white text-[10px] w-5 h-5 rounded-full flex items-center justify-center">
-              {activeFilterCount}
-            </span>
-          )}
+          <IoIosArrowBack className="w-4 h-4" />
         </button>
+
+        {startPage > 1 && (
+          <>
+            <button
+              onClick={() => setPageFn(1)}
+              className="px-3.5 py-2 rounded-lg text-sm font-medium bg-white border-2 border-gray-300 text-gray-600 hover:bg-gray-100 hover:border-gray-400 transition-all duration-200 shadow-sm"
+            >
+              1
+            </button>
+            {startPage > 2 && (
+              <span className="px-1 text-gray-400 text-sm">…</span>
+            )}
+          </>
+        )}
+
+        {pageNumbers.map((number) => (
+          <button
+            key={number}
+            onClick={() => setPageFn(number)}
+            className={`px-3.5 py-2 rounded-lg text-sm font-medium transition-all duration-200 shadow-sm border-2 ${
+              currentPageNum === number
+                ? "bg-emerald-500 text-white border-emerald-500 hover:bg-emerald-600"
+                : "bg-white border-gray-300 text-gray-600 hover:bg-gray-100 hover:border-gray-400"
+            }`}
+          >
+            {number}
+          </button>
+        ))}
+
+        {endPage < totalPagesNum && (
+          <>
+            {endPage < totalPagesNum - 1 && (
+              <span className="px-1 text-gray-400 text-sm">…</span>
+            )}
+            <button
+              onClick={() => setPageFn(totalPagesNum)}
+              className="px-3.5 py-2 rounded-lg text-sm font-medium bg-white border-2 border-gray-300 text-gray-600 hover:bg-gray-100 hover:border-gray-400 transition-all duration-200 shadow-sm"
+            >
+              {totalPagesNum}
+            </button>
+          </>
+        )}
+
         <button
-          onClick={exportExcel}
-          className="px-3 py-2.5 bg-yellow-100 hover:bg-yellow-200 text-black font-bold rounded-full text-xs flex items-center gap-1.5 transition-colors flex-shrink-0"
+          onClick={() =>
+            currentPageNum < totalPagesNum && setPageFn(currentPageNum + 1)
+          }
+          disabled={currentPageNum === totalPagesNum}
+          className={`px-3 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
+            currentPageNum === totalPagesNum
+              ? "bg-gray-100 text-gray-300 cursor-not-allowed"
+              : "bg-white border-2 border-gray-300 text-gray-600 hover:bg-gray-100 hover:border-gray-400 shadow-sm"
+          }`}
         >
-          <IoMdDownload className="w-4 h-4" />
-          <span className="hidden sm:inline">Excel</span>
-        </button>
-        <button
-          onClick={exportPDF}
-          className="px-3 py-2.5 bg-green-300 hover:bg-green-400 text-black font-bold rounded-full text-xs flex items-center gap-1.5 transition-colors flex-shrink-0"
-        >
-          <IoMdDownload className="w-4 h-4" />
-          <span className="hidden sm:inline">PDF</span>
+          <IoIosArrowForward className="w-4 h-4" />
         </button>
       </div>
+    );
+  };
 
-      {/* Expandable Filters Panel */}
-      {showFilters && (
-        <div className="bg-white rounded-full p-3 sm:p-4 shadow-lg border border-gray-100 mb-3 sm:mb-4 space-y-3">
-          <div className="flex items-center justify-between mb-2">
-            <h3 className="text-sm font-bold text-black">Advanced Filters</h3>
-            <button
-              onClick={() => setShowFilters(false)}
-              className="text-gray-400"
-            >
-              <FiX className="w-5 h-5" />
-            </button>
-          </div>
+  const statsData = [
+    {
+      label: "Total Expenses",
+      value: formatCurrency(totalAmount),
+      icon: Package,
+    },
+    { label: "Records", value: filtered.length, icon: Clock },
+    { label: "Average", value: formatCurrency(avgAmount), icon: CheckCircle },
+  ];
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            <div>
-              <label className="block text-xs font-bold text-gray-700 mb-1.5">
-                From Date
-              </label>
-              <LocalizationProvider dateAdapter={AdapterDayjs}>
-                <DatePicker
-                  value={fromDate}
-                  onChange={setFromDate}
-                  maxDate={dayjs()}
-                  slotProps={{
-                    textField: {
-                      size: "small",
-                      fullWidth: true,
-                      sx: {
-                        "& .MuiOutlinedInput-root": {
-                          borderRadius: "10px",
-                          fontSize: "13px",
-                        },
-                      },
-                    },
-                  }}
-                />
-              </LocalizationProvider>
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-gray-50">
+      <div className="max-w-8xl mx-auto px-3 sm:px-4 md:px-6 py-4 sm:py-6 md:py-8">
+        {/* Header */}
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4 mb-4 sm:mb-6">
+          <div className="flex items-center gap-3 sm:gap-4">
+            <div className="w-10 h-10 sm:w-12 sm:h-12 bg-gradient-to-br from-emerald-400 to-emerald-500 rounded-xl flex items-center justify-center shadow-lg shadow-emerald-200 border-2 border-emerald-300">
+              <DollarSign className="w-5 h-5 sm:w-6 sm:h-6 text-white" />
             </div>
             <div>
-              <label className="block text-xs font-bold text-gray-700 mb-1.5">
-                To Date
-              </label>
-              <LocalizationProvider dateAdapter={AdapterDayjs}>
-                <DatePicker
-                  value={toDate}
-                  onChange={setToDate}
-                  maxDate={dayjs()}
-                  slotProps={{
-                    textField: {
-                      size: "small",
-                      fullWidth: true,
-                      sx: {
-                        "& .MuiOutlinedInput-root": {
-                          borderRadius: "10px",
-                          fontSize: "13px",
-                        },
-                      },
-                    },
-                  }}
-                />
-              </LocalizationProvider>
+              <h1 className="text-xl sm:text-2xl font-bold text-gray-800 tracking-tight">
+                Expenses
+              </h1>
+              <p className="text-xs sm:text-sm text-gray-500 hidden xs:block">
+                Track and manage all company expenses
+              </p>
             </div>
           </div>
-
-          <div className="flex gap-2 pt-2 border-t border-gray-100">
-            <button
-              onClick={clearFilters}
-              className="flex-1 py-2.5 bg-gray-100 hover:bg-gray-200 text-black font-bold rounded-full text-xs"
-            >
-              Clear All
-            </button>
-          </div>
+          <button
+            onClick={getExpenses}
+            className="flex items-center gap-1.5 sm:gap-2 px-4 sm:px-5 py-2 sm:py-2.5 bg-white border-2 border-gray-300 text-gray-700 hover:bg-gray-100 font-semibold rounded-xl transition-all duration-200 shadow-sm text-xs sm:text-sm"
+          >
+            <IoMdRefresh
+              className={`w-3.5 h-3.5 sm:w-4 sm:h-4 ${loading ? "animate-spin" : ""}`}
+            />
+            <span className="hidden xs:inline">Refresh</span>
+          </button>
         </div>
-      )}
 
-      {/* Active Filter Chips */}
-      {activeFilterCount > 0 && !showFilters && (
-        <div className="flex flex-wrap gap-1.5 mb-3 sm:mb-4">
-          {filterCreatedBy && (
-            <span className="inline-flex items-center px-2.5 py-1 bg-green-100 text-green-800 text-[10px] font-medium rounded-full">
-              {filterCreatedBy}
-              <button onClick={() => setFilterCreatedBy("")} className="ml-1">
-                <FiX className="w-3 h-3" />
-              </button>
-            </span>
-          )}
-          {fromDate && (
-            <span className="inline-flex items-center px-2.5 py-1 bg-blue-100 text-blue-800 text-[10px] font-medium rounded-full">
-              From {dayjs(fromDate).format("DD/MM")}
-              <button onClick={() => setFromDate(null)} className="ml-1">
-                <FiX className="w-3 h-3" />
-              </button>
-            </span>
-          )}
-          {toDate && (
-            <span className="inline-flex items-center px-2.5 py-1 bg-blue-100 text-blue-800 text-[10px] font-medium rounded-full">
-              To {dayjs(toDate).format("DD/MM")}
-              <button onClick={() => setToDate(null)} className="ml-1">
-                <FiX className="w-3 h-3" />
-              </button>
-            </span>
-          )}
-        </div>
-      )}
-
-      <Loading load={loading} />
-
-      {/* Results Count */}
-      <div className="flex items-center justify-between mb-2 px-1">
-        <p className="text-xs text-gray-500">
-          <span className="font-bold text-black">{filtered.length}</span>{" "}
-          expenses
-        </p>
-        <p className="text-[10px] text-gray-400">
-          Page {currentPage} of {totalPages || 1}
-        </p>
-      </div>
-
-      {/* Mobile Card View - Green/Gray/Yellow Theme */}
-      <div className="md:hidden space-y-2 mb-4">
-        {loading ? (
-          <div className="bg-white rounded-xl p-6 text-center border border-gray-200">
-            <div className="animate-spin w-8 h-8 border-2 border-green-300 border-t-transparent rounded-full mx-auto mb-3" />
-            <p className="text-sm text-gray-500">Loading...</p>
-          </div>
-        ) : paginated.length === 0 ? (
-          <div className="bg-white rounded-xl p-6 text-center border border-gray-200">
-            <div className="w-12 h-12 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-3">
-              <FiDollarSign className="text-gray-400" size={24} />
-            </div>
-            <p className="text-sm font-bold text-black">No expenses found</p>
-            <p className="text-xs text-gray-500 mt-1">
-              Try adjusting filters or add new expenses
-            </p>
-          </div>
-        ) : (
-          paginated.map((exp, idx) => (
-            <div
-              key={exp._id}
-              className="bg-white rounded-xl border border-gray-200 overflow-hidden shadow-sm"
-            >
-              <div className="p-3 flex items-center justify-between">
-                <div className="flex items-center gap-2 min-w-0">
-                  <div className="w-8 h-8 bg-green-300 rounded-full flex items-center justify-center flex-shrink-0">
-                    <span className="text-xs font-bold text-black">
-                      {(currentPage - 1) * itemsPerPage + idx + 1}
-                    </span>
-                  </div>
+        {/* Stats Cards */}
+        <div className="grid grid-cols-1 xs:grid-cols-3 gap-2 sm:gap-3 md:gap-4 mb-4 sm:mb-6">
+          {statsData.map((stat, index) => {
+            const Icon = stat.icon;
+            return (
+              <div
+                key={index}
+                className="bg-white p-3 sm:p-4 md:p-5 rounded-2xl border-2 border-gray-300 shadow-md hover:shadow-lg transition-all duration-300 hover:scale-[1.02]"
+              >
+                <div className="flex items-center justify-between">
                   <div className="min-w-0">
-                    <p className="text-sm font-bold text-black truncate">
-                      {exp.title}
+                    <p className="text-[10px] sm:text-xs font-medium text-black/60 uppercase tracking-wider truncate">
+                      {stat.label}
                     </p>
-                    <p className="text-[10px] text-gray-500">
-                      {dayjs(exp.date).format("DD/MM/YY")} •{" "}
-                      {exp.createdBy
-                        ? `${exp.createdBy.firstName} ${exp.createdBy.lastName}`
-                        : "Unknown"}
+                    <p className="text-sm sm:text-lg md:text-xl font-bold text-black mt-0.5 sm:mt-1 truncate">
+                      {stat.value}
                     </p>
                   </div>
-                </div>
-                <div className="flex items-center gap-2 flex-shrink-0">
-                  <span className="text-sm font-bold text-black">
-                    Tsh {exp.amount.toLocaleString()}
-                  </span>
-                  {canEditExpenses ? (
-                    <button
-                      onClick={() => openEditModal(exp)}
-                      className="p-2 bg-gray-200 hover:bg-gray-300 text-black rounded-full transition-colors"
-                    >
-                      <FiEdit2 className="w-3.5 h-3.5" />
-                    </button>
-                  ) : (
-                    <button
-                      className="p-2 bg-gray-100 text-gray-400 rounded-full cursor-not-allowed"
-                      disabled
-                    >
-                      <FiEdit2 className="w-3.5 h-3.5" />
-                    </button>
-                  )}
+                  <div className="bg-gray-100 p-2 sm:p-2.5 rounded-xl border-2 border-gray-300 flex-shrink-0">
+                    <Icon className="w-4 h-4 sm:w-5 sm:h-5 text-black" />
+                  </div>
                 </div>
               </div>
-              {exp.details && (
-                <div className="px-3 pb-3">
-                  <p className="text-xs text-gray-600 bg-gray-50 rounded-lg p-2">
-                    {exp.details}
-                  </p>
-                </div>
-              )}
-            </div>
-          ))
-        )}
-      </div>
-
-      {/* Desktop Table View - Colored Columns (Matching Suppliers/Debts Style) */}
-      <div className="hidden md:block rounded-xl shadow bg-white overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="min-w-full">
-            <thead>
-              <tr className="bg-gray-200">
-                {[
-                  "SN",
-                  "Title",
-                  "Amount",
-                  "Details",
-                  "Date",
-                  "Created By",
-                  "Action",
-                ].map((h) => (
-                  <th
-                    key={h}
-                    className="px-3 py-3 text-center text-xs font-bold text-black uppercase border-r border-gray-300"
-                  >
-                    {h}
-                  </th>
-                ))}
-              </tr>
-            </thead>
-
-            <tr className="h-3" />
-
-            <tbody>
-              {paginated.length === 0 ? (
-                <tr>
-                  <td colSpan={7} className="text-center py-12">
-                    <div className="space-y-3">
-                      <div className="text-4xl">💰</div>
-                      <p className="text-lg font-bold text-black">
-                        No expenses found
-                      </p>
-                      <p className="text-gray-600 text-sm">
-                        Try adjusting your filters or add new expenses
-                      </p>
-                    </div>
-                  </td>
-                </tr>
-              ) : (
-                paginated.map((exp, idx) => (
-                  <React.Fragment key={exp._id}>
-                    <tr className="hover:bg-gray-50 transition-colors shadow-md">
-                      <td className="py-3 px-2 text-center border-r border-gray-300 bg-gray-200">
-                        <span className="inline-flex items-center justify-center w-8 h-8 bg-green-300 text-black font-bold rounded-full text-xs shadow">
-                          {(currentPage - 1) * itemsPerPage + idx + 1}
-                        </span>
-                      </td>
-                      <td className="py-3 px-2 text-center bg-green-200 border-r border-gray-200">
-                        <span className="font-bold text-black text-xs">
-                          {exp.title}
-                        </span>
-                      </td>
-                      <td className="py-3 px-2 text-center bg-yellow-100 border-r border-gray-200">
-                        <span className="font-bold text-black text-xs">
-                          {exp.amount.toLocaleString()}
-                        </span>
-                      </td>
-                      <td className="py-3 px-2 text-center bg-gray-200 border-r border-gray-200">
-                        <span className="font-bold text-black text-xs">
-                          {exp.details || "—"}
-                        </span>
-                      </td>
-                      <td className="py-3 px-2 text-center bg-gray-100 border-r border-gray-200">
-                        <span className="font-bold text-black text-xs">
-                          {dayjs(exp.date).format("DD/MM/YYYY")}
-                        </span>
-                      </td>
-                      <td className="py-3 px-2 text-center bg-green-200 border-r border-gray-200">
-                        <span className="font-bold text-black text-xs">
-                          {exp.createdBy
-                            ? `${exp.createdBy.firstName} ${exp.createdBy.lastName}`
-                            : "—"}
-                        </span>
-                      </td>
-                      <td className="py-3 px-2 text-center bg-gray-100">
-                        {canEditExpenses ? (
-                          <button
-                            onClick={() => openEditModal(exp)}
-                            className="px-3 py-1.5 bg-gray-200 hover:bg-gray-300 text-black font-bold rounded-full text-xs flex items-center justify-center gap-1 transition-colors"
-                          >
-                            <FiEdit2 className="w-3 h-3" /> Edit
-                          </button>
-                        ) : (
-                          <span className="inline-flex items-center px-3 py-1.5 bg-gray-300 text-gray-600 font-bold rounded-full text-xs">
-                            Not Allowed
-                          </span>
-                        )}
-                      </td>
-                    </tr>
-                    <tr className="h-3">
-                      <td colSpan={7} className="p-0"></td>
-                    </tr>
-                  </React.Fragment>
-                ))
-              )}
-            </tbody>
-
-            <tfoot>
-              <tr className="bg-gradient-to-r from-yellow-50 to-yellow-100 text-sm font-semibold text-yellow-800 border-t border-yellow-200">
-                <td></td>
-                <td></td>
-                <td
-                  colSpan="3"
-                  className="text-right p-3 pr-6 uppercase tracking-wider text-xs"
-                >
-                  Total Expenses:
-                </td>
-                <td className="p-3 text-right text-lg font-bold text-yellow-600">
-                  Tsh {totalAmount.toLocaleString()}
-                </td>
-                <td></td>
-              </tr>
-            </tfoot>
-          </table>
+            );
+          })}
         </div>
-      </div>
 
-      {/* Pagination */}
-      {totalPages > 1 && (
-        <div className="flex items-center justify-between gap-2 mt-3 sm:mt-4 p-3 bg-white rounded-full border border-gray-200 shadow-sm">
-          <button
-            onClick={() => currentPage > 1 && setCurrentPage(currentPage - 1)}
-            disabled={currentPage === 1}
-            className="p-2 bg-gray-200 hover:bg-gray-300 text-black font-bold rounded-full disabled:opacity-40"
-          >
-            <IoIosArrowBack className="w-4 h-4" />
-          </button>
-
-          <div className="flex items-center gap-1">
-            {[...Array(Math.min(totalPages, 5))].map((_, i) => {
-              let pageNum;
-              if (totalPages <= 5) pageNum = i + 1;
-              else if (currentPage <= 3) pageNum = i + 1;
-              else if (currentPage >= totalPages - 2)
-                pageNum = totalPages - 4 + i;
-              else pageNum = currentPage - 2 + i;
-
-              return (
-                <button
-                  key={i}
-                  onClick={() => setCurrentPage(pageNum)}
-                  className={`w-8 h-8 text-xs font-bold rounded-full transition-colors ${
-                    currentPage === pageNum
-                      ? "bg-black text-white"
-                      : "text-gray-700 hover:bg-gray-100"
-                  }`}
-                >
-                  {pageNum}
-                </button>
-              );
-            })}
+        {/* Add New Expense */}
+        <div className="bg-white rounded-2xl border-2 border-gray-200 shadow-sm mb-4 sm:mb-6 overflow-hidden">
+          <div className="px-4 sm:px-6 py-3 sm:py-4 border-b-2 border-gray-200 bg-gray-50">
+            <div className="flex items-center gap-3">
+              <div className="p-2 bg-gradient-to-br from-emerald-400 to-emerald-500 rounded-xl shadow-md shadow-emerald-200">
+                <IoMdAdd className="text-white" size={18} />
+              </div>
+              <div>
+                <h2 className="font-bold text-gray-800 text-sm sm:text-base">
+                  Add New Expense
+                </h2>
+                <p className="text-gray-500 text-xs">
+                  Fill in the details below
+                </p>
+              </div>
+            </div>
           </div>
 
-          <button
-            onClick={() =>
-              currentPage < totalPages && setCurrentPage(currentPage + 1)
-            }
-            disabled={currentPage === totalPages}
-            className="p-2 bg-gray-200 hover:bg-gray-300 text-black font-bold rounded-full disabled:opacity-40"
-          >
-            <IoIosArrowForward className="w-4 h-4" />
-          </button>
-        </div>
-      )}
+          <div className="p-4 sm:p-6 space-y-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+              <div>
+                <label className="block text-xs font-semibold text-gray-700 mb-1.5">
+                  Title <span className="text-red-500">*</span>
+                </label>
+                <input
+                  type="text"
+                  placeholder="Expense title..."
+                  value={input.title}
+                  onChange={(e) =>
+                    setInput({ ...input, title: e.target.value })
+                  }
+                  className="w-full px-3.5 py-2.5 text-sm border-2 border-gray-300 rounded-xl bg-white text-black focus:outline-none focus:ring-2 focus:ring-emerald-300 focus:border-transparent transition-all duration-200"
+                />
+              </div>
 
-      {/* Edit Modal */}
-      {editModalOpen && canEditExpenses && (
-        <EditExpense
-          expense={editingExpense}
-          onClose={closeEditModal}
-          onSuccess={handleUpdateSuccess}
-        />
-      )}
+              <div>
+                <label className="block text-xs font-semibold text-gray-700 mb-1.5">
+                  Amount <span className="text-red-500">*</span>
+                </label>
+                <div className="relative">
+                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 text-xs font-bold">
+                    TSh
+                  </span>
+                  <input
+                    type="number"
+                    placeholder="0.00"
+                    value={input.amount}
+                    onChange={(e) =>
+                      setInput({ ...input, amount: e.target.value })
+                    }
+                    className="w-full pl-12 pr-3.5 py-2.5 text-sm border-2 border-gray-300 rounded-xl bg-white text-black focus:outline-none focus:ring-2 focus:ring-emerald-300 focus:border-transparent transition-all duration-200"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold text-gray-700 mb-1.5">
+                  Details
+                </label>
+                <input
+                  type="text"
+                  placeholder="Additional details..."
+                  value={input.details}
+                  onChange={(e) =>
+                    setInput({ ...input, details: e.target.value })
+                  }
+                  className="w-full px-3.5 py-2.5 text-sm border-2 border-gray-300 rounded-xl bg-white text-black focus:outline-none focus:ring-2 focus:ring-emerald-300 focus:border-transparent transition-all duration-200"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold text-gray-700 mb-1.5">
+                  Date <span className="text-red-500">*</span>
+                </label>
+                <LocalizationProvider dateAdapter={AdapterDayjs}>
+                  <DatePicker
+                    value={input.date}
+                    onChange={(newValue) =>
+                      setInput({ ...input, date: newValue })
+                    }
+                    maxDate={dayjs()}
+                    slotProps={{
+                      textField: {
+                        size: "small",
+                        fullWidth: true,
+                        sx: {
+                          "& .MuiOutlinedInput-root": {
+                            borderRadius: "12px",
+                            fontSize: "14px",
+                          },
+                        },
+                      },
+                    }}
+                  />
+                </LocalizationProvider>
+              </div>
+            </div>
+
+            <div className="flex justify-end">
+              <button
+                onClick={addExpense}
+                className="px-6 py-2.5 bg-emerald-500 hover:bg-emerald-600 text-white font-semibold rounded-xl shadow-md hover:shadow-lg hover:shadow-emerald-200 hover:scale-[1.02] active:scale-95 transition-all duration-300 text-sm flex items-center gap-2 border-2 border-emerald-400"
+              >
+                <IoMdAdd size={18} />
+                Add Expense
+              </button>
+            </div>
+          </div>
+        </div>
+
+        {/* Search + Filters */}
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-4 mb-4 sm:mb-5">
+          <div className="flex gap-2 w-full sm:w-auto">
+            <div className="relative flex-1 sm:w-56 md:w-64">
+              <User className="absolute left-3 top-1/2 -translate-y-1/2 text-black/50 w-3.5 h-3.5 sm:w-4 sm:h-4" />
+              <select
+                value={filterCreatedBy}
+                onChange={(e) => setFilterCreatedBy(e.target.value)}
+                className="w-full pl-8 sm:pl-9 pr-8 py-2 sm:py-2.5 bg-white border-2 border-gray-300 rounded-2xl focus:outline-none focus:ring-2 focus:ring-gray-400 focus:ring-offset-1 transition-all duration-200 text-black text-xs sm:text-sm appearance-none"
+              >
+                <option value="">All Users</option>
+                {uniqueCreators.map((user) => (
+                  <option key={user} value={user}>
+                    {user}
+                  </option>
+                ))}
+              </select>
+              <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none">
+                <svg
+                  className="w-3.5 h-3.5 text-gray-400"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M19 9l-7 7-7-7"
+                  />
+                </svg>
+              </div>
+            </div>
+            <button
+              onClick={() => setShowFilters(!showFilters)}
+              className={`flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-2 sm:py-2.5 rounded-2xl font-semibold text-xs sm:text-sm transition-all duration-200 border-2 ${
+                showFilters || activeFilterCount > 0
+                  ? "bg-emerald-500 border-emerald-500 text-white shadow-md shadow-emerald-200"
+                  : "bg-white border-gray-300 text-gray-600 hover:bg-gray-100 hover:border-gray-400"
+              }`}
+            >
+              <FiFilter className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+              <span className="hidden xs:inline">Filters</span>
+              {activeFilterCount > 0 && (
+                <span className="bg-white text-emerald-600 text-[10px] sm:text-xs w-4 h-4 sm:w-5 sm:h-5 rounded-full flex items-center justify-center font-bold">
+                  {activeFilterCount}
+                </span>
+              )}
+            </button>
+          </div>
+
+          <div className="flex gap-2 w-full sm:w-auto">
+            <button
+              onClick={exportExcel}
+              className="flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-2 sm:py-2.5 bg-white border-2 border-gray-300 text-gray-700 hover:bg-gray-100 font-semibold rounded-xl transition-all duration-200 text-xs sm:text-sm"
+            >
+              <Download className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+              <span className="hidden xs:inline">Excel</span>
+            </button>
+            <button
+              onClick={exportPDF}
+              className="flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-2 sm:py-2.5 bg-emerald-500 hover:bg-emerald-600 text-white font-semibold rounded-xl transition-all duration-200 shadow-sm text-xs sm:text-sm border-2 border-emerald-400"
+            >
+              <Download className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+              <span className="hidden xs:inline">PDF</span>
+            </button>
+          </div>
+        </div>
+
+        {/* Expandable Filters Panel */}
+        {showFilters && (
+          <div className="bg-white rounded-2xl p-4 sm:p-5 shadow-lg border-2 border-gray-200 mb-4 space-y-3 sm:space-y-4">
+            <div className="flex items-center justify-between">
+              <h3 className="text-sm font-bold text-gray-800">
+                Advanced Filters
+              </h3>
+              <button
+                onClick={() => setShowFilters(false)}
+                className="p-1 hover:bg-gray-100 rounded-lg text-gray-400 hover:text-gray-600"
+              >
+                <X className="w-4 h-4 sm:w-5 sm:h-5" />
+              </button>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
+              <div>
+                <label className="block text-xs font-medium text-gray-600 mb-1.5">
+                  From Date
+                </label>
+                <LocalizationProvider dateAdapter={AdapterDayjs}>
+                  <DatePicker
+                    value={fromDate}
+                    onChange={setFromDate}
+                    maxDate={dayjs()}
+                    slotProps={{
+                      textField: {
+                        size: "small",
+                        fullWidth: true,
+                        sx: {
+                          "& .MuiOutlinedInput-root": {
+                            borderRadius: "12px",
+                            fontSize: "13px",
+                          },
+                        },
+                      },
+                    }}
+                  />
+                </LocalizationProvider>
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-gray-600 mb-1.5">
+                  To Date
+                </label>
+                <LocalizationProvider dateAdapter={AdapterDayjs}>
+                  <DatePicker
+                    value={toDate}
+                    onChange={setToDate}
+                    maxDate={dayjs()}
+                    slotProps={{
+                      textField: {
+                        size: "small",
+                        fullWidth: true,
+                        sx: {
+                          "& .MuiOutlinedInput-root": {
+                            borderRadius: "12px",
+                            fontSize: "13px",
+                          },
+                        },
+                      },
+                    }}
+                  />
+                </LocalizationProvider>
+              </div>
+            </div>
+
+            <button
+              onClick={clearFilters}
+              className="w-full py-2.5 bg-gray-200 hover:bg-gray-300 text-gray-700 font-semibold rounded-xl transition-all duration-200 text-sm"
+            >
+              Clear All Filters
+            </button>
+          </div>
+        )}
+
+        {/* Active Filter Chips */}
+        {activeFilterCount > 0 && !showFilters && (
+          <div className="flex flex-wrap gap-1 sm:gap-1.5 mb-3 sm:mb-4">
+            {filterCreatedBy && (
+              <span className="inline-flex items-center gap-0.5 sm:gap-1 px-2 sm:px-3 py-0.5 sm:py-1 bg-emerald-100 text-emerald-700 text-[10px] sm:text-xs font-medium rounded-full border border-emerald-200">
+                {filterCreatedBy}
+                <button
+                  onClick={() => setFilterCreatedBy("")}
+                  className="hover:text-emerald-900"
+                >
+                  <X className="w-2.5 h-2.5 sm:w-3 sm:h-3" />
+                </button>
+              </span>
+            )}
+            {fromDate && (
+              <span className="inline-flex items-center gap-0.5 sm:gap-1 px-2 sm:px-3 py-0.5 sm:py-1 bg-blue-100 text-blue-700 text-[10px] sm:text-xs font-medium rounded-full border border-blue-200">
+                From {dayjs(fromDate).format("DD/MM/YY")}
+                <button
+                  onClick={() => setFromDate(null)}
+                  className="hover:text-blue-900"
+                >
+                  <X className="w-2.5 h-2.5 sm:w-3 sm:h-3" />
+                </button>
+              </span>
+            )}
+            {toDate && (
+              <span className="inline-flex items-center gap-0.5 sm:gap-1 px-2 sm:px-3 py-0.5 sm:py-1 bg-blue-100 text-blue-700 text-[10px] sm:text-xs font-medium rounded-full border border-blue-200">
+                To {dayjs(toDate).format("DD/MM/YY")}
+                <button
+                  onClick={() => setToDate(null)}
+                  className="hover:text-blue-900"
+                >
+                  <X className="w-2.5 h-2.5 sm:w-3 sm:h-3" />
+                </button>
+              </span>
+            )}
+          </div>
+        )}
+
+        <Loading load={loading} />
+
+        {/* Results Count */}
+        <div className="flex items-center justify-between mb-2 sm:mb-3 px-1">
+          <p className="text-[10px] sm:text-sm text-gray-500">
+            <span className="font-semibold text-gray-700">
+              {filtered.length}
+            </span>{" "}
+            expenses found
+          </p>
+          <p className="text-[10px] sm:text-sm text-gray-400">
+            Page {currentPage} of {totalPages || 1}
+          </p>
+        </div>
+
+        {/* Card List - Normal size, well arranged */}
+        <div className="space-y-2.5 sm:space-y-3">
+          {loading ? (
+            <div className="flex flex-col items-center justify-center py-12 sm:py-16 bg-gray-100 rounded-2xl border-2 border-gray-300 shadow-sm">
+              <div className="w-10 h-10 sm:w-12 sm:h-12 border-4 border-emerald-300 border-t-emerald-500 rounded-full animate-spin" />
+              <p className="text-xs sm:text-sm text-gray-500 mt-3 sm:mt-4">
+                Loading expenses...
+              </p>
+            </div>
+          ) : paginated.length === 0 ? (
+            <div className="bg-gray-100 rounded-2xl border-2 border-gray-300 shadow-sm py-12 sm:py-16 text-center">
+              <div className="w-16 h-16 sm:w-20 sm:h-20 bg-gray-200 rounded-full flex items-center justify-center mx-auto mb-3 sm:mb-4 border-2 border-gray-300">
+                <DollarSign className="w-8 h-8 sm:w-10 sm:h-10 text-gray-400" />
+              </div>
+              <p className="text-sm sm:text-base text-gray-700 font-medium">
+                No expenses found
+              </p>
+              <p className="text-xs sm:text-sm text-gray-500 mt-1">
+                Try adjusting your filters
+              </p>
+            </div>
+          ) : (
+            paginated.map((exp, idx) => (
+              <div
+                key={exp._id}
+                className="bg-gray-200 rounded-xl border-2 border-gray-300 shadow-sm p-4 sm:p-5 hover:shadow-md hover:border-emerald-300 transition-all duration-300"
+              >
+                {/* Row 1: Expense Info */}
+                <div className="flex flex-wrap items-center justify-between gap-3">
+                  <div className="flex items-center gap-3 sm:gap-4 min-w-0 flex-1">
+                    <div className="w-10 h-10 sm:w-11 sm:h-11 rounded-full bg-emerald-200 flex items-center justify-center flex-shrink-0 border-2 border-emerald-300">
+                      <DollarSign className="w-5 h-5 text-emerald-700" />
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <span className="text-sm sm:text-base font-semibold text-gray-800 truncate max-w-[120px] xs:max-w-[180px] sm:max-w-[250px]">
+                          {exp.title}
+                        </span>
+                        <span className="text-[9px] sm:text-[10px] text-gray-600 bg-white px-2 py-0.5 rounded border border-gray-300 flex-shrink-0">
+                          #{idx + 1}
+                        </span>
+                      </div>
+                      <div className="flex items-center gap-2 sm:gap-3 text-[10px] sm:text-xs text-gray-500 mt-0.5 flex-wrap">
+                        <span className="flex items-center gap-1">
+                          <Calendar className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
+                          {formatDate(exp.date)}
+                        </span>
+                        <span className="w-0.5 h-0.5 bg-gray-400 rounded-full" />
+                        <span className="flex items-center gap-1">
+                          <User className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
+                          {exp.createdBy
+                            ? `${exp.createdBy.firstName} ${exp.createdBy.lastName}`
+                            : "Unknown"}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-2 sm:gap-3 flex-shrink-0">
+                    <div className="text-right">
+                      <div className="text-sm sm:text-base font-bold text-gray-800">
+                        {formatCurrency(exp.amount)}
+                      </div>
+                    </div>
+                    {canEditExpenses ? (
+                      <button
+                        onClick={() => openEditModal(exp)}
+                        className="p-2 sm:p-2.5 bg-white border-2 border-gray-300 rounded-lg hover:bg-gray-100 transition-all duration-200 shadow-sm"
+                        title="Edit Expense"
+                      >
+                        <Edit className="w-4 h-4 text-gray-600" />
+                      </button>
+                    ) : (
+                      <span className="px-2 py-1 bg-gray-200 text-gray-400 text-[9px] sm:text-[10px] font-semibold rounded border border-gray-300">
+                        No Access
+                      </span>
+                    )}
+                  </div>
+                </div>
+
+                {/* Row 2: Details (if available) */}
+                {exp.details && (
+                  <div className="mt-3 pt-3 border-t-2 border-gray-300">
+                    <p className="text-xs sm:text-sm text-gray-600">
+                      <span className="font-medium text-gray-500">
+                        Details:
+                      </span>{" "}
+                      {exp.details}
+                    </p>
+                  </div>
+                )}
+              </div>
+            ))
+          )}
+        </div>
+
+        {/* Pagination */}
+        {filtered.length > 0 && (
+          <div className="mt-3 sm:mt-4 bg-white px-3 sm:px-5 py-2.5 sm:py-4 rounded-xl border-2 border-gray-200 shadow-sm flex flex-col sm:flex-row justify-between items-center gap-2 sm:gap-3">
+            <span className="text-[9px] sm:text-xs text-gray-500 text-center sm:text-left">
+              Showing{" "}
+              <span className="font-semibold text-gray-700">
+                {(currentPage - 1) * itemsPerPage + 1}
+              </span>{" "}
+              to{" "}
+              <span className="font-semibold text-gray-700">
+                {Math.min(currentPage * itemsPerPage, filtered.length)}
+              </span>{" "}
+              of{" "}
+              <span className="font-semibold text-gray-700">
+                {filtered.length}
+              </span>{" "}
+              expenses
+            </span>
+            {renderPagination(currentPage, totalPages, setCurrentPage)}
+          </div>
+        )}
+
+        {/* Edit Modal */}
+        {editModalOpen && canEditExpenses && (
+          <EditExpense
+            expense={editingExpense}
+            onClose={closeEditModal}
+            onSuccess={handleUpdateSuccess}
+          />
+        )}
+      </div>
     </div>
   );
 };

@@ -7,7 +7,6 @@
  * - Creating new orders with items
  * - Converting requests to orders
  * - Reviewing requests (accept/reject items, change delivery date)
- * - Deleting orders
  * - Pagination for both orders and requests
  * - Marking requests as collected (from Completed to Collected)
  */
@@ -18,13 +17,11 @@ import {
   searchOrders,
   fetchOrders,
   createOrder,
-  deleteOrder,
 } from "../../Redux/orders";
 import {
   Search,
   Plus,
   X,
-  Trash2,
   CheckCircle,
   Clock,
   Package,
@@ -48,7 +45,6 @@ import {
   Banknote,
   ChevronDown,
   Calendar,
-  Globe,
   Info,
   Edit,
   Save,
@@ -58,7 +54,7 @@ import {
   X as XIcon,
   Hourglass,
   PackageCheck,
-  Truck,
+  Eye,
 } from "lucide-react";
 
 import BASE_URL from "../../Utils/config";
@@ -84,11 +80,11 @@ const Orders = () => {
   // ==========================================================================
   // STATE - FILTERS & VIEWS
   // ==========================================================================
-  const [filter, setFilter] = useState("All"); // Order status filter
-  const [searchTerm, setSearchTerm] = useState(""); // Order search
-  const [activeView, setActiveView] = useState("orders"); // "orders" | "requests"
-  const [requestsFilter, setRequestsFilter] = useState("pending"); // Request status filter
-  const [requestsSearch, setRequestsSearch] = useState(""); // Request search
+  const [filter, setFilter] = useState("All");
+  const [searchTerm, setSearchTerm] = useState("");
+  const [activeView, setActiveView] = useState("orders");
+  const [requestsFilter, setRequestsFilter] = useState("pending");
+  const [requestsSearch, setRequestsSearch] = useState("");
 
   // ==========================================================================
   // STATE - MODALS
@@ -162,15 +158,9 @@ const Orders = () => {
   // FILTER FUNCTIONS
   // ==========================================================================
 
-  /**
-   * Get filtered requests based on status and search term
-   * UPDATED: Completed shows only orders with status "Completed"
-   * Collected shows only requests with status "Collected"
-   */
   const getFilteredRequests = () => {
     let filtered = requests || [];
 
-    // Filter by status - REORDERED: Pending -> Accepted -> Converted -> Rejected -> Cancelled -> Completed -> Collected
     if (requestsFilter === "pending") {
       filtered = filtered.filter(
         (r) =>
@@ -186,24 +176,18 @@ const Orders = () => {
     } else if (requestsFilter === "cancelled") {
       filtered = filtered.filter((r) => r.status === "Cancelled");
     } else if (requestsFilter === "completed") {
-      // FIXED: Show ONLY requests where associated order status is "Completed"
-      // AND request status is NOT "Collected"
       filtered = filtered.filter((r) => {
-        // Check if request has an associated order that is Completed
         if (r.order) {
           const orderStatus =
             typeof r.order === "object" ? r.order.status : r.order?.status;
-          // Only show if order is Completed AND request is NOT Collected
           return orderStatus === "Completed" && r.status !== "Collected";
         }
         return false;
       });
     } else if (requestsFilter === "collected") {
-      // FIXED: Show ONLY requests with status "Collected"
       filtered = filtered.filter((r) => r.status === "Collected");
     }
 
-    // Filter by search term
     if (requestsSearch.trim()) {
       const term = requestsSearch.toLowerCase().trim();
       filtered = filtered.filter(
@@ -216,15 +200,12 @@ const Orders = () => {
     return filtered;
   };
 
-  /**
-   * Filter orders by status - SORTED by createdAt ascending (oldest first)
-   */
   const filteredOrders = (
     filter === "All" ? [...orders] : orders.filter((o) => o.status === filter)
   ).sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt));
 
   // ==========================================================================
-  // PAGINATION CALCULATIONS - ORDERS (SEPARATE)
+  // PAGINATION CALCULATIONS
   // ==========================================================================
   const ordersIndexOfLastItem = ordersCurrentPage * ordersItemsPerPage;
   const ordersIndexOfFirstItem = ordersIndexOfLastItem - ordersItemsPerPage;
@@ -236,9 +217,6 @@ const Orders = () => {
     filteredOrders.length / ordersItemsPerPage,
   );
 
-  // ==========================================================================
-  // PAGINATION CALCULATIONS - REQUESTS (SEPARATE)
-  // ==========================================================================
   const filteredRequests = [...getFilteredRequests()].sort(
     (a, b) => new Date(a.createdAt) - new Date(b.createdAt),
   );
@@ -257,9 +235,6 @@ const Orders = () => {
   // UTILITY FUNCTIONS
   // ==========================================================================
 
-  /**
-   * Validate phone number format
-   */
   const validatePhoneNumber = (phone) => {
     const cleaned = phone.replace(/[\s\-()]/g, "");
     if (cleaned.startsWith("255")) {
@@ -271,16 +246,10 @@ const Orders = () => {
     return false;
   };
 
-  /**
-   * Format currency to TSh
-   */
   const formatCurrency = (amount) => {
     return `TSh ${(amount || 0).toLocaleString()}`;
   };
 
-  /**
-   * Calculate total from items array
-   */
   const calculateTotal = (items) => {
     return items.reduce((sum, item) => {
       const total =
@@ -289,9 +258,6 @@ const Orders = () => {
     }, 0);
   };
 
-  /**
-   * Format date for display
-   */
   const formatDate = (dateString) => {
     if (!dateString) return "N/A";
     return new Date(dateString).toLocaleDateString("en-US", {
@@ -301,18 +267,12 @@ const Orders = () => {
     });
   };
 
-  /**
-   * Format date for input (YYYY-MM-DD)
-   */
   const formatDateForInput = (dateString) => {
     if (!dateString) return "";
     const date = new Date(dateString);
     return date.toISOString().split("T")[0];
   };
 
-  /**
-   * Format date and time for display
-   */
   const formatDateTime = (dateString) => {
     if (!dateString) return "N/A";
     return new Date(dateString).toLocaleString("en-US", {
@@ -324,9 +284,6 @@ const Orders = () => {
     });
   };
 
-  /**
-   * Get request status display name
-   */
   const getStatusDisplayName = (status) => {
     const nameMap = {
       "Pending Review": "Pending Review",
@@ -341,9 +298,6 @@ const Orders = () => {
     return nameMap[status] || status;
   };
 
-  /**
-   * Get item status badge
-   */
   const getItemStatusBadge = (status) => {
     const statusMap = {
       Pending: "bg-amber-100 text-amber-700",
@@ -353,9 +307,6 @@ const Orders = () => {
     return statusMap[status] || "bg-gray-100 text-gray-700";
   };
 
-  /**
-   * Get request source badge
-   */
   const getSourceBadge = (source) => {
     const sourceMap = {
       Website: "bg-blue-100 text-blue-700",
@@ -367,9 +318,6 @@ const Orders = () => {
     return sourceMap[source] || "bg-gray-100 text-gray-700";
   };
 
-  /**
-   * Get request status badge
-   */
   const getRequestStatusBadge = (status) => {
     const statusMap = {
       "Pending Review": "bg-amber-100 text-amber-700 border-amber-200",
@@ -385,9 +333,6 @@ const Orders = () => {
     return statusMap[status] || "bg-gray-100 text-gray-700 border-gray-200";
   };
 
-  /**
-   * Get request status icon
-   */
   const getRequestStatusIcon = (status) => {
     const iconMap = {
       "Pending Review": Clock,
@@ -403,8 +348,9 @@ const Orders = () => {
   };
 
   // ==========================================================================
-  // EVENT HANDLERS - PHONE
+  // EVENT HANDLERS
   // ==========================================================================
+
   const handlePhoneChange = (e) => {
     const value = e.target.value;
     setFormData({ ...formData, customerPhone: value });
@@ -424,9 +370,6 @@ const Orders = () => {
     }
   };
 
-  // ==========================================================================
-  // EVENT HANDLERS - FORM RESET
-  // ==========================================================================
   const resetForm = () => {
     setFormData({ customerName: "", customerPhone: "", items: [], notes: "" });
     setNewItem({ itemId: "", quantity: 1, discount: 0, priceType: "Retail" });
@@ -434,9 +377,6 @@ const Orders = () => {
     setIsPhoneValid(false);
   };
 
-  // ==========================================================================
-  // EVENT HANDLERS - PAGINATION (SEPARATE)
-  // ==========================================================================
   const ordersPaginate = (pageNumber) => setOrdersCurrentPage(pageNumber);
   const requestsPaginate = (pageNumber) => setRequestsCurrentPage(pageNumber);
 
@@ -461,17 +401,11 @@ const Orders = () => {
   // EFFECTS
   // ==========================================================================
 
-  /**
-   * Fetch orders and items on component mount
-   */
   useEffect(() => {
     dispatch(fetchOrders());
     fetchAllItems();
   }, [dispatch]);
 
-  /**
-   * Fetch requests when switching to requests view
-   */
   useEffect(() => {
     if (activeView === "requests") {
       fetchRequests();
@@ -479,9 +413,6 @@ const Orders = () => {
     }
   }, [activeView]);
 
-  /**
-   * Search orders with debounce
-   */
   useEffect(() => {
     const timer = setTimeout(() => {
       if (searchTerm) {
@@ -493,16 +424,10 @@ const Orders = () => {
     return () => clearTimeout(timer);
   }, [searchTerm, dispatch]);
 
-  /**
-   * Reset orders pagination when filter changes
-   */
   useEffect(() => {
     setOrdersCurrentPage(1);
   }, [filter]);
 
-  /**
-   * Reset requests pagination when filter changes
-   */
   useEffect(() => {
     setRequestsCurrentPage(1);
   }, [requestsFilter, requestsSearch]);
@@ -511,9 +436,6 @@ const Orders = () => {
   // API CALLS
   // ==========================================================================
 
-  /**
-   * Fetch all available items
-   */
   const fetchAllItems = async () => {
     try {
       const response = await fetch(`${BASE_URL}/api/items/getAllItems`);
@@ -525,9 +447,6 @@ const Orders = () => {
     }
   };
 
-  /**
-   * Fetch customer requests
-   */
   const fetchRequests = async () => {
     setRequestsLoading(true);
     try {
@@ -552,9 +471,6 @@ const Orders = () => {
   // REVIEW REQUEST HANDLERS
   // ==========================================================================
 
-  /**
-   * Open review modal for a request
-   */
   const openReviewModal = (request) => {
     setRequestToReview(request);
     const initialItems = (request.items || []).map((item) => ({
@@ -577,9 +493,6 @@ const Orders = () => {
     setShowReviewModal(true);
   };
 
-  /**
-   * Update item status in review
-   */
   const updateReviewItemStatus = (index, status) => {
     const updated = [...reviewItems];
     updated[index].status = status;
@@ -589,18 +502,12 @@ const Orders = () => {
     setReviewItems(updated);
   };
 
-  /**
-   * Update item rejection reason in review
-   */
   const updateReviewItemRejectionReason = (index, reason) => {
     const updated = [...reviewItems];
     updated[index].rejectionReason = reason;
     setReviewItems(updated);
   };
 
-  /**
-   * Submit review to backend
-   */
   const handleSubmitReview = async () => {
     const allPending = reviewItems.every((item) => item.status === "Pending");
     if (allPending) {
@@ -665,9 +572,6 @@ const Orders = () => {
   // REQUEST ACTION HANDLERS
   // ==========================================================================
 
-  /**
-   * Mark request as collected - Using the correct endpoint
-   */
   const handleMarkCollected = async (requestId) => {
     if (!window.confirm("Mark this request as collected?")) return;
 
@@ -698,9 +602,6 @@ const Orders = () => {
     }
   };
 
-  /**
-   * Convert a request to an order - Only for Accepted requests
-   */
   const handleConvertRequest = async (requestId) => {
     if (!window.confirm("Convert this request to an order?")) return;
     setRequestActionLoading(true);
@@ -729,9 +630,6 @@ const Orders = () => {
     }
   };
 
-  /**
-   * Reject a customer request - Only for Pending Review
-   */
   const handleRejectRequest = async (requestId) => {
     if (!window.confirm("Reject this request?")) return;
     setRequestActionLoading(true);
@@ -761,9 +659,6 @@ const Orders = () => {
   // ITEM MANAGEMENT (Create Order)
   // ==========================================================================
 
-  /**
-   * Validate item before adding to order
-   */
   const validateItem = (itemId, quantity) => {
     const selectedItem = availableItems.find((item) => item._id === itemId);
     if (!selectedItem) return { valid: false, message: "Item not found" };
@@ -782,9 +677,6 @@ const Orders = () => {
     return { valid: true, item: selectedItem };
   };
 
-  /**
-   * Add item to order form
-   */
   const handleAddItem = () => {
     if (!newItem.itemId || !newItem.quantity) {
       toast.error("Please select an item and enter quantity");
@@ -846,9 +738,6 @@ const Orders = () => {
     }
   };
 
-  /**
-   * Remove item from order form
-   */
   const handleRemoveItem = (index) => {
     setFormData((prev) => ({
       ...prev,
@@ -861,9 +750,6 @@ const Orders = () => {
   // ORDER CRUD OPERATIONS
   // ==========================================================================
 
-  /**
-   * Create new order
-   */
   const handleCreateOrder = async (e) => {
     e.preventDefault();
 
@@ -888,21 +774,6 @@ const Orders = () => {
     } catch (error) {
       console.error("Failed to create order:", error);
       toast.error(error.response?.data?.message || "Failed to create order");
-    }
-  };
-
-  /**
-   * Delete an order
-   */
-  const handleDeleteOrder = async (orderId) => {
-    if (!window.confirm("Are you sure you want to delete this order?")) return;
-    try {
-      await dispatch(deleteOrder(orderId));
-      dispatch(fetchOrders());
-      toast.success("✅ Order deleted successfully");
-    } catch (error) {
-      console.error("Failed to delete order:", error);
-      toast.error(error.response?.data?.message || "Failed to delete order");
     }
   };
 
@@ -944,9 +815,6 @@ const Orders = () => {
     "Cancelled",
   ];
 
-  // ==========================================================================
-  // REQUEST STATS - UPDATED: Completed = order status "Completed" & NOT Collected
-  // ==========================================================================
   const requestStats = {
     pending: (requests || []).filter(
       (r) =>
@@ -958,7 +826,6 @@ const Orders = () => {
     rejected: (requests || []).filter((r) => r.status === "Rejected").length,
     cancelled: (requests || []).filter((r) => r.status === "Cancelled").length,
     completed: (requests || []).filter((r) => {
-      // Only count if order is Completed AND request is NOT Collected
       if (r.order) {
         const orderStatus =
           typeof r.order === "object" ? r.order.status : r.order?.status;
@@ -974,21 +841,11 @@ const Orders = () => {
       label: "Total Orders",
       value: orders.length,
       icon: ShoppingCart,
-      bg: "bg-emerald-50",
-      iconBg: "bg-emerald-100",
-      iconColor: "text-emerald-600",
-      border: "border-emerald-200",
-      textColor: "text-emerald-700",
     },
     {
       label: "Revenue",
       value: `TSh ${orders.reduce((sum, o) => sum + (o.grandTotal || 0), 0).toLocaleString()}`,
       icon: Banknote,
-      bg: "bg-blue-50",
-      iconBg: "bg-blue-100",
-      iconColor: "text-blue-600",
-      border: "border-blue-200",
-      textColor: "text-blue-700",
     },
     {
       label: "Active Orders",
@@ -996,21 +853,11 @@ const Orders = () => {
         (o) => o.status === "Pending" || o.status === "Confirmed",
       ).length,
       icon: Activity,
-      bg: "bg-amber-50",
-      iconBg: "bg-amber-100",
-      iconColor: "text-amber-600",
-      border: "border-amber-200",
-      textColor: "text-amber-700",
     },
     {
       label: "Completion Rate",
       value: `${orders.length > 0 ? Math.round((orders.filter((o) => o.status === "Completed").length / orders.length) * 100) : 0}%`,
       icon: BarChart3,
-      bg: "bg-purple-50",
-      iconBg: "bg-purple-100",
-      iconColor: "text-purple-600",
-      border: "border-purple-200",
-      textColor: "text-purple-700",
     },
   ];
 
@@ -1018,9 +865,6 @@ const Orders = () => {
   // RENDER HELPERS - PAGINATION
   // ==========================================================================
 
-  /**
-   * Render pagination component
-   */
   const renderPagination = (
     currentPageNum,
     totalPagesNum,
@@ -1122,9 +966,6 @@ const Orders = () => {
   // RENDER HELPERS - VIEW TABS
   // ==========================================================================
 
-  /**
-   * Render view toggle buttons (Orders / Requests)
-   */
   const renderViewToggle = () => (
     <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-5">
       <div className="flex bg-white rounded-xl p-1 border-2 border-gray-200 shadow-sm">
@@ -1187,12 +1028,12 @@ const Orders = () => {
       </div>
 
       <div className="relative w-full sm:w-64">
-        <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 w-4 h-4" />
+        <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-black/50 w-4 h-4" />
         <input
           placeholder={
             activeView === "orders" ? "Search orders..." : "Search requests..."
           }
-          className="w-full pl-9 pr-4 py-2.5 bg-white border-2 border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-300 focus:border-transparent transition-all duration-200 text-sm text-black placeholder-gray-400 shadow-sm"
+          className="w-full pl-9 pr-4 py-2.5 bg-white border-2 border-gray-300 rounded-2xl focus:outline-none focus:ring-2 focus:ring-gray-400 focus:ring-offset-1 transition-all duration-200 text-black placeholder:text-black/50 shadow-sm"
           value={activeView === "orders" ? searchTerm : requestsSearch}
           onChange={(e) =>
             activeView === "orders"
@@ -1208,9 +1049,6 @@ const Orders = () => {
   // RENDER HELPERS - ORDERS SECTION
   // ==========================================================================
 
-  /**
-   * Render order status filter pills
-   */
   const renderOrderFilters = () => (
     <div className="flex flex-wrap gap-2 mb-5">
       {statusOptions.map((s) => (
@@ -1252,14 +1090,14 @@ const Orders = () => {
   );
 
   /**
-   * Render a single order card - LIGHT GREY BG
+   * Render a single order card - UPDATED: Removed delete button, larger View button
    */
   const renderOrderCard = (order) => {
     const StatusIcon = statusIcons[order.status] || Clock;
     return (
       <div
         key={order._id}
-        className="bg-gray-100 rounded-2xl border-2 border-gray-300 shadow-sm p-4 sm:p-5 hover:shadow-md hover:border-emerald-300 transition-all duration-300"
+        className="bg-gray-200 rounded-2xl border-2 border-gray-300 shadow-sm p-4 sm:p-5 hover:shadow-md hover:border-emerald-300 transition-all duration-300"
       >
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
           <div className="flex items-center gap-4 w-full sm:w-auto">
@@ -1305,35 +1143,24 @@ const Orders = () => {
               {order.status}
             </span>
 
+            {/* View Details - Bigger and better */}
             <button
               onClick={() => {
                 setSelectedOrder(order);
                 setShowDetailModal(true);
               }}
-              className="p-2 text-blue-600 hover:text-blue-800 hover:bg-blue-100 rounded-lg transition-all duration-200 border border-transparent hover:border-blue-200"
+              className="flex items-center gap-1.5 px-4 py-2 bg-white border-2 border-gray-300 text-gray-700 hover:bg-gray-100 hover:border-gray-400 font-semibold rounded-lg text-xs transition-all duration-200 shadow-sm"
               title="View Details"
             >
-              <FileText className="w-4 h-4" />
+              <Eye className="w-4 h-4" />
+              View
             </button>
-
-            {order.status !== "Completed" && (
-              <button
-                onClick={() => handleDeleteOrder(order._id)}
-                className="p-2 text-red-400 hover:text-red-600 hover:bg-red-100 rounded-lg transition-all duration-200 border border-transparent hover:border-red-200"
-                title="Delete Order"
-              >
-                <Trash2 className="w-4 h-4" />
-              </button>
-            )}
           </div>
         </div>
       </div>
     );
   };
 
-  /**
-   * Render the orders list
-   */
   const renderOrdersList = () => {
     if (loading) {
       return (
@@ -1369,9 +1196,6 @@ const Orders = () => {
   // RENDER HELPERS - REQUESTS SECTION
   // ==========================================================================
 
-  /**
-   * Render request status filter pills - REORDERED: Pending -> Accepted -> Converted -> Rejected -> Cancelled -> Completed -> Collected
-   */
   const renderRequestFilters = () => (
     <div className="flex flex-wrap gap-2 mb-5">
       {[
@@ -1464,7 +1288,7 @@ const Orders = () => {
   );
 
   /**
-   * Render a single request card - LIGHT GREY BG
+   * Render a single request card
    */
   const renderRequestCard = (request) => {
     const StatusIcon = getRequestStatusIcon(request.status);
@@ -1482,11 +1306,7 @@ const Orders = () => {
 
     const canReview = request.status === "Pending Review";
     const canConvert = request.status === "Accepted";
-    const canReject =
-      request.status === "Pending Review" ||
-      request.status === "Awaiting Customer Confirmation";
 
-    // Check if the associated order is Completed
     const isOrderCompleted =
       request.order &&
       (typeof request.order === "object"
@@ -1498,7 +1318,7 @@ const Orders = () => {
     return (
       <div
         key={request._id}
-        className="bg-gray-100 rounded-2xl border-2 border-gray-300 shadow-sm p-4 sm:p-5 hover:shadow-md hover:border-emerald-300 transition-all duration-300"
+        className="bg-gray-200 rounded-2xl border-2 border-gray-300 shadow-sm p-4 sm:p-5 hover:shadow-md hover:border-emerald-300 transition-all duration-300"
       >
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
           <div className="flex items-center gap-4 w-full sm:w-auto">
@@ -1613,10 +1433,11 @@ const Orders = () => {
                 setSelectedRequest(request);
                 setShowRequestDetailModal(true);
               }}
-              className="p-2 text-blue-600 hover:text-blue-800 hover:bg-blue-100 rounded-lg transition-all duration-200 border border-transparent hover:border-blue-200"
+              className="flex items-center gap-1.5 px-4 py-2 bg-white border-2 border-gray-300 text-gray-700 hover:bg-gray-100 hover:border-gray-400 font-semibold rounded-lg text-xs transition-all duration-200 shadow-sm"
               title="View Details"
             >
-              <FileText className="w-4 h-4" />
+              <Eye className="w-4 h-4" />
+              View
             </button>
 
             {canReview && (
@@ -1680,9 +1501,6 @@ const Orders = () => {
     );
   };
 
-  /**
-   * Render the requests list
-   */
   const renderRequestsList = () => {
     if (requestsLoading) {
       return (
@@ -1696,8 +1514,8 @@ const Orders = () => {
     if (currentRequests.length === 0) {
       return (
         <div className="bg-gray-100 rounded-2xl border-2 border-gray-300 shadow-sm py-20 text-center">
-          <div className="w-20 h-20 bg-gray-200 rounded-full flex items-center justify-center mx-auto mb-4 border-2 border-gray-300">
-            <ClipboardList className="w-10 h-10 text-gray-400" />
+          <div className="w-20 h-20 bg-gray-300 rounded-full flex items-center justify-center mx-auto mb-4 border-2 border-gray-400">
+            <ClipboardList className="w-10 h-10 text-gray-500" />
           </div>
           <p className="text-gray-700 font-medium">No requests found</p>
           <p className="text-sm text-gray-500 mt-1">
@@ -3196,23 +3014,19 @@ const Orders = () => {
             return (
               <div
                 key={index}
-                className={`bg-white p-4 sm:p-5 rounded-xl border-2 ${stat.border} shadow-md hover:shadow-lg transition-all duration-300 hover:scale-[1.02]`}
+                className="bg-white p-4 sm:p-5 rounded-2xl border-2 border-gray-300 shadow-md hover:shadow-lg transition-all duration-300 hover:scale-[1.02]"
               >
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <p className="text-xs font-medium text-black/60 uppercase tracking-wider">
                       {stat.label}
                     </p>
-                    <p
-                      className={`text-lg sm:text-xl font-bold ${stat.textColor} mt-1`}
-                    >
+                    <p className="text-lg sm:text-xl font-bold text-black mt-1">
                       {stat.value}
                     </p>
                   </div>
-                  <div
-                    className={`${stat.iconBg} p-2.5 rounded-lg border-2 ${stat.border}`}
-                  >
-                    <Icon className={`w-5 h-5 ${stat.iconColor}`} />
+                  <div className="bg-gray-100 p-2.5 rounded-xl border-2 border-gray-300">
+                    <Icon className="w-5 h-5 text-black" />
                   </div>
                 </div>
               </div>
@@ -3262,7 +3076,7 @@ const Orders = () => {
             {renderRequestFilters()}
             {renderRequestsList()}
 
-            {/* Requests Pagination - SEPARATE */}
+            {/* Requests Pagination */}
             {filteredRequests.length > 0 && (
               <div className="mt-4 bg-white px-4 sm:px-5 py-3 sm:py-4 rounded-xl border-2 border-gray-200 shadow-sm flex flex-col sm:flex-row justify-between items-center gap-3">
                 <span className="text-xs text-gray-500">
