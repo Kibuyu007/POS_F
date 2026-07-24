@@ -31,6 +31,7 @@ const ItemsCategories = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 10;
+  const [expandedCategory, setExpandedCategory] = useState(null);
 
   // Filtered categories based on search
   const filteredCategories = category.filter((c) =>
@@ -77,7 +78,6 @@ const ItemsCategories = () => {
   const [showModalAdd, setShowModalAdd] = useState(false);
   const [showModalEdit, setShowModalEdit] = useState(false);
   const [modifiedCategory, setModifiedCategory] = useState(null);
-  const [expandedCategory, setExpandedCategory] = useState(null);
 
   // Calculate stats
   const totalCategories = category.length;
@@ -95,542 +95,405 @@ const ItemsCategories = () => {
   const canEditCategory = user?.roles?.canEditCategory === true;
 
   return (
-    <div className="min-h-screen bg-gray-100">
-      <div className="mx-auto px-3 sm:px-4 lg:px-6 py-4 sm:py-6">
-        {/* Header */}
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-5 gap-3">
-          <div>
-            <h1 className="text-xl sm:text-2xl font-bold text-black">
-              Item Categories
-            </h1>
-            <p className="text-sm text-gray-600 mt-0.5 hidden sm:block">
-              Manage and organize item categories
-            </p>
-          </div>
+    <div className="p-2 sm:p-3 md:p-4 lg:p-5 bg-gray-50 min-h-screen">
+      {/* Header */}
+      <div className="flex items-center justify-between mb-3 sm:mb-4">
+        <div className="min-w-0 flex-1">
+          <h1 className="text-lg sm:text-xl md:text-2xl font-bold text-black">
+            Item Categories
+          </h1>
+          <p className="text-gray-600 text-xs hidden sm:block">
+            Manage and organize item categories
+          </p>
+        </div>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={fetchData}
+            className="px-3 py-2 bg-green-300 hover:bg-green-400 text-black font-bold rounded-full shadow text-xs flex items-center gap-1.5 flex-shrink-0"
+          >
+            <FaSync className="w-3.5 h-3.5" />
+            <span className="hidden sm:inline">Refresh</span>
+          </button>
 
-          {/* Desktop Actions */}
-          <div className="hidden sm:flex items-center gap-2 flex-shrink-0">
+          {canAddCategory ? (
             <button
-              onClick={fetchData}
-              className="flex items-center gap-2 px-4 py-2.5 bg-green-300 hover:bg-green-400 text-black font-bold rounded-full border border-green-400 shadow-sm text-sm transition-all"
+              onClick={() => setShowModalAdd(true)}
+              className="px-3 py-2 bg-green-300 hover:bg-green-400 text-black font-bold rounded-full shadow text-xs flex items-center gap-1.5 flex-shrink-0"
             >
-              <FaSync className="w-4 h-4" />
-              <span>Refresh</span>
+              <FaPlus className="w-3.5 h-3.5" />
+              <span className="hidden sm:inline">Add Category</span>
+              <span className="sm:hidden">Add</span>
             </button>
-
-            {canAddCategory ? (
-              <button
-                onClick={() => setShowModalAdd(true)}
-                className="flex items-center gap-2 px-4 py-2.5 bg-green-300 hover:bg-green-400 text-black font-bold rounded-full border border-green-400 shadow-sm transition-all text-sm"
-              >
-                <FaPlus className="w-4 h-4" />
-                <span>Add Category</span>
-              </button>
-            ) : (
-              <div className="relative group">
-                <button
-                  disabled
-                  className="flex items-center gap-2 px-4 py-2.5 bg-gray-300 text-gray-500 font-bold rounded-full border border-gray-400 cursor-not-allowed text-sm"
-                >
-                  <FaPlus className="w-4 h-4" />
-                  <span>Add Category</span>
-                </button>
-                <div className="absolute right-0 top-full mt-2 w-64 p-3 bg-gray-800 text-white text-sm rounded-2xl shadow-xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50">
-                  <p className="font-bold mb-1">Permission Required</p>
-                  <p className="text-gray-300 text-xs">
-                    You need the{" "}
-                    <span className="font-bold text-green-300">
-                      Add Categories
-                    </span>{" "}
-                    permission to create new categories.
-                  </p>
-                </div>
-              </div>
-            )}
-          </div>
-
-          {/* Mobile Actions - 3 small buttons in a row */}
-          <div className="sm:hidden flex items-center gap-2 w-full">
-            <button
-              onClick={fetchData}
-              className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2.5 bg-green-300 hover:bg-green-400 text-black font-bold rounded-full border border-green-400 shadow-sm text-xs transition-all"
-            >
-              <FaSync className="w-3.5 h-3.5" />
-              <span>Refresh</span>
-            </button>
-
-            {canAddCategory ? (
-              <button
-                onClick={() => setShowModalAdd(true)}
-                className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2.5 bg-green-300 hover:bg-green-400 text-black font-bold rounded-full border border-green-400 shadow-sm text-xs transition-all"
-              >
-                <FaPlus className="w-3.5 h-3.5" />
-                <span>Add</span>
-              </button>
-            ) : (
+          ) : (
+            <div className="relative group">
               <button
                 disabled
-                className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2.5 bg-gray-300 text-gray-500 font-bold rounded-full border border-gray-400 cursor-not-allowed text-xs"
+                className="px-3 py-2 bg-gray-300 text-gray-500 font-bold rounded-full cursor-not-allowed text-xs flex items-center gap-1.5"
               >
                 <FaPlus className="w-3.5 h-3.5" />
-                <span>Add</span>
+                <span className="hidden sm:inline">Add Category</span>
               </button>
-            )}
-          </div>
+              <div className="absolute right-0 top-full mt-2 w-64 p-3 bg-gray-800 text-white text-sm rounded-2xl shadow-xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50">
+                <p className="font-bold mb-1">Permission Required</p>
+                <p className="text-gray-300 text-xs">
+                  You need the{" "}
+                  <span className="font-bold text-green-300">
+                    Add Categories
+                  </span>{" "}
+                  permission to create new categories.
+                </p>
+              </div>
+            </div>
+          )}
         </div>
+      </div>
 
-        {/* Stats Cards - Rounded Full */}
-        <div className="grid grid-cols-2 lg:grid-cols-3 gap-3 mb-5">
-          <div className="bg-white rounded-full border border-gray-300 p-3 sm:p-4 shadow-sm hover:shadow-md transition-shadow">
-            <div className="flex items-center gap-2 sm:gap-3">
-              <div className="w-9 h-9 sm:w-10 sm:h-10 bg-green-200 rounded-full flex items-center justify-center flex-shrink-0 border border-green-400">
-                <FaTags className="w-4 h-4 sm:w-5 sm:h-5 text-green-700" />
-              </div>
-              <div className="min-w-0">
-                <p className="text-[10px] sm:text-xs text-gray-600 font-bold truncate">
-                  Total Categories
-                </p>
-                <p className="text-lg sm:text-xl font-bold text-black">
-                  {totalCategories}
-                </p>
-              </div>
-            </div>
-          </div>
-          <div className="bg-white rounded-full border border-gray-300 p-3 sm:p-4 shadow-sm hover:shadow-md transition-shadow">
-            <div className="flex items-center gap-2 sm:gap-3">
-              <div className="w-9 h-9 sm:w-10 sm:h-10 bg-blue-200 rounded-full flex items-center justify-center flex-shrink-0 border border-blue-400">
-                <FaFilter className="w-4 h-4 sm:w-5 sm:h-5 text-blue-700" />
-              </div>
-              <div className="min-w-0">
-                <p className="text-[10px] sm:text-xs text-gray-600 font-bold truncate">
-                  Filtered
-                </p>
-                <p className="text-lg sm:text-xl font-bold text-black">
-                  {filteredCategories.length}
-                </p>
-              </div>
-            </div>
-          </div>
-          <div className="bg-white rounded-full border border-gray-300 p-3 sm:p-4 shadow-sm hover:shadow-md transition-shadow col-span-2 lg:col-span-1">
-            <div className="flex items-center gap-2 sm:gap-3">
-              <div className="w-9 h-9 sm:w-10 sm:h-10 bg-green-200 rounded-full flex items-center justify-center flex-shrink-0 border border-green-400">
-                <FaInfoCircle className="w-4 h-4 sm:w-5 sm:h-5 text-green-700" />
-              </div>
-              <div className="min-w-0">
-                <p className="text-[10px] sm:text-xs text-gray-600 font-bold truncate">
-                  With Description
-                </p>
-                <p className="text-lg sm:text-xl font-bold text-green-700">
-                  {categoriesWithDesc}
-                </p>
-              </div>
-            </div>
-          </div>
+      {/* Stats Cards */}
+      <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 mb-3 sm:mb-4">
+        <div className="bg-white border border-gray-200 rounded-full p-2.5 sm:p-3 shadow-sm text-center">
+          <p className="text-[10px] sm:text-xs text-gray-500 font-medium mb-0.5">
+            Total Categories
+          </p>
+          <p className="text-xs sm:text-sm md:text-base font-bold text-black">
+            {totalCategories}
+          </p>
         </div>
+        <div className="bg-white border border-gray-200 rounded-full p-2.5 sm:p-3 shadow-sm text-center">
+          <p className="text-[10px] sm:text-xs text-gray-500 font-medium mb-0.5">
+            Filtered
+          </p>
+          <p className="text-xs sm:text-sm md:text-base font-bold text-black">
+            {filteredCategories.length}
+          </p>
+        </div>
+        <div className="bg-white border border-gray-200 rounded-full p-2.5 sm:p-3 shadow-sm text-center">
+          <p className="text-[10px] sm:text-xs text-gray-500 font-medium mb-0.5">
+            With Description
+          </p>
+          <p className="text-xs sm:text-sm md:text-base font-bold text-green-600">
+            {categoriesWithDesc}
+          </p>
+        </div>
+      </div>
 
-        {/* Search Bar - Rounded Full */}
-        <div className="bg-white rounded-full border border-gray-300 p-4 shadow-sm mb-5">
-          <div className="relative">
-            <div className="absolute inset-y-0 left-4 flex items-center pointer-events-none">
-              <FaSearch className="w-4 h-4 text-gray-500" />
-            </div>
-            <input
-              type="text"
-              placeholder="Search category name..."
-              className="w-full pl-11 pr-11 py-2.5 bg-gray-100 border border-gray-300 rounded-full text-sm text-black placeholder-gray-500 focus:border-green-400 focus:outline-none focus:ring-2 focus:ring-green-100 transition-all"
-              value={searchQuery}
-              onChange={(e) => {
-                setSearchQuery(e.target.value);
-                setCurrentPage(1);
-              }}
-            />
+      {/* Search Bar */}
+      <div className="flex gap-2 mb-3 sm:mb-4">
+        <div className="flex-1 relative">
+          <div className="absolute inset-y-0 left-3 sm:left-4 flex items-center">
+            <FaSearch className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-gray-400" />
+          </div>
+          <input
+            type="text"
+            placeholder="Search category name..."
+            className="w-full pl-9 sm:pl-11 pr-8 py-2.5 sm:py-3 text-sm border border-gray-300 rounded-full bg-white text-black focus:border-green-300 focus:outline-none focus:ring-2 focus:ring-green-100"
+            value={searchQuery}
+            onChange={(e) => {
+              setSearchQuery(e.target.value);
+              setCurrentPage(1);
+            }}
+          />
+          {searchQuery && (
+            <button
+              onClick={clearSearch}
+              className="absolute inset-y-0 right-3 flex items-center text-gray-400"
+            >
+              <span className="text-xl leading-none">×</span>
+            </button>
+          )}
+        </div>
+      </div>
+
+      {/* Error Alert */}
+      {showError && (
+        <div className="bg-red-50 border border-red-200 text-red-600 rounded-full p-4 mb-4 flex items-center gap-3">
+          <FaExclamationTriangle className="w-5 h-5 flex-shrink-0" />
+          <p className="text-sm font-bold">{showError}</p>
+        </div>
+      )}
+
+      {/* Results Count */}
+      <div className="flex items-center justify-between mb-2 px-1">
+        <p className="text-xs text-gray-500">
+          <span className="font-bold text-black">{filteredCategories.length}</span>{" "}
+          categories found
+        </p>
+        <p className="text-[10px] text-gray-400">
+          Page {currentPage} of {totalPages || 1}
+        </p>
+      </div>
+
+      {/* Mobile Card View */}
+      <div className="lg:hidden space-y-2 mb-4">
+        {currentItems.length === 0 ? (
+          <div className="bg-white rounded-xl p-6 text-center border border-gray-200">
+            <div className="text-3xl mb-2">🏷️</div>
+            <p className="text-sm font-bold text-black">No categories found</p>
+            <p className="text-xs text-gray-500">Try adjusting filters</p>
+          </div>
+        ) : (
+          currentItems.map((catego) => {
+            const isExpanded = expandedCategory === catego._id;
+            return (
+              <div
+                key={catego._id}
+                className="bg-white rounded-xl border border-gray-200 overflow-hidden shadow-sm"
+              >
+                {/* Card Header - Click to expand */}
+                <div
+                  className="p-3 bg-gradient-to-r from-green-100 to-green-200 cursor-pointer"
+                  onClick={() =>
+                    setExpandedCategory(isExpanded ? null : catego._id)
+                  }
+                >
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2 min-w-0">
+                      <div className="w-8 h-8 bg-white rounded-full flex items-center justify-center shadow-sm flex-shrink-0">
+                        <FaTags className="text-green-600" size={16} />
+                      </div>
+                      <div className="min-w-0">
+                        <p className="text-sm font-bold text-black truncate">
+                          {catego.name}
+                        </p>
+                        <p className="text-[10px] text-gray-600 truncate">
+                          {catego.description || "No description"}
+                        </p>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2 flex-shrink-0">
+                      {isExpanded ? (
+                        <FaChevronUp className="text-gray-500" size={18} />
+                      ) : (
+                        <FaChevronDown className="text-gray-500" size={18} />
+                      )}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Expanded Details */}
+                {isExpanded && (
+                  <div className="p-3 space-y-3">
+                    <div className="bg-gray-50 rounded-lg p-3 border border-gray-200">
+                      <p className="text-[10px] text-gray-500 font-medium">
+                        Category Name
+                      </p>
+                      <p className="text-sm font-bold text-black">
+                        {catego.name}
+                      </p>
+                    </div>
+                    <div className="bg-green-50 rounded-lg p-3 border border-green-200">
+                      <p className="text-[10px] text-green-600 font-medium">
+                        Description
+                      </p>
+                      <p className="text-sm font-bold text-black">
+                        {catego.description || (
+                          <span className="italic text-gray-400">
+                            No description
+                          </span>
+                        )}
+                      </p>
+                    </div>
+
+                    {/* Actions */}
+                    <div className="pt-2 border-t border-gray-200">
+                      {canEditCategory ? (
+                        <button
+                          onClick={() => {
+                            setShowModalEdit(true);
+                            setModifiedCategory(catego);
+                          }}
+                          className="w-full flex items-center justify-center gap-2 px-3 py-2.5 bg-green-300 hover:bg-green-400 text-black font-bold rounded-full text-xs transition-all border border-green-400"
+                        >
+                          <AiTwotoneEdit className="w-3.5 h-3.5" />
+                          Edit Category
+                        </button>
+                      ) : (
+                        <button
+                          disabled
+                          className="w-full flex items-center justify-center gap-2 px-3 py-2.5 bg-gray-200 text-gray-400 font-bold rounded-full text-xs cursor-not-allowed border border-gray-300"
+                        >
+                          <AiTwotoneEdit className="w-3.5 h-3.5" />
+                          No Permission
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                )}
+              </div>
+            );
+          })
+        )}
+      </div>
+
+      {/* Desktop Card View - Same style as CompletedNonPO */}
+      <div className="hidden lg:block space-y-3">
+        {currentItems.length === 0 ? (
+          <div className="bg-white rounded-xl p-8 text-center border border-gray-200">
+            <div className="text-4xl mb-3">🏷️</div>
+            <h3 className="text-lg font-bold text-black mb-2">
+              No Categories Found
+            </h3>
+            <p className="text-gray-600 text-sm mb-4">
+              {searchQuery
+                ? "No categories match your search"
+                : "No categories found in the system"}
+            </p>
             {searchQuery && (
               <button
                 onClick={clearSearch}
-                className="absolute inset-y-0 right-4 flex items-center text-gray-400 hover:text-gray-600"
+                className="px-4 py-2 bg-green-300 hover:bg-green-400 text-black font-bold rounded-full transition-colors text-sm"
               >
-                <span className="text-xl leading-none">×</span>
+                Clear Search
               </button>
             )}
           </div>
-        </div>
-
-        {/* Error Alert - Rounded Full */}
-        {showError && (
-          <div className="bg-red-100 border border-red-300 rounded-full p-4 mb-5">
-            <div className="flex items-center gap-3">
-              <div className="w-8 h-8 bg-red-200 rounded-full flex items-center justify-center flex-shrink-0">
-                <FaExclamationTriangle className="w-4 h-4 text-red-700" />
-              </div>
-              <p className="text-sm text-red-800 font-bold">{showError}</p>
-            </div>
-          </div>
-        )}
-
-        {/* Results Count */}
-        <div className="flex items-center justify-between mb-3">
-          <p className="text-sm text-gray-600">
-            <span className="font-bold text-black">
-              {filteredCategories.length}
-            </span>{" "}
-            categories found
-          </p>
-          <p className="text-xs text-gray-500">
-            Page {currentPage} of {totalPages || 1}
-          </p>
-        </div>
-
-        {/* ===== MOBILE & TABLET VIEW (Cards) ===== */}
-        <div className="lg:hidden space-y-3">
-          {currentItems.length === 0 ? (
-            <div className="bg-white rounded-2xl p-8 text-center border border-gray-300 shadow-sm">
-              <div className="w-16 h-16 bg-gray-200 rounded-full flex items-center justify-center mx-auto mb-4">
-                <FaTags className="w-8 h-8 text-gray-500" />
-              </div>
-              <h3 className="text-lg font-bold text-black mb-1">
-                No categories found
-              </h3>
-              <p className="text-sm text-gray-600">
-                {searchQuery
-                  ? "Try a different search term"
-                  : "Start by adding your first category"}
-              </p>
-              {canAddCategory && !searchQuery && (
-                <button
-                  onClick={() => setShowModalAdd(true)}
-                  className="mt-4 px-5 py-2.5 bg-green-300 hover:bg-green-400 text-black font-bold rounded-full transition-all border border-green-400"
-                >
-                  Add First Category
-                </button>
-              )}
-              {!canAddCategory && !searchQuery && (
-                <div className="mt-3 p-3 bg-amber-50 border border-amber-200 rounded-xl">
-                  <p className="text-sm text-amber-800 font-medium">
-                    <span className="font-bold">Permission Required:</span> You
-                    need Add Categories permission to create new categories.
-                  </p>
-                </div>
-              )}
-            </div>
-          ) : (
-            currentItems.map((catego) => {
-              const isExpanded = expandedCategory === catego._id;
-              return (
+        ) : (
+          currentItems.map((catego) => {
+            const isExpanded = expandedCategory === catego._id;
+            return (
+              <div
+                key={catego._id}
+                className="bg-white rounded-xl border border-gray-200 overflow-hidden shadow-sm hover:shadow-md transition-shadow"
+              >
+                {/* Header */}
                 <div
-                  key={catego._id}
-                  className="bg-white rounded-2xl border border-gray-300 overflow-hidden shadow-sm hover:shadow-md transition-all"
+                  className="p-4 bg-gradient-to-r from-green-100 to-green-200 cursor-pointer"
+                  onClick={() =>
+                    setExpandedCategory(isExpanded ? null : catego._id)
+                  }
                 >
-                  {/* Card Header */}
-                  <div
-                    className="p-4"
-                    onClick={() =>
-                      setExpandedCategory(isExpanded ? null : catego._id)
-                    }
-                  >
-                    <div className="flex items-start justify-between gap-3">
-                      <div className="flex items-start gap-3 flex-1 min-w-0">
-                        <div className="w-10 h-10 bg-green-200 rounded-full flex items-center justify-center flex-shrink-0 border border-green-400">
-                          <FaTags className="w-4 h-4 text-green-700" />
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <h3 className="font-bold text-black text-sm truncate">
-                            {catego.name}
-                          </h3>
-                          <p className="text-xs text-gray-600 mt-1">
-                            {catego.description || (
-                              <span className="italic text-gray-400">
-                                No description
-                              </span>
-                            )}
-                          </p>
-                        </div>
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 bg-white rounded-full flex items-center justify-center shadow-sm">
+                        <FaTags className="text-green-600" size={20} />
                       </div>
-                      <div className="flex-shrink-0">
-                        {isExpanded ? (
-                          <FaChevronUp className="w-5 h-5 text-gray-500" />
-                        ) : (
-                          <FaChevronDown className="w-5 h-5 text-gray-500" />
-                        )}
+                      <div>
+                        <p className="font-bold text-black">{catego.name}</p>
+                        <p className="text-xs text-gray-600">
+                          {catego.description
+                            ? catego.description.length > 60
+                              ? catego.description.substring(0, 60) + "..."
+                              : catego.description
+                            : "No description"}
+                        </p>
                       </div>
+                    </div>
+                    <div className="flex items-center gap-4">
+                      <div className="flex items-center gap-1.5">
+                        <span className="px-2.5 py-1 bg-white/60 rounded-full text-xs font-bold text-gray-700">
+                          {catego.description ? "Has Description" : "No Description"}
+                        </span>
+                      </div>
+                      {isExpanded ? (
+                        <FaChevronUp className="text-gray-500" size={20} />
+                      ) : (
+                        <FaChevronDown className="text-gray-500" size={20} />
+                      )}
                     </div>
                   </div>
+                </div>
 
-                  {/* Expanded Details */}
-                  {isExpanded && (
-                    <div className="px-4 pb-4 border-t border-gray-200">
-                      <div className="mt-3 space-y-2">
-                        <div className="bg-gray-100 rounded-full p-3 border border-gray-300">
-                          <span className="text-xs text-gray-600 font-bold block mb-1">
-                            Category Name
-                          </span>
-                          <span className="text-sm font-bold text-black">
-                            {catego.name}
-                          </span>
-                        </div>
-                        <div className="bg-green-100 rounded-full p-3 border border-green-300">
-                          <span className="text-xs text-green-700 font-bold block mb-1">
-                            Description
-                          </span>
-                          <span className="text-sm font-bold text-black">
-                            {catego.description || (
-                              <span className="italic text-gray-400">
-                                No description
-                              </span>
-                            )}
-                          </span>
-                        </div>
+                {/* Expanded Details */}
+                {isExpanded && (
+                  <div className="p-4 border-t border-gray-200">
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="bg-gray-50 rounded-lg p-4 border border-gray-200">
+                        <p className="text-xs text-gray-500 font-medium mb-1">
+                          Category Name
+                        </p>
+                        <p className="text-lg font-bold text-black">
+                          {catego.name}
+                        </p>
                       </div>
-
-                      {/* Actions */}
-                      <div className="mt-4">
-                        {canEditCategory ? (
-                          <button
-                            onClick={() => {
-                              setShowModalEdit(true);
-                              setModifiedCategory(catego);
-                            }}
-                            className="w-full flex items-center justify-center gap-2 px-3 py-2.5 bg-green-300 hover:bg-green-400 text-black font-bold rounded-full text-xs transition-all border border-green-400"
-                          >
-                            <AiTwotoneEdit className="w-3.5 h-3.5" />
-                            Edit Category
-                          </button>
-                        ) : (
-                          <button
-                            disabled
-                            className="w-full flex items-center justify-center gap-2 px-3 py-2.5 bg-gray-300 text-gray-500 font-bold rounded-full text-xs cursor-not-allowed border border-gray-400"
-                          >
-                            <AiTwotoneEdit className="w-3.5 h-3.5" />
-                            Edit (No Permission)
-                          </button>
-                        )}
+                      <div className="bg-green-50 rounded-lg p-4 border border-green-200">
+                        <p className="text-xs text-green-600 font-medium mb-1">
+                          Description
+                        </p>
+                        <p className="text-sm font-bold text-black">
+                          {catego.description || (
+                            <span className="italic text-gray-400">
+                              No description provided
+                            </span>
+                          )}
+                        </p>
                       </div>
                     </div>
-                  )}
-                </div>
-              );
-            })
-          )}
-        </div>
 
-        {/* ===== DESKTOP VIEW (Table - NOT rounded full) ===== */}
-        <div className="hidden lg:block bg-white rounded-xl border border-gray-300 overflow-hidden shadow-sm">
-          <div className="overflow-x-auto">
-            <table className="w-full min-w-[600px]">
-              <thead>
-                <tr className="bg-green-200 border-b border-green-400">
-                  {["SN", "Category Name", "Description", "Action"].map(
-                    (header, idx) => (
-                      <th
-                        key={idx}
-                        className="px-4 py-3.5 text-center text-xs font-bold text-black uppercase tracking-wider whitespace-nowrap border-r border-green-300"
-                      >
-                        {header}
-                      </th>
-                    ),
-                  )}
-                </tr>
-              </thead>
-              <tbody>
-                {currentItems.length === 0 ? (
-                  <tr>
-                    <td colSpan={4} className="text-center py-16">
-                      <div className="flex flex-col items-center gap-4">
-                        <div className="w-16 h-16 bg-gray-200 rounded-full flex items-center justify-center">
-                          <FaTags className="w-8 h-8 text-gray-500" />
-                        </div>
-                        <div>
-                          <p className="text-lg font-bold text-black">
-                            No categories found
-                          </p>
-                          <p className="text-sm text-gray-600 mt-1">
-                            {searchQuery
-                              ? "Try a different search term"
-                              : "Start by adding your first category"}
-                          </p>
-                        </div>
-                        {canAddCategory && !searchQuery && (
-                          <button
-                            onClick={() => setShowModalAdd(true)}
-                            className="mt-2 px-5 py-2.5 bg-green-300 hover:bg-green-400 text-black font-bold rounded-full transition-all border border-green-400"
-                          >
-                            Add First Category
-                          </button>
-                        )}
-                        {!canAddCategory && !searchQuery && (
-                          <div className="mt-3 p-3 bg-amber-50 border border-amber-200 rounded-xl">
-                            <p className="text-sm text-amber-800 font-medium">
-                              <span className="font-bold">
-                                Permission Required:
-                              </span>{" "}
-                              You need Add Categories permission.
-                            </p>
-                          </div>
-                        )}
-                      </div>
-                    </td>
-                  </tr>
-                ) : (
-                  currentItems.map((catego, index) => (
-                    <React.Fragment key={catego._id}>
-                      <tr className="hover:bg-green-50 transition-colors cursor-pointer group">
-                        <td className="px-4 py-4 text-center border-r border-gray-200">
-                          <span className="inline-flex items-center justify-center w-8 h-8 bg-green-300 text-black font-bold rounded-full text-xs">
-                            {(currentPage - 1) * itemsPerPage + index + 1}
-                          </span>
-                        </td>
-                        <td className="px-4 py-4 text-center border-r border-gray-200">
-                          <div className="flex items-center justify-center gap-2">
-                            <div className="w-8 h-8 bg-green-200 rounded-full flex items-center justify-center border border-green-400">
-                              <FaTags className="w-4 h-4 text-green-700" />
-                            </div>
-                            <span className="font-bold text-black text-sm">
-                              {catego.name}
-                            </span>
-                          </div>
-                        </td>
-                        <td className="px-4 py-4 text-center border-r border-gray-200">
-                          <span className="text-sm font-bold text-black">
-                            {catego.description || (
-                              <span className="text-gray-500 italic">
-                                No description
-                              </span>
-                            )}
-                          </span>
-                        </td>
-                        <td className="px-4 py-4 text-center">
-                          {canEditCategory ? (
-                            <button
-                              onClick={() => {
-                                setShowModalEdit(true);
-                                setModifiedCategory(catego);
-                              }}
-                              className="p-2 bg-green-300 hover:bg-green-400 text-black rounded-full transition-all border border-green-400"
-                              title="Edit Category"
-                            >
-                              <AiTwotoneEdit className="w-4 h-4" />
-                            </button>
-                          ) : (
-                            <div className="relative group inline-block">
-                              <button
-                                disabled
-                                className="p-2 bg-gray-300 text-gray-500 rounded-full cursor-not-allowed border border-gray-400"
-                              >
-                                <AiTwotoneEdit className="w-4 h-4" />
-                              </button>
-                              <div className="absolute right-0 top-full mt-2 w-64 p-3 bg-gray-800 text-white text-sm rounded-2xl shadow-xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50">
-                                <p className="font-bold mb-1">
-                                  Permission Required
-                                </p>
-                                <p className="text-gray-300 text-xs">
-                                  You need the{" "}
-                                  <span className="font-bold text-green-300">
-                                    Edit Categories
-                                  </span>{" "}
-                                  permission to modify categories.
-                                </p>
-                              </div>
-                            </div>
-                          )}
-                        </td>
-                      </tr>
-                      <tr className="h-2">
-                        <td colSpan={4} className="p-0 bg-gray-50"></td>
-                      </tr>
-                    </React.Fragment>
-                  ))
+                    {/* Actions */}
+                    <div className="mt-4 pt-3 border-t border-gray-200">
+                      {canEditCategory ? (
+                        <button
+                          onClick={() => {
+                            setShowModalEdit(true);
+                            setModifiedCategory(catego);
+                          }}
+                          className="px-4 py-2 bg-green-300 hover:bg-green-400 text-black font-bold rounded-full text-sm transition-all flex items-center gap-2 border border-green-400"
+                        >
+                          <AiTwotoneEdit className="w-4 h-4" />
+                          Edit Category
+                        </button>
+                      ) : (
+                        <button
+                          disabled
+                          className="px-4 py-2 bg-gray-200 text-gray-400 font-bold rounded-full text-sm cursor-not-allowed border border-gray-300 flex items-center gap-2"
+                        >
+                          <AiTwotoneEdit className="w-4 h-4" />
+                          No Permission
+                        </button>
+                      )}
+                    </div>
+                  </div>
                 )}
-              </tbody>
-            </table>
-          </div>
-
-          {/* Desktop Pagination - Rounded Full */}
-          {totalPages > 1 && (
-            <div className="flex flex-col sm:flex-row items-center justify-between gap-4 px-6 py-4 border-t border-gray-300 bg-gray-100">
-              <p className="text-sm text-gray-600">
-                Showing{" "}
-                <span className="font-bold text-black">
-                  {(currentPage - 1) * itemsPerPage + 1}
-                </span>{" "}
-                to{" "}
-                <span className="font-bold text-black">
-                  {Math.min(currentPage * itemsPerPage, totalItems)}
-                </span>{" "}
-                of <span className="font-bold text-black">{totalItems}</span>{" "}
-                categories
-              </p>
-              <div className="flex items-center gap-1">
-                <button
-                  onClick={prevPage}
-                  disabled={currentPage === 1}
-                  className="p-2.5 bg-white hover:bg-gray-100 text-black rounded-full border border-gray-300 disabled:opacity-40 disabled:cursor-not-allowed transition-all"
-                >
-                  <IoIosArrowBack className="w-4 h-4" />
-                </button>
-                {[...Array(totalPages)].map((_, i) => {
-                  const pageNum = i + 1;
-                  const isCurrent = currentPage === pageNum;
-                  const showPage =
-                    pageNum === 1 ||
-                    pageNum === totalPages ||
-                    (pageNum >= currentPage - 1 && pageNum <= currentPage + 1);
-                  if (showPage) {
-                    return (
-                      <button
-                        key={i}
-                        onClick={() => setCurrentPage(pageNum)}
-                        className={`w-9 h-9 text-sm font-bold rounded-full transition-all ${isCurrent ? "bg-green-300 text-black shadow border border-green-400" : "text-black hover:bg-gray-200 border border-gray-300"}`}
-                      >
-                        {pageNum}
-                      </button>
-                    );
-                  } else if (
-                    (pageNum === currentPage - 2 ||
-                      pageNum === currentPage + 2) &&
-                    totalPages > 5
-                  ) {
-                    return (
-                      <span key={i} className="px-2 text-gray-500 font-bold">
-                        ...
-                      </span>
-                    );
-                  }
-                  return null;
-                })}
-                <button
-                  onClick={nextPage}
-                  disabled={currentPage === totalPages}
-                  className="p-2.5 bg-white hover:bg-gray-100 text-black rounded-full border border-gray-300 disabled:opacity-40 disabled:cursor-not-allowed transition-all"
-                >
-                  <IoIosArrowForward className="w-4 h-4" />
-                </button>
               </div>
-            </div>
-          )}
-        </div>
-
-        {/* Mobile Pagination - Rounded Full */}
-        {totalPages > 1 && (
-          <div className="lg:hidden flex items-center justify-center gap-2 mt-4">
-            <button
-              onClick={prevPage}
-              disabled={currentPage === 1}
-              className="p-2.5 bg-white hover:bg-gray-100 text-black rounded-full border border-gray-300 disabled:opacity-40 disabled:cursor-not-allowed transition-all"
-            >
-              <IoIosArrowBack className="w-5 h-5" />
-            </button>
-            <span className="px-4 py-2 bg-white border border-gray-300 rounded-full text-sm font-bold text-black">
-              {currentPage} / {totalPages}
-            </span>
-            <button
-              onClick={nextPage}
-              disabled={currentPage === totalPages}
-              className="p-2.5 bg-white hover:bg-gray-100 text-black rounded-full border border-gray-300 disabled:opacity-40 disabled:cursor-not-allowed transition-all"
-            >
-              <IoIosArrowForward className="w-5 h-5" />
-            </button>
-          </div>
+            );
+          })
         )}
       </div>
+
+      {/* Pagination */}
+      {totalPages > 1 && (
+        <div className="flex items-center justify-between gap-2 mt-3 sm:mt-4 p-3 bg-white rounded-full border border-gray-200 shadow-sm">
+          <button
+            onClick={prevPage}
+            disabled={currentPage === 1}
+            className="p-2 bg-gray-100 hover:bg-gray-200 text-black rounded-full disabled:opacity-40"
+          >
+            <IoIosArrowBack className="w-4 h-4" />
+          </button>
+
+          <div className="flex items-center gap-1">
+            {[...Array(Math.min(totalPages, 5))].map((_, i) => {
+              let pageNum;
+              if (totalPages <= 5) pageNum = i + 1;
+              else if (currentPage <= 3) pageNum = i + 1;
+              else if (currentPage >= totalPages - 2)
+                pageNum = totalPages - 4 + i;
+              else pageNum = currentPage - 2 + i;
+
+              return (
+                <button
+                  key={i}
+                  onClick={() => setCurrentPage(pageNum)}
+                  className={`w-8 h-8 text-xs font-bold rounded-full transition-colors ${
+                    currentPage === pageNum
+                      ? "bg-black text-white"
+                      : "text-gray-700 hover:bg-gray-100"
+                  }`}
+                >
+                  {pageNum}
+                </button>
+              );
+            })}
+          </div>
+
+          <button
+            onClick={nextPage}
+            disabled={currentPage === totalPages}
+            className="p-2 bg-gray-100 hover:bg-gray-200 text-black rounded-full disabled:opacity-40"
+          >
+            <IoIosArrowForward className="w-4 h-4" />
+          </button>
+        </div>
+      )}
 
       {/* Modals */}
       {canAddCategory && (
