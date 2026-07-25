@@ -1,15 +1,7 @@
-import React from "react";
 import axios from "axios";
 import { useEffect, useState } from "react";
 import { IoIosArrowBack, IoIosArrowForward } from "react-icons/io";
-import {
-  FiSearch,
-  FiRefreshCw,
-  FiChevronDown,
-  FiChevronUp,
-  FiFilter,
-  FiX,
-} from "react-icons/fi";
+import { FiRefreshCw, FiFilter } from "react-icons/fi";
 import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs";
 import { LocalizationProvider } from "@mui/x-date-pickers";
 import { DatePicker } from "@mui/x-date-pickers/DatePicker";
@@ -38,6 +30,7 @@ const MadeniNonPo = () => {
   const [supplierFilter, setSupplierFilter] = useState("");
   const [startDate, setStartDate] = useState(null);
   const [endDate, setEndDate] = useState(null);
+  const [statusFilter, setStatusFilter] = useState("pending"); // Default to "pending"
   const [currentPage, setCurrentPage] = useState(1);
   const [selectedSupplier, setSelectedSupplier] = useState(null);
   const [paymentDialogOpen, setPaymentDialogOpen] = useState(false);
@@ -52,7 +45,7 @@ const MadeniNonPo = () => {
 
   useEffect(() => {
     setCurrentPage(1);
-  }, [supplierFilter, startDate, endDate]);
+  }, [supplierFilter, startDate, endDate, statusFilter]);
 
   const fetchSupplierBills = async () => {
     setLoad(true);
@@ -70,6 +63,7 @@ const MadeniNonPo = () => {
   };
 
   const filteredData = supplierBills.filter((supplier) => {
+    // Supplier name filter
     if (
       supplierFilter &&
       !supplier.supplierName
@@ -79,6 +73,7 @@ const MadeniNonPo = () => {
       return false;
     }
 
+    // Date range filter
     if (startDate || endDate) {
       const hasItemsInRange = supplier.items.some((item) => {
         const itemDate = dayjs(item.createdAt);
@@ -90,7 +85,15 @@ const MadeniNonPo = () => {
           : true;
         return matchStart && matchEnd;
       });
-      return hasItemsInRange;
+      if (!hasItemsInRange) return false;
+    }
+
+    // Status filter
+    if (statusFilter === "pending") {
+      return supplier.totalRemainingBalance > 0;
+    }
+    if (statusFilter === "paid") {
+      return supplier.totalRemainingBalance <= 0;
     }
 
     return true;
@@ -114,7 +117,6 @@ const MadeniNonPo = () => {
   ).length;
 
   const totalPages = Math.ceil(filteredData.length / itemsPerPage);
-  const totalSuppliers = filteredData.length;
 
   const currentSuppliers = filteredData.slice(
     (currentPage - 1) * itemsPerPage,
@@ -162,7 +164,7 @@ const MadeniNonPo = () => {
 
       if (res.data.success) {
         toast.success(
-          `Payment of Tsh ${amount.toLocaleString()} processed successfully!`,
+          `Payment of ${amount.toLocaleString()} processed successfully!`,
         );
         setBulkPaymentAmount("");
         setPaymentDialogOpen(false);
@@ -196,18 +198,22 @@ const MadeniNonPo = () => {
 
   const canPayBilledGrn = user?.roles?.canPayBilledGrn === true;
 
-  const activeFilterCount = [supplierFilter, startDate, endDate].filter(
-    Boolean,
-  ).length;
+  const activeFilterCount = [
+    supplierFilter,
+    startDate,
+    endDate,
+    statusFilter !== "pending",
+  ].filter(Boolean).length;
 
   const clearFilters = () => {
     setSupplierFilter("");
     setStartDate(null);
     setEndDate(null);
+    setStatusFilter("pending"); // Reset to "pending"
   };
 
   const formatCurrency = (amount) => {
-    return `TSh ${(amount || 0).toLocaleString()}`;
+    return `${(amount || 0).toLocaleString()}`;
   };
 
   const formatDate = (dateString) => {
@@ -273,7 +279,7 @@ const MadeniNonPo = () => {
             onClick={() => setPageFn(number)}
             className={`px-3.5 py-2 rounded-lg text-sm font-medium transition-all duration-200 shadow-sm border-2 ${
               currentPageNum === number
-                ? "bg-emerald-500 text-white border-emerald-500 hover:bg-emerald-600"
+                ? "bg-green-300 text-black border-green-300 hover:bg-green-400"
                 : "bg-white border-gray-300 text-gray-600 hover:bg-gray-100 hover:border-gray-400"
             }`}
           >
@@ -330,8 +336,8 @@ const MadeniNonPo = () => {
         {/* Header */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4 mb-4 sm:mb-6">
           <div className="flex items-center gap-3 sm:gap-4">
-            <div className="w-10 h-10 sm:w-12 sm:h-12 bg-gradient-to-br from-emerald-400 to-emerald-500 rounded-xl flex items-center justify-center shadow-lg shadow-emerald-200 border-2 border-emerald-300">
-              <Package className="w-5 h-5 sm:w-6 sm:h-6 text-white" />
+            <div className="w-10 h-10 sm:w-12 sm:h-12 bg-green-300 rounded-xl flex items-center justify-center shadow-lg shadow-green-200 border-2 border-green-400">
+              <Package className="w-5 h-5 sm:w-6 sm:h-6 text-black" />
             </div>
             <div>
               <h1 className="text-xl sm:text-2xl font-bold text-gray-800 tracking-tight">
@@ -376,7 +382,7 @@ const MadeniNonPo = () => {
                       </p>
                     )}
                   </div>
-                  <div className="bg-gray-100 p-2 sm:p-2.5 rounded-xl border-2 border-gray-300 flex-shrink-0">
+                  <div className="bg-green-300 p-2 sm:p-2.5 rounded-xl border-2 border-green-400 flex-shrink-0">
                     <Icon className="w-4 h-4 sm:w-5 sm:h-5 text-black" />
                   </div>
                 </div>
@@ -410,14 +416,14 @@ const MadeniNonPo = () => {
               onClick={() => setShowFilters(!showFilters)}
               className={`flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-2 sm:py-2.5 rounded-2xl font-semibold text-xs sm:text-sm transition-all duration-200 border-2 ${
                 showFilters || activeFilterCount > 0
-                  ? "bg-emerald-500 border-emerald-500 text-white shadow-md shadow-emerald-200"
+                  ? "bg-green-300 border-green-300 text-black shadow-md shadow-green-200"
                   : "bg-white border-gray-300 text-gray-600 hover:bg-gray-100 hover:border-gray-400"
               }`}
             >
               <FiFilter className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
               <span className="hidden xs:inline">Filters</span>
               {activeFilterCount > 0 && (
-                <span className="bg-white text-emerald-600 text-[10px] sm:text-xs w-4 h-4 sm:w-5 sm:h-5 rounded-full flex items-center justify-center font-bold">
+                <span className="bg-white text-black text-[10px] sm:text-xs w-4 h-4 sm:w-5 sm:h-5 rounded-full flex items-center justify-center font-bold">
                   {activeFilterCount}
                 </span>
               )}
@@ -489,6 +495,45 @@ const MadeniNonPo = () => {
               </div>
             </div>
 
+            {/* Status Filter */}
+            <div>
+              <label className="block text-xs font-medium text-gray-600 mb-1.5">
+                Payment Status
+              </label>
+              <div className="flex gap-2">
+                <button
+                  onClick={() => setStatusFilter("all")}
+                  className={`px-4 py-2 rounded-xl text-xs sm:text-sm font-semibold transition-all duration-200 border-2 ${
+                    statusFilter === "all"
+                      ? "bg-green-300 border-green-300 text-black"
+                      : "bg-white border-gray-300 text-gray-600 hover:bg-gray-100 hover:border-gray-400"
+                  }`}
+                >
+                  All
+                </button>
+                <button
+                  onClick={() => setStatusFilter("pending")}
+                  className={`px-4 py-2 rounded-xl text-xs sm:text-sm font-semibold transition-all duration-200 border-2 ${
+                    statusFilter === "pending"
+                      ? "bg-yellow-400 border-yellow-400 text-black"
+                      : "bg-white border-gray-300 text-gray-600 hover:bg-gray-100 hover:border-gray-400"
+                  }`}
+                >
+                  Pending
+                </button>
+                <button
+                  onClick={() => setStatusFilter("paid")}
+                  className={`px-4 py-2 rounded-xl text-xs sm:text-sm font-semibold transition-all duration-200 border-2 ${
+                    statusFilter === "paid"
+                      ? "bg-green-300 border-green-300 text-black"
+                      : "bg-white border-gray-300 text-gray-600 hover:bg-gray-100 hover:border-gray-400"
+                  }`}
+                >
+                  Fully Paid
+                </button>
+              </div>
+            </div>
+
             <button
               onClick={clearFilters}
               className="w-full py-2.5 bg-gray-200 hover:bg-gray-300 text-gray-700 font-semibold rounded-xl transition-all duration-200 text-sm"
@@ -502,33 +547,55 @@ const MadeniNonPo = () => {
         {activeFilterCount > 0 && !showFilters && (
           <div className="flex flex-wrap gap-1 sm:gap-1.5 mb-3 sm:mb-4">
             {supplierFilter && (
-              <span className="inline-flex items-center gap-0.5 sm:gap-1 px-2 sm:px-3 py-0.5 sm:py-1 bg-emerald-100 text-emerald-700 text-[10px] sm:text-xs font-medium rounded-full border border-emerald-200">
+              <span className="inline-flex items-center gap-0.5 sm:gap-1 px-2 sm:px-3 py-0.5 sm:py-1 bg-green-100 text-black text-[10px] sm:text-xs font-medium rounded-full border border-green-200">
                 {supplierFilter}
                 <button
                   onClick={() => setSupplierFilter("")}
-                  className="hover:text-emerald-900"
+                  className="hover:text-black"
                 >
                   <X className="w-2.5 h-2.5 sm:w-3 sm:h-3" />
                 </button>
               </span>
             )}
             {startDate && (
-              <span className="inline-flex items-center gap-0.5 sm:gap-1 px-2 sm:px-3 py-0.5 sm:py-1 bg-blue-100 text-blue-700 text-[10px] sm:text-xs font-medium rounded-full border border-blue-200">
+              <span className="inline-flex items-center gap-0.5 sm:gap-1 px-2 sm:px-3 py-0.5 sm:py-1 bg-blue-100 text-black text-[10px] sm:text-xs font-medium rounded-full border border-blue-200">
                 From {dayjs(startDate).format("DD/MM/YY")}
                 <button
                   onClick={() => setStartDate(null)}
-                  className="hover:text-blue-900"
+                  className="hover:text-black"
                 >
                   <X className="w-2.5 h-2.5 sm:w-3 sm:h-3" />
                 </button>
               </span>
             )}
             {endDate && (
-              <span className="inline-flex items-center gap-0.5 sm:gap-1 px-2 sm:px-3 py-0.5 sm:py-1 bg-blue-100 text-blue-700 text-[10px] sm:text-xs font-medium rounded-full border border-blue-200">
+              <span className="inline-flex items-center gap-0.5 sm:gap-1 px-2 sm:px-3 py-0.5 sm:py-1 bg-blue-100 text-black text-[10px] sm:text-xs font-medium rounded-full border border-blue-200">
                 To {dayjs(endDate).format("DD/MM/YY")}
                 <button
                   onClick={() => setEndDate(null)}
-                  className="hover:text-blue-900"
+                  className="hover:text-black"
+                >
+                  <X className="w-2.5 h-2.5 sm:w-3 sm:h-3" />
+                </button>
+              </span>
+            )}
+            {statusFilter === "all" && (
+              <span className="inline-flex items-center gap-0.5 sm:gap-1 px-2 sm:px-3 py-0.5 sm:py-1 bg-green-100 text-black text-[10px] sm:text-xs font-medium rounded-full border border-green-200">
+                All
+                <button
+                  onClick={() => setStatusFilter("pending")}
+                  className="hover:text-black"
+                >
+                  <X className="w-2.5 h-2.5 sm:w-3 sm:h-3" />
+                </button>
+              </span>
+            )}
+            {statusFilter === "paid" && (
+              <span className="inline-flex items-center gap-0.5 sm:gap-1 px-2 sm:px-3 py-0.5 sm:py-1 bg-green-100 text-black text-[10px] sm:text-xs font-medium rounded-full border border-green-200">
+                Fully Paid
+                <button
+                  onClick={() => setStatusFilter("pending")}
+                  className="hover:text-black"
                 >
                   <X className="w-2.5 h-2.5 sm:w-3 sm:h-3" />
                 </button>
@@ -556,7 +623,7 @@ const MadeniNonPo = () => {
         <div className="space-y-2 sm:space-y-2.5">
           {load ? (
             <div className="flex flex-col items-center justify-center py-12 sm:py-16 bg-gray-100 rounded-2xl border-2 border-gray-300 shadow-sm">
-              <div className="w-10 h-10 sm:w-12 sm:h-12 border-4 border-emerald-300 border-t-emerald-500 rounded-full animate-spin" />
+              <div className="w-10 h-10 sm:w-12 sm:h-12 border-4 border-green-300 border-t-green-500 rounded-full animate-spin" />
               <p className="text-xs sm:text-sm text-gray-500 mt-3 sm:mt-4">
                 Loading supplier bills...
               </p>
@@ -581,15 +648,15 @@ const MadeniNonPo = () => {
               return (
                 <div
                   key={supplier.supplierId}
-                  className="bg-gray-200 rounded-xl border-2 border-gray-300 shadow-sm hover:shadow-md hover:border-emerald-300 transition-all duration-300 overflow-hidden"
+                  className="bg-gray-200 rounded-xl border-2 border-gray-300 shadow-sm hover:shadow-md hover:border-green-300 transition-all duration-300 overflow-hidden"
                 >
                   {/* Card Header */}
                   <div className="p-3 sm:p-4">
                     <div className="flex flex-col xs:flex-row items-start xs:items-center justify-between gap-2">
                       {/* Left: Supplier Info */}
                       <div className="flex items-center gap-2 sm:gap-3 min-w-0 w-full xs:w-auto">
-                        <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-emerald-200 flex items-center justify-center flex-shrink-0 border-2 border-emerald-300">
-                          <Building className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-emerald-700" />
+                        <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-green-300 flex items-center justify-center flex-shrink-0 border-2 border-green-400">
+                          <Building className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-black" />
                         </div>
                         <div className="min-w-0 flex-1">
                           <div className="flex items-center gap-1.5 sm:gap-2 flex-wrap">
@@ -602,7 +669,7 @@ const MadeniNonPo = () => {
                             <span
                               className={`px-1.5 sm:px-2 py-0.5 rounded-full text-[8px] sm:text-[10px] font-semibold border-2 flex-shrink-0 ${
                                 isFullyPaid
-                                  ? "bg-emerald-100 text-emerald-700 border-emerald-200"
+                                  ? "bg-green-300 text-black border-green-400"
                                   : "bg-yellow-100 text-yellow-700 border-yellow-200"
                               }`}
                             >
@@ -666,7 +733,7 @@ const MadeniNonPo = () => {
                       <div className="mt-2">
                         <div className="h-1.5 bg-white/60 rounded-full overflow-hidden">
                           <div
-                            className="h-full bg-gradient-to-r from-yellow-400 to-emerald-500 rounded-full transition-all"
+                            className="h-full bg-gradient-to-r from-yellow-400 to-green-300 rounded-full transition-all"
                             style={{
                               width: `${supplier.totalBilledAmount > 0 ? (supplier.totalPaidAmount / supplier.totalBilledAmount) * 100 : 0}%`,
                             }}
@@ -728,7 +795,7 @@ const MadeniNonPo = () => {
                                       {formatDate(item.createdAt)}
                                     </td>
                                     <td className="px-2 sm:px-3 py-1.5 text-[9px] sm:text-[10px] text-center text-gray-700 border-r border-gray-100">
-                                      {item.quantity}
+                                      {item.billedAmount}
                                     </td>
                                     <td className="px-2 sm:px-3 py-1.5 text-[9px] sm:text-[10px] text-right text-gray-700 border-r border-gray-100">
                                       {formatCurrency(item.buyingPrice || 0)}
@@ -738,7 +805,7 @@ const MadeniNonPo = () => {
                                         item.billedTotalCost || 0,
                                       )}
                                     </td>
-                                    <td className="px-2 sm:px-3 py-1.5 text-[9px] sm:text-[10px] text-right text-emerald-600 border-r border-gray-100">
+                                    <td className="px-2 sm:px-3 py-1.5 text-[9px] sm:text-[10px] text-right text-green-600 border-r border-gray-100">
                                       {formatCurrency(item.paidAmount || 0)}
                                     </td>
                                     <td className="px-2 sm:px-3 py-1.5 text-[9px] sm:text-[10px] text-right font-bold text-red-600 border-r border-gray-100">
@@ -748,7 +815,7 @@ const MadeniNonPo = () => {
                                       <span
                                         className={`px-1.5 sm:px-2 py-0.5 rounded-full text-[7px] sm:text-[8px] font-semibold border ${
                                           isPaid
-                                            ? "bg-emerald-100 text-emerald-700 border-emerald-200"
+                                            ? "bg-green-300 text-black border-green-400"
                                             : "bg-yellow-100 text-yellow-700 border-yellow-200"
                                         }`}
                                       >
@@ -838,7 +905,7 @@ const MadeniNonPo = () => {
                     <span className="text-xs text-gray-600 font-medium">
                       Amount Paid
                     </span>
-                    <span className="text-sm font-bold text-emerald-600">
+                    <span className="text-sm font-bold text-green-600">
                       {formatCurrency(selectedSupplier.totalPaidAmount)}
                     </span>
                   </div>
@@ -858,9 +925,6 @@ const MadeniNonPo = () => {
                     Payment Amount <span className="text-red-500">*</span>
                   </label>
                   <div className="relative">
-                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-xs font-bold text-gray-500">
-                      TSh
-                    </span>
                     <input
                       type="text"
                       value={formatNumber(bulkPaymentAmount)}
@@ -869,7 +933,7 @@ const MadeniNonPo = () => {
                         if (!/^\d*\.?\d*$/.test(rawValue)) return;
                         setBulkPaymentAmount(rawValue);
                       }}
-                      className="w-full pl-12 pr-4 py-3 border-2 border-gray-300 rounded-xl text-base focus:outline-none focus:ring-2 focus:ring-yellow-300 focus:border-transparent text-black bg-white"
+                      className="w-full px-4 py-3 border-2 border-gray-300 rounded-xl text-base focus:outline-none focus:ring-2 focus:ring-yellow-300 focus:border-transparent text-black bg-white"
                       placeholder="0.00"
                     />
                   </div>
@@ -879,7 +943,7 @@ const MadeniNonPo = () => {
                         selectedSupplier.totalRemainingBalance.toString(),
                       )
                     }
-                    className="text-xs text-emerald-600 font-semibold mt-1.5 hover:text-emerald-700 transition-colors"
+                    className="text-xs text-green-600 font-semibold mt-1.5 hover:text-green-700 transition-colors"
                   >
                     Pay full balance
                   </button>

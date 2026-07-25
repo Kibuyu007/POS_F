@@ -1,4 +1,3 @@
-import React from "react";
 import { useState, useEffect } from "react";
 import axios from "axios";
 import * as XLSX from "xlsx";
@@ -7,21 +6,14 @@ import autoTable from "jspdf-autotable";
 import { DatePicker, LocalizationProvider } from "@mui/x-date-pickers";
 import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs";
 import dayjs from "dayjs";
-import {
-  IoIosArrowBack,
-  IoIosArrowForward,
-  IoMdAdd,
-  IoMdDownload,
-  IoMdRefresh,
-} from "react-icons/io";
-import { FiX, FiEdit2, FiFilter, FiUser } from "react-icons/fi";
+import { IoIosArrowBack, IoIosArrowForward, IoMdRefresh } from "react-icons/io";
+import { FiFilter } from "react-icons/fi";
 import Loading from "../../../Components/Shared/Loading";
 import BASE_URL from "../../../Utils/config";
 import toast from "react-hot-toast";
 import EditExpense from "./EditExpense";
 import { useSelector } from "react-redux";
 import {
-  Search,
   X,
   Package,
   Clock,
@@ -31,6 +23,10 @@ import {
   DollarSign,
   Edit,
   Download,
+  ClipboardClock,
+  Plus,
+  ArrowRight,
+  Sparkles,
 } from "lucide-react";
 
 const Expenses = () => {
@@ -233,7 +229,7 @@ const Expenses = () => {
   ).length;
 
   const formatCurrency = (amount) => {
-    return `TSh ${(amount || 0).toLocaleString()}`;
+    return `${(amount || 0).toLocaleString()}`;
   };
 
   const formatDate = (dateString) => {
@@ -299,7 +295,7 @@ const Expenses = () => {
             onClick={() => setPageFn(number)}
             className={`px-3.5 py-2 rounded-lg text-sm font-medium transition-all duration-200 shadow-sm border-2 ${
               currentPageNum === number
-                ? "bg-emerald-500 text-white border-emerald-500 hover:bg-emerald-600"
+                ? "bg-green-300 text-black border-green-300 hover:bg-green-400"
                 : "bg-white border-gray-300 text-gray-600 hover:bg-gray-100 hover:border-gray-400"
             }`}
           >
@@ -351,14 +347,14 @@ const Expenses = () => {
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-gray-50">
       <div className="max-w-8xl mx-auto px-3 sm:px-4 md:px-6 py-4 sm:py-6 md:py-8">
-        {/* Header */}
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4 mb-4 sm:mb-6">
+        {/* Header - Responsive */}
+        <div className="flex flex-wrap items-center justify-between gap-3 sm:gap-4 mb-4 sm:mb-6">
           <div className="flex items-center gap-3 sm:gap-4">
-            <div className="w-10 h-10 sm:w-12 sm:h-12 bg-gradient-to-br from-emerald-400 to-emerald-500 rounded-xl flex items-center justify-center shadow-lg shadow-emerald-200 border-2 border-emerald-300">
-              <DollarSign className="w-5 h-5 sm:w-6 sm:h-6 text-white" />
+            <div className="w-10 h-10 sm:w-12 sm:h-12 bg-green-300 rounded-xl flex items-center justify-center shadow-lg shadow-green-200 border-2 border-green-400">
+              <ClipboardClock className="w-5 h-5 sm:w-6 sm:h-6 text-black" />
             </div>
             <div>
-              <h1 className="text-xl sm:text-2xl font-bold text-gray-800 tracking-tight">
+              <h1 className="text-lg sm:text-xl md:text-2xl font-bold text-gray-800 tracking-tight">
                 Expenses
               </h1>
               <p className="text-xs sm:text-sm text-gray-500 hidden xs:block">
@@ -368,7 +364,7 @@ const Expenses = () => {
           </div>
           <button
             onClick={getExpenses}
-            className="flex items-center gap-1.5 sm:gap-2 px-4 sm:px-5 py-2 sm:py-2.5 bg-white border-2 border-gray-300 text-gray-700 hover:bg-gray-100 font-semibold rounded-xl transition-all duration-200 shadow-sm text-xs sm:text-sm"
+            className="flex items-center gap-1.5 sm:gap-2 px-3 sm:px-5 py-2 sm:py-2.5 bg-white border-2 border-gray-300 text-gray-700 hover:bg-gray-100 font-semibold rounded-xl transition-all duration-200 shadow-sm text-xs sm:text-sm"
           >
             <IoMdRefresh
               className={`w-3.5 h-3.5 sm:w-4 sm:h-4 ${loading ? "animate-spin" : ""}`}
@@ -377,8 +373,8 @@ const Expenses = () => {
           </button>
         </div>
 
-        {/* Stats Cards */}
-        <div className="grid grid-cols-1 xs:grid-cols-3 gap-2 sm:gap-3 md:gap-4 mb-4 sm:mb-6">
+        {/* Stats Cards - Stacked on mobile */}
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 sm:gap-3 md:gap-4 mb-4 sm:mb-6">
           {statsData.map((stat, index) => {
             const Icon = stat.icon;
             return (
@@ -395,7 +391,7 @@ const Expenses = () => {
                       {stat.value}
                     </p>
                   </div>
-                  <div className="bg-gray-100 p-2 sm:p-2.5 rounded-xl border-2 border-gray-300 flex-shrink-0">
+                  <div className="bg-green-300 p-2 sm:p-2.5 rounded-xl border-2 border-green-400 flex-shrink-0">
                     <Icon className="w-4 h-4 sm:w-5 sm:h-5 text-black" />
                   </div>
                 </div>
@@ -404,49 +400,70 @@ const Expenses = () => {
           })}
         </div>
 
-        {/* Add New Expense */}
-        <div className="bg-white rounded-2xl border-2 border-gray-200 shadow-sm mb-4 sm:mb-6 overflow-hidden">
-          <div className="px-4 sm:px-6 py-3 sm:py-4 border-b-2 border-gray-200 bg-gray-50">
+        {/* Add New Expense - POLISHED SECTION */}
+        <div className="bg-white rounded-2xl border-2 border-gray-200 shadow-sm mb-4 sm:mb-6 overflow-hidden hover:shadow-lg transition-all duration-300">
+          {/* Header with gradient accent */}
+          <div className="relative px-4 sm:px-7 py-3 sm:py-5 bg-gradient-to-r from-green-300/20 via-transparent to-transparent border-b-2 border-gray-200">
             <div className="flex items-center gap-3">
-              <div className="p-2 bg-gradient-to-br from-emerald-400 to-emerald-500 rounded-xl shadow-md shadow-emerald-200">
-                <IoMdAdd className="text-white" size={18} />
+              <div className="p-2 sm:p-2.5 bg-gradient-to-br from-green-300 to-green-400 rounded-xl shadow-md shadow-green-200/50 border-2 border-green-400">
+                <Plus className="text-black w-4 h-4 sm:w-5 sm:h-5" />
               </div>
               <div>
-                <h2 className="font-bold text-gray-800 text-sm sm:text-base">
+                <h2 className="font-bold text-gray-800 text-sm sm:text-lg flex items-center gap-2">
                   Add New Expense
+                  <Sparkles className="w-3 h-3 sm:w-4 sm:h-4 text-green-400" />
                 </h2>
-                <p className="text-gray-500 text-xs">
-                  Fill in the details below
+                <p className="text-gray-500 text-[10px] sm:text-xs flex items-center gap-2 flex-wrap">
+                  <span>Fill in the details below to record a new expense</span>
+                  <span className="w-1 h-1 bg-gray-300 rounded-full hidden xs:inline" />
+                  <span className="text-red-500 font-medium">* required</span>
                 </p>
               </div>
             </div>
+            {/* Decorative accent line */}
+            <div className="absolute bottom-0 left-0 h-0.5 w-32 sm:w-48 bg-gradient-to-r from-green-300 to-green-400 rounded-full" />
           </div>
 
-          <div className="p-4 sm:p-6 space-y-4">
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
-              <div>
-                <label className="block text-xs font-semibold text-gray-700 mb-1.5">
-                  Title <span className="text-red-500">*</span>
-                </label>
-                <input
-                  type="text"
-                  placeholder="Expense title..."
-                  value={input.title}
-                  onChange={(e) =>
-                    setInput({ ...input, title: e.target.value })
-                  }
-                  className="w-full px-3.5 py-2.5 text-sm border-2 border-gray-300 rounded-xl bg-white text-black focus:outline-none focus:ring-2 focus:ring-emerald-300 focus:border-transparent transition-all duration-200"
-                />
-              </div>
-
-              <div>
-                <label className="block text-xs font-semibold text-gray-700 mb-1.5">
-                  Amount <span className="text-red-500">*</span>
+          <div className="p-4 sm:p-7">
+            {/* Form Grid */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-5">
+              {/* Title Field */}
+              <div className="group">
+                <label className="block text-xs font-semibold text-gray-700 mb-1.5 flex items-center gap-1">
+                  <span>Title</span>
+                  <span className="text-red-500 text-sm">*</span>
                 </label>
                 <div className="relative">
-                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 text-xs font-bold">
+                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                    <span className="text-gray-400 text-xs">📝</span>
+                  </div>
+                  <input
+                    type="text"
+                    placeholder="Enter expense title..."
+                    value={input.title}
+                    onChange={(e) =>
+                      setInput({ ...input, title: e.target.value })
+                    }
+                    className="w-full pl-8 pr-10 py-2.5 sm:py-3 text-sm border-2 border-gray-300 rounded-xl bg-white text-black placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-green-300 focus:border-transparent transition-all duration-200 group-hover:border-gray-400"
+                  />
+                  {input.title && (
+                    <div className="absolute right-3 top-1/2 -translate-y-1/2">
+                      <div className="w-1.5 h-1.5 sm:w-2 sm:h-2 bg-green-300 rounded-full animate-pulse" />
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Amount Field */}
+              <div className="group">
+                <label className="block text-xs font-semibold text-gray-700 mb-1.5 flex items-center gap-1">
+                  <span>Amount</span>
+                  <span className="text-red-500 text-sm">*</span>
+                </label>
+                <div className="relative">
+                  <div className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 font-bold text-[10px] sm:text-xs bg-gray-100 px-1.5 sm:px-2 py-0.5 sm:py-1 rounded border border-gray-200">
                     TSh
-                  </span>
+                  </div>
                   <input
                     type="number"
                     placeholder="0.00"
@@ -454,29 +471,42 @@ const Expenses = () => {
                     onChange={(e) =>
                       setInput({ ...input, amount: e.target.value })
                     }
-                    className="w-full pl-12 pr-3.5 py-2.5 text-sm border-2 border-gray-300 rounded-xl bg-white text-black focus:outline-none focus:ring-2 focus:ring-emerald-300 focus:border-transparent transition-all duration-200"
+                    className="w-full pl-12 sm:pl-16 pr-10 sm:pr-12 py-2.5 sm:py-3 text-sm border-2 border-gray-300 rounded-xl bg-white text-black placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-green-300 focus:border-transparent transition-all duration-200 group-hover:border-gray-400"
+                  />
+                  {input.amount && (
+                    <div className="absolute right-2 sm:right-3 top-1/2 -translate-y-1/2 text-[10px] sm:text-xs text-gray-400 font-medium bg-gray-50 px-1.5 sm:px-2 py-0.5 rounded border border-gray-200">
+                      .00
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Details Field */}
+              <div className="group">
+                <label className="block text-xs font-semibold text-gray-700 mb-1.5">
+                  Details
+                </label>
+                <div className="relative">
+                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                    <span className="text-gray-400 text-xs">📋</span>
+                  </div>
+                  <input
+                    type="text"
+                    placeholder="Additional info..."
+                    value={input.details}
+                    onChange={(e) =>
+                      setInput({ ...input, details: e.target.value })
+                    }
+                    className="w-full pl-8 pr-4 py-2.5 sm:py-3 text-sm border-2 border-gray-300 rounded-xl bg-white text-black placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-green-300 focus:border-transparent transition-all duration-200 group-hover:border-gray-400"
                   />
                 </div>
               </div>
 
-              <div>
-                <label className="block text-xs font-semibold text-gray-700 mb-1.5">
-                  Details
-                </label>
-                <input
-                  type="text"
-                  placeholder="Additional details..."
-                  value={input.details}
-                  onChange={(e) =>
-                    setInput({ ...input, details: e.target.value })
-                  }
-                  className="w-full px-3.5 py-2.5 text-sm border-2 border-gray-300 rounded-xl bg-white text-black focus:outline-none focus:ring-2 focus:ring-emerald-300 focus:border-transparent transition-all duration-200"
-                />
-              </div>
-
-              <div>
-                <label className="block text-xs font-semibold text-gray-700 mb-1.5">
-                  Date <span className="text-red-500">*</span>
+              {/* Date Field */}
+              <div className="group">
+                <label className="block text-xs font-semibold text-gray-700 mb-1.5 flex items-center gap-1">
+                  <span>Date</span>
+                  <span className="text-red-500 text-sm">*</span>
                 </label>
                 <LocalizationProvider dateAdapter={AdapterDayjs}>
                   <DatePicker
@@ -493,6 +523,22 @@ const Expenses = () => {
                           "& .MuiOutlinedInput-root": {
                             borderRadius: "12px",
                             fontSize: "14px",
+                            backgroundColor: "white",
+                            "& fieldset": {
+                              borderColor: "#d1d5db",
+                              borderWidth: "2px",
+                            },
+                            "&:hover fieldset": {
+                              borderColor: "#9ca3af",
+                            },
+                            "&.Mui-focused fieldset": {
+                              borderColor: "#86efac",
+                              borderWidth: "2px",
+                            },
+                          },
+                          "& .MuiOutlinedInput-input": {
+                            padding: "8px 14px",
+                            color: "black",
                           },
                         },
                       },
@@ -502,19 +548,36 @@ const Expenses = () => {
               </div>
             </div>
 
-            <div className="flex justify-end">
+            {/* Action Buttons */}
+            <div className="flex flex-col sm:flex-row items-center justify-between gap-4 mt-5 sm:mt-6 pt-4 sm:pt-5 border-t-2 border-gray-200">
+              <div className="flex items-center gap-3 text-[10px] sm:text-xs text-gray-400">
+                <div className="flex items-center gap-1.5">
+                  <span className="w-1.5 h-1.5 bg-green-300 rounded-full" />
+                  <span>All fields with</span>
+                  <span className="text-red-500 font-bold">*</span>
+                  <span>are required</span>
+                </div>
+              </div>
               <button
                 onClick={addExpense}
-                className="px-6 py-2.5 bg-emerald-500 hover:bg-emerald-600 text-white font-semibold rounded-xl shadow-md hover:shadow-lg hover:shadow-emerald-200 hover:scale-[1.02] active:scale-95 transition-all duration-300 text-sm flex items-center gap-2 border-2 border-emerald-400"
+                className="group relative w-full sm:w-auto px-5 sm:px-8 py-2.5 sm:py-3.5 bg-gradient-to-r from-green-300 to-green-400 hover:from-green-400 hover:to-green-500 text-black font-bold rounded-xl shadow-md hover:shadow-lg hover:shadow-green-200/50 hover:scale-[1.02] active:scale-95 transition-all duration-300 text-sm flex items-center justify-center gap-2 border-2 border-green-400 overflow-hidden"
               >
-                <IoMdAdd size={18} />
-                Add Expense
+                <span className="absolute inset-0 bg-white opacity-0 group-hover:opacity-20 transition-opacity duration-300" />
+                <Plus
+                  size={18}
+                  className="text-black group-hover:rotate-90 transition-transform duration-300"
+                />
+                <span>Add Expense</span>
+                <ArrowRight
+                  size={16}
+                  className="text-black/70 group-hover:translate-x-1 transition-transform duration-300"
+                />
               </button>
             </div>
           </div>
         </div>
 
-        {/* Search + Filters */}
+        {/* Search + Filters - Responsive */}
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-4 mb-4 sm:mb-5">
           <div className="flex gap-2 w-full sm:w-auto">
             <div className="relative flex-1 sm:w-56 md:w-64">
@@ -551,14 +614,14 @@ const Expenses = () => {
               onClick={() => setShowFilters(!showFilters)}
               className={`flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-2 sm:py-2.5 rounded-2xl font-semibold text-xs sm:text-sm transition-all duration-200 border-2 ${
                 showFilters || activeFilterCount > 0
-                  ? "bg-emerald-500 border-emerald-500 text-white shadow-md shadow-emerald-200"
+                  ? "bg-green-300 border-green-300 text-black shadow-md shadow-green-200"
                   : "bg-white border-gray-300 text-gray-600 hover:bg-gray-100 hover:border-gray-400"
               }`}
             >
               <FiFilter className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
               <span className="hidden xs:inline">Filters</span>
               {activeFilterCount > 0 && (
-                <span className="bg-white text-emerald-600 text-[10px] sm:text-xs w-4 h-4 sm:w-5 sm:h-5 rounded-full flex items-center justify-center font-bold">
+                <span className="bg-white text-black text-[10px] sm:text-xs w-4 h-4 sm:w-5 sm:h-5 rounded-full flex items-center justify-center font-bold">
                   {activeFilterCount}
                 </span>
               )}
@@ -575,7 +638,7 @@ const Expenses = () => {
             </button>
             <button
               onClick={exportPDF}
-              className="flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-2 sm:py-2.5 bg-emerald-500 hover:bg-emerald-600 text-white font-semibold rounded-xl transition-all duration-200 shadow-sm text-xs sm:text-sm border-2 border-emerald-400"
+              className="flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-2 sm:py-2.5 bg-green-300 hover:bg-green-400 text-black font-semibold rounded-xl transition-all duration-200 shadow-sm text-xs sm:text-sm border-2 border-green-400"
             >
               <Download className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
               <span className="hidden xs:inline">PDF</span>
@@ -662,33 +725,33 @@ const Expenses = () => {
         {activeFilterCount > 0 && !showFilters && (
           <div className="flex flex-wrap gap-1 sm:gap-1.5 mb-3 sm:mb-4">
             {filterCreatedBy && (
-              <span className="inline-flex items-center gap-0.5 sm:gap-1 px-2 sm:px-3 py-0.5 sm:py-1 bg-emerald-100 text-emerald-700 text-[10px] sm:text-xs font-medium rounded-full border border-emerald-200">
+              <span className="inline-flex items-center gap-0.5 sm:gap-1 px-2 sm:px-3 py-0.5 sm:py-1 bg-green-100 text-black text-[10px] sm:text-xs font-medium rounded-full border border-green-200">
                 {filterCreatedBy}
                 <button
                   onClick={() => setFilterCreatedBy("")}
-                  className="hover:text-emerald-900"
+                  className="hover:text-black"
                 >
                   <X className="w-2.5 h-2.5 sm:w-3 sm:h-3" />
                 </button>
               </span>
             )}
             {fromDate && (
-              <span className="inline-flex items-center gap-0.5 sm:gap-1 px-2 sm:px-3 py-0.5 sm:py-1 bg-blue-100 text-blue-700 text-[10px] sm:text-xs font-medium rounded-full border border-blue-200">
+              <span className="inline-flex items-center gap-0.5 sm:gap-1 px-2 sm:px-3 py-0.5 sm:py-1 bg-blue-100 text-black text-[10px] sm:text-xs font-medium rounded-full border border-blue-200">
                 From {dayjs(fromDate).format("DD/MM/YY")}
                 <button
                   onClick={() => setFromDate(null)}
-                  className="hover:text-blue-900"
+                  className="hover:text-black"
                 >
                   <X className="w-2.5 h-2.5 sm:w-3 sm:h-3" />
                 </button>
               </span>
             )}
             {toDate && (
-              <span className="inline-flex items-center gap-0.5 sm:gap-1 px-2 sm:px-3 py-0.5 sm:py-1 bg-blue-100 text-blue-700 text-[10px] sm:text-xs font-medium rounded-full border border-blue-200">
+              <span className="inline-flex items-center gap-0.5 sm:gap-1 px-2 sm:px-3 py-0.5 sm:py-1 bg-blue-100 text-black text-[10px] sm:text-xs font-medium rounded-full border border-blue-200">
                 To {dayjs(toDate).format("DD/MM/YY")}
                 <button
                   onClick={() => setToDate(null)}
-                  className="hover:text-blue-900"
+                  className="hover:text-black"
                 >
                   <X className="w-2.5 h-2.5 sm:w-3 sm:h-3" />
                 </button>
@@ -701,22 +764,22 @@ const Expenses = () => {
 
         {/* Results Count */}
         <div className="flex items-center justify-between mb-2 sm:mb-3 px-1">
-          <p className="text-[10px] sm:text-sm text-gray-500">
+          <p className="text-[9px] sm:text-sm text-gray-500">
             <span className="font-semibold text-gray-700">
               {filtered.length}
             </span>{" "}
             expenses found
           </p>
-          <p className="text-[10px] sm:text-sm text-gray-400">
+          <p className="text-[9px] sm:text-sm text-gray-400">
             Page {currentPage} of {totalPages || 1}
           </p>
         </div>
 
-        {/* Card List - Normal size, well arranged */}
-        <div className="space-y-2.5 sm:space-y-3">
+        {/* Card List - Responsive */}
+        <div className="space-y-2 sm:space-y-3">
           {loading ? (
             <div className="flex flex-col items-center justify-center py-12 sm:py-16 bg-gray-100 rounded-2xl border-2 border-gray-300 shadow-sm">
-              <div className="w-10 h-10 sm:w-12 sm:h-12 border-4 border-emerald-300 border-t-emerald-500 rounded-full animate-spin" />
+              <div className="w-10 h-10 sm:w-12 sm:h-12 border-4 border-green-300 border-t-green-500 rounded-full animate-spin" />
               <p className="text-xs sm:text-sm text-gray-500 mt-3 sm:mt-4">
                 Loading expenses...
               </p>
@@ -737,17 +800,16 @@ const Expenses = () => {
             paginated.map((exp, idx) => (
               <div
                 key={exp._id}
-                className="bg-gray-200 rounded-xl border-2 border-gray-300 shadow-sm p-4 sm:p-5 hover:shadow-md hover:border-emerald-300 transition-all duration-300"
+                className="bg-gray-200 rounded-xl border-2 border-gray-300 shadow-sm p-3 sm:p-5 hover:shadow-md hover:border-green-300 transition-all duration-300"
               >
-                {/* Row 1: Expense Info */}
                 <div className="flex flex-wrap items-center justify-between gap-3">
                   <div className="flex items-center gap-3 sm:gap-4 min-w-0 flex-1">
-                    <div className="w-10 h-10 sm:w-11 sm:h-11 rounded-full bg-emerald-200 flex items-center justify-center flex-shrink-0 border-2 border-emerald-300">
-                      <DollarSign className="w-5 h-5 text-emerald-700" />
+                    <div className="w-10 h-10 sm:w-11 sm:h-11 rounded-full bg-green-300 flex items-center justify-center flex-shrink-0 border-2 border-green-400">
+                      <ClipboardClock className="w-4 h-4 sm:w-5 sm:h-5 text-black" />
                     </div>
                     <div className="min-w-0 flex-1">
                       <div className="flex items-center gap-2 flex-wrap">
-                        <span className="text-sm sm:text-base font-semibold text-gray-800 truncate max-w-[120px] xs:max-w-[180px] sm:max-w-[250px]">
+                        <span className="text-sm sm:text-base font-semibold text-gray-800 truncate max-w-[100px] xs:max-w-[180px] sm:max-w-[250px]">
                           {exp.title}
                         </span>
                         <span className="text-[9px] sm:text-[10px] text-gray-600 bg-white px-2 py-0.5 rounded border border-gray-300 flex-shrink-0">
@@ -792,7 +854,6 @@ const Expenses = () => {
                   </div>
                 </div>
 
-                {/* Row 2: Details (if available) */}
                 {exp.details && (
                   <div className="mt-3 pt-3 border-t-2 border-gray-300">
                     <p className="text-xs sm:text-sm text-gray-600">
@@ -808,7 +869,7 @@ const Expenses = () => {
           )}
         </div>
 
-        {/* Pagination */}
+        {/* Pagination - Responsive */}
         {filtered.length > 0 && (
           <div className="mt-3 sm:mt-4 bg-white px-3 sm:px-5 py-2.5 sm:py-4 rounded-xl border-2 border-gray-200 shadow-sm flex flex-col sm:flex-row justify-between items-center gap-2 sm:gap-3">
             <span className="text-[9px] sm:text-xs text-gray-500 text-center sm:text-left">

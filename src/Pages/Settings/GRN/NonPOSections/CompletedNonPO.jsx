@@ -173,7 +173,7 @@ const CompletedNonPO = () => {
 
       {/* Stats Cards */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mb-3 sm:mb-4">
-        <div className="bg-white border border-gray-200 rounded-full p-2.5 sm:p-3 shadow-sm text-center">
+        <div className="bg-white border border-gray-400 rounded-full p-2.5 sm:p-3 shadow-sm text-center">
           <p className="text-[10px] sm:text-xs text-gray-500 font-medium mb-0.5">
             Total GRNs
           </p>
@@ -181,7 +181,7 @@ const CompletedNonPO = () => {
             {totalItems}
           </p>
         </div>
-        <div className="bg-white border border-gray-200 rounded-full p-2.5 sm:p-3 shadow-sm text-center">
+        <div className="bg-white border border-gray-400 rounded-full p-2.5 sm:p-3 shadow-sm text-center">
           <p className="text-[10px] sm:text-xs text-gray-500 font-medium mb-0.5">
             Total Items
           </p>
@@ -192,7 +192,7 @@ const CompletedNonPO = () => {
             )}
           </p>
         </div>
-        <div className="bg-white border border-gray-200 rounded-full p-2.5 sm:p-3 shadow-sm text-center">
+        <div className="bg-white border border-gray-400 rounded-full p-2.5 sm:p-3 shadow-sm text-center">
           <p className="text-[10px] sm:text-xs text-gray-500 font-medium mb-0.5">
             Billed
           </p>
@@ -200,7 +200,7 @@ const CompletedNonPO = () => {
             {totalBilledItems}
           </p>
         </div>
-        <div className="bg-white border border-gray-200 rounded-full p-2.5 sm:p-3 shadow-sm text-center">
+        <div className="bg-white border border-gray-400 rounded-full p-2.5 sm:p-3 shadow-sm text-center">
           <p className="text-[10px] sm:text-xs text-gray-500 font-medium mb-0.5">
             Completed
           </p>
@@ -221,7 +221,7 @@ const CompletedNonPO = () => {
             placeholder="Search supplier..."
             value={filterSupplier}
             onChange={(e) => setFilterSupplier(e.target.value)}
-            className="w-full pl-9 sm:pl-11 pr-8 py-2.5 sm:py-3 text-sm border border-gray-300 rounded-full bg-white text-black focus:border-green-300 focus:outline-none focus:ring-2 focus:ring-green-100"
+            className="w-full pl-9 sm:pl-11 pr-8 py-2.5 sm:py-3 text-sm border border-gray-400 rounded-full bg-white text-black focus:border-green-300 focus:outline-none focus:ring-2 focus:ring-green-100"
           />
           {filterSupplier && (
             <button

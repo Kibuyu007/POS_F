@@ -13,11 +13,7 @@
 
 import { useState, useEffect } from "react";
 import { useDispatch, useSelector } from "react-redux";
-import {
-  searchOrders,
-  fetchOrders,
-  createOrder,
-} from "../../Redux/orders";
+import { searchOrders, fetchOrders, createOrder } from "../../Redux/orders";
 import {
   Search,
   Plus,
@@ -247,7 +243,7 @@ const Orders = () => {
   };
 
   const formatCurrency = (amount) => {
-    return `TSh ${(amount || 0).toLocaleString()}`;
+    return `${(amount || 0).toLocaleString()}`;
   };
 
   const calculateTotal = (items) => {
@@ -301,7 +297,7 @@ const Orders = () => {
   const getItemStatusBadge = (status) => {
     const statusMap = {
       Pending: "bg-amber-100 text-amber-700",
-      Accepted: "bg-emerald-100 text-emerald-700",
+      Accepted: "bg-green-300 text-black",
       Rejected: "bg-red-100 text-red-700",
     };
     return statusMap[status] || "bg-gray-100 text-gray-700";
@@ -316,21 +312,6 @@ const Orders = () => {
       Manual: "bg-gray-100 text-gray-700",
     };
     return sourceMap[source] || "bg-gray-100 text-gray-700";
-  };
-
-  const getRequestStatusBadge = (status) => {
-    const statusMap = {
-      "Pending Review": "bg-amber-100 text-amber-700 border-amber-200",
-      "Awaiting Customer Confirmation":
-        "bg-blue-100 text-blue-700 border-blue-200",
-      Accepted: "bg-emerald-100 text-emerald-700 border-emerald-200",
-      Converted: "bg-purple-100 text-purple-700 border-purple-200",
-      Rejected: "bg-red-100 text-red-700 border-red-200",
-      Cancelled: "bg-gray-100 text-gray-700 border-gray-200",
-      Collected: "bg-emerald-100 text-emerald-700 border-emerald-200",
-      Completed: "bg-green-100 text-green-700 border-green-200",
-    };
-    return statusMap[status] || "bg-gray-100 text-gray-700 border-gray-200";
   };
 
   const getRequestStatusIcon = (status) => {
@@ -799,11 +780,11 @@ const Orders = () => {
     "Pending Review": "bg-amber-50 text-amber-700 border-amber-200",
     "Awaiting Customer Confirmation":
       "bg-blue-50 text-blue-700 border-blue-200",
-    Accepted: "bg-emerald-50 text-emerald-700 border-emerald-200",
+    Accepted: "bg-green-300 text-black border-green-400",
     Converted: "bg-purple-50 text-purple-700 border-purple-200",
     Rejected: "bg-red-50 text-red-700 border-red-200",
     Cancelled: "bg-gray-50 text-gray-700 border-gray-200",
-    Collected: "bg-emerald-50 text-emerald-700 border-emerald-200",
+    Collected: "bg-green-300 text-black border-green-400",
     Completed: "bg-green-50 text-green-700 border-green-200",
   };
 
@@ -844,7 +825,7 @@ const Orders = () => {
     },
     {
       label: "Revenue",
-      value: `TSh ${orders.reduce((sum, o) => sum + (o.grandTotal || 0), 0).toLocaleString()}`,
+      value: `${orders.reduce((sum, o) => sum + (o.grandTotal || 0), 0).toLocaleString()}`,
       icon: Banknote,
     },
     {
@@ -925,7 +906,7 @@ const Orders = () => {
             onClick={() => paginateFn(number)}
             className={`px-3.5 py-2 rounded-lg text-sm font-medium transition-all duration-200 shadow-sm border-2 ${
               currentPageNum === number
-                ? "bg-emerald-500 text-white border-emerald-500 hover:bg-emerald-600"
+                ? "bg-green-300 text-black border-green-300 hover:bg-green-400"
                 : "bg-white border-gray-300 text-gray-600 hover:bg-gray-100 hover:border-gray-400"
             }`}
           >
@@ -968,21 +949,22 @@ const Orders = () => {
 
   const renderViewToggle = () => (
     <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-5">
-      <div className="flex bg-white rounded-xl p-1 border-2 border-gray-200 shadow-sm">
+      <div className="flex flex-wrap bg-white rounded-xl p-1 border-2 border-gray-200 shadow-sm">
         <button
           onClick={() => setActiveView("orders")}
-          className={`flex items-center gap-2 px-4 sm:px-5 py-2 rounded-lg text-sm font-semibold transition-all duration-200 ${
+          className={`flex items-center gap-2 px-3 sm:px-5 py-2 rounded-lg text-xs sm:text-sm font-semibold transition-all duration-200 ${
             activeView === "orders"
-              ? "bg-emerald-500 text-white shadow-md shadow-emerald-200"
+              ? "bg-green-300 text-black shadow-md shadow-green-200"
               : "text-gray-500 hover:text-gray-700 hover:bg-gray-100"
           }`}
         >
           <List className="w-4 h-4" />
-          Orders
+          <span className="hidden xs:inline">Orders</span>
+          <span className="xs:inline">Orders</span>
           <span
             className={`text-xs px-2 py-0.5 rounded-full ${
               activeView === "orders"
-                ? "bg-white/20 text-white"
+                ? "bg-black/10 text-black"
                 : "bg-gray-200 text-gray-500"
             }`}
           >
@@ -994,19 +976,20 @@ const Orders = () => {
             setActiveView("requests");
             fetchRequests();
           }}
-          className={`flex items-center gap-2 px-4 sm:px-5 py-2 rounded-lg text-sm font-semibold transition-all duration-200 ${
+          className={`flex items-center gap-2 px-3 sm:px-5 py-2 rounded-lg text-xs sm:text-sm font-semibold transition-all duration-200 ${
             activeView === "requests"
-              ? "bg-emerald-500 text-white shadow-md shadow-emerald-200"
+              ? "bg-green-300 text-black shadow-md shadow-green-200"
               : "text-gray-500 hover:text-gray-700 hover:bg-gray-100"
           }`}
         >
           <ClipboardList className="w-4 h-4" />
-          Requests
+          <span className="hidden xs:inline">Requests</span>
+          <span className="xs:inline">Requests</span>
           {requestStats.pending > 0 && (
             <span
               className={`text-xs px-2 py-0.5 rounded-full ${
                 activeView === "requests"
-                  ? "bg-white/20 text-white"
+                  ? "bg-black/10 text-black"
                   : "bg-amber-200 text-amber-700"
               }`}
             >
@@ -1017,7 +1000,7 @@ const Orders = () => {
             <span
               className={`text-xs px-2 py-0.5 rounded-full ${
                 activeView === "requests"
-                  ? "bg-white/20 text-white"
+                  ? "bg-black/10 text-black"
                   : "bg-green-200 text-green-700"
               }`}
             >
@@ -1033,7 +1016,7 @@ const Orders = () => {
           placeholder={
             activeView === "orders" ? "Search orders..." : "Search requests..."
           }
-          className="w-full pl-9 pr-4 py-2.5 bg-white border-2 border-gray-300 rounded-2xl focus:outline-none focus:ring-2 focus:ring-gray-400 focus:ring-offset-1 transition-all duration-200 text-black placeholder:text-black/50 shadow-sm"
+          className="w-full pl-9 pr-4 py-2.5 bg-white border-2 border-gray-300 rounded-2xl focus:outline-none focus:ring-2 focus:ring-gray-400 focus:ring-offset-1 transition-all duration-200 text-black placeholder:text-black/50 shadow-sm text-sm"
           value={activeView === "orders" ? searchTerm : requestsSearch}
           onChange={(e) =>
             activeView === "orders"
@@ -1055,9 +1038,9 @@ const Orders = () => {
         <button
           key={s}
           onClick={() => setFilter(s)}
-          className={`flex items-center gap-2 px-4 py-1.5 rounded-full text-xs font-semibold transition-all duration-200 border-2 ${
+          className={`flex items-center gap-2 px-3 sm:px-4 py-1 sm:py-1.5 rounded-full text-[10px] sm:text-xs font-semibold transition-all duration-200 border-2 ${
             filter === s
-              ? "bg-emerald-500 border-emerald-500 text-white shadow-md shadow-emerald-200"
+              ? "bg-green-300 border-green-300 text-black shadow-md shadow-green-200"
               : "bg-white border-gray-300 text-gray-500 hover:border-gray-400 hover:text-gray-700 hover:bg-gray-100"
           }`}
         >
@@ -1065,7 +1048,7 @@ const Orders = () => {
             <span
               className={`w-1.5 h-1.5 rounded-full ${
                 filter === s
-                  ? "bg-white"
+                  ? "bg-black"
                   : s === "Pending"
                     ? "bg-yellow-400"
                     : s === "Confirmed"
@@ -1079,7 +1062,7 @@ const Orders = () => {
           {s}
           {s !== "All" && (
             <span
-              className={`text-xs ${filter === s ? "text-white/80" : "text-gray-400"}`}
+              className={`text-[10px] sm:text-xs ${filter === s ? "text-black/70" : "text-gray-400"}`}
             >
               {orders.filter((o) => o.status === s).length}
             </span>
@@ -1090,19 +1073,19 @@ const Orders = () => {
   );
 
   /**
-   * Render a single order card - UPDATED: Removed delete button, larger View button
+   * Render a single order card - Responsive
    */
   const renderOrderCard = (order) => {
     const StatusIcon = statusIcons[order.status] || Clock;
     return (
       <div
         key={order._id}
-        className="bg-gray-200 rounded-2xl border-2 border-gray-300 shadow-sm p-4 sm:p-5 hover:shadow-md hover:border-emerald-300 transition-all duration-300"
+        className="bg-gray-200 rounded-2xl border-2 border-gray-300 shadow-sm p-4 sm:p-5 hover:shadow-md hover:border-green-300 transition-all duration-300"
       >
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
           <div className="flex items-center gap-4 w-full sm:w-auto">
-            <div className="w-11 h-11 rounded-full bg-emerald-200 flex items-center justify-center text-emerald-700 text-sm font-bold flex-shrink-0 border-2 border-emerald-300">
-              <User className="w-5 h-5" />
+            <div className="w-11 h-11 rounded-full bg-green-300 flex items-center justify-center text-black text-sm font-bold flex-shrink-0 border-2 border-green-400">
+              <User className="w-5 h-5 text-black" />
             </div>
             <div className="min-w-0 flex-1">
               <div className="flex items-center gap-2 flex-wrap">
@@ -1124,13 +1107,13 @@ const Orders = () => {
             </div>
           </div>
 
-          <div className="flex items-center gap-2 w-full sm:w-auto justify-end">
+          <div className="flex items-center gap-2 w-full sm:w-auto justify-end flex-wrap">
             <div className="text-right mr-2">
               <div className="text-sm font-bold text-gray-800">
                 {formatCurrency(order.grandTotal)}
               </div>
               {order.totalDiscount > 0 && (
-                <span className="text-[10px] text-emerald-700 font-medium bg-emerald-100 px-2 py-0.5 rounded-full border border-emerald-200">
+                <span className="text-[10px] text-green-700 font-medium bg-green-100 px-2 py-0.5 rounded-full border border-green-200">
                   -{formatCurrency(order.totalDiscount)}
                 </span>
               )}
@@ -1143,7 +1126,6 @@ const Orders = () => {
               {order.status}
             </span>
 
-            {/* View Details - Bigger and better */}
             <button
               onClick={() => {
                 setSelectedOrder(order);
@@ -1165,7 +1147,7 @@ const Orders = () => {
     if (loading) {
       return (
         <div className="flex flex-col items-center justify-center py-20 bg-gray-100 rounded-2xl border-2 border-gray-300 shadow-sm">
-          <div className="w-12 h-12 border-4 border-emerald-300 border-t-emerald-500 rounded-full animate-spin" />
+          <div className="w-12 h-12 border-4 border-green-300 border-t-green-500 rounded-full animate-spin" />
           <p className="text-sm text-gray-500 mt-4">Loading orders...</p>
         </div>
       );
@@ -1208,7 +1190,7 @@ const Orders = () => {
         {
           key: "accepted",
           label: "Accepted",
-          color: "emerald",
+          color: "green",
           count: requestStats.accepted,
         },
         {
@@ -1238,45 +1220,43 @@ const Orders = () => {
         {
           key: "collected",
           label: "Collected",
-          color: "emerald",
+          color: "green",
           count: requestStats.collected,
         },
       ].map((tab) => {
         const isActive = requestsFilter === tab.key;
         const dotColor = {
           amber: "bg-amber-400",
-          emerald: "bg-emerald-400",
+          green: "bg-green-400",
           purple: "bg-purple-400",
           red: "bg-red-400",
           gray: "bg-gray-400",
-          green: "bg-green-400",
         }[tab.color];
         const activeBg = {
           amber: "bg-amber-500 border-amber-500 text-white",
-          emerald: "bg-emerald-500 border-emerald-500 text-white",
+          green: "bg-green-300 border-green-300 text-black",
           purple: "bg-purple-500 border-purple-500 text-white",
           red: "bg-red-500 border-red-500 text-white",
           gray: "bg-gray-500 border-gray-500 text-white",
-          green: "bg-green-500 border-green-500 text-white",
         }[tab.color];
 
         return (
           <button
             key={tab.key}
             onClick={() => setRequestsFilter(tab.key)}
-            className={`flex items-center gap-2 px-4 py-1.5 rounded-full text-xs font-semibold transition-all duration-200 border-2 shadow-sm ${
+            className={`flex items-center gap-2 px-2.5 sm:px-4 py-1 sm:py-1.5 rounded-full text-[9px] sm:text-xs font-semibold transition-all duration-200 border-2 shadow-sm ${
               isActive
                 ? activeBg
                 : "bg-white border-gray-300 text-gray-500 hover:border-gray-400 hover:text-gray-700 hover:bg-gray-100"
             }`}
           >
             <span
-              className={`w-1.5 h-1.5 rounded-full ${isActive ? "bg-white" : dotColor}`}
+              className={`w-1.5 h-1.5 rounded-full ${isActive ? "bg-black" : dotColor}`}
             />
             {tab.label}
             {tab.count > 0 && (
               <span
-                className={`text-xs ${isActive ? "text-white/80" : "text-gray-400"}`}
+                className={`text-[9px] sm:text-xs ${isActive ? "text-black/70" : "text-gray-400"}`}
               >
                 ({tab.count})
               </span>
@@ -1288,7 +1268,7 @@ const Orders = () => {
   );
 
   /**
-   * Render a single request card
+   * Render a single request card - Responsive
    */
   const renderRequestCard = (request) => {
     const StatusIcon = getRequestStatusIcon(request.status);
@@ -1318,12 +1298,12 @@ const Orders = () => {
     return (
       <div
         key={request._id}
-        className="bg-gray-200 rounded-2xl border-2 border-gray-300 shadow-sm p-4 sm:p-5 hover:shadow-md hover:border-emerald-300 transition-all duration-300"
+        className="bg-gray-200 rounded-2xl border-2 border-gray-300 shadow-sm p-4 sm:p-5 hover:shadow-md hover:border-green-300 transition-all duration-300"
       >
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
           <div className="flex items-center gap-4 w-full sm:w-auto">
-            <div className="w-11 h-11 rounded-full bg-emerald-200 flex items-center justify-center text-emerald-700 text-sm font-bold flex-shrink-0 border-2 border-emerald-300">
-              <User className="w-5 h-5" />
+            <div className="w-11 h-11 rounded-full bg-green-300 flex items-center justify-center text-black text-sm font-bold flex-shrink-0 border-2 border-green-400">
+              <User className="w-5 h-5 text-black" />
             </div>
             <div className="min-w-0 flex-1">
               <div className="flex items-center gap-2 flex-wrap">
@@ -1375,7 +1355,7 @@ const Orders = () => {
                 request.status === "Accepted") && (
                 <div className="flex items-center gap-2 mt-1 text-xs">
                   {acceptedItems > 0 && (
-                    <span className="text-emerald-600 font-medium flex items-center gap-1">
+                    <span className="text-green-600 font-medium flex items-center gap-1">
                       <Check className="w-3 h-3" />
                       {acceptedItems} accepted
                     </span>
@@ -1420,7 +1400,7 @@ const Orders = () => {
             </div>
           </div>
 
-          <div className="flex items-center gap-2 w-full sm:w-auto justify-end">
+          <div className="flex items-center gap-2 w-full sm:w-auto justify-end flex-wrap">
             <span
               className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold border-2 ${requestStatusColors[request.status]}`}
             >
@@ -1488,7 +1468,7 @@ const Orders = () => {
               <button
                 onClick={() => handleMarkCollected(request._id)}
                 disabled={requestActionLoading}
-                className="flex items-center gap-1 px-3 py-1.5 bg-emerald-500 text-white text-xs font-semibold rounded-lg hover:bg-emerald-600 hover:shadow-md transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed border-2 border-emerald-400"
+                className="flex items-center gap-1 px-3 py-1.5 bg-green-300 text-black text-xs font-semibold rounded-lg hover:bg-green-400 hover:shadow-md transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed border-2 border-green-400"
                 title="Mark as Collected"
               >
                 <PackageCheck className="w-3.5 h-3.5" />
@@ -1505,7 +1485,7 @@ const Orders = () => {
     if (requestsLoading) {
       return (
         <div className="flex flex-col items-center justify-center py-20 bg-gray-100 rounded-2xl border-2 border-gray-300 shadow-sm">
-          <div className="w-12 h-12 border-4 border-emerald-300 border-t-emerald-500 rounded-full animate-spin" />
+          <div className="w-12 h-12 border-4 border-green-300 border-t-green-500 rounded-full animate-spin" />
           <p className="text-sm text-gray-500 mt-4">Loading requests...</p>
         </div>
       );
@@ -1537,7 +1517,7 @@ const Orders = () => {
   };
 
   // ==========================================================================
-  // MODAL RENDERERS
+  // MODAL RENDERERS - KEPT COMPLETELY UNCHANGED
   // ==========================================================================
 
   /**
@@ -1552,8 +1532,8 @@ const Orders = () => {
           <div className="sticky top-0 z-10 bg-white px-6 sm:px-8 py-5 border-b border-gray-200 rounded-t-2xl">
             <div className="flex justify-between items-center">
               <div className="flex items-center gap-3">
-                <div className="p-2 bg-gradient-to-br from-emerald-400 to-emerald-500 rounded-xl shadow-lg shadow-emerald-200">
-                  <Plus className="w-5 h-5 text-white" />
+                <div className="p-2 bg-green-300 rounded-xl shadow-lg shadow-green-200 border-2 border-green-400">
+                  <Plus className="w-5 h-5 text-black" />
                 </div>
                 <div>
                   <h2 className="text-xl font-bold text-gray-800">
@@ -1593,7 +1573,7 @@ const Orders = () => {
                       <input
                         type="text"
                         required
-                        className="w-full px-3.5 py-2.5 border-2 border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-300 focus:border-transparent transition-all duration-200 text-black bg-white text-sm"
+                        className="w-full px-3.5 py-2.5 border-2 border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-300 focus:border-transparent transition-all duration-200 text-black bg-white text-sm"
                         value={formData.customerName}
                         onChange={(e) =>
                           setFormData({
@@ -1614,7 +1594,7 @@ const Orders = () => {
                         <input
                           type="tel"
                           required
-                          className={`w-full pl-9 pr-4 py-2.5 border-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-300 focus:border-transparent transition-all duration-200 text-black bg-white text-sm ${
+                          className={`w-full pl-9 pr-4 py-2.5 border-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-300 focus:border-transparent transition-all duration-200 text-black bg-white text-sm ${
                             formData.customerPhone && !isPhoneValid
                               ? "border-red-300 bg-red-50"
                               : formData.customerPhone && isPhoneValid
@@ -1647,7 +1627,7 @@ const Orders = () => {
                       <div className="relative">
                         <StickyNote className="absolute left-3 top-3 text-gray-400 w-4 h-4" />
                         <textarea
-                          className="w-full pl-9 pr-4 py-2.5 border-2 border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-300 focus:border-transparent transition-all duration-200 resize-none text-black bg-white text-sm"
+                          className="w-full pl-9 pr-4 py-2.5 border-2 border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-300 focus:border-transparent transition-all duration-200 resize-none text-black bg-white text-sm"
                           rows="3"
                           value={formData.notes}
                           onChange={(e) =>
@@ -1662,13 +1642,13 @@ const Orders = () => {
               </div>
 
               <div className="space-y-4">
-                <div className="bg-gradient-to-br from-emerald-100 to-emerald-200 rounded-xl p-4 border-2 border-emerald-300">
+                <div className="bg-gradient-to-br from-green-100 to-green-200 rounded-xl p-4 border-2 border-green-300">
                   <h4 className="text-sm font-semibold text-gray-700 mb-3 flex items-center gap-2">
-                    <Layers className="w-4 h-4 text-emerald-600" />
+                    <Layers className="w-4 h-4 text-green-600" />
                     Order Summary
                   </h4>
                   <div className="space-y-2 text-sm">
-                    <div className="flex justify-between py-1.5 border-b border-emerald-300/50">
+                    <div className="flex justify-between py-1.5 border-b border-green-300/50">
                       <span className="text-gray-600">Items:</span>
                       <span className="font-semibold text-gray-800">
                         {formData.items.length}
@@ -1683,12 +1663,12 @@ const Orders = () => {
                         )}
                       </span>
                     </div>
-                    <div className="flex justify-between pt-2 border-t-2 border-emerald-400">
+                    <div className="flex justify-between pt-2 border-t-2 border-green-400">
                       <span className="text-gray-700 font-semibold">
                         Grand Total:
                       </span>
-                      <span className="text-xl font-bold text-emerald-700">
-                        TSh {calculateTotal(formData.items).toLocaleString()}
+                      <span className="text-xl font-bold text-green-700">
+                        {calculateTotal(formData.items).toLocaleString()}
                       </span>
                     </div>
                   </div>
@@ -1737,7 +1717,7 @@ const Orders = () => {
                 <div className="grid grid-cols-1 sm:grid-cols-12 gap-2">
                   <div className="sm:col-span-4 relative">
                     <select
-                      className="w-full px-3.5 py-2.5 border-2 border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-300 focus:border-transparent transition-all duration-200 text-black bg-white text-sm appearance-none pr-10 max-h-[200px] overflow-y-auto"
+                      className="w-full px-3.5 py-2.5 border-2 border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-300 focus:border-transparent transition-all duration-200 text-black bg-white text-sm appearance-none pr-10 max-h-[200px] overflow-y-auto"
                       value={newItem.itemId}
                       onChange={(e) =>
                         setNewItem({ ...newItem, itemId: e.target.value })
@@ -1754,9 +1734,9 @@ const Orders = () => {
                             value={item._id}
                             className="py-1"
                           >
-                            {item.name} — TSh {item.price?.toLocaleString()}
+                            {item.name} — {item.price?.toLocaleString()}
                             {hasWholesale &&
-                              ` (Wholesale: TSh ${item.wholesalePrice?.toLocaleString()})`}
+                              ` (Wholesale: ${item.wholesalePrice?.toLocaleString()})`}
                             {item.itemQuantity === 0 && " ⚠️ OOS"}
                           </option>
                         );
@@ -1766,7 +1746,7 @@ const Orders = () => {
                   </div>
 
                   <select
-                    className="sm:col-span-2 px-3.5 py-2.5 border-2 border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-300 focus:border-transparent transition-all duration-200 text-black bg-white text-sm"
+                    className="sm:col-span-2 px-3.5 py-2.5 border-2 border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-300 focus:border-transparent transition-all duration-200 text-black bg-white text-sm"
                     value={newItem.priceType}
                     onChange={(e) =>
                       setNewItem({ ...newItem, priceType: e.target.value })
@@ -1779,7 +1759,7 @@ const Orders = () => {
                   <input
                     type="number"
                     min="1"
-                    className="sm:col-span-2 px-3.5 py-2.5 border-2 border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-300 focus:border-transparent transition-all duration-200 text-black bg-white text-sm"
+                    className="sm:col-span-2 px-3.5 py-2.5 border-2 border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-300 focus:border-transparent transition-all duration-200 text-black bg-white text-sm"
                     value={newItem.quantity}
                     onChange={(e) =>
                       setNewItem({
@@ -1795,7 +1775,7 @@ const Orders = () => {
                     <input
                       type="number"
                       min="0"
-                      className="w-full pl-9 pr-3.5 py-2.5 border-2 border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-300 focus:border-transparent transition-all duration-200 text-black bg-white text-sm"
+                      className="w-full pl-9 pr-3.5 py-2.5 border-2 border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-300 focus:border-transparent transition-all duration-200 text-black bg-white text-sm"
                       value={newItem.discount}
                       onChange={(e) =>
                         setNewItem({
@@ -1810,7 +1790,7 @@ const Orders = () => {
                   <button
                     type="button"
                     onClick={handleAddItem}
-                    className="sm:col-span-2 px-4 py-2.5 bg-emerald-500 text-white font-semibold rounded-lg hover:bg-emerald-600 transition-all duration-300 hover:shadow-lg hover:shadow-emerald-200 hover:scale-[1.02] active:scale-95 text-sm shadow-sm flex items-center justify-center gap-2 border-2 border-emerald-400"
+                    className="sm:col-span-2 px-4 py-2.5 bg-green-300 text-black font-semibold rounded-lg hover:bg-green-400 transition-all duration-300 hover:shadow-lg hover:shadow-green-200 hover:scale-[1.02] active:scale-95 text-sm shadow-sm flex items-center justify-center gap-2 border-2 border-green-400"
                   >
                     <Plus className="w-4 h-4" />
                     Add
@@ -1832,7 +1812,7 @@ const Orders = () => {
                       className={`flex items-center justify-between p-3 rounded-lg border-2 transition-all ${
                         item.isExpired
                           ? "border-yellow-300 bg-yellow-100/50"
-                          : "border-gray-200 hover:border-emerald-300 bg-gray-100/50"
+                          : "border-gray-200 hover:border-green-300 bg-gray-100/50"
                       }`}
                     >
                       <div className="flex items-center gap-3 flex-wrap">
@@ -1843,10 +1823,10 @@ const Orders = () => {
                           ×{item.quantity}
                         </span>
                         <span className="text-xs text-gray-600 bg-gray-200 px-2 py-0.5 rounded border border-gray-300">
-                          TSh {item.unitPrice?.toLocaleString()}
+                          {item.unitPrice?.toLocaleString()}
                         </span>
                         {item.priceType === "Wholesale" && (
-                          <span className="text-[10px] bg-emerald-200 text-emerald-700 px-2 py-0.5 rounded-full font-semibold">
+                          <span className="text-[10px] bg-green-200 text-green-700 px-2 py-0.5 rounded-full font-semibold">
                             Wholesale
                           </span>
                         )}
@@ -1858,13 +1838,12 @@ const Orders = () => {
                         )}
                         {item.discount > 0 && (
                           <span className="text-[10px] bg-blue-200 text-blue-700 px-2 py-0.5 rounded-full font-semibold">
-                            -TSh {item.discount.toLocaleString()}
+                            -{item.discount.toLocaleString()}
                           </span>
                         )}
                       </div>
                       <div className="flex items-center gap-3">
                         <span className="font-bold text-gray-800 text-sm">
-                          TSh{" "}
                           {(
                             (item.unitPrice || 0) * (item.quantity || 0) -
                             (item.discount || 0)
@@ -1908,7 +1887,7 @@ const Orders = () => {
                 <button
                   type="submit"
                   disabled={formData.items.length === 0 || !isPhoneValid}
-                  className="flex-1 sm:flex-none px-6 py-2.5 bg-emerald-500 text-white font-semibold rounded-lg hover:bg-emerald-600 transition-all duration-300 hover:shadow-lg hover:shadow-emerald-200 hover:scale-[1.02] active:scale-95 text-sm flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed shadow-md border-2 border-emerald-400"
+                  className="flex-1 sm:flex-none px-6 py-2.5 bg-green-300 text-black font-semibold rounded-lg hover:bg-green-400 transition-all duration-300 hover:shadow-lg hover:shadow-green-200 hover:scale-[1.02] active:scale-95 text-sm flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed shadow-md border-2 border-green-400"
                 >
                   <CheckCircle className="w-4 h-4" />
                   Create Order
@@ -2011,7 +1990,7 @@ const Orders = () => {
                         ×{item.quantity}
                       </span>
                       {item.priceType === "Wholesale" && (
-                        <span className="text-[10px] bg-emerald-200 text-emerald-700 px-2 py-0.5 rounded-full font-semibold">
+                        <span className="text-[10px] bg-green-200 text-green-700 px-2 py-0.5 rounded-full font-semibold">
                           Wholesale
                         </span>
                       )}
@@ -2035,14 +2014,14 @@ const Orders = () => {
                 {selectedOrder.totalDiscount > 0 && (
                   <div className="flex justify-between text-sm">
                     <span className="text-gray-500">Discount</span>
-                    <span className="font-medium text-emerald-700">
+                    <span className="font-medium text-green-700">
                       -{formatCurrency(selectedOrder.totalDiscount)}
                     </span>
                   </div>
                 )}
                 <div className="flex justify-between text-base font-bold pt-2 border-t-2 border-gray-200">
                   <span className="text-gray-800">Total</span>
-                  <span className="text-emerald-700">
+                  <span className="text-green-700">
                     {formatCurrency(selectedOrder.grandTotal)}
                   </span>
                 </div>
@@ -2110,19 +2089,19 @@ const Orders = () => {
                           "Awaiting Customer Confirmation"
                         ? "bg-gradient-to-br from-blue-400 to-blue-500 shadow-blue-200"
                         : selectedRequest.status === "Accepted"
-                          ? "bg-gradient-to-br from-emerald-400 to-emerald-500 shadow-emerald-200"
+                          ? "bg-green-300 shadow-green-200 border-2 border-green-400"
                           : selectedRequest.status === "Converted"
                             ? "bg-gradient-to-br from-purple-400 to-purple-500 shadow-purple-200"
                             : selectedRequest.status === "Rejected"
                               ? "bg-gradient-to-br from-red-400 to-red-500 shadow-red-200"
                               : selectedRequest.status === "Collected"
-                                ? "bg-gradient-to-br from-emerald-400 to-emerald-500 shadow-emerald-200"
+                                ? "bg-green-300 shadow-green-200 border-2 border-green-400"
                                 : selectedRequest.status === "Completed"
                                   ? "bg-gradient-to-br from-green-400 to-green-500 shadow-green-200"
                                   : "bg-gradient-to-br from-gray-400 to-gray-500 shadow-gray-200"
                   }`}
                 >
-                  <ClipboardList className="w-5 h-5 text-white" />
+                  <ClipboardList className="w-5 h-5 text-black" />
                 </div>
                 <div>
                   <h2 className="text-xl font-bold text-gray-800">
@@ -2215,7 +2194,7 @@ const Orders = () => {
                     Approved Delivery Date
                   </p>
                   <div className="flex items-center gap-2 mt-1">
-                    <span className="font-semibold text-emerald-700">
+                    <span className="font-semibold text-green-700">
                       {formatDate(selectedRequest.approvedDeliveryDate)}
                     </span>
                     {selectedRequest.deliveryDateChanged && (
@@ -2251,7 +2230,7 @@ const Orders = () => {
                     selectedRequest.status === "Accepted") && (
                     <div className="flex items-center gap-1 ml-2 text-xs">
                       {acceptedItems > 0 && (
-                        <span className="text-emerald-600 font-medium flex items-center gap-1">
+                        <span className="text-green-600 font-medium flex items-center gap-1">
                           <Check className="w-3 h-3" />
                           {acceptedItems}
                         </span>
@@ -2615,7 +2594,7 @@ const Orders = () => {
                 <button
                   onClick={() => handleMarkCollected(selectedRequest._id)}
                   disabled={requestActionLoading}
-                  className="flex-1 bg-emerald-500 text-white font-semibold py-2.5 px-5 rounded-lg hover:bg-emerald-600 transition-all duration-300 disabled:opacity-50 flex items-center justify-center gap-2 text-sm border-2 border-emerald-400"
+                  className="flex-1 bg-green-300 text-black font-semibold py-2.5 px-5 rounded-lg hover:bg-green-400 transition-all duration-300 disabled:opacity-50 flex items-center justify-center gap-2 text-sm border-2 border-green-400"
                 >
                   {requestActionLoading ? (
                     <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white" />
@@ -2658,8 +2637,8 @@ const Orders = () => {
               )}
 
               {selectedRequest.status === "Collected" && (
-                <div className="w-full p-3 bg-emerald-100 rounded-lg border-2 border-emerald-200">
-                  <p className="text-sm text-emerald-700 flex items-center gap-2">
+                <div className="w-full p-3 bg-green-100 rounded-lg border-2 border-green-200">
+                  <p className="text-sm text-green-700 flex items-center gap-2">
                     <PackageCheck className="w-4 h-4" />
                     This request has been collected.
                   </p>
@@ -2736,9 +2715,9 @@ const Orders = () => {
                 <p className="text-xs text-gray-500">Total Items</p>
                 <p className="text-xl font-bold text-gray-800">{totalItems}</p>
               </div>
-              <div className="bg-emerald-100 rounded-lg p-3 text-center border-2 border-emerald-200">
-                <p className="text-xs text-emerald-600">Accepted</p>
-                <p className="text-xl font-bold text-emerald-700">
+              <div className="bg-green-100 rounded-lg p-3 text-center border-2 border-green-200">
+                <p className="text-xs text-green-600">Accepted</p>
+                <p className="text-xl font-bold text-green-700">
                   {acceptedCount}
                 </p>
               </div>
@@ -2766,7 +2745,7 @@ const Orders = () => {
                     key={index}
                     className={`p-3 rounded-lg border-2 transition-all ${
                       item.status === "Accepted"
-                        ? "border-emerald-300 bg-emerald-50"
+                        ? "border-green-300 bg-green-50"
                         : item.status === "Rejected"
                           ? "border-red-300 bg-red-50"
                           : "border-gray-200 bg-gray-50"
@@ -2790,8 +2769,8 @@ const Orders = () => {
                           }
                           className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all duration-200 flex items-center gap-1 border-2 ${
                             item.status === "Accepted"
-                              ? "bg-emerald-500 text-white border-emerald-500 shadow-md shadow-emerald-200"
-                              : "bg-gray-200 text-gray-600 border-gray-300 hover:bg-emerald-100 hover:text-emerald-700 hover:border-emerald-300"
+                              ? "bg-green-300 text-black border-green-300 shadow-md shadow-green-200"
+                              : "bg-gray-200 text-gray-600 border-gray-300 hover:bg-green-100 hover:text-green-700 hover:border-green-300"
                           }`}
                         >
                           <CheckCircle className="w-3.5 h-3.5" />
@@ -2900,7 +2879,7 @@ const Orders = () => {
             <div className="bg-gray-100 rounded-xl p-4 border-2 border-gray-200">
               <div className="flex justify-between text-sm">
                 <span className="text-gray-600">Items Accepted:</span>
-                <span className="font-semibold text-emerald-600">
+                <span className="font-semibold text-green-600">
                   {acceptedCount}
                 </span>
               </div>
@@ -2926,7 +2905,7 @@ const Orders = () => {
                   ) : acceptedCount > 0 && rejectedCount > 0 ? (
                     <span className="text-blue-600">Partial (Reviewed)</span>
                   ) : acceptedCount > 0 ? (
-                    <span className="text-emerald-600">All Accepted</span>
+                    <span className="text-green-600">All Accepted</span>
                   ) : rejectedCount > 0 ? (
                     <span className="text-red-600">All Rejected</span>
                   ) : (
@@ -2982,51 +2961,52 @@ const Orders = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-gray-50">
-      <div className="max-w-8xl mx-auto px-4 sm:px-6 py-6 sm:py-8">
-        {/* Header */}
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
-          <div className="flex items-center gap-4">
-            <div className="w-12 h-12 bg-gradient-to-br from-emerald-400 to-emerald-500 rounded-xl flex items-center justify-center shadow-lg shadow-emerald-200 border-2 border-emerald-300">
-              <Package className="w-6 h-6 text-white" />
+      <div className="max-w-8xl mx-auto px-3 sm:px-4 md:px-6 py-4 sm:py-6 md:py-8">
+        {/* Header - Responsive */}
+        <div className="flex flex-wrap items-center justify-between gap-3 sm:gap-4 mb-4 sm:mb-6">
+          <div className="flex items-center gap-3 sm:gap-4">
+            <div className="w-10 h-10 sm:w-12 sm:h-12 bg-green-300 rounded-xl flex items-center justify-center shadow-lg shadow-green-200 border-2 border-green-400">
+              <Package className="w-5 h-5 sm:w-6 sm:h-6 text-black" />
             </div>
             <div>
-              <h1 className="text-2xl font-bold text-gray-800 tracking-tight">
+              <h1 className="text-lg sm:text-xl md:text-2xl font-bold text-gray-800 tracking-tight">
                 Orders
               </h1>
-              <p className="text-sm text-gray-500">
+              <p className="text-xs sm:text-sm text-gray-500 hidden xs:block">
                 Manage orders & customer requests
               </p>
             </div>
           </div>
           <button
             onClick={() => setShowCreateModal(true)}
-            className="flex items-center gap-2 px-5 py-2.5 bg-emerald-500 text-white rounded-xl hover:bg-emerald-600 transition-all duration-300 hover:shadow-lg hover:shadow-emerald-200 hover:scale-[1.02] active:scale-95 text-sm font-semibold shadow-md border-2 border-emerald-400"
+            className="flex items-center gap-2 px-3 sm:px-5 py-2 sm:py-2.5 bg-green-300 text-black rounded-xl hover:bg-green-400 transition-all duration-300 hover:shadow-lg hover:shadow-green-200 hover:scale-[1.02] active:scale-95 text-xs sm:text-sm font-semibold shadow-md border-2 border-green-400"
           >
             <Plus className="w-4 h-4" />
-            New Order
+            <span className="hidden xs:inline">New Order</span>
+            <span className="xs:inline">New</span>
           </button>
         </div>
 
-        {/* Stats Cards */}
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 mb-6">
+        {/* Stats Cards - Stacked on mobile */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-3 md:gap-4 mb-4 sm:mb-6">
           {statsData.map((stat, index) => {
             const Icon = stat.icon;
             return (
               <div
                 key={index}
-                className="bg-white p-4 sm:p-5 rounded-2xl border-2 border-gray-300 shadow-md hover:shadow-lg transition-all duration-300 hover:scale-[1.02]"
+                className="bg-white p-3 sm:p-4 md:p-5 rounded-2xl border-2 border-gray-300 shadow-md hover:shadow-lg transition-all duration-300 hover:scale-[1.02]"
               >
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-xs font-medium text-black/60 uppercase tracking-wider">
+                    <p className="text-[9px] sm:text-xs font-medium text-black/60 uppercase tracking-wider">
                       {stat.label}
                     </p>
-                    <p className="text-lg sm:text-xl font-bold text-black mt-1">
+                    <p className="text-sm sm:text-lg md:text-xl font-bold text-black mt-1">
                       {stat.value}
                     </p>
                   </div>
-                  <div className="bg-gray-100 p-2.5 rounded-xl border-2 border-gray-300">
-                    <Icon className="w-5 h-5 text-black" />
+                  <div className="bg-green-300 p-2 sm:p-2.5 rounded-xl border-2 border-green-400">
+                    <Icon className="w-4 h-4 sm:w-5 sm:h-5 text-black" />
                   </div>
                 </div>
               </div>
@@ -3045,8 +3025,8 @@ const Orders = () => {
 
             {/* Orders Pagination */}
             {filteredOrders.length > 0 && (
-              <div className="mt-4 bg-white px-4 sm:px-5 py-3 sm:py-4 rounded-xl border-2 border-gray-200 shadow-sm flex flex-col sm:flex-row justify-between items-center gap-3">
-                <span className="text-xs text-gray-500">
+              <div className="mt-4 bg-white px-3 sm:px-5 py-3 sm:py-4 rounded-xl border-2 border-gray-200 shadow-sm flex flex-col sm:flex-row justify-between items-center gap-2 sm:gap-3">
+                <span className="text-[9px] sm:text-xs text-gray-500 text-center sm:text-left">
                   Showing{" "}
                   <span className="font-semibold text-gray-700">
                     {ordersIndexOfFirstItem + 1}
@@ -3078,8 +3058,8 @@ const Orders = () => {
 
             {/* Requests Pagination */}
             {filteredRequests.length > 0 && (
-              <div className="mt-4 bg-white px-4 sm:px-5 py-3 sm:py-4 rounded-xl border-2 border-gray-200 shadow-sm flex flex-col sm:flex-row justify-between items-center gap-3">
-                <span className="text-xs text-gray-500">
+              <div className="mt-4 bg-white px-3 sm:px-5 py-3 sm:py-4 rounded-xl border-2 border-gray-200 shadow-sm flex flex-col sm:flex-row justify-between items-center gap-2 sm:gap-3">
+                <span className="text-[9px] sm:text-xs text-gray-500 text-center sm:text-left">
                   Showing{" "}
                   <span className="font-semibold text-gray-700">
                     {requestsIndexOfFirstItem + 1}
@@ -3107,7 +3087,7 @@ const Orders = () => {
         )}
       </div>
 
-      {/* Modals */}
+      {/* Modals - ALL UNCHANGED */}
       {renderCreateOrderModal()}
       {renderOrderDetailModal()}
       {renderRequestDetailModal()}

@@ -725,6 +725,17 @@ const NonPoGrn = () => {
                     </p>
                   </div>
                 </div>
+                {/* Bill indicator in summary */}
+                {itemHold.some(
+                  (item) => item.billedAmount && item.billedAmount > 0,
+                ) && (
+                  <div className="ml-4 flex items-center gap-1 px-3 py-1.5 bg-blue-50 border border-blue-200 rounded-lg">
+                    <RiBillLine className="text-blue-600" size={14} />
+                    <span className="text-xs font-semibold text-blue-700">
+                      Has Bills
+                    </span>
+                  </div>
+                )}
               </div>
               <div className="flex items-center gap-3">
                 <button
@@ -761,24 +772,36 @@ const NonPoGrn = () => {
                 <table className="min-w-full">
                   <thead>
                     <tr className="bg-gray-100 border-b border-gray-200">
-                      {[
-                        { label: "#", width: "w-14" },
-                        { label: "Product", width: "min-w-[180px]" },
-                        { label: "Qty", width: "w-20" },
-                        { label: "Buy Price", width: "w-28" },
-                        { label: "Total", width: "w-28" },
-                        { label: "Sell Price", width: "w-28" },
-                        { label: "Mfg Date", width: "w-28" },
-                        { label: "Exp Date", width: "w-28" },
-                        { label: "", width: "w-14" },
-                      ].map((h) => (
-                        <th
-                          key={h.label}
-                          className={`px-4 py-3.5 text-left text-[11px] font-bold text-gray-500 uppercase tracking-wider ${h.width}`}
-                        >
-                          {h.label}
-                        </th>
-                      ))}
+                      <th className="px-4 py-3.5 text-left text-[11px] font-bold text-gray-500 uppercase tracking-wider w-14">
+                        #
+                      </th>
+                      <th className="px-4 py-3.5 text-left text-[11px] font-bold text-gray-500 uppercase tracking-wider min-w-[180px]">
+                        Product
+                      </th>
+                      <th className="px-4 py-3.5 text-left text-[11px] font-bold text-gray-500 uppercase tracking-wider w-20">
+                        Qty
+                      </th>
+                      <th className="px-4 py-3.5 text-left text-[11px] font-bold text-gray-500 uppercase tracking-wider w-28">
+                        Buy Price
+                      </th>
+                      <th className="px-4 py-3.5 text-left text-[11px] font-bold text-gray-500 uppercase tracking-wider w-28">
+                        Total
+                      </th>
+                      <th className="px-4 py-3.5 text-left text-[11px] font-bold text-gray-500 uppercase tracking-wider w-28">
+                        Sell Price
+                      </th>
+                      <th className="px-4 py-3.5 text-left text-[11px] font-bold text-gray-500 uppercase tracking-wider w-28">
+                        Mfg Date
+                      </th>
+                      <th className="px-4 py-3.5 text-left text-[11px] font-bold text-gray-500 uppercase tracking-wider w-28">
+                        Exp Date
+                      </th>
+                      <th className="px-4 py-3.5 text-left text-[11px] font-bold text-gray-500 uppercase tracking-wider w-24">
+                        Bill
+                      </th>
+                      <th className="px-4 py-3.5 text-left text-[11px] font-bold text-gray-500 uppercase tracking-wider w-14">
+                        Action
+                      </th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-gray-100">
@@ -829,6 +852,23 @@ const NonPoGrn = () => {
                           )}
                         </td>
                         <td className="px-4 py-4">
+                          {item.billedAmount && item.billedAmount > 0 ? (
+                            <div className="relative group">
+                              <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md bg-green-100 text-green-700 text-xs font-semibold border border-green-200 cursor-help">
+                                <RiBillLine size={14} />
+                                {formatPrice(item.billedAmount)}
+                              </span>
+                              {/* Tooltip */}
+                              <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-3 py-2 bg-gray-900 text-white text-xs rounded-lg opacity-0 group-hover:opacity-100 transition-opacity duration-200 whitespace-nowrap pointer-events-none z-10">
+                                Billed Amount: Tsh{" "}
+                                {formatPrice(item.billedAmount)}
+                              </div>
+                            </div>
+                          ) : (
+                            <span className="text-xs text-gray-400">—</span>
+                          )}
+                        </td>
+                        <td className="px-4 py-4">
                           <button
                             onClick={() => removeItem(item)}
                             className="p-2 text-gray-400 hover:text-red-500 rounded-lg hover:bg-red-50 transition-all duration-200 opacity-0 group-hover:opacity-100"
@@ -843,10 +883,26 @@ const NonPoGrn = () => {
               </div>
               {/* Table Footer */}
               <div className="px-6 py-4 bg-gray-50 border-t border-gray-200 flex items-center justify-between">
-                <span className="text-xs text-gray-500 font-medium">
-                  Showing {itemHold.length}{" "}
-                  {itemHold.length === 1 ? "item" : "items"}
-                </span>
+                <div className="flex items-center gap-6">
+                  <span className="text-xs text-gray-500 font-medium">
+                    Showing {itemHold.length}{" "}
+                    {itemHold.length === 1 ? "item" : "items"}
+                  </span>
+                  {/* Bill summary in footer */}
+                  {itemHold.some(
+                    (item) => item.billedAmount && item.billedAmount > 0,
+                  ) && (
+                    <span className="text-xs text-blue-600 font-medium flex items-center gap-1">
+                      <RiBillLine size={14} />
+                      {
+                        itemHold.filter(
+                          (item) => item.billedAmount && item.billedAmount > 0,
+                        ).length
+                      }{" "}
+                      item(s) have bills
+                    </span>
+                  )}
+                </div>
                 <div className="flex items-center gap-2">
                   <span className="text-xs text-gray-500">Grand Total:</span>
                   <span className="text-sm font-bold text-green-700">

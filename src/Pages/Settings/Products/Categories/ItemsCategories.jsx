@@ -148,29 +148,29 @@ const ItemsCategories = () => {
         </div>
       </div>
 
-      {/* Stats Cards */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 mb-3 sm:mb-4">
-        <div className="bg-white border border-gray-200 rounded-full p-2.5 sm:p-3 shadow-sm text-center">
-          <p className="text-[10px] sm:text-xs text-gray-500 font-medium mb-0.5">
+      {/* Stats Cards - Grey border, rounded-2xl */}
+      <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 mb-4">
+        <div className="bg-white p-4 rounded-2xl border-2 border-gray-300 shadow-sm text-center">
+          <p className="text-[10px] sm:text-xs text-gray-500 font-medium mb-1">
             Total Categories
           </p>
-          <p className="text-xs sm:text-sm md:text-base font-bold text-black">
+          <p className="text-lg sm:text-xl font-bold text-black">
             {totalCategories}
           </p>
         </div>
-        <div className="bg-white border border-gray-200 rounded-full p-2.5 sm:p-3 shadow-sm text-center">
-          <p className="text-[10px] sm:text-xs text-gray-500 font-medium mb-0.5">
+        <div className="bg-white p-4 rounded-2xl border-2 border-gray-300 shadow-sm text-center">
+          <p className="text-[10px] sm:text-xs text-gray-500 font-medium mb-1">
             Filtered
           </p>
-          <p className="text-xs sm:text-sm md:text-base font-bold text-black">
+          <p className="text-lg sm:text-xl font-bold text-black">
             {filteredCategories.length}
           </p>
         </div>
-        <div className="bg-white border border-gray-200 rounded-full p-2.5 sm:p-3 shadow-sm text-center">
-          <p className="text-[10px] sm:text-xs text-gray-500 font-medium mb-0.5">
+        <div className="bg-white p-4 rounded-2xl border-2 border-gray-300 shadow-sm text-center">
+          <p className="text-[10px] sm:text-xs text-gray-500 font-medium mb-1">
             With Description
           </p>
-          <p className="text-xs sm:text-sm md:text-base font-bold text-green-600">
+          <p className="text-lg sm:text-xl font-bold text-green-600">
             {categoriesWithDesc}
           </p>
         </div>
@@ -214,7 +214,9 @@ const ItemsCategories = () => {
       {/* Results Count */}
       <div className="flex items-center justify-between mb-2 px-1">
         <p className="text-xs text-gray-500">
-          <span className="font-bold text-black">{filteredCategories.length}</span>{" "}
+          <span className="font-bold text-black">
+            {filteredCategories.length}
+          </span>{" "}
           categories found
         </p>
         <p className="text-[10px] text-gray-400">
@@ -324,7 +326,7 @@ const ItemsCategories = () => {
         )}
       </div>
 
-      {/* Desktop Card View - Same style as CompletedNonPO */}
+      {/* Desktop Card View */}
       <div className="hidden lg:block space-y-3">
         {currentItems.length === 0 ? (
           <div className="bg-white rounded-xl p-8 text-center border border-gray-200">
@@ -380,7 +382,9 @@ const ItemsCategories = () => {
                     <div className="flex items-center gap-4">
                       <div className="flex items-center gap-1.5">
                         <span className="px-2.5 py-1 bg-white/60 rounded-full text-xs font-bold text-gray-700">
-                          {catego.description ? "Has Description" : "No Description"}
+                          {catego.description
+                            ? "Has Description"
+                            : "No Description"}
                         </span>
                       </div>
                       {isExpanded ? (

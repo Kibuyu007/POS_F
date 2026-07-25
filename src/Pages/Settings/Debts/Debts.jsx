@@ -21,7 +21,6 @@ import {
   CheckCircle,
   Clock,
   Package,
-  AlertCircle,
 } from "lucide-react";
 
 const Debts = () => {
@@ -231,10 +230,11 @@ const Debts = () => {
     setDebtStatusFilter("all");
     setPaymentStatusFilter("not_paid");
     setCurrentPage(1);
+    toast.success("Filters cleared!");
   };
 
   const formatCurrency = (amount) => {
-    return `TSh ${(amount || 0).toLocaleString()}`;
+    return `${(amount || 0).toLocaleString()}`;
   };
 
   const formatDate = (dateString) => {
@@ -317,7 +317,7 @@ const Debts = () => {
             onClick={() => setPageFn(number)}
             className={`px-3.5 py-2 rounded-lg text-sm font-medium transition-all duration-200 shadow-sm border-2 ${
               currentPageNum === number
-                ? "bg-emerald-500 text-white border-emerald-500 hover:bg-emerald-600"
+                ? "bg-green-300 text-black border-green-300 hover:bg-green-400"
                 : "bg-white border-gray-300 text-gray-600 hover:bg-gray-100 hover:border-gray-400"
             }`}
           >
@@ -366,13 +366,13 @@ const Debts = () => {
     <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-gray-50">
       <div className="max-w-8xl mx-auto px-3 sm:px-4 md:px-6 py-4 sm:py-6 md:py-8">
         {/* Header */}
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4 mb-4 sm:mb-6">
+        <div className="flex flex-wrap items-center justify-between gap-3 mb-4 sm:mb-6">
           <div className="flex items-center gap-3 sm:gap-4">
-            <div className="w-10 h-10 sm:w-12 sm:h-12 bg-gradient-to-br from-emerald-400 to-emerald-500 rounded-xl flex items-center justify-center shadow-lg shadow-emerald-200 border-2 border-emerald-300">
-              <Package className="w-5 h-5 sm:w-6 sm:h-6 text-white" />
+            <div className="w-10 h-10 sm:w-12 sm:h-12 bg-green-300 rounded-xl flex items-center justify-center shadow-lg shadow-green-200 border-2 border-green-400">
+              <Package className="w-5 h-5 sm:w-6 sm:h-6 text-black" />
             </div>
             <div>
-              <h1 className="text-xl sm:text-2xl font-bold text-gray-800 tracking-tight">
+              <h1 className="text-lg sm:text-xl md:text-2xl font-bold text-gray-800 tracking-tight">
                 Debts
               </h1>
               <p className="text-xs sm:text-sm text-gray-500 hidden xs:block">
@@ -382,14 +382,15 @@ const Debts = () => {
           </div>
           <button
             onClick={() => setOpenAdd(true)}
-            className="flex items-center gap-1.5 sm:gap-2 px-4 sm:px-5 py-2 sm:py-2.5 bg-emerald-500 text-white rounded-xl hover:bg-emerald-600 transition-all duration-300 hover:shadow-lg hover:shadow-emerald-200 hover:scale-[1.02] active:scale-95 text-xs sm:text-sm font-semibold shadow-md border-2 border-emerald-400"
+            className="flex items-center gap-1.5 sm:gap-2 px-3 sm:px-5 py-2 sm:py-2.5 bg-green-300 text-black rounded-xl hover:bg-green-400 transition-all duration-300 hover:shadow-lg hover:shadow-green-200 hover:scale-[1.02] active:scale-95 text-xs sm:text-sm font-semibold shadow-md border-2 border-green-400"
           >
-            <span>+ Add New Debt</span>
+            <span className="hidden xs:inline">+ Add New Debt</span>
+            <span className="xs:inline">+ Add</span>
           </button>
         </div>
 
-        {/* Stats Cards */}
-        <div className="grid grid-cols-1 xs:grid-cols-3 gap-2 sm:gap-3 md:gap-4 mb-4 sm:mb-6">
+        {/* Stats Cards - Stacked on mobile */}
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 sm:gap-3 md:gap-4 mb-4 sm:mb-6">
           {statsData.map((stat, index) => {
             const Icon = stat.icon;
             return (
@@ -402,11 +403,11 @@ const Debts = () => {
                     <p className="text-[10px] sm:text-xs font-medium text-black/60 uppercase tracking-wider truncate">
                       {stat.label}
                     </p>
-                    <p className="text-sm sm:text-lg md:text-xl font-bold text-black mt-0.5 sm:mt-1 truncate">
+                    <p className="text-base sm:text-lg md:text-xl font-bold text-black mt-0.5 truncate">
                       {stat.value}
                     </p>
                   </div>
-                  <div className="bg-gray-100 p-2 sm:p-2.5 rounded-xl border-2 border-gray-300 flex-shrink-0">
+                  <div className="bg-green-300 p-2 sm:p-2.5 rounded-xl border-2 border-green-400 flex-shrink-0">
                     <Icon className="w-4 h-4 sm:w-5 sm:h-5 text-black" />
                   </div>
                 </div>
@@ -415,24 +416,24 @@ const Debts = () => {
           })}
         </div>
 
-        {/* Search + Filters */}
+        {/* Search + Filters - Responsive */}
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-4 mb-4 sm:mb-5">
           <div className="flex flex-wrap gap-1.5 sm:gap-2">
             {paymentStatusOptions.map((option) => (
               <button
                 key={option.value}
                 onClick={() => setPaymentStatusFilter(option.value)}
-                className={`flex items-center gap-1 sm:gap-2 px-3 sm:px-4 py-1 sm:py-1.5 rounded-full text-[10px] sm:text-xs font-semibold transition-all duration-200 border-2 ${
+                className={`flex items-center gap-1 sm:gap-2 px-2.5 sm:px-4 py-1 sm:py-1.5 rounded-full text-[9px] sm:text-xs font-semibold transition-all duration-200 border-2 ${
                   paymentStatusFilter === option.value
-                    ? "bg-emerald-500 border-emerald-500 text-white shadow-md shadow-emerald-200"
+                    ? "bg-green-300 border-green-300 text-black shadow-md shadow-green-200"
                     : "bg-white border-gray-300 text-gray-500 hover:border-gray-400 hover:text-gray-700 hover:bg-gray-100"
                 }`}
               >
                 {option.label}
                 <span
-                  className={`text-[10px] sm:text-xs ${
+                  className={`text-[9px] sm:text-xs ${
                     paymentStatusFilter === option.value
-                      ? "text-white/80"
+                      ? "text-black/70"
                       : "text-gray-400"
                   }`}
                 >
@@ -454,9 +455,9 @@ const Debts = () => {
               <input
                 type="text"
                 placeholder="Search customer..."
+                className="w-full pl-8 sm:pl-9 pr-8 py-2 sm:py-2.5 bg-white border-2 border-gray-300 rounded-2xl focus:outline-none focus:ring-2 focus:ring-gray-400 focus:ring-offset-1 transition-all duration-200 text-black placeholder:text-black/50 text-xs sm:text-sm"
                 value={customerFilter}
                 onChange={(e) => setCustomerFilter(e.target.value)}
-                className="w-full pl-8 sm:pl-9 pr-8 py-2 sm:py-2.5 bg-white border-2 border-gray-300 rounded-2xl focus:outline-none focus:ring-2 focus:ring-gray-400 focus:ring-offset-1 transition-all duration-200 text-black placeholder:text-black/50 text-xs sm:text-sm"
               />
               {customerFilter && (
                 <button
@@ -471,14 +472,14 @@ const Debts = () => {
               onClick={() => setShowFilters(!showFilters)}
               className={`flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-2 sm:py-2.5 rounded-2xl font-semibold text-xs sm:text-sm transition-all duration-200 border-2 ${
                 showFilters || activeFilterCount > 0
-                  ? "bg-emerald-500 border-emerald-500 text-white shadow-md shadow-emerald-200"
+                  ? "bg-green-300 border-green-300 text-black shadow-md shadow-green-200"
                   : "bg-white border-gray-300 text-gray-600 hover:bg-gray-100 hover:border-gray-400"
               }`}
             >
               <FaFilter className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
               <span className="hidden xs:inline">Filters</span>
               {activeFilterCount > 0 && (
-                <span className="bg-white text-emerald-600 text-[10px] sm:text-xs w-4 h-4 sm:w-5 sm:h-5 rounded-full flex items-center justify-center font-bold">
+                <span className="bg-white text-black text-[10px] sm:text-xs w-4 h-4 sm:w-5 sm:h-5 rounded-full flex items-center justify-center font-bold">
                   {activeFilterCount}
                 </span>
               )}
@@ -592,7 +593,7 @@ const Debts = () => {
               </span>
             )}
             {paymentStatusFilter !== "not_paid" && (
-              <span className="inline-flex items-center gap-0.5 sm:gap-1 px-2 sm:px-3 py-0.5 sm:py-1 bg-emerald-100 text-emerald-700 text-[10px] sm:text-xs font-medium rounded-full border border-emerald-200">
+              <span className="inline-flex items-center gap-0.5 sm:gap-1 px-2 sm:px-3 py-0.5 sm:py-1 bg-green-100 text-black text-[10px] sm:text-xs font-medium rounded-full border border-green-200">
                 {
                   paymentStatusOptions.find(
                     (o) => o.value === paymentStatusFilter,
@@ -600,40 +601,40 @@ const Debts = () => {
                 }
                 <button
                   onClick={() => setPaymentStatusFilter("not_paid")}
-                  className="hover:text-emerald-900"
+                  className="hover:text-black"
                 >
                   <X className="w-2.5 h-2.5 sm:w-3 sm:h-3" />
                 </button>
               </span>
             )}
             {startDate && (
-              <span className="inline-flex items-center gap-0.5 sm:gap-1 px-2 sm:px-3 py-0.5 sm:py-1 bg-blue-100 text-blue-700 text-[10px] sm:text-xs font-medium rounded-full border border-blue-200">
+              <span className="inline-flex items-center gap-0.5 sm:gap-1 px-2 sm:px-3 py-0.5 sm:py-1 bg-blue-100 text-black text-[10px] sm:text-xs font-medium rounded-full border border-blue-200">
                 From {dayjs(startDate).format("DD/MM/YY")}
                 <button
                   onClick={() => setStartDate(null)}
-                  className="hover:text-blue-900"
+                  className="hover:text-black/70"
                 >
                   <X className="w-2.5 h-2.5 sm:w-3 sm:h-3" />
                 </button>
               </span>
             )}
             {endDate && (
-              <span className="inline-flex items-center gap-0.5 sm:gap-1 px-2 sm:px-3 py-0.5 sm:py-1 bg-blue-100 text-blue-700 text-[10px] sm:text-xs font-medium rounded-full border border-blue-200">
+              <span className="inline-flex items-center gap-0.5 sm:gap-1 px-2 sm:px-3 py-0.5 sm:py-1 bg-blue-100 text-black text-[10px] sm:text-xs font-medium rounded-full border border-blue-200">
                 To {dayjs(endDate).format("DD/MM/YY")}
                 <button
                   onClick={() => setEndDate(null)}
-                  className="hover:text-blue-900"
+                  className="hover:text-black/70"
                 >
                   <X className="w-2.5 h-2.5 sm:w-3 sm:h-3" />
                 </button>
               </span>
             )}
             {customerFilter && (
-              <span className="inline-flex items-center gap-0.5 sm:gap-1 px-2 sm:px-3 py-0.5 sm:py-1 bg-amber-100 text-amber-700 text-[10px] sm:text-xs font-medium rounded-full border border-amber-200">
+              <span className="inline-flex items-center gap-0.5 sm:gap-1 px-2 sm:px-3 py-0.5 sm:py-1 bg-amber-100 text-black text-[10px] sm:text-xs font-medium rounded-full border border-amber-200">
                 {customerFilter}
                 <button
                   onClick={() => setCustomerFilter("")}
-                  className="hover:text-amber-900"
+                  className="hover:text-black/70"
                 >
                   <X className="w-2.5 h-2.5 sm:w-3 sm:h-3" />
                 </button>
@@ -646,22 +647,248 @@ const Debts = () => {
 
         {/* Results Count */}
         <div className="flex items-center justify-between mb-2 sm:mb-3 px-1">
-          <p className="text-[10px] sm:text-sm text-gray-500">
+          <p className="text-[9px] sm:text-sm text-gray-500">
             <span className="font-semibold text-gray-700">
               {filteredData.length}
             </span>{" "}
             results found
           </p>
-          <p className="text-[10px] sm:text-sm text-gray-400">
+          <p className="text-[9px] sm:text-sm text-gray-400">
             Page {currentPage} of {totalPages || 1}
           </p>
         </div>
 
-        {/* Card List */}
-        <div className="space-y-2 sm:space-y-2.5">
+        {/* Mobile Card View */}
+        <div className="block sm:hidden space-y-2 mb-4">
+          {load ? (
+            <div className="flex flex-col items-center justify-center py-12 bg-gray-100 rounded-2xl border-2 border-gray-300 shadow-sm">
+              <div className="w-10 h-10 border-4 border-green-300 border-t-green-500 rounded-full animate-spin" />
+              <p className="text-xs text-gray-500 mt-3">Loading debts...</p>
+            </div>
+          ) : currentList.length === 0 ? (
+            <div className="bg-gray-100 rounded-2xl border-2 border-gray-300 shadow-sm py-12 text-center">
+              <div className="w-16 h-16 bg-gray-200 rounded-full flex items-center justify-center mx-auto mb-3 border-2 border-gray-300">
+                <Package className="w-8 h-8 text-gray-400" />
+              </div>
+              <p className="text-sm text-gray-700 font-medium">
+                No debts found
+              </p>
+              <p className="text-xs text-gray-500 mt-1">
+                Try adjusting your filters
+              </p>
+            </div>
+          ) : (
+            currentList.map((d, idx) => {
+              const isEditing = editingStatusId === d._id;
+              const isFullyPaid = d.remainingAmount <= 0;
+              const paidAmount =
+                (d.totalAmount || 0) - (d.remainingAmount || 0);
+
+              return (
+                <div
+                  key={d._id}
+                  className="bg-gray-200 rounded-xl border-2 border-gray-300 shadow-sm p-3 hover:shadow-md hover:border-green-300 transition-all duration-300"
+                >
+                  {/* Row 1: Customer & Status */}
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2 min-w-0 flex-1">
+                      <div className="w-8 h-8 rounded-full bg-green-300 flex items-center justify-center flex-shrink-0 border-2 border-green-400">
+                        <User className="w-3.5 h-3.5 text-black" />
+                      </div>
+                      <div className="min-w-0">
+                        <div className="flex items-center gap-1.5 flex-wrap">
+                          <span className="text-sm font-semibold text-gray-800 truncate max-w-[100px]">
+                            {d.customerName || "—"}
+                          </span>
+                          <span className="text-[9px] text-gray-600 bg-white px-1.5 py-0.5 rounded border border-gray-300">
+                            #{idx + 1}
+                          </span>
+                        </div>
+                        <div className="flex items-center gap-1.5 text-[9px] text-gray-500 mt-0.5">
+                          <span className="flex items-center gap-0.5">
+                            <Phone className="w-2.5 h-2.5" />
+                            {d.phone || "—"}
+                          </span>
+                          <span className="w-0.5 h-0.5 bg-gray-400 rounded-full" />
+                          <span className="flex items-center gap-0.5">
+                            <Calendar className="w-2.5 h-2.5" />
+                            {formatDate(d.createdAt)}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                    <div className="flex flex-col items-end gap-1">
+                      <span
+                        className={`px-1.5 py-0.5 rounded-full text-[8px] font-semibold border-2 ${
+                          d.debtStatus === "Asset"
+                            ? "bg-red-100 text-red-700 border-red-200"
+                            : "bg-yellow-100 text-yellow-700 border-yellow-200"
+                        }`}
+                      >
+                        {d.debtStatus || "—"}
+                      </span>
+                      <span
+                        className={`inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-full text-[8px] font-semibold border-2 ${
+                          isFullyPaid
+                            ? "bg-green-300 text-black border-green-400"
+                            : "bg-red-100 text-red-700 border-red-200"
+                        }`}
+                      >
+                        {isFullyPaid ? (
+                          <>
+                            <CheckCircle className="w-2 h-2" />
+                            Paid
+                          </>
+                        ) : (
+                          <>
+                            <Clock className="w-2 h-2" />
+                            Pending
+                          </>
+                        )}
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Row 2: Financial Summary */}
+                  <div className="mt-2 pt-2 border-t border-gray-300">
+                    <div className="flex flex-wrap items-center justify-between gap-1 text-[10px]">
+                      <div>
+                        <span className="text-gray-500">Total:</span>
+                        <span className="font-semibold text-gray-800 ml-1">
+                          {formatCurrency(d.totalAmount)}
+                        </span>
+                      </div>
+                      <div className="w-px h-4 bg-gray-300" />
+                      <div>
+                        <span className="text-gray-500">Paid:</span>
+                        <span className="font-semibold text-green-600 ml-1">
+                          {formatCurrency(paidAmount)}
+                        </span>
+                      </div>
+                      <div className="w-px h-4 bg-gray-300" />
+                      <div>
+                        <span className="text-gray-500">Remaining:</span>
+                        <span
+                          className={`font-semibold ml-1 ${
+                            isFullyPaid ? "text-green-600" : "text-red-600"
+                          }`}
+                        >
+                          {formatCurrency(d.remainingAmount)}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Row 3: Actions */}
+                  <div className="flex flex-wrap items-center justify-between gap-2 mt-2 pt-2 border-t border-gray-300">
+                    <div className="flex items-center gap-1.5">
+                      {canChangeDebtStatus && !isEditing && (
+                        <button
+                          onClick={() => handleStatusEdit(d)}
+                          className="px-2 py-1 bg-white border-2 border-gray-300 text-gray-700 hover:bg-gray-100 font-semibold rounded-lg text-[9px] transition-all duration-200 shadow-sm"
+                          disabled={
+                            editingStatusId !== null &&
+                            editingStatusId !== d._id
+                          }
+                        >
+                          <FiEdit className="w-3 h-3" />
+                        </button>
+                      )}
+                      {isEditing && canChangeDebtStatus && (
+                        <div className="flex items-center gap-1 bg-white rounded-lg border-2 border-gray-300 p-1 shadow-sm">
+                          <select
+                            value={tempStatus}
+                            onChange={(e) => setTempStatus(e.target.value)}
+                            className="px-1.5 py-1 text-[9px] bg-gray-50 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-300 text-gray-700 font-medium max-w-[70px]"
+                            disabled={statusUpdating}
+                          >
+                            {debtStatusOptions.map((opt) => (
+                              <option key={opt.value} value={opt.value}>
+                                {opt.label}
+                              </option>
+                            ))}
+                          </select>
+                          <div className="flex items-center gap-0.5">
+                            <button
+                              onClick={() => handleStatusUpdate(d._id)}
+                              disabled={statusUpdating}
+                              className="px-2 py-1 bg-green-300 hover:bg-green-400 text-black font-semibold rounded-lg text-[9px]"
+                            >
+                              <FiCheck className="w-3 h-3" />
+                            </button>
+                            <button
+                              onClick={handleStatusCancel}
+                              disabled={statusUpdating}
+                              className="px-2 py-1 bg-gray-200 hover:bg-gray-300 text-gray-700 font-semibold rounded-lg text-[9px]"
+                            >
+                              <FiX className="w-3 h-3" />
+                            </button>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+
+                    {!isFullyPaid && canPayDebts && (
+                      <div className="flex items-center gap-1 flex-1 min-w-[120px]">
+                        <div className="relative flex-1">
+                          <span className="absolute left-1.5 top-1/2 -translate-y-1/2 text-[7px] font-bold text-gray-500">
+                            TSh
+                          </span>
+                          <input
+                            type="text"
+                            value={
+                              deductions[d._id]
+                                ? formatNumberWithCommas(deductions[d._id])
+                                : ""
+                            }
+                            onChange={(e) =>
+                              handlePaymentInputChange(d._id, e.target.value)
+                            }
+                            className="w-full pl-6 pr-1.5 py-1 rounded-lg border-2 border-gray-300 text-[9px] focus:outline-none focus:ring-2 focus:ring-green-300 focus:border-green-300 text-black bg-white"
+                            placeholder="Amount"
+                            disabled={isEditing}
+                          />
+                        </div>
+                        <button
+                          onClick={() => handlePay(d)}
+                          disabled={
+                            !deductions[d._id] ||
+                            parseFloat(deductions[d._id]) <= 0 ||
+                            isEditing
+                          }
+                          className={`px-2.5 py-1 font-semibold rounded-lg text-[9px] transition-all duration-200 ${
+                            deductions[d._id] &&
+                            parseFloat(deductions[d._id]) > 0 &&
+                            !isEditing
+                              ? "bg-yellow-400 hover:bg-yellow-500 text-black shadow-sm"
+                              : "bg-gray-300 text-gray-500 cursor-not-allowed"
+                          }`}
+                        >
+                          Pay
+                        </button>
+                      </div>
+                    )}
+
+                    {isFullyPaid && (
+                      <div className="flex items-center gap-1 px-2 py-1 bg-green-100 rounded-lg border border-green-300">
+                        <CheckCircle className="w-3 h-3 text-green-600" />
+                        <span className="text-[8px] font-semibold text-black">
+                          Fully Paid
+                        </span>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              );
+            })
+          )}
+        </div>
+
+        {/* Tablet & Desktop Card View */}
+        <div className="hidden sm:block space-y-2 sm:space-y-2.5">
           {load ? (
             <div className="flex flex-col items-center justify-center py-12 sm:py-16 bg-gray-100 rounded-2xl border-2 border-gray-300 shadow-sm">
-              <div className="w-10 h-10 sm:w-12 sm:h-12 border-4 border-emerald-300 border-t-emerald-500 rounded-full animate-spin" />
+              <div className="w-10 h-10 sm:w-12 sm:h-12 border-4 border-green-300 border-t-green-500 rounded-full animate-spin" />
               <p className="text-xs sm:text-sm text-gray-500 mt-3 sm:mt-4">
                 Loading debts...
               </p>
@@ -688,24 +915,24 @@ const Debts = () => {
               return (
                 <div
                   key={d._id}
-                  className="bg-gray-200 rounded-xl border-2 border-gray-300 shadow-sm p-3 sm:p-4 hover:shadow-md hover:border-emerald-300 transition-all duration-300"
+                  className="bg-gray-200 rounded-xl border-2 border-gray-300 shadow-sm p-3 sm:p-4 hover:shadow-md hover:border-green-300 transition-all duration-300"
                 >
                   {/* Row 1: Customer & Status */}
                   <div className="flex flex-wrap items-center justify-between gap-2">
                     <div className="flex items-center gap-2 sm:gap-3 min-w-0 flex-1">
-                      <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-emerald-200 flex items-center justify-center flex-shrink-0 border-2 border-emerald-300">
-                        <User className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-emerald-700" />
+                      <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-green-300 flex items-center justify-center flex-shrink-0 border-2 border-green-400">
+                        <User className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-black" />
                       </div>
                       <div className="min-w-0 flex-1">
                         <div className="flex items-center gap-1.5 sm:gap-2 flex-wrap">
-                          <span className="text-xs sm:text-sm font-semibold text-gray-800 truncate max-w-[100px] xs:max-w-[150px] sm:max-w-[200px]">
+                          <span className="text-sm sm:text-base font-semibold text-gray-800 truncate max-w-[100px] xs:max-w-[150px] sm:max-w-[200px]">
                             {d.customerName || "—"}
                           </span>
-                          <span className="text-[9px] sm:text-[10px] text-gray-600 bg-white px-1.5 py-0.5 rounded border border-gray-300 flex-shrink-0">
+                          <span className="text-[10px] sm:text-[11px] text-gray-600 bg-white px-1.5 py-0.5 rounded border border-gray-300 flex-shrink-0">
                             #{idx + 1}
                           </span>
                         </div>
-                        <div className="flex items-center gap-1.5 sm:gap-2 text-[9px] sm:text-[10px] text-gray-500 mt-0.5 flex-wrap">
+                        <div className="flex items-center gap-1.5 sm:gap-2 text-[10px] sm:text-xs text-gray-500 mt-0.5 flex-wrap">
                           <span className="flex items-center gap-0.5">
                             <Phone className="w-2.5 h-2.5 sm:w-3 sm:h-3" />
                             <span className="hidden xs:inline">
@@ -722,7 +949,7 @@ const Debts = () => {
                     </div>
                     <div className="flex items-center gap-1 sm:gap-1.5 flex-shrink-0">
                       <span
-                        className={`px-1.5 sm:px-2 py-0.5 rounded-full text-[8px] sm:text-[10px] font-semibold border-2 ${
+                        className={`px-1.5 sm:px-2 py-0.5 rounded-full text-[9px] sm:text-[11px] font-semibold border-2 ${
                           d.debtStatus === "Asset"
                             ? "bg-red-100 text-red-700 border-red-200"
                             : "bg-yellow-100 text-yellow-700 border-yellow-200"
@@ -731,9 +958,9 @@ const Debts = () => {
                         {d.debtStatus || "—"}
                       </span>
                       <span
-                        className={`inline-flex items-center gap-0.5 px-1.5 sm:px-2 py-0.5 rounded-full text-[8px] sm:text-[10px] font-semibold border-2 ${
+                        className={`inline-flex items-center gap-0.5 px-1.5 sm:px-2 py-0.5 rounded-full text-[9px] sm:text-[11px] font-semibold border-2 ${
                           isFullyPaid
-                            ? "bg-emerald-100 text-emerald-700 border-emerald-200"
+                            ? "bg-green-300 text-black border-green-400"
                             : "bg-red-100 text-red-700 border-red-200"
                         }`}
                       >
@@ -753,52 +980,48 @@ const Debts = () => {
                   </div>
 
                   {/* Row 2: Financial Summary */}
-                  <div className="flex flex-wrap items-center justify-between gap-2 mt-2 sm:mt-2.5 px-1">
-                    <div className="flex items-center gap-3 sm:gap-4 md:gap-6 flex-wrap">
-                      <div>
-                        <p className="text-[7px] sm:text-[8px] text-gray-400 font-medium uppercase">
-                          Total
-                        </p>
-                        <p className="text-[10px] sm:text-xs font-bold text-gray-800">
-                          {formatCurrency(d.totalAmount)}
-                        </p>
-                      </div>
-                      <div className="w-px h-5 sm:h-7 bg-gray-300" />
-                      <div>
-                        <p className="text-[7px] sm:text-[8px] text-gray-400 font-medium uppercase">
-                          Paid
-                        </p>
-                        <p className="text-[10px] sm:text-xs font-bold text-emerald-600">
-                          {formatCurrency(paidAmount)}
-                        </p>
-                      </div>
-                      <div className="w-px h-5 sm:h-7 bg-gray-300" />
-                      <div>
-                        <p className="text-[7px] sm:text-[8px] text-gray-400 font-medium uppercase">
-                          Remaining
-                        </p>
-                        <p
-                          className={`text-[10px] sm:text-xs font-bold ${
-                            isFullyPaid ? "text-emerald-600" : "text-red-600"
-                          }`}
-                        >
-                          {formatCurrency(d.remainingAmount)}
-                        </p>
+                  <div className="mt-2 pt-2 border-t-2 border-gray-300">
+                    <div className="flex flex-wrap items-center justify-between gap-2">
+                      <div className="flex flex-wrap items-center gap-3 sm:gap-4 text-xs sm:text-sm">
+                        <div>
+                          <span className="text-gray-600">Total:</span>
+                          <span className="font-semibold text-gray-800 ml-1">
+                            {formatCurrency(d.totalAmount)}
+                          </span>
+                        </div>
+                        <div className="w-px h-5 bg-gray-300" />
+                        <div>
+                          <span className="text-gray-600">Paid:</span>
+                          <span className="font-semibold text-green-600 ml-1">
+                            {formatCurrency(paidAmount)}
+                          </span>
+                        </div>
+                        <div className="w-px h-5 bg-gray-300" />
+                        <div>
+                          <span className="text-gray-600">Remaining:</span>
+                          <span
+                            className={`font-semibold ml-1 ${
+                              isFullyPaid ? "text-green-600" : "text-red-600"
+                            }`}
+                          >
+                            {formatCurrency(d.remainingAmount)}
+                          </span>
+                        </div>
                       </div>
                     </div>
                   </div>
 
                   {/* Row 3: Actions */}
-                  <div className="flex flex-wrap items-center justify-between gap-2 sm:gap-3 mt-2 sm:mt-2.5 pt-2 sm:pt-2.5 border-t border-gray-300">
+                  <div className="flex flex-wrap items-center justify-between gap-2 sm:gap-3 mt-2 pt-2 border-t-2 border-gray-300">
                     {/* Left: Change Status */}
                     <div className="flex items-center gap-1.5 sm:gap-2">
-                      <span className="text-[8px] sm:text-[10px] text-gray-500 font-medium hidden xs:inline">
+                      <span className="text-[9px] sm:text-[11px] text-gray-500 font-medium hidden xs:inline">
                         Type:
                       </span>
                       {canChangeDebtStatus && !isEditing && (
                         <button
                           onClick={() => handleStatusEdit(d)}
-                          className="px-2.5 sm:px-4 py-1 sm:py-1.5 bg-white border-2 border-gray-300 text-gray-700 hover:bg-gray-100 font-semibold rounded-lg text-[9px] sm:text-xs transition-all duration-200 shadow-sm flex items-center gap-1 sm:gap-1.5"
+                          className="px-2.5 sm:px-4 py-1 sm:py-1.5 bg-white border-2 border-gray-300 text-gray-700 hover:bg-gray-100 font-semibold rounded-lg text-[10px] sm:text-xs transition-all duration-200 shadow-sm flex items-center gap-1 sm:gap-1.5"
                           disabled={
                             editingStatusId !== null &&
                             editingStatusId !== d._id
@@ -814,7 +1037,7 @@ const Debts = () => {
                           <select
                             value={tempStatus}
                             onChange={(e) => setTempStatus(e.target.value)}
-                            className="px-1.5 sm:px-3 py-1 sm:py-1.5 text-[9px] sm:text-xs bg-gray-50 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-400 text-gray-700 font-medium max-w-[80px] sm:max-w-none"
+                            className="px-1.5 sm:px-3 py-1 sm:py-1.5 text-[10px] sm:text-xs bg-gray-50 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-300 text-gray-700 font-medium max-w-[80px] sm:max-w-none"
                             disabled={statusUpdating}
                           >
                             {debtStatusOptions.map((opt) => (
@@ -827,7 +1050,7 @@ const Debts = () => {
                             <button
                               onClick={() => handleStatusUpdate(d._id)}
                               disabled={statusUpdating}
-                              className="px-2 sm:px-3 py-1 sm:py-1.5 bg-emerald-500 hover:bg-emerald-600 text-white font-semibold rounded-lg text-[9px] sm:text-xs transition-colors flex items-center gap-0.5 sm:gap-1"
+                              className="px-2 sm:px-3 py-1 sm:py-1.5 bg-green-300 hover:bg-green-400 text-black font-semibold rounded-lg text-[10px] sm:text-xs transition-colors flex items-center gap-0.5 sm:gap-1"
                             >
                               <FiCheck className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
                               <span className="hidden xs:inline">Save</span>
@@ -835,7 +1058,7 @@ const Debts = () => {
                             <button
                               onClick={handleStatusCancel}
                               disabled={statusUpdating}
-                              className="px-2 sm:px-3 py-1 sm:py-1.5 bg-gray-200 hover:bg-gray-300 text-gray-700 font-semibold rounded-lg text-[9px] sm:text-xs transition-colors flex items-center gap-0.5 sm:gap-1"
+                              className="px-2 sm:px-3 py-1 sm:py-1.5 bg-gray-200 hover:bg-gray-300 text-gray-700 font-semibold rounded-lg text-[10px] sm:text-xs transition-colors flex items-center gap-0.5 sm:gap-1"
                             >
                               <FiX className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
                               <span className="hidden xs:inline">Cancel</span>
@@ -849,7 +1072,7 @@ const Debts = () => {
                     {!isFullyPaid && canPayDebts && (
                       <div className="flex items-center gap-1 sm:gap-1.5 flex-1 sm:flex-none min-w-[140px]">
                         <div className="relative flex-1 min-w-[80px] xs:min-w-[120px] sm:min-w-[150px] max-w-[240px]">
-                          <span className="absolute left-1.5 sm:left-2.5 top-1/2 -translate-y-1/2 text-[7px] sm:text-[9px] font-bold text-gray-500">
+                          <span className="absolute left-1.5 sm:left-2.5 top-1/2 -translate-y-1/2 text-[8px] sm:text-[10px] font-bold text-gray-500">
                             TSh
                           </span>
                           <input
@@ -862,7 +1085,7 @@ const Debts = () => {
                             onChange={(e) =>
                               handlePaymentInputChange(d._id, e.target.value)
                             }
-                            className="w-full pl-6 sm:pl-9 pr-1.5 sm:pr-2 py-1 sm:py-1.5 rounded-lg border-2 border-gray-300 text-[9px] sm:text-xs focus:outline-none focus:ring-2 focus:ring-emerald-300 focus:border-emerald-300 text-black bg-white"
+                            className="w-full pl-6 sm:pl-9 pr-1.5 sm:pr-2 py-1 sm:py-1.5 rounded-lg border-2 border-gray-300 text-[10px] sm:text-xs focus:outline-none focus:ring-2 focus:ring-green-300 focus:border-green-300 text-black bg-white"
                             placeholder="Amount"
                             disabled={isEditing}
                           />
@@ -874,7 +1097,7 @@ const Debts = () => {
                             parseFloat(deductions[d._id]) <= 0 ||
                             isEditing
                           }
-                          className={`px-2.5 sm:px-4 py-1 sm:py-1.5 font-semibold rounded-lg text-[9px] sm:text-xs transition-all duration-200 ${
+                          className={`px-2.5 sm:px-4 py-1 sm:py-1.5 font-semibold rounded-lg text-[10px] sm:text-xs transition-all duration-200 ${
                             deductions[d._id] &&
                             parseFloat(deductions[d._id]) > 0 &&
                             !isEditing
@@ -888,9 +1111,9 @@ const Debts = () => {
                     )}
 
                     {isFullyPaid && (
-                      <div className="flex items-center gap-1 sm:gap-1.5 px-2 sm:px-3 py-1 sm:py-1.5 bg-emerald-100 rounded-lg border border-emerald-300">
-                        <CheckCircle className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-emerald-600" />
-                        <span className="text-[8px] sm:text-[10px] font-semibold text-emerald-700">
+                      <div className="flex items-center gap-1 sm:gap-1.5 px-2 sm:px-3 py-1 sm:py-1.5 bg-green-100 rounded-lg border border-green-300">
+                        <CheckCircle className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-green-600" />
+                        <span className="text-[9px] sm:text-[11px] font-semibold text-black">
                           Fully Paid
                         </span>
                       </div>
@@ -905,7 +1128,7 @@ const Debts = () => {
         {/* Pagination */}
         {filteredData.length > 0 && (
           <div className="mt-3 sm:mt-4 bg-white px-3 sm:px-5 py-2.5 sm:py-4 rounded-xl border-2 border-gray-200 shadow-sm flex flex-col sm:flex-row justify-between items-center gap-2 sm:gap-3">
-            <span className="text-[9px] sm:text-xs text-gray-500 text-center sm:text-left">
+            <span className="text-[9px] sm:text-sm text-gray-500 text-center sm:text-left">
               Showing{" "}
               <span className="font-semibold text-gray-700">
                 {(currentPage - 1) * itemsPerPage + 1}

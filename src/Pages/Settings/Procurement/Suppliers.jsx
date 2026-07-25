@@ -161,7 +161,7 @@ const Suppliers = () => {
             onClick={() => setPageFn(number)}
             className={`px-3.5 py-2 rounded-lg text-sm font-medium transition-all duration-200 shadow-sm border-2 ${
               currentPageNum === number
-                ? "bg-emerald-500 text-white border-emerald-500 hover:bg-emerald-600"
+                ? "bg-green-300 text-black border-green-300 hover:bg-green-400"
                 : "bg-white border-gray-300 text-gray-600 hover:bg-gray-100 hover:border-gray-400"
             }`}
           >
@@ -210,13 +210,13 @@ const Suppliers = () => {
     <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-gray-50">
       <div className="max-w-8xl mx-auto px-3 sm:px-4 md:px-6 py-4 sm:py-6 md:py-8">
         {/* Header */}
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4 mb-4 sm:mb-6">
+        <div className="flex flex-wrap items-center justify-between gap-3 mb-4 sm:mb-6">
           <div className="flex items-center gap-3 sm:gap-4">
-            <div className="w-10 h-10 sm:w-12 sm:h-12 bg-gradient-to-br from-emerald-400 to-emerald-500 rounded-xl flex items-center justify-center shadow-lg shadow-emerald-200 border-2 border-emerald-300">
-              <Building className="w-5 h-5 sm:w-6 sm:h-6 text-white" />
+            <div className="w-10 h-10 sm:w-12 sm:h-12 bg-green-300 rounded-xl flex items-center justify-center shadow-lg shadow-green-200 border-2 border-green-400">
+              <Building className="w-5 h-5 sm:w-6 sm:h-6 text-black" />
             </div>
             <div>
-              <h1 className="text-xl sm:text-2xl font-bold text-gray-800 tracking-tight">
+              <h1 className="text-lg sm:text-xl md:text-2xl font-bold text-gray-800 tracking-tight">
                 Suppliers
               </h1>
               <p className="text-xs sm:text-sm text-gray-500 hidden xs:block">
@@ -226,15 +226,15 @@ const Suppliers = () => {
           </div>
           <button
             onClick={() => setShowModalAdd(true)}
-            className="flex items-center gap-1.5 sm:gap-2 px-4 sm:px-5 py-2 sm:py-2.5 bg-emerald-500 text-white rounded-xl hover:bg-emerald-600 transition-all duration-300 hover:shadow-lg hover:shadow-emerald-200 hover:scale-[1.02] active:scale-95 text-xs sm:text-sm font-semibold shadow-md border-2 border-emerald-400"
+            className="flex items-center gap-1.5 sm:gap-2 px-3 sm:px-5 py-2 sm:py-2.5 bg-green-300 text-black rounded-xl hover:bg-green-400 transition-all duration-300 hover:shadow-lg hover:shadow-green-200 hover:scale-[1.02] active:scale-95 text-xs sm:text-sm font-semibold shadow-md border-2 border-green-400"
           >
             <FiUserPlus className="w-4 h-4 sm:w-5 sm:h-5" />
-            <span>Add Supplier</span>
+            <span className="hidden xs:inline">Add Supplier</span>
           </button>
         </div>
 
-        {/* Stats Cards */}
-        <div className="grid grid-cols-1 xs:grid-cols-3 gap-2 sm:gap-3 md:gap-4 mb-4 sm:mb-6">
+        {/* Stats Cards - Stacked on mobile */}
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 sm:gap-3 md:gap-4 mb-4 sm:mb-6">
           {statsData.map((stat, index) => {
             const Icon = stat.icon;
             return (
@@ -247,11 +247,11 @@ const Suppliers = () => {
                     <p className="text-[10px] sm:text-xs font-medium text-black/60 uppercase tracking-wider truncate">
                       {stat.label}
                     </p>
-                    <p className="text-sm sm:text-lg md:text-xl font-bold text-black mt-0.5 sm:mt-1">
+                    <p className="text-base sm:text-lg md:text-xl font-bold text-black mt-0.5 truncate">
                       {stat.value}
                     </p>
                   </div>
-                  <div className="bg-gray-100 p-2 sm:p-2.5 rounded-xl border-2 border-gray-300 flex-shrink-0">
+                  <div className="bg-green-300 p-2 sm:p-2.5 rounded-xl border-2 border-green-400 flex-shrink-0">
                     <Icon className="w-4 h-4 sm:w-5 sm:h-5 text-black" />
                   </div>
                 </div>
@@ -260,7 +260,7 @@ const Suppliers = () => {
           })}
         </div>
 
-        {/* Search + Filters */}
+        {/* Search + Filters - Responsive */}
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-4 mb-4 sm:mb-5">
           <div className="flex flex-wrap gap-1.5 sm:gap-2">
             {["all", "Active", "Inactive"].map((status) => (
@@ -270,15 +270,15 @@ const Suppliers = () => {
                   setStatusFilter(status);
                   setCurrentPage(1);
                 }}
-                className={`flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-1 sm:py-1.5 rounded-full text-[10px] sm:text-xs font-semibold transition-all duration-200 border-2 ${
+                className={`flex items-center gap-1 sm:gap-2 px-2.5 sm:px-4 py-1 sm:py-1.5 rounded-full text-[9px] sm:text-xs font-semibold transition-all duration-200 border-2 ${
                   statusFilter === status
-                    ? "bg-emerald-500 border-emerald-500 text-white shadow-md shadow-emerald-200"
+                    ? "bg-green-300 border-green-300 text-black shadow-md shadow-green-200"
                     : "bg-white border-gray-300 text-gray-500 hover:border-gray-400 hover:text-gray-700 hover:bg-gray-100"
                 }`}
               >
                 {status === "all" ? "All" : status}
                 <span
-                  className={`text-[10px] sm:text-xs ${statusFilter === status ? "text-white/80" : "text-gray-400"}`}
+                  className={`text-[9px] sm:text-xs ${statusFilter === status ? "text-black/70" : "text-gray-400"}`}
                 >
                   (
                   {status === "all"
@@ -316,14 +316,14 @@ const Suppliers = () => {
               onClick={() => setShowFilters(!showFilters)}
               className={`flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-2 sm:py-2.5 rounded-2xl font-semibold text-xs sm:text-sm transition-all duration-200 border-2 ${
                 showFilters || activeFilterCount > 0
-                  ? "bg-emerald-500 border-emerald-500 text-white shadow-md shadow-emerald-200"
+                  ? "bg-green-300 border-green-300 text-black shadow-md shadow-green-200"
                   : "bg-white border-gray-300 text-gray-600 hover:bg-gray-100 hover:border-gray-400"
               }`}
             >
               <FaFilter className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
               <span className="hidden xs:inline">Filters</span>
               {activeFilterCount > 0 && (
-                <span className="bg-white text-emerald-600 text-[10px] sm:text-xs w-4 h-4 sm:w-5 sm:h-5 rounded-full flex items-center justify-center font-bold">
+                <span className="bg-white text-black text-[10px] sm:text-xs w-4 h-4 sm:w-5 sm:h-5 rounded-full flex items-center justify-center font-bold">
                   {activeFilterCount}
                 </span>
               )}
@@ -358,11 +358,11 @@ const Suppliers = () => {
         {activeFilterCount > 0 && !showFilters && (
           <div className="flex flex-wrap gap-1 sm:gap-1.5 mb-3 sm:mb-4">
             {statusFilter !== "all" && (
-              <span className="inline-flex items-center gap-0.5 sm:gap-1 px-2 sm:px-3 py-0.5 sm:py-1 bg-emerald-100 text-emerald-700 text-[10px] sm:text-xs font-medium rounded-full border border-emerald-200">
+              <span className="inline-flex items-center gap-0.5 sm:gap-1 px-2 sm:px-3 py-0.5 sm:py-1 bg-green-100 text-black text-[10px] sm:text-xs font-medium rounded-full border border-green-200">
                 {statusFilter}
                 <button
                   onClick={() => setStatusFilter("all")}
-                  className="hover:text-emerald-900"
+                  className="hover:text-black"
                 >
                   <X className="w-2.5 h-2.5 sm:w-3 sm:h-3" />
                 </button>
@@ -393,22 +393,147 @@ const Suppliers = () => {
 
         {/* Results Count */}
         <div className="flex items-center justify-between mb-2 sm:mb-3 px-1">
-          <p className="text-[10px] sm:text-sm text-gray-500">
+          <p className="text-[9px] sm:text-sm text-gray-500">
             <span className="font-semibold text-gray-700">
               {filteredSuppliers.length}
             </span>{" "}
             results found
           </p>
-          <p className="text-[10px] sm:text-sm text-gray-400">
+          <p className="text-[9px] sm:text-sm text-gray-400">
             Page {currentPage} of {totalPages || 1}
           </p>
         </div>
 
-        {/* Card List - Normal size */}
-        <div className="space-y-2 sm:space-y-3">
+        {/* Mobile Card View */}
+        <div className="block sm:hidden space-y-2 mb-4">
+          {load ? (
+            <div className="flex flex-col items-center justify-center py-12 bg-gray-100 rounded-2xl border-2 border-gray-300 shadow-sm">
+              <div className="w-10 h-10 border-4 border-green-300 border-t-green-500 rounded-full animate-spin" />
+              <p className="text-xs text-gray-500 mt-3">Loading suppliers...</p>
+            </div>
+          ) : currentSuppliers.length === 0 ? (
+            <div className="bg-gray-100 rounded-2xl border-2 border-gray-300 shadow-sm py-12 text-center">
+              <div className="w-16 h-16 bg-gray-200 rounded-full flex items-center justify-center mx-auto mb-3 border-2 border-gray-300">
+                <Building className="w-8 h-8 text-gray-400" />
+              </div>
+              <p className="text-sm text-gray-700 font-medium">
+                No suppliers found
+              </p>
+              <p className="text-xs text-gray-500 mt-1">
+                Try adjusting your filters
+              </p>
+            </div>
+          ) : (
+            currentSuppliers.map((supplier) => {
+              const isActive = supplier.status === "Active";
+
+              return (
+                <div
+                  key={supplier._id}
+                  className="bg-gray-200 rounded-xl border-2 border-gray-300 shadow-sm p-3 hover:shadow-md hover:border-green-300 transition-all duration-300"
+                >
+                  <div className="flex flex-col gap-2">
+                    {/* Header */}
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2 min-w-0">
+                        <div
+                          className={`w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 border-2 ${
+                            isActive
+                              ? "bg-green-300 border-green-400"
+                              : "bg-gray-300 border-gray-400"
+                          }`}
+                        >
+                          <Building
+                            className={`w-4 h-4 ${isActive ? "text-black" : "text-gray-600"}`}
+                          />
+                        </div>
+                        <div className="min-w-0">
+                          <span className="text-sm font-semibold text-gray-800 truncate">
+                            {supplier.supplierName || "—"}
+                          </span>
+                          <span
+                            className={`px-2 py-0.5 rounded-full text-[8px] font-semibold border-2 inline-block mt-0.5 ${
+                              isActive
+                                ? "bg-green-300 text-black border-green-400"
+                                : "bg-red-100 text-red-700 border-red-200"
+                            }`}
+                          >
+                            {supplier.status}
+                          </span>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-1">
+                        <button
+                          onClick={() =>
+                            toggleStatus(supplier._id, supplier.status)
+                          }
+                          className={`p-1.5 font-semibold rounded-full text-[9px] transition-all duration-200 border-2 shadow-sm ${
+                            isActive
+                              ? "bg-white border-gray-300 text-gray-700 hover:bg-gray-100"
+                              : "bg-green-300 border-green-400 text-black hover:bg-green-400"
+                          }`}
+                        >
+                          {isActive ? (
+                            <FiToggleLeft className="w-3.5 h-3.5" />
+                          ) : (
+                            <FiToggleRight className="w-3.5 h-3.5" />
+                          )}
+                        </button>
+                        {canEditSupplier ? (
+                          <button
+                            onClick={() => {
+                              setShowModalEdit(true);
+                              setModifiedUser(supplier);
+                            }}
+                            className="p-1.5 bg-white border-2 border-gray-300 text-gray-700 hover:bg-gray-100 rounded-full transition-all duration-200"
+                          >
+                            <FiEdit className="w-3.5 h-3.5" />
+                          </button>
+                        ) : (
+                          <span className="px-2 py-1 bg-gray-200 text-gray-400 text-[9px] font-semibold rounded-full border-2 border-gray-300">
+                            No Access
+                          </span>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Details */}
+                    <div className="flex flex-wrap items-center gap-2 text-[9px] text-gray-500 border-t border-gray-300 pt-2">
+                      {supplier.company && (
+                        <span className="truncate max-w-[80px]">
+                          {supplier.company}
+                        </span>
+                      )}
+                      {supplier.company && supplier.phone && (
+                        <span className="w-0.5 h-0.5 bg-gray-400 rounded-full" />
+                      )}
+                      {supplier.phone && (
+                        <span className="flex items-center gap-0.5">
+                          <Phone className="w-3 h-3" />
+                          {supplier.phone}
+                        </span>
+                      )}
+                      {supplier.email && (
+                        <>
+                          <span className="w-0.5 h-0.5 bg-gray-400 rounded-full" />
+                          <span className="truncate max-w-[100px]">
+                            {supplier.email}
+                          </span>
+                        </>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              );
+            })
+          )}
+        </div>
+
+        {/* Tablet & Desktop Card View */}
+        <div className="hidden sm:block space-y-2 sm:space-y-3">
           {load ? (
             <div className="flex flex-col items-center justify-center py-12 sm:py-16 bg-gray-100 rounded-2xl border-2 border-gray-300 shadow-sm">
-              <div className="w-10 h-10 sm:w-12 sm:h-12 border-4 border-emerald-300 border-t-emerald-500 rounded-full animate-spin" />
+              <div className="w-10 h-10 sm:w-12 sm:h-12 border-4 border-green-300 border-t-green-500 rounded-full animate-spin" />
               <p className="text-xs sm:text-sm text-gray-500 mt-3 sm:mt-4">
                 Loading suppliers...
               </p>
@@ -432,7 +557,7 @@ const Suppliers = () => {
               return (
                 <div
                   key={supplier._id}
-                  className="bg-gray-200 rounded-xl border-2 border-gray-300 shadow-sm p-4 sm:p-4.5 hover:shadow-md hover:border-emerald-300 transition-all duration-300"
+                  className="bg-gray-200 rounded-xl border-2 border-gray-300 shadow-sm p-4 sm:p-4.5 hover:shadow-md hover:border-green-300 transition-all duration-300"
                 >
                   {/* Single row - all items in one line */}
                   <div className="flex flex-wrap items-center justify-between gap-2 sm:gap-3">
@@ -441,12 +566,12 @@ const Suppliers = () => {
                       <div
                         className={`w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 border-2 ${
                           isActive
-                            ? "bg-emerald-200 border-emerald-300"
+                            ? "bg-green-300 border-green-400"
                             : "bg-gray-300 border-gray-400"
                         }`}
                       >
                         <Building
-                          className={`w-5 h-5 ${isActive ? "text-emerald-700" : "text-gray-600"}`}
+                          className={`w-5 h-5 ${isActive ? "text-black" : "text-gray-600"}`}
                         />
                       </div>
                       <div className="min-w-0 flex-1">
@@ -460,7 +585,7 @@ const Suppliers = () => {
                           <span
                             className={`px-2 py-0.5 rounded-full text-[8px] sm:text-[9px] font-semibold border-2 flex-shrink-0 ${
                               isActive
-                                ? "bg-emerald-100 text-emerald-700 border-emerald-200"
+                                ? "bg-green-300 text-black border-green-400"
                                 : "bg-red-100 text-red-700 border-red-200"
                             }`}
                           >
@@ -501,7 +626,7 @@ const Suppliers = () => {
                         className={`px-3 sm:px-4 py-1.5 sm:py-2 font-semibold rounded-full text-[10px] sm:text-xs transition-all duration-200 border-2 shadow-sm flex items-center gap-1.5 sm:gap-2 ${
                           isActive
                             ? "bg-white border-gray-300 text-gray-700 hover:bg-gray-100"
-                            : "bg-emerald-500 border-emerald-400 text-white hover:bg-emerald-600"
+                            : "bg-green-300 border-green-400 text-black hover:bg-green-400"
                         }`}
                       >
                         {isActive ? (
