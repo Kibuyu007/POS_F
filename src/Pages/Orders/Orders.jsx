@@ -2803,7 +2803,7 @@ const Orders = () => {
                               e.target.value,
                             )
                           }
-                          className="w-full px-3 py-1.5 text-sm border-2 border-red-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-300 focus:border-transparent bg-white"
+                          className="w-full px-3 py-1.5 text-sm border-2 border-red-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-300 focus:border-transparent bg-white text-black"
                         />
                       </div>
                     )}
