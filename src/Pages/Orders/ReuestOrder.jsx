@@ -239,13 +239,6 @@ const CustomerRequestModal = ({ requestNumber, onClose, onRefresh }) => {
       showToast(`${selectedItem.name} tayari imeorodheshwa`, "error");
       return;
     }
-    if (selectedItem.itemQuantity < newItem.quantity) {
-      showToast(
-        `${selectedItem.name} zilizobaki ni ${selectedItem.itemQuantity} tu`,
-        "error",
-      );
-      return;
-    }
     setAmendmentData((prev) => ({
       ...prev,
       items: [
@@ -324,14 +317,18 @@ const CustomerRequestModal = ({ requestNumber, onClose, onRefresh }) => {
 
   const getStatusIcon = (status) => {
     const iconMap = {
-      "Pending Review": <FaClock className="w-5 h-5" />,
-      "Awaiting Customer Confirmation": <FaHourglassHalf className="w-5 h-5" />,
-      Accepted: <FaCheckCircle className="w-5 h-5" />,
-      Converted: <FaCheckCircle className="w-5 h-5" />,
-      Rejected: <FaTimesIcon className="w-5 h-5" />,
-      Cancelled: <FaTimesIcon className="w-5 h-5" />,
+      "Pending Review": <FaClock className="w-4 h-4 sm:w-5 sm:h-5" />,
+      "Awaiting Customer Confirmation": (
+        <FaHourglassHalf className="w-4 h-4 sm:w-5 sm:h-5" />
+      ),
+      Accepted: <FaCheckCircle className="w-4 h-4 sm:w-5 sm:h-5" />,
+      Converted: <FaCheckCircle className="w-4 h-4 sm:w-5 sm:h-5" />,
+      Rejected: <FaTimesIcon className="w-4 h-4 sm:w-5 sm:h-5" />,
+      Cancelled: <FaTimesIcon className="w-4 h-4 sm:w-5 sm:h-5" />,
     };
-    return iconMap[status] || <FaInfoCircle className="w-5 h-5" />;
+    return (
+      iconMap[status] || <FaInfoCircle className="w-4 h-4 sm:w-5 sm:h-5" />
+    );
   };
 
   const getItemStatusBadge = (status) => {
@@ -404,7 +401,6 @@ const CustomerRequestModal = ({ requestNumber, onClose, onRefresh }) => {
         />
       )}
       <div className="bg-white rounded-2xl w-full max-w-3xl shadow-2xl max-h-[90vh] overflow-y-auto">
-        {/* Header */}
         <div className="sticky top-0 z-10 bg-white px-4 sm:px-6 py-4 border-b border-gray-200 rounded-t-2xl">
           <div className="flex justify-between items-center">
             <div className="flex items-center gap-3 min-w-0">
@@ -412,10 +408,10 @@ const CustomerRequestModal = ({ requestNumber, onClose, onRefresh }) => {
                 <FaStore className="text-white text-lg" />
               </div>
               <div className="min-w-0">
-                <h2 className="text-lg font-bold text-gray-800 truncate">
+                <h2 className="text-base sm:text-lg font-bold text-gray-800 truncate">
                   Hali ya Order
                 </h2>
-                <p className="text-sm text-gray-500 font-mono truncate">
+                <p className="text-xs sm:text-sm text-gray-500 font-mono truncate">
                   {request.requestNumber}
                 </p>
               </div>
@@ -424,18 +420,16 @@ const CustomerRequestModal = ({ requestNumber, onClose, onRefresh }) => {
               onClick={onClose}
               className="p-2 hover:bg-gray-100 rounded-lg transition-colors text-gray-500 hover:text-gray-700 flex-shrink-0"
             >
-              <FaTimes className="w-5 h-5" />
+              <FaTimes className="w-4 h-4 sm:w-5 sm:h-5" />
             </button>
           </div>
         </div>
 
-        {/* Body */}
         <div className="p-4 sm:p-6 space-y-6">
-          {/* Status Badge */}
-          <div className="flex flex-wrap items-center gap-3">
+          <div className="flex flex-wrap items-center gap-2 sm:gap-3">
             {request.source && (
               <span
-                className={`text-xs px-3 py-1 rounded-full font-medium ${getSourceBadge(request.source)} flex items-center gap-1`}
+                className={`text-xs px-2 sm:px-3 py-1 rounded-full font-medium ${getSourceBadge(request.source)} flex items-center gap-1`}
               >
                 {getSourceIcon(request.source)}
                 {request.source === "Website"
@@ -446,19 +440,35 @@ const CustomerRequestModal = ({ requestNumber, onClose, onRefresh }) => {
               </span>
             )}
             <span
-              className={`inline-flex items-center gap-1.5 px-4 py-2 rounded-full text-sm font-semibold border ${getStatusBadge(request.status)}`}
+              className={`inline-flex items-center gap-1.5 px-3 sm:px-4 py-1.5 sm:py-2 rounded-full text-xs sm:text-sm font-semibold border ${getStatusBadge(request.status)}`}
             >
               {getStatusIcon(request.status)}
-              {getStatusDisplayName(request.status)}
+              <span className="hidden xs:inline">
+                {getStatusDisplayName(request.status)}
+              </span>
+              <span className="xs:hidden">
+                {request.status === "Pending Review"
+                  ? "Inakaguliwa"
+                  : request.status === "Awaiting Customer Confirmation"
+                    ? "Inasubiri"
+                    : request.status === "Accepted"
+                      ? "Imekubaliwa"
+                      : request.status === "Converted"
+                        ? "Inaandaliwa"
+                        : request.status === "Rejected"
+                          ? "Imekataliwa"
+                          : request.status === "Cancelled"
+                            ? "Imefutwa"
+                            : request.status}
+              </span>
             </span>
             {request.reviewCycle && request.reviewCycle > 1 && (
-              <span className="text-xs bg-purple-100 text-purple-700 px-3 py-1 rounded-full font-medium">
+              <span className="text-xs bg-purple-100 text-purple-700 px-2 sm:px-3 py-1 rounded-full font-medium">
                 Mzunguko {request.reviewCycle}
               </span>
             )}
           </div>
 
-          {/* Status Messages */}
           {request.status === "Awaiting Customer Confirmation" &&
             !isAmending && (
               <div className="bg-blue-50 border-2 border-blue-200 rounded-xl p-4">
@@ -478,21 +488,21 @@ const CustomerRequestModal = ({ requestNumber, onClose, onRefresh }) => {
                       <button
                         onClick={handleAcceptRequest}
                         disabled={actionLoading}
-                        className="px-5 py-2 bg-emerald-500 text-white font-semibold rounded-lg hover:bg-emerald-600 hover:shadow-lg transition-all duration-300 disabled:opacity-50 flex items-center gap-2 text-sm"
+                        className="px-4 sm:px-5 py-2 bg-emerald-500 text-white font-semibold rounded-lg hover:bg-emerald-600 hover:shadow-lg transition-all duration-300 disabled:opacity-50 flex items-center gap-2 text-xs sm:text-sm"
                       >
                         {actionLoading ? (
                           <FaSpinner className="animate-spin" />
                         ) : (
-                          <FaCheck className="w-4 h-4" />
+                          <FaCheck className="w-3 h-3 sm:w-4 sm:h-4" />
                         )}
                         Kubali
                       </button>
                       <button
                         onClick={() => setIsAmending(true)}
                         disabled={actionLoading}
-                        className="px-5 py-2 bg-blue-500 text-white font-semibold rounded-lg hover:bg-blue-600 hover:shadow-lg transition-all duration-300 disabled:opacity-50 flex items-center gap-2 text-sm"
+                        className="px-4 sm:px-5 py-2 bg-blue-500 text-white font-semibold rounded-lg hover:bg-blue-600 hover:shadow-lg transition-all duration-300 disabled:opacity-50 flex items-center gap-2 text-xs sm:text-sm"
                       >
-                        <FaEdit className="w-4 h-4" />
+                        <FaEdit className="w-3 h-3 sm:w-4 sm:h-4" />
                         Rekebisha
                       </button>
                     </div>
@@ -501,7 +511,6 @@ const CustomerRequestModal = ({ requestNumber, onClose, onRefresh }) => {
               </div>
             )}
 
-          {/* Amendment Form */}
           {isAmending && (
             <div className="bg-gray-50 rounded-xl p-4 border border-gray-200">
               <div className="flex items-center justify-between mb-4">
@@ -682,7 +691,6 @@ const CustomerRequestModal = ({ requestNumber, onClose, onRefresh }) => {
             </div>
           )}
 
-          {/* Customer Info */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 p-4 bg-gray-50 rounded-xl border border-gray-200">
             <div className="flex items-center gap-3">
               <FaUser className="text-emerald-500 flex-shrink-0" />
@@ -735,7 +743,6 @@ const CustomerRequestModal = ({ requestNumber, onClose, onRefresh }) => {
             )}
           </div>
 
-          {/* Items List */}
           <div className="border border-gray-200 rounded-xl overflow-hidden">
             <button
               onClick={() =>
@@ -830,7 +837,6 @@ const CustomerRequestModal = ({ requestNumber, onClose, onRefresh }) => {
             )}
           </div>
 
-          {/* Review Information */}
           {request.reviewedBy && (
             <div className="border border-gray-200 rounded-xl overflow-hidden">
               <button
@@ -905,7 +911,6 @@ const CustomerRequestModal = ({ requestNumber, onClose, onRefresh }) => {
             </div>
           )}
 
-          {/* Amendment History */}
           {request.amendmentHistory?.length > 0 && (
             <div className="border border-gray-200 rounded-xl overflow-hidden">
               <button
@@ -1010,7 +1015,6 @@ const CustomerRequestModal = ({ requestNumber, onClose, onRefresh }) => {
             </div>
           )}
 
-          {/* Notes */}
           {request.notes && (
             <div className="p-3 bg-amber-50 rounded-lg border border-amber-200">
               <div className="flex items-start gap-2">
@@ -1027,7 +1031,6 @@ const CustomerRequestModal = ({ requestNumber, onClose, onRefresh }) => {
             </div>
           )}
 
-          {/* Timeline */}
           {request.timeline?.length > 0 && (
             <div>
               <h3 className="text-sm font-semibold text-gray-700 mb-3 flex items-center gap-2">
@@ -1101,6 +1104,11 @@ const RequestOrder = () => {
   const [statusLoading, setStatusLoading] = useState(false);
   const [statusError, setStatusError] = useState("");
 
+  const [phoneError, setPhoneError] = useState("");
+  const [nameError, setNameError] = useState("");
+  const [dateError, setDateError] = useState("");
+  const [cartError, setCartError] = useState("");
+
   useEffect(() => {
     fetchItems();
   }, []);
@@ -1147,18 +1155,22 @@ const RequestOrder = () => {
           itemId: item._id,
           name: item.name,
           quantity: 1,
-          price: item.price,
-          wholesalePrice: item.wholesalePrice,
-          enableWholesale: item.enableWholesale,
-          wholesaleMinQty: item.wholesaleMinQty,
-          stock: item.itemQuantity,
+          price: item.price || 0,
+          wholesalePrice: item.wholesalePrice || 0,
+          enableWholesale: item.enableWholesale || false,
+          wholesaleMinQty: item.wholesaleMinQty || 0,
+          stock: item.itemQuantity || 0,
         },
       ];
     });
+    setCartError("");
   };
 
   const removeFromCart = (itemId) => {
     setCart((prev) => prev.filter((c) => c.itemId !== itemId));
+    if (cart.length <= 1) {
+      setCartError("");
+    }
   };
 
   const updateQuantity = (itemId, qty) => {
@@ -1169,10 +1181,6 @@ const RequestOrder = () => {
     setCart((prev) =>
       prev.map((c) => {
         if (c.itemId === itemId) {
-          if (qty > c.stock) {
-            showToast(`${c.name} zilizobaki ni ${c.stock} tu.`, "error");
-            return c;
-          }
           return { ...c, quantity: qty };
         }
         return c;
@@ -1180,55 +1188,83 @@ const RequestOrder = () => {
     );
   };
 
+  const validatePhone = (phone) => {
+    setCustomerPhone(phone);
+    if (phone.trim() === "") {
+      setPhoneError("Namba ya simu inahitajika");
+    } else if (!/^[0-9+\-\s()]{10,15}$/.test(phone.trim())) {
+      setPhoneError("Namba ya simu lazima iwe na tarakimu 10-15");
+    } else {
+      setPhoneError("");
+    }
+  };
+
+  const validateName = (name) => {
+    setCustomerName(name);
+    if (name.trim() === "") {
+      setNameError("Jina kamili linahitajika");
+    } else {
+      setNameError("");
+    }
+  };
+
+  const validateDate = (date) => {
+    setRequestedDeliveryDate(date);
+    if (!date) {
+      setDateError("Tarehe ya uwasilishaji inahitajika");
+    } else {
+      const selectedDate = new Date(date);
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      if (selectedDate < today) {
+        setDateError("Tarehe ya uwasilishaji haiwezi kuwa ya nyuma");
+      } else {
+        setDateError("");
+      }
+    }
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
+
+    let hasError = false;
+
     if (!customerName.trim()) {
-      showToast("Tafadhali ingiza jina lako kamili", "error");
-      return;
+      setNameError("Jina kamili linahitajika");
+      hasError = true;
     }
+
     if (!customerPhone.trim()) {
-      showToast("Tafadhali ingiza namba yako ya simu", "error");
-      return;
+      setPhoneError("Namba ya simu inahitajika");
+      hasError = true;
+    } else if (!/^[0-9+\-\s()]{10,15}$/.test(customerPhone.trim())) {
+      setPhoneError("Namba ya simu lazima iwe na tarakimu 10-15");
+      hasError = true;
     }
-    if (!/^[0-9+\-\s()]{10,15}$/.test(customerPhone.trim())) {
-      showToast(
-        "Tafadhali ingiza namba halali ya simu (10-15 tarakimu)",
-        "error",
-      );
-      return;
-    }
+
     if (!requestedDeliveryDate) {
-      showToast("Tafadhali chagua tarehe ya uwasilishaji", "error");
-      return;
+      setDateError("Tarehe ya uwasilishaji inahitajika");
+      hasError = true;
+    } else {
+      const selectedDate = new Date(requestedDeliveryDate);
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      if (selectedDate < today) {
+        setDateError("Tarehe ya uwasilishaji haiwezi kuwa ya nyuma");
+        hasError = true;
+      }
     }
-    const selectedDate = new Date(requestedDeliveryDate);
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    if (selectedDate < today) {
-      showToast("Tarehe ya uwasilishaji haiwezi kuwa ya nyuma", "error");
-      return;
-    }
+
     if (cart.length === 0) {
-      showToast(
-        "Tafadhali ongeza angalau bidhaa moja kwenye ombi lako",
-        "error",
-      );
+      setCartError("Tafadhali ongeza angalau bidhaa moja");
+      hasError = true;
+    }
+
+    if (hasError) {
+      showToast("Tafadhali rekebisha makosa yaliyoonyeshwa", "error");
       return;
     }
-    for (const cartItem of cart) {
-      const item = items.find((i) => i._id === cartItem.itemId);
-      if (!item) {
-        showToast(`Bidhaa ${cartItem.name} haipo tena.`, "error");
-        return;
-      }
-      if (item.itemQuantity < cartItem.quantity) {
-        showToast(
-          `${item.name} zilizobaki ni ${item.itemQuantity} tu.`,
-          "error",
-        );
-        return;
-      }
-    }
+
     setLoading(true);
     try {
       const res = await axios.post(`${BASE_URL}/api/orders/addRequests`, {
@@ -1280,6 +1316,10 @@ const RequestOrder = () => {
     setRequestedDeliveryDate("");
     setCart([]);
     setShowOrderPage(false);
+    setPhoneError("");
+    setNameError("");
+    setDateError("");
+    setCartError("");
   };
 
   const goBackToWelcome = () => {
@@ -1289,10 +1329,14 @@ const RequestOrder = () => {
     setCustomerPhone("");
     setNotes("");
     setRequestedDeliveryDate("");
+    setPhoneError("");
+    setNameError("");
+    setDateError("");
+    setCartError("");
   };
 
   const calculateItemTotal = (cartItem) => {
-    let unitPrice = cartItem.price;
+    let unitPrice = cartItem.price || 0;
     if (
       cartItem.enableWholesale &&
       cartItem.quantity >= cartItem.wholesaleMinQty &&
@@ -1318,6 +1362,121 @@ const RequestOrder = () => {
       .replace("TZS", "TSh");
   };
 
+  const handlePrintOrSave = () => {
+    const printContent = `
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; text-align: center;">
+        <div style="background: linear-gradient(135deg, #10b981, #14b8a6); padding: 30px; border-radius: 12px; color: white; margin-bottom: 20px;">
+          <h1 style="margin: 0; font-size: 28px;">✓ ORDER CONFIRMED</h1>
+          <p style="margin: 10px 0 0; opacity: 0.9;">Your order has been submitted successfully!</p>
+        </div>
+        
+        <div style="background: #f0fdf4; border: 2px solid #10b981; border-radius: 12px; padding: 20px; margin: 20px 0;">
+          <h3 style="color: #065f46; margin: 0 0 10px;">Order Number</h3>
+          <p style="font-size: 24px; font-weight: bold; color: #065f46; margin: 0; word-break: break-all; font-family: monospace;">
+            ${requestNumber}
+          </p>
+          <p style="color: #6b7280; font-size: 12px; margin-top: 10px;">
+            Please save this number to track your order
+          </p>
+        </div>
+        
+        <div style="background: #f9fafb; border-radius: 12px; padding: 15px; margin: 20px 0; text-align: left;">
+          <h4 style="color: #374151; margin: 0 0 10px;">Order Summary</h4>
+          <p style="color: #6b7280; font-size: 14px; margin: 5px 0;">
+            <strong>Customer:</strong> ${customerName}
+          </p>
+          <p style="color: #6b7280; font-size: 14px; margin: 5px 0;">
+            <strong>Phone:</strong> ${customerPhone}
+          </p>
+          <p style="color: #6b7280; font-size: 14px; margin: 5px 0;">
+            <strong>Delivery Date:</strong> ${new Date(requestedDeliveryDate).toLocaleDateString("sw-TZ", { year: "numeric", month: "long", day: "numeric" })}
+          </p>
+          <p style="color: #6b7280; font-size: 14px; margin: 5px 0;">
+            <strong>Total Items:</strong> ${cart.length}
+          </p>
+          <div style="margin-top: 10px; border-top: 1px solid #e5e7eb; padding-top: 10px;">
+            <p style="color: #6b7280; font-size: 14px; margin: 5px 0;">
+              <strong>Items:</strong>
+            </p>
+            <ul style="color: #6b7280; font-size: 13px; list-style: none; padding: 0;">
+              ${cart
+                .map(
+                  (item) => `
+                <li style="padding: 4px 0; border-bottom: 1px solid #f3f4f6;">
+                  ${item.name} × ${item.quantity} - ${formatCurrency(calculateItemTotal(item))}
+                </li>
+              `,
+                )
+                .join("")}
+            </ul>
+          </div>
+          ${
+            notes
+              ? `
+            <div style="margin-top: 10px; border-top: 1px solid #e5e7eb; padding-top: 10px;">
+              <p style="color: #6b7280; font-size: 14px; margin: 5px 0;">
+                <strong>Notes:</strong> ${notes}
+              </p>
+            </div>
+          `
+              : ""
+          }
+          <div style="margin-top: 10px; border-top: 1px solid #e5e7eb; padding-top: 10px;">
+            <p style="color: #6b7280; font-size: 14px; margin: 5px 0;">
+              <strong>Total Amount:</strong> ${formatCurrency(cartTotal)}
+            </p>
+          </div>
+        </div>
+        
+        <div style="background: #fef3c7; border: 1px solid #f59e0b; border-radius: 12px; padding: 12px; margin: 20px 0;">
+          <p style="color: #92400e; font-size: 13px; margin: 0;">
+            💡 Keep this receipt for your records. You can track your order using the order number above.
+          </p>
+        </div>
+        
+        <div style="margin-top: 30px; padding-top: 20px; border-top: 2px solid #e5e7eb;">
+          <p style="color: #6b7280; font-size: 12px; margin: 0;">
+            Generated on ${new Date().toLocaleString("sw-TZ")}
+          </p>
+          <p style="color: #9ca3af; font-size: 11px; margin: 5px 0 0;">
+            UZA ONLINE SHOP
+          </p>
+        </div>
+      </div>
+    `;
+
+    const printWindow = window.open("", "_blank", "width=600,height=800");
+    if (printWindow) {
+      printWindow.document.write(`
+        <html>
+          <head>
+            <title>Order ${requestNumber}</title>
+            <style>
+              @media print {
+                body { margin: 0; padding: 20px; }
+                .no-print { display: none !important; }
+              }
+            </style>
+          </head>
+          <body>
+            ${printContent}
+            <div class="no-print" style="text-align: center; margin-top: 30px;">
+              <button onclick="window.print()" style="padding: 12px 30px; background: #10b981; color: white; border: none; border-radius: 8px; font-size: 16px; cursor: pointer; margin: 0 10px;">
+                🖨️ Print / Save as PDF
+              </button>
+              <button onclick="window.close()" style="padding: 12px 30px; background: #6b7280; color: white; border: none; border-radius: 8px; font-size: 16px; cursor: pointer; margin: 0 10px;">
+                ✕ Close
+              </button>
+            </div>
+          </body>
+        </html>
+      `);
+      printWindow.document.close();
+    } else {
+      window.print();
+    }
+  };
+
   // Welcome Page
   if (!showOrderPage && !submitted) {
     return (
@@ -1338,20 +1497,20 @@ const RequestOrder = () => {
         )}
         <div className="max-w-2xl w-full">
           <div className="bg-white rounded-3xl shadow-2xl p-6 sm:p-12 text-center border border-gray-100">
-            <div className="w-24 h-24 sm:w-28 sm:h-28 bg-gradient-to-br from-emerald-400 to-teal-400 rounded-2xl flex items-center justify-center mx-auto mb-6 shadow-xl shadow-emerald-200">
-              <FaStore className="text-white text-4xl sm:text-5xl" />
+            <div className="w-20 h-20 sm:w-28 sm:h-28 bg-gradient-to-br from-emerald-400 to-teal-400 rounded-2xl flex items-center justify-center mx-auto mb-6 shadow-xl shadow-emerald-200">
+              <FaStore className="text-white text-3xl sm:text-5xl" />
             </div>
-            <h1 className="text-3xl sm:text-5xl font-extrabold text-gray-800 mb-2">
+            <h1 className="text-2xl sm:text-5xl font-extrabold text-gray-800 mb-2">
               UZA{" "}
               <span className="text-transparent bg-gradient-to-r from-emerald-600 to-teal-600 bg-clip-text">
                 ONLINE SHOP
               </span>
             </h1>
             <div className="h-1 w-20 bg-gradient-to-r from-emerald-400 to-teal-400 rounded-full mx-auto mb-4"></div>
-            <p className="text-gray-600 text-base sm:text-lg mb-1">
+            <p className="text-gray-600 text-sm sm:text-lg mb-1">
               Karibu kwenye duka lako la mtandaoni
             </p>
-            <p className="text-gray-400 text-sm mb-8">
+            <p className="text-gray-400 text-xs sm:text-sm mb-8">
               Bidhaa bora, zinawasilishwa kwa uangalifu
             </p>
             <div className="space-y-4">
@@ -1362,7 +1521,7 @@ const RequestOrder = () => {
                 }}
                 className="w-full bg-gradient-to-r from-emerald-500 to-teal-500 text-white font-semibold py-4 px-6 rounded-xl hover:shadow-xl hover:shadow-emerald-200 transition-all duration-300 hover:scale-[1.02] active:scale-95 flex items-center justify-center gap-3 text-base sm:text-lg"
               >
-                <FaShoppingBag className="text-xl" />
+                <FaShoppingBag className="text-lg sm:text-xl" />
                 Anza Ombi Lako
                 <FaArrowRight className="text-sm" />
               </button>
@@ -1389,7 +1548,7 @@ const RequestOrder = () => {
                   <div className="flex-1 w-full flex flex-col sm:flex-row gap-2">
                     <input
                       type="text"
-                      placeholder="Ingiza namba ya Order (mfano: REQ-20260115-0001)"
+                      placeholder="Ingiza namba ya Order"
                       value={checkNumber}
                       onChange={(e) => setCheckNumber(e.target.value)}
                       onKeyPress={(e) => e.key === "Enter" && checkStatus()}
@@ -1441,18 +1600,24 @@ const RequestOrder = () => {
             onClose={() => setToast(null)}
           />
         )}
+        {showRequestModal && (
+          <CustomerRequestModal
+            requestNumber={modalRequestNumber}
+            onClose={closeRequestModal}
+          />
+        )}
         <div className="max-w-md w-full bg-white rounded-3xl shadow-2xl p-6 sm:p-10 text-center border border-gray-100">
-          <div className="w-24 h-24 bg-gradient-to-br from-emerald-400 to-teal-400 rounded-full flex items-center justify-center mx-auto mb-6 shadow-xl shadow-emerald-200 animate-bounce">
-            <FaCheckCircle className="text-white text-5xl" />
+          <div className="w-20 h-20 sm:w-24 sm:h-24 bg-gradient-to-br from-emerald-400 to-teal-400 rounded-full flex items-center justify-center mx-auto mb-6 shadow-xl shadow-emerald-200 animate-bounce">
+            <FaCheckCircle className="text-white text-4xl sm:text-5xl" />
           </div>
-          <h2 className="text-2xl sm:text-3xl font-bold text-gray-800 mb-2">
+          <h2 className="text-xl sm:text-3xl font-bold text-gray-800 mb-2">
             Ombi Limetumwa! 🎉
           </h2>
           <p className="text-gray-600 mb-1">Namba yako ya ombi:</p>
-          <p className="text-xl sm:text-2xl font-mono font-bold text-transparent bg-gradient-to-r from-emerald-600 to-teal-600 bg-clip-text mb-4 break-all">
+          <p className="text-base sm:text-2xl font-mono font-bold text-transparent bg-gradient-to-r from-emerald-600 to-teal-600 bg-clip-text mb-4 break-all">
             {requestNumber}
           </p>
-          <div className="bg-gradient-to-r from-emerald-50 to-teal-50 rounded-xl p-5 mb-8 border border-emerald-200">
+          <div className="bg-gradient-to-r from-emerald-50 to-teal-50 rounded-xl p-4 sm:p-5 mb-8 border border-emerald-200">
             <p className="text-sm text-gray-700">
               📌 Hifadhi namba hii ili kuangalia hali ya ombi lako baadaye.
             </p>
@@ -1464,12 +1629,44 @@ const RequestOrder = () => {
               Fukilia ombi hili
             </button>
           </div>
+
+          <div className="flex flex-col gap-3 mb-6">
+            <button
+              onClick={handlePrintOrSave}
+              className="w-full bg-gradient-to-r from-blue-500 to-indigo-500 text-white font-semibold py-3.5 sm:py-4 px-4 sm:px-6 rounded-xl hover:shadow-xl hover:shadow-blue-200 transition-all duration-300 hover:scale-[1.02] active:scale-95 flex items-center justify-center gap-3 text-sm sm:text-base"
+            >
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                className="w-5 h-5"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"
+                />
+              </svg>
+              <span>Chapisha / Hifadhi</span>
+            </button>
+
+            <button
+              onClick={resetForm}
+              className="w-full bg-gradient-to-r from-emerald-500 to-teal-500 text-white font-semibold py-3.5 sm:py-4 px-4 sm:px-6 rounded-xl hover:shadow-xl hover:shadow-emerald-200 transition-all duration-300 hover:scale-[1.02] active:scale-95 flex items-center justify-center gap-3 text-sm sm:text-base"
+            >
+              <FaPlus className="w-4 h-4 sm:w-5 sm:h-5" />
+              Weka Ombi Lingine
+            </button>
+          </div>
+
           <button
-            onClick={resetForm}
-            className="w-full bg-gradient-to-r from-emerald-500 to-teal-500 text-white font-semibold py-3.5 px-6 rounded-xl hover:shadow-xl hover:shadow-emerald-200 transition-all duration-300 hover:scale-[1.02] active:scale-95 flex items-center justify-center gap-2"
+            onClick={() => openRequestModal(requestNumber)}
+            className="text-sm text-emerald-600 hover:text-emerald-700 transition-colors flex items-center justify-center gap-2 mx-auto border border-emerald-200 bg-emerald-50 px-4 py-2.5 rounded-lg hover:bg-emerald-100 w-full"
           >
-            <FaPlus className="w-4 h-4" />
-            Weka Ombi Lingine
+            <FaSearch className="w-4 h-4" />
+            Angalia Hali ya Ombi
           </button>
         </div>
       </div>
@@ -1493,22 +1690,21 @@ const RequestOrder = () => {
         />
       )}
 
-      {/* Header */}
       <div className="bg-white border-b border-gray-200 sticky top-0 z-30 shadow-sm">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 py-3 sm:py-5">
+        <div className="max-w-7xl mx-auto px-3 sm:px-6 py-3 sm:py-5">
           <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3 sm:gap-4 min-w-0">
+            <div className="flex items-center gap-2 sm:gap-4 min-w-0">
               <button
                 onClick={goBackToWelcome}
-                className="p-2 hover:bg-gray-100 rounded-xl transition-colors text-gray-600 hover:text-gray-800 flex-shrink-0"
+                className="p-1.5 sm:p-2 hover:bg-gray-100 rounded-xl transition-colors text-gray-600 hover:text-gray-800 flex-shrink-0"
               >
                 <FaArrowLeft className="text-base sm:text-lg" />
               </button>
-              <div className="p-2.5 bg-gradient-to-br from-emerald-500 to-teal-500 rounded-xl shadow-lg shadow-emerald-200 flex-shrink-0">
-                <FaStore className="text-white text-lg sm:text-xl" />
+              <div className="p-2 sm:p-2.5 bg-gradient-to-br from-emerald-500 to-teal-500 rounded-xl shadow-lg shadow-emerald-200 flex-shrink-0">
+                <FaStore className="text-white text-base sm:text-xl" />
               </div>
               <div className="min-w-0">
-                <h1 className="text-lg sm:text-2xl font-bold text-gray-800 truncate">
+                <h1 className="text-base sm:text-2xl font-bold text-gray-800 truncate">
                   Weka Order
                 </h1>
                 <p className="text-[10px] sm:text-xs text-gray-500 hidden sm:block">
@@ -1518,14 +1714,14 @@ const RequestOrder = () => {
             </div>
             <button
               onClick={() => setIsCartOpen(!isCartOpen)}
-              className="lg:hidden relative bg-emerald-50 px-3 sm:px-4 py-2 rounded-full border border-emerald-200 flex items-center gap-2 hover:bg-emerald-100 transition-colors flex-shrink-0"
+              className="lg:hidden relative bg-emerald-50 px-3 sm:px-4 py-1.5 sm:py-2 rounded-full border border-emerald-200 flex items-center gap-2 hover:bg-emerald-100 transition-colors flex-shrink-0"
             >
-              <FaShoppingCart className="text-emerald-600" />
-              <span className="font-semibold text-emerald-700">
+              <FaShoppingCart className="text-emerald-600 text-sm sm:text-base" />
+              <span className="font-semibold text-emerald-700 text-sm">
                 {cart.length}
               </span>
               {cart.length > 0 && (
-                <span className="absolute -top-1 -right-1 w-2.5 h-2.5 bg-red-500 rounded-full animate-pulse"></span>
+                <span className="absolute -top-1 -right-1 w-2 h-2 sm:w-2.5 sm:h-2.5 bg-red-500 rounded-full animate-pulse"></span>
               )}
             </button>
             {cart.length > 0 && (
@@ -1544,22 +1740,20 @@ const RequestOrder = () => {
         </div>
       </div>
 
-      {/* Main Content */}
-      <div className="max-w-8xl mx-auto px-4 sm:px-6 py-4 sm:py-6 lg:py-10">
-        {/* Mobile/Tablet Tabs */}
+      <div className="max-w-7xl mx-auto px-3 sm:px-6 py-4 sm:py-6 lg:py-10">
         <div className="lg:hidden mb-6">
           <div className="bg-white rounded-2xl shadow-md p-1 flex gap-1">
             <button
               onClick={() => setActiveTab("items")}
-              className={`flex-1 py-3 px-4 rounded-xl font-medium text-sm transition-all duration-300 ${
+              className={`flex-1 py-2.5 sm:py-3 px-3 sm:px-4 rounded-xl font-medium text-xs sm:text-sm transition-all duration-300 ${
                 activeTab === "items"
                   ? "bg-gradient-to-r from-emerald-500 to-teal-500 text-white shadow-lg shadow-emerald-200"
                   : "text-gray-600 hover:bg-gray-50"
               }`}
             >
-              <div className="flex items-center justify-center gap-2">
-                <FaBoxOpen className="text-sm" />
-                Bidhaa
+              <div className="flex items-center justify-center gap-1.5 sm:gap-2">
+                <FaBoxOpen className="text-xs sm:text-sm" />
+                <span>Bidhaa</span>
                 <span className="text-xs opacity-75">
                   ({filteredItems.length})
                 </span>
@@ -1567,15 +1761,15 @@ const RequestOrder = () => {
             </button>
             <button
               onClick={() => setActiveTab("cart")}
-              className={`flex-1 py-3 px-4 rounded-xl font-medium text-sm transition-all duration-300 ${
+              className={`flex-1 py-2.5 sm:py-3 px-3 sm:px-4 rounded-xl font-medium text-xs sm:text-sm transition-all duration-300 ${
                 activeTab === "cart"
                   ? "bg-gradient-to-r from-emerald-500 to-teal-500 text-white shadow-lg shadow-emerald-200"
                   : "text-gray-600 hover:bg-gray-50"
               }`}
             >
-              <div className="flex items-center justify-center gap-2">
-                <FaShoppingCart className="text-sm" />
-                Order
+              <div className="flex items-center justify-center gap-1.5 sm:gap-2">
+                <FaShoppingCart className="text-xs sm:text-sm" />
+                <span>Order</span>
                 <span className="text-xs opacity-75">({cart.length})</span>
               </div>
             </button>
@@ -1583,34 +1777,32 @@ const RequestOrder = () => {
         </div>
 
         <div className="lg:grid lg:grid-cols-3 lg:gap-8">
-          {/* Left Column - Items */}
           <div
             className={`lg:col-span-2 ${activeTab === "cart" ? "hidden lg:block" : "block"}`}
           >
-            {/* Status Checker */}
             <div className="bg-white rounded-2xl shadow-md p-4 sm:p-6 mb-6 border border-gray-100">
               <div className="flex flex-col gap-4">
                 <div className="flex items-center gap-2 text-gray-700">
                   <div className="p-2 bg-emerald-100 rounded-lg flex-shrink-0">
                     <FaSearch className="text-emerald-600" />
                   </div>
-                  <span className="text-base font-semibold">
+                  <span className="text-sm sm:text-base font-semibold">
                     Fuatilia Order Yako
                   </span>
                 </div>
                 <div className="flex flex-col sm:flex-row gap-3">
                   <input
                     type="text"
-                    placeholder="Ingiza namba ya Order (mfano: REQ-20260115-0001)"
+                    placeholder="Ingiza namba ya Order"
                     value={checkNumber}
                     onChange={(e) => setCheckNumber(e.target.value)}
                     onKeyPress={(e) => e.key === "Enter" && checkStatus()}
-                    className="flex-1 w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-emerald-400 focus:ring-2 focus:ring-emerald-200 outline-none transition-all text-sm bg-white"
+                    className="flex-1 w-full px-4 py-2.5 sm:py-3 rounded-xl border border-gray-200 focus:border-emerald-400 focus:ring-2 focus:ring-emerald-200 outline-none transition-all text-sm bg-white"
                   />
                   <button
                     onClick={checkStatus}
                     disabled={statusLoading}
-                    className="w-full sm:w-auto px-6 sm:px-8 py-3 bg-gradient-to-r from-emerald-500 to-teal-500 text-white font-medium rounded-xl hover:shadow-lg hover:shadow-emerald-200 transition-all duration-300 hover:scale-[1.02] active:scale-95 disabled:opacity-50 text-sm whitespace-nowrap flex items-center justify-center gap-2"
+                    className="w-full sm:w-auto px-6 sm:px-8 py-2.5 sm:py-3 bg-gradient-to-r from-emerald-500 to-teal-500 text-white font-medium rounded-xl hover:shadow-lg hover:shadow-emerald-200 transition-all duration-300 hover:scale-[1.02] active:scale-95 disabled:opacity-50 text-sm whitespace-nowrap flex items-center justify-center gap-2"
                   >
                     {statusLoading ? (
                       <FaSpinner className="animate-spin" />
@@ -1634,18 +1826,17 @@ const RequestOrder = () => {
               )}
             </div>
 
-            {/* Items Grid */}
             <div>
               <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-6 gap-3">
                 <div>
-                  <h2 className="text-xl sm:text-2xl font-bold text-gray-800">
+                  <h2 className="text-lg sm:text-2xl font-bold text-gray-800">
                     Bidhaa Zilizopo
                   </h2>
-                  <p className="text-sm text-gray-500">
+                  <p className="text-xs sm:text-sm text-gray-500">
                     Chagua bidhaa kuongeza kwenye Order yako
                   </p>
                 </div>
-                <span className="text-sm text-gray-400 bg-white px-4 py-1.5 rounded-full border border-gray-200 whitespace-nowrap">
+                <span className="text-xs sm:text-sm text-gray-400 bg-white px-3 sm:px-4 py-1.5 rounded-full border border-gray-200 whitespace-nowrap">
                   {filteredItems.length} bidhaa
                 </span>
               </div>
@@ -1658,7 +1849,7 @@ const RequestOrder = () => {
                     placeholder="Tafuta bidhaa kwa jina..."
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
-                    className="w-full pl-12 pr-12 py-3.5 rounded-xl border border-gray-200 focus:border-emerald-400 focus:ring-2 focus:ring-emerald-200 outline-none transition-all bg-white text-sm"
+                    className="w-full pl-10 sm:pl-12 pr-10 sm:pr-12 py-3 sm:py-3.5 rounded-xl border border-gray-200 focus:border-emerald-400 focus:ring-2 focus:ring-emerald-200 outline-none transition-all bg-white text-sm"
                   />
                   {searchTerm && (
                     <button
@@ -1676,26 +1867,26 @@ const RequestOrder = () => {
                 )}
               </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 gap-4">
+              <div className="grid grid-cols-1 xs:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 gap-3 sm:gap-4">
                 {filteredItems.map((item) => (
                   <div
                     key={item._id}
                     className="group bg-white rounded-2xl shadow-sm hover:shadow-xl transition-all duration-300 border border-gray-200 hover:border-emerald-300 overflow-hidden"
                   >
-                    <div className="p-4 sm:p-5">
+                    <div className="p-3 sm:p-5">
                       <div className="flex items-start justify-between mb-3">
                         <div className="flex-1 min-w-0">
-                          <h3 className="text-base font-semibold text-gray-800 group-hover:text-emerald-600 transition-colors truncate">
+                          <h3 className="text-sm sm:text-base font-semibold text-gray-800 group-hover:text-emerald-600 transition-colors truncate">
                             {item.name}
                           </h3>
                         </div>
-                        <div className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 group-hover:scale-110 transition-transform bg-gradient-to-br from-emerald-50 to-teal-50 border border-emerald-100">
-                          <FaBoxOpen className="text-lg text-emerald-500" />
+                        <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-xl flex items-center justify-center flex-shrink-0 group-hover:scale-110 transition-transform bg-gradient-to-br from-emerald-50 to-teal-50 border border-emerald-100">
+                          <FaBoxOpen className="text-base sm:text-lg text-emerald-500" />
                         </div>
                       </div>
                       <div className="mb-4">
-                        <p className="text-2xl font-bold text-gray-900">
-                          {formatCurrency(item.price)}
+                        <p className="text-xl sm:text-2xl font-bold text-gray-900">
+                          {formatCurrency(item.price || 0)}
                         </p>
                         {item.enableWholesale && item.wholesalePrice > 0 && (
                           <div className="mt-2 flex flex-wrap items-center gap-2">
@@ -1708,10 +1899,15 @@ const RequestOrder = () => {
                             </span>
                           </div>
                         )}
+                        {item.itemQuantity !== undefined && (
+                          <div className="mt-1 text-xs text-gray-400">
+                            Zilizobaki: {item.itemQuantity}
+                          </div>
+                        )}
                       </div>
                       <button
                         onClick={() => addToCart(item)}
-                        className="w-full font-semibold py-3 px-4 rounded-xl transition-all duration-300 bg-gradient-to-r from-emerald-500 to-teal-500 text-white hover:shadow-lg hover:shadow-emerald-200 hover:scale-[1.02] active:scale-95 flex items-center justify-center gap-2 text-sm"
+                        className="w-full font-semibold py-2.5 sm:py-3 px-3 sm:px-4 rounded-xl transition-all duration-300 bg-gradient-to-r from-emerald-500 to-teal-500 text-white hover:shadow-lg hover:shadow-emerald-200 hover:scale-[1.02] active:scale-95 flex items-center justify-center gap-2 text-xs sm:text-sm"
                       >
                         <FaPlus className="text-xs" />
                         Weka kwenye Order
@@ -1726,13 +1922,13 @@ const RequestOrder = () => {
                 filteredItems.length === 0 &&
                 searchTerm && (
                   <div className="text-center py-16">
-                    <div className="w-24 h-24 bg-gradient-to-br from-gray-100 to-gray-200 rounded-full flex items-center justify-center mx-auto mb-4">
-                      <FaSearch className="text-gray-400 text-4xl" />
+                    <div className="w-20 h-20 sm:w-24 sm:h-24 bg-gradient-to-br from-gray-100 to-gray-200 rounded-full flex items-center justify-center mx-auto mb-4">
+                      <FaSearch className="text-gray-400 text-3xl sm:text-4xl" />
                     </div>
-                    <h3 className="text-lg font-semibold text-gray-600 mb-2">
+                    <h3 className="text-base sm:text-lg font-semibold text-gray-600 mb-2">
                       Hakuna bidhaa zilizopatikana
                     </h3>
-                    <p className="text-sm text-gray-400">
+                    <p className="text-xs sm:text-sm text-gray-400">
                       Jaribu kubadilisha maneno ya utafutaji
                     </p>
                     <button
@@ -1746,7 +1942,6 @@ const RequestOrder = () => {
             </div>
           </div>
 
-          {/* Right Column - Cart (Desktop) */}
           <div className="hidden lg:block lg:col-span-1">
             <div className="sticky top-24">
               <div className="bg-white rounded-2xl shadow-lg border border-gray-200 p-6">
@@ -1808,7 +2003,6 @@ const RequestOrder = () => {
                                 <input
                                   type="number"
                                   min="1"
-                                  max={c.stock}
                                   value={c.quantity}
                                   onChange={(e) =>
                                     updateQuantity(
@@ -1823,12 +2017,7 @@ const RequestOrder = () => {
                                   onClick={() =>
                                     updateQuantity(c.itemId, c.quantity + 1)
                                   }
-                                  disabled={c.quantity >= c.stock}
-                                  className={`w-8 h-8 rounded-lg bg-white border border-gray-200 hover:bg-gray-100 hover:border-emerald-300 transition-all flex items-center justify-center ${
-                                    c.quantity >= c.stock
-                                      ? "opacity-50 cursor-not-allowed"
-                                      : ""
-                                  }`}
+                                  className="w-8 h-8 rounded-lg bg-white border border-gray-200 hover:bg-gray-100 hover:border-emerald-300 transition-all flex items-center justify-center"
                                 >
                                   <FaPlus className="text-xs text-gray-600" />
                                 </button>
@@ -1837,9 +2026,11 @@ const RequestOrder = () => {
                                 {formatCurrency(itemTotal)}
                               </span>
                             </div>
-                            <div className="mt-2 text-[10px] text-gray-400 flex justify-end">
-                              Zilizobaki: {c.stock}
-                            </div>
+                            {c.stock !== undefined && (
+                              <div className="mt-2 text-[10px] text-gray-400 flex justify-end">
+                                Zilizobaki: {c.stock}
+                              </div>
+                            )}
                           </div>
                         );
                       })}
@@ -1866,12 +2057,26 @@ const RequestOrder = () => {
                             type="text"
                             placeholder="Mfano: Kibuyu Shop"
                             value={customerName}
-                            onChange={(e) => setCustomerName(e.target.value)}
+                            onChange={(e) => validateName(e.target.value)}
+                            onBlur={() => validateName(customerName)}
                             required
-                            className="w-full pl-12 pr-4 py-3.5 rounded-xl border border-gray-200 focus:border-emerald-400 focus:ring-2 focus:ring-emerald-200 outline-none transition-all text-sm bg-white"
+                            className={`w-full pl-12 pr-4 py-3.5 rounded-xl border-2 outline-none transition-all text-sm bg-white ${
+                              nameError
+                                ? "border-red-500 focus:border-red-500 focus:ring-2 focus:ring-red-200"
+                                : customerName.trim() && !nameError
+                                  ? "border-emerald-500 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-200"
+                                  : "border-gray-200 focus:border-emerald-400 focus:ring-2 focus:ring-emerald-200"
+                            }`}
                           />
                         </div>
+                        {nameError && (
+                          <p className="mt-1 text-xs text-red-500 flex items-center gap-1">
+                            <FaExclamationTriangle className="w-3 h-3" />
+                            {nameError}
+                          </p>
+                        )}
                       </div>
+
                       <div>
                         <label className="block text-xs font-medium text-gray-500 mb-1">
                           <FaPhone className="inline mr-1" /> Namba ya Simu{" "}
@@ -1883,12 +2088,26 @@ const RequestOrder = () => {
                             type="tel"
                             placeholder="Mfano: 0712345678"
                             value={customerPhone}
-                            onChange={(e) => setCustomerPhone(e.target.value)}
+                            onChange={(e) => validatePhone(e.target.value)}
+                            onBlur={() => validatePhone(customerPhone)}
                             required
-                            className="w-full pl-12 pr-4 py-3.5 rounded-xl border border-gray-200 focus:border-emerald-400 focus:ring-2 focus:ring-emerald-200 outline-none transition-all text-sm bg-white"
+                            className={`w-full pl-12 pr-4 py-3.5 rounded-xl border-2 outline-none transition-all text-sm bg-white ${
+                              phoneError
+                                ? "border-red-500 focus:border-red-500 focus:ring-2 focus:ring-red-200"
+                                : customerPhone.trim() && !phoneError
+                                  ? "border-emerald-500 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-200"
+                                  : "border-gray-200 focus:border-emerald-400 focus:ring-2 focus:ring-emerald-200"
+                            }`}
                           />
                         </div>
+                        {phoneError && (
+                          <p className="mt-1 text-xs text-red-500 flex items-center gap-1">
+                            <FaExclamationTriangle className="w-3 h-3" />
+                            {phoneError}
+                          </p>
+                        )}
                       </div>
+
                       <div>
                         <label className="block text-xs font-medium text-gray-500 mb-1">
                           <FaCalendarAlt className="inline mr-1" /> Tarehe
@@ -1901,14 +2120,26 @@ const RequestOrder = () => {
                             type="date"
                             min={new Date().toISOString().split("T")[0]}
                             value={requestedDeliveryDate}
-                            onChange={(e) =>
-                              setRequestedDeliveryDate(e.target.value)
-                            }
+                            onChange={(e) => validateDate(e.target.value)}
+                            onBlur={() => validateDate(requestedDeliveryDate)}
                             required
-                            className="w-full pl-12 pr-4 py-3.5 rounded-xl border border-gray-200 focus:border-emerald-400 focus:ring-2 focus:ring-emerald-200 outline-none transition-all text-sm bg-white"
+                            className={`w-full pl-12 pr-4 py-3.5 rounded-xl border-2 outline-none transition-all text-sm bg-white ${
+                              dateError
+                                ? "border-red-500 focus:border-red-500 focus:ring-2 focus:ring-red-200"
+                                : requestedDeliveryDate && !dateError
+                                  ? "border-emerald-500 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-200"
+                                  : "border-gray-200 focus:border-emerald-400 focus:ring-2 focus:ring-emerald-200"
+                            }`}
                           />
                         </div>
+                        {dateError && (
+                          <p className="mt-1 text-xs text-red-500 flex items-center gap-1">
+                            <FaExclamationTriangle className="w-3 h-3" />
+                            {dateError}
+                          </p>
+                        )}
                       </div>
+
                       <div>
                         <label className="block text-xs font-medium text-gray-500 mb-1">
                           <FaStickyNote className="inline mr-1" /> Maelezo Zaidi
@@ -1924,6 +2155,7 @@ const RequestOrder = () => {
                           />
                         </div>
                       </div>
+
                       <div>
                         <label className="block text-xs font-medium text-gray-500 mb-1">
                           <FaInfoCircle className="inline mr-1" /> Ulitupataje?
@@ -1941,6 +2173,13 @@ const RequestOrder = () => {
                           </select>
                         </div>
                       </div>
+
+                      {cartError && (
+                        <div className="text-red-500 text-sm flex items-center gap-2 bg-red-50 p-2 rounded-lg border border-red-200">
+                          <FaExclamationTriangle className="w-4 h-4 flex-shrink-0" />
+                          {cartError}
+                        </div>
+                      )}
                     </div>
 
                     <button
@@ -1967,7 +2206,6 @@ const RequestOrder = () => {
         </div>
       </div>
 
-      {/* Mobile/Tablet Cart Bottom Sheet */}
       <div
         className={`lg:hidden fixed inset-0 z-50 transition-all duration-400 ${isCartOpen ? "opacity-100 pointer-events-auto" : "opacity-0 pointer-events-none"}`}
       >
@@ -2065,12 +2303,7 @@ const RequestOrder = () => {
                               onClick={() =>
                                 updateQuantity(c.itemId, c.quantity + 1)
                               }
-                              disabled={c.quantity >= c.stock}
-                              className={`w-9 h-9 rounded-lg bg-white border border-gray-200 hover:bg-gray-100 hover:border-emerald-300 transition-all flex items-center justify-center ${
-                                c.quantity >= c.stock
-                                  ? "opacity-50 cursor-not-allowed"
-                                  : ""
-                              }`}
+                              className="w-9 h-9 rounded-lg bg-white border border-gray-200 hover:bg-gray-100 hover:border-emerald-300 transition-all flex items-center justify-center"
                             >
                               <FaPlus className="text-xs text-gray-600" />
                             </button>
@@ -2079,9 +2312,11 @@ const RequestOrder = () => {
                             {formatCurrency(itemTotal)}
                           </span>
                         </div>
-                        <div className="mt-1 text-[10px] text-gray-400 text-right">
-                          Zilizobaki: {c.stock}
-                        </div>
+                        {c.stock !== undefined && (
+                          <div className="mt-1 text-[10px] text-gray-400 text-right">
+                            Zilizobaki: {c.stock}
+                          </div>
+                        )}
                       </div>
                     );
                   })}
@@ -2108,11 +2343,24 @@ const RequestOrder = () => {
                         type="text"
                         placeholder="Mfano: Kibuyu Shop"
                         value={customerName}
-                        onChange={(e) => setCustomerName(e.target.value)}
+                        onChange={(e) => validateName(e.target.value)}
+                        onBlur={() => validateName(customerName)}
                         required
-                        className="w-full pl-12 pr-4 py-3.5 rounded-xl border border-gray-200 focus:border-emerald-400 focus:ring-2 focus:ring-emerald-200 outline-none transition-all text-sm bg-white"
+                        className={`w-full pl-12 pr-4 py-3.5 rounded-xl border-2 outline-none transition-all text-sm bg-white ${
+                          nameError
+                            ? "border-red-500 focus:border-red-500 focus:ring-2 focus:ring-red-200"
+                            : customerName.trim() && !nameError
+                              ? "border-emerald-500 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-200"
+                              : "border-gray-200 focus:border-emerald-400 focus:ring-2 focus:ring-emerald-200"
+                        }`}
                       />
                     </div>
+                    {nameError && (
+                      <p className="mt-1 text-xs text-red-500 flex items-center gap-1">
+                        <FaExclamationTriangle className="w-3 h-3" />
+                        {nameError}
+                      </p>
+                    )}
                   </div>
                   <div>
                     <label className="block text-xs font-medium text-gray-500 mb-1">
@@ -2125,11 +2373,24 @@ const RequestOrder = () => {
                         type="tel"
                         placeholder="Mfano: 0712345678"
                         value={customerPhone}
-                        onChange={(e) => setCustomerPhone(e.target.value)}
+                        onChange={(e) => validatePhone(e.target.value)}
+                        onBlur={() => validatePhone(customerPhone)}
                         required
-                        className="w-full pl-12 pr-4 py-3.5 rounded-xl border border-gray-200 focus:border-emerald-400 focus:ring-2 focus:ring-emerald-200 outline-none transition-all text-sm bg-white"
+                        className={`w-full pl-12 pr-4 py-3.5 rounded-xl border-2 outline-none transition-all text-sm bg-white ${
+                          phoneError
+                            ? "border-red-500 focus:border-red-500 focus:ring-2 focus:ring-red-200"
+                            : customerPhone.trim() && !phoneError
+                              ? "border-emerald-500 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-200"
+                              : "border-gray-200 focus:border-emerald-400 focus:ring-2 focus:ring-emerald-200"
+                        }`}
                       />
                     </div>
+                    {phoneError && (
+                      <p className="mt-1 text-xs text-red-500 flex items-center gap-1">
+                        <FaExclamationTriangle className="w-3 h-3" />
+                        {phoneError}
+                      </p>
+                    )}
                   </div>
                   <div>
                     <label className="block text-xs font-medium text-gray-500 mb-1">
@@ -2143,13 +2404,24 @@ const RequestOrder = () => {
                         type="date"
                         min={new Date().toISOString().split("T")[0]}
                         value={requestedDeliveryDate}
-                        onChange={(e) =>
-                          setRequestedDeliveryDate(e.target.value)
-                        }
+                        onChange={(e) => validateDate(e.target.value)}
+                        onBlur={() => validateDate(requestedDeliveryDate)}
                         required
-                        className="w-full pl-12 pr-4 py-3.5 rounded-xl border border-gray-200 focus:border-emerald-400 focus:ring-2 focus:ring-emerald-200 outline-none transition-all text-sm bg-white"
+                        className={`w-full pl-12 pr-4 py-3.5 rounded-xl border-2 outline-none transition-all text-sm bg-white ${
+                          dateError
+                            ? "border-red-500 focus:border-red-500 focus:ring-2 focus:ring-red-200"
+                            : requestedDeliveryDate && !dateError
+                              ? "border-emerald-500 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-200"
+                              : "border-gray-200 focus:border-emerald-400 focus:ring-2 focus:ring-emerald-200"
+                        }`}
                       />
                     </div>
+                    {dateError && (
+                      <p className="mt-1 text-xs text-red-500 flex items-center gap-1">
+                        <FaExclamationTriangle className="w-3 h-3" />
+                        {dateError}
+                      </p>
+                    )}
                   </div>
                   <div>
                     <label className="block text-xs font-medium text-gray-500 mb-1">
@@ -2183,6 +2455,12 @@ const RequestOrder = () => {
                       </select>
                     </div>
                   </div>
+                  {cartError && (
+                    <div className="text-red-500 text-sm flex items-center gap-2 bg-red-50 p-2 rounded-lg border border-red-200">
+                      <FaExclamationTriangle className="w-4 h-4 flex-shrink-0" />
+                      {cartError}
+                    </div>
+                  )}
                 </div>
 
                 <button
@@ -2207,15 +2485,14 @@ const RequestOrder = () => {
         </div>
       </div>
 
-      {/* Mobile Floating Cart Button */}
       {cart.length > 0 && !isCartOpen && (
         <button
           onClick={() => setIsCartOpen(true)}
-          className="lg:hidden fixed bottom-6 right-6 z-40 bg-gradient-to-r from-emerald-500 to-teal-500 text-white p-4 rounded-full shadow-2xl shadow-emerald-200 hover:scale-110 transition-all duration-300 animate-bounce"
+          className="lg:hidden fixed bottom-6 right-6 z-40 bg-gradient-to-r from-emerald-500 to-teal-500 text-white p-3.5 sm:p-4 rounded-full shadow-2xl shadow-emerald-200 hover:scale-110 transition-all duration-300 animate-bounce"
         >
           <div className="relative">
-            <FaShoppingCart className="text-2xl" />
-            <span className="absolute -top-2 -right-2 bg-red-500 text-white text-xs font-bold w-6 h-6 rounded-full flex items-center justify-center shadow-lg shadow-red-200">
+            <FaShoppingCart className="text-xl sm:text-2xl" />
+            <span className="absolute -top-2 -right-2 bg-red-500 text-white text-xs font-bold w-5 h-5 sm:w-6 sm:h-6 rounded-full flex items-center justify-center shadow-lg shadow-red-200">
               {cart.length}
             </span>
           </div>

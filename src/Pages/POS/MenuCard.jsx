@@ -45,6 +45,9 @@ const MenuCard = ({ refreshTrigger, onOrderPay }) => {
   const zuiaAdd = useSelector((state) => state.cart.receiptPrinted);
   const dispatch = useDispatch();
 
+  // Calculate total quantity of items in cart (sum of all quantities)
+  const totalCartItems = cartData.reduce((sum, item) => sum + item.quantity, 0);
+
   // ==================== STATE ====================
   const [categories, setCategories] = useState([]);
   const [selected, setSelected] = useState(null);
@@ -1013,7 +1016,7 @@ const MenuCard = ({ refreshTrigger, onOrderPay }) => {
   // ==================== RENDER MENU TAB ====================
   const renderMenuTab = () => (
     <div className="space-y-3 sm:space-y-4">
-      {/* Mobile: Top Bar */}
+      {/* Mobile: Top Bar with Cart Icon and Badge */}
       <div className="lg:hidden flex items-center justify-between bg-gradient-to-r from-white to-gray-50 rounded-xl shadow-md border-2 border-gray-200 p-2.5 sm:p-3">
         <div className="flex items-center gap-2">
           <button
@@ -1027,6 +1030,22 @@ const MenuCard = ({ refreshTrigger, onOrderPay }) => {
           </span>
         </div>
         <div className="flex items-center gap-2">
+          {/* Cart icon with badge on mobile */}
+          <div className="relative">
+            <button className="p-1.5 sm:p-2 bg-green-100 hover:bg-green-200 rounded-lg text-green-600 transition-colors border-2 border-green-200">
+              <FaShoppingCart className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+            </button>
+            {totalCartItems > 0 && (
+              <>
+                <div className="absolute -top-1 -right-1 w-4 h-4 sm:w-5 sm:h-5 bg-gradient-to-r from-red-500 to-red-600 rounded-full flex items-center justify-center shadow-lg shadow-red-200 border-2 border-white">
+                  <span className="text-[8px] sm:text-[10px] font-bold text-white">
+                    {totalCartItems > 99 ? "99+" : totalCartItems}
+                  </span>
+                </div>
+                <div className="absolute -top-1 -right-1 w-4 h-4 sm:w-5 sm:h-5 bg-red-500 rounded-full animate-ping opacity-30"></div>
+              </>
+            )}
+          </div>
           <button
             onClick={() => setShowFilters(!showFilters)}
             className="p-1.5 sm:p-2 bg-gray-100 hover:bg-gray-200 rounded-lg text-gray-700 transition-colors border-2 border-gray-200"
@@ -1157,7 +1176,7 @@ const MenuCard = ({ refreshTrigger, onOrderPay }) => {
         </div>
       </div>
 
-      {/* Desktop: Full Header */}
+      {/* Desktop: Full Header with Cart Icon and Badge */}
       <div className="hidden lg:block bg-gradient-to-r from-white to-gray-50 rounded-2xl shadow-md border-2 border-gray-200 p-5">
         <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
           <div className="flex flex-wrap items-center gap-3">
@@ -1194,6 +1213,23 @@ const MenuCard = ({ refreshTrigger, onOrderPay }) => {
           </div>
 
           <div className="flex flex-wrap items-center gap-3 text-sm">
+            {/* Cart icon with badge on desktop */}
+            <div className="relative">
+              <button className="flex items-center gap-2 bg-green-100 px-3 py-1.5 rounded-full border-2 border-green-300 shadow-sm hover:bg-green-200 transition-colors">
+                <FaShoppingCart className="text-green-600" />
+                <span className="text-sm font-medium text-green-700">Cart</span>
+              </button>
+              {totalCartItems > 0 && (
+                <>
+                  <div className="absolute -top-1.5 -right-1.5 w-5 h-5 sm:w-6 sm:h-6 bg-gradient-to-r from-red-500 to-red-600 rounded-full flex items-center justify-center shadow-lg shadow-red-200 border-2 border-white">
+                    <span className="text-[9px] sm:text-[11px] font-bold text-white">
+                      {totalCartItems > 99 ? "99+" : totalCartItems}
+                    </span>
+                  </div>
+                  <div className="absolute -top-1.5 -right-1.5 w-5 h-5 sm:w-6 sm:h-6 bg-red-500 rounded-full animate-ping opacity-30"></div>
+                </>
+              )}
+            </div>
             <div className="px-4 py-1.5 rounded-lg border-2 border-gray-200 bg-white shadow-sm text-gray-700 font-medium">
               <span className="font-bold text-green-600">{items.length}</span>{" "}
               {saleType === "Wholesale" ? "wholesale" : ""} items
@@ -1301,7 +1337,7 @@ const MenuCard = ({ refreshTrigger, onOrderPay }) => {
         </div>
       </div>
 
-      {/* Items Grid - WITH BIGGER ITEM NAMES */}
+      {/* Items Grid */}
       <div className="space-y-3 sm:space-y-4">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 sm:gap-3">
           <div className="flex items-center gap-2 sm:gap-3">
@@ -1317,6 +1353,15 @@ const MenuCard = ({ refreshTrigger, onOrderPay }) => {
             </h3>
           </div>
           <div className="flex flex-wrap items-center gap-2 sm:gap-3">
+            {/* Small cart badge in items section */}
+            {totalCartItems > 0 && (
+              <div className="flex items-center gap-1 bg-green-100 px-2 py-0.5 rounded-full border border-green-200">
+                <FaShoppingCart className="text-green-600 text-[10px] sm:text-xs" />
+                <span className="font-bold text-green-700 text-[10px] sm:text-xs">
+                  {totalCartItems}
+                </span>
+              </div>
+            )}
             {saleType === "Wholesale" && (
               <div className="text-[9px] sm:text-xs bg-gradient-to-r from-gray-50 to-white px-2 sm:px-3 py-0.5 sm:py-1 rounded-lg border-2 border-gray-200 shadow-sm font-medium">
                 <FaCube className="inline mr-1 text-green-500 text-[9px] sm:text-xs" />
@@ -1376,16 +1421,12 @@ const MenuCard = ({ refreshTrigger, onOrderPay }) => {
                     ${expired ? "border-amber-300 bg-amber-50/50" : "border-gray-300 hover:border-green-300"}
                     ${isOutOfStock ? "opacity-60" : ""}`}
                 >
-                  {/* Card glow effect */}
                   <div className="absolute inset-0 bg-gradient-to-br from-green-50/0 to-green-50/0 group-hover:from-green-50/20 group-hover:to-teal-50/20 transition-all duration-500 rounded-2xl pointer-events-none"></div>
-
-                  {/* Decorative top accent */}
                   <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-green-400 to-teal-400 rounded-t-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
 
                   <div className="relative mb-2 sm:mb-3">
                     <div className="flex justify-between items-start mb-1 sm:mb-2">
                       <div className="flex-1 min-w-0">
-                        {/* UPDATED: Bigger item name */}
                         <h3 className="font-bold text-gray-800 text-sm sm:text-base md:text-lg truncate pr-2">
                           {item.name}
                           {expired && (
@@ -1417,7 +1458,6 @@ const MenuCard = ({ refreshTrigger, onOrderPay }) => {
                       </span>
                     </div>
 
-                    {/* Stock and Expiry Info */}
                     <div className="flex flex-wrap items-center gap-1 sm:gap-2 mb-1 sm:mb-2">
                       <div className="flex items-center gap-0.5 sm:gap-1 text-[8px] sm:text-xs text-gray-600 bg-gray-200 px-1.5 sm:px-2 py-0.5 rounded border-2 border-gray-300">
                         <FaWarehouse className="text-gray-500 text-[8px] sm:text-xs" />
@@ -1587,7 +1627,7 @@ const MenuCard = ({ refreshTrigger, onOrderPay }) => {
   // ==================== MAIN RENDER ====================
   return (
     <div className="space-y-3 sm:space-y-4 lg:space-y-6 px-2 sm:px-3 lg:px-4 xl:px-6 pb-6">
-      {/* Tab Navigation - Responsive */}
+      {/* Tab Navigation - Clean without cart badge */}
       <div className="bg-gradient-to-r from-white to-gray-50 rounded-2xl shadow-md border-2 border-gray-200 p-1.5 flex gap-1.5">
         <button
           onClick={() => setActiveTab("menu")}
