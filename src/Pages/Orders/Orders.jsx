@@ -509,6 +509,11 @@ const Orders = () => {
       return;
     }
 
+    // Check if all items are accepted
+    const allAccepted = reviewItems.every((item) => item.status === "Accepted");
+    // Check if there are any rejected items
+    const hasRejected = reviewItems.some((item) => item.status === "Rejected");
+
     setReviewLoading(true);
     try {
       const payload = {
@@ -520,6 +525,8 @@ const Orders = () => {
         approvedDeliveryDate: reviewData.approvedDeliveryDate,
         deliveryDateChangeReason: reviewData.deliveryDateChangeReason || "",
         reviewNotes: reviewData.reviewNotes || "",
+        autoAccept: allAccepted, // If all items are accepted, auto-accept the request
+        hasRejected: hasRejected, // Let backend know if there are rejected items
       };
 
       const response = await axios.put(
@@ -529,7 +536,18 @@ const Orders = () => {
       );
 
       if (response.data.success) {
-        toast.success("✅ Request reviewed successfully!");
+        if (allAccepted) {
+          toast.success(
+            "✅ All items accepted! Request automatically approved.",
+          );
+        } else if (hasRejected) {
+          toast.success(
+            "✅ Review submitted. Waiting for customer confirmation.",
+          );
+        } else {
+          toast.success("✅ Request reviewed successfully!");
+        }
+
         setShowReviewModal(false);
         await fetchRequests();
         if (selectedRequest && selectedRequest._id === requestToReview._id) {
@@ -959,8 +977,7 @@ const Orders = () => {
           }`}
         >
           <List className="w-4 h-4" />
-          <span className="hidden xs:inline">Orders</span>
-          <span className="xs:inline">Orders</span>
+          <span>Orders</span>
           <span
             className={`text-xs px-2 py-0.5 rounded-full ${
               activeView === "orders"
@@ -983,8 +1000,7 @@ const Orders = () => {
           }`}
         >
           <ClipboardList className="w-4 h-4" />
-          <span className="hidden xs:inline">Requests</span>
-          <span className="xs:inline">Requests</span>
+          <span>Requests</span>
           {requestStats.pending > 0 && (
             <span
               className={`text-xs px-2 py-0.5 rounded-full ${
@@ -1517,7 +1533,7 @@ const Orders = () => {
   };
 
   // ==========================================================================
-  // MODAL RENDERERS - KEPT COMPLETELY UNCHANGED
+  // MODAL RENDERERS
   // ==========================================================================
 
   /**
@@ -3087,7 +3103,7 @@ const Orders = () => {
         )}
       </div>
 
-      {/* Modals - ALL UNCHANGED */}
+      {/* Modals */}
       {renderCreateOrderModal()}
       {renderOrderDetailModal()}
       {renderRequestDetailModal()}

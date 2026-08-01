@@ -39,19 +39,24 @@ import {
 } from "react-icons/fa";
 import BASE_URL from "../../Utils/config";
 
-// Toast Component
+// ============================================================
+// TOAST COMPONENT - Shows temporary notifications
+// ============================================================
 const Toast = ({ message, type, onClose }) => {
+  // Auto-close toast after 4 seconds
   useEffect(() => {
     const timer = setTimeout(onClose, 4000);
     return () => clearTimeout(timer);
   }, [onClose]);
 
+  // Style mapping for different toast types
   const styles = {
     error: "bg-red-500",
     success: "bg-emerald-500",
     info: "bg-blue-500",
   };
 
+  // Icon mapping for different toast types
   const icons = {
     error: <FaExclamationTriangle className="text-white" />,
     success: <FaCheckCircle className="text-white" />,
@@ -76,13 +81,18 @@ const Toast = ({ message, type, onClose }) => {
   );
 };
 
-// Customer Request Status Modal
+// ============================================================
+// CUSTOMER REQUEST MODAL - Shows request details and status
+// ============================================================
 const CustomerRequestModal = ({ requestNumber, onClose, onRefresh }) => {
+  // State for request data
   const [loading, setLoading] = useState(true);
   const [request, setRequest] = useState(null);
   const [error, setError] = useState(null);
   const [actionLoading, setActionLoading] = useState(false);
   const [toast, setToast] = useState(null);
+
+  // State for amendment functionality
   const [isAmending, setIsAmending] = useState(false);
   const [amendmentData, setAmendmentData] = useState({
     items: [],
@@ -92,12 +102,17 @@ const CustomerRequestModal = ({ requestNumber, onClose, onRefresh }) => {
   });
   const [availableItems, setAvailableItems] = useState([]);
   const [newItem, setNewItem] = useState({ itemId: "", quantity: 1 });
+
+  // State for collapsible sections
   const [expandedSections, setExpandedSections] = useState({
     items: true,
     amendmentHistory: false,
     reviewInfo: false,
   });
 
+  // ============================================================
+  // EFFECTS - Fetch data on mount and when request number changes
+  // ============================================================
   useEffect(() => {
     if (requestNumber) {
       fetchRequest();
@@ -105,6 +120,7 @@ const CustomerRequestModal = ({ requestNumber, onClose, onRefresh }) => {
     }
   }, [requestNumber]);
 
+  // Populate amendment form when entering amendment mode
   useEffect(() => {
     if (isAmending && request) {
       setAmendmentData({
@@ -124,6 +140,11 @@ const CustomerRequestModal = ({ requestNumber, onClose, onRefresh }) => {
     }
   }, [isAmending, request]);
 
+  // ============================================================
+  // API CALLS
+  // ============================================================
+
+  // Fetch request details by number
   const fetchRequest = async () => {
     setLoading(true);
     setError(null);
@@ -143,6 +164,7 @@ const CustomerRequestModal = ({ requestNumber, onClose, onRefresh }) => {
     }
   };
 
+  // Fetch available items for amendment
   const fetchAvailableItems = async () => {
     try {
       const response = await axios.get(`${BASE_URL}/api/items/public/items`);
@@ -152,11 +174,20 @@ const CustomerRequestModal = ({ requestNumber, onClose, onRefresh }) => {
     }
   };
 
+  // ============================================================
+  // HELPER FUNCTIONS
+  // ============================================================
+
   const showToast = (message, type = "info") => {
     setToast({ message, type });
     setTimeout(() => setToast(null), 4000);
   };
 
+  // ============================================================
+  // REQUEST ACTION HANDLERS
+  // ============================================================
+
+  // Accept the request
   const handleAcceptRequest = async () => {
     if (!window.confirm("Je, una uhakika unataka kukubali ombi hili?")) return;
     setActionLoading(true);
@@ -181,6 +212,7 @@ const CustomerRequestModal = ({ requestNumber, onClose, onRefresh }) => {
     }
   };
 
+  // Submit amendment request
   const handleAmendRequest = async (e) => {
     e.preventDefault();
     if (amendmentData.items.length === 0) {
@@ -222,6 +254,10 @@ const CustomerRequestModal = ({ requestNumber, onClose, onRefresh }) => {
       setActionLoading(false);
     }
   };
+
+  // ============================================================
+  // AMENDMENT ITEM MANAGEMENT
+  // ============================================================
 
   const addAmendmentItem = () => {
     if (!newItem.itemId) {
@@ -270,6 +306,10 @@ const CustomerRequestModal = ({ requestNumber, onClose, onRefresh }) => {
     setAmendmentData((prev) => ({ ...prev, items: updatedItems }));
   };
 
+  // ============================================================
+  // FORMATTING FUNCTIONS
+  // ============================================================
+
   const formatDate = (dateString) => {
     if (!dateString) return "N/A";
     return new Date(dateString).toLocaleDateString("sw-TZ", {
@@ -289,6 +329,10 @@ const CustomerRequestModal = ({ requestNumber, onClose, onRefresh }) => {
       minute: "2-digit",
     });
   };
+
+  // ============================================================
+  // STYLE HELPERS
+  // ============================================================
 
   const getStatusBadge = (status) => {
     const statusMap = {
@@ -358,6 +402,9 @@ const CustomerRequestModal = ({ requestNumber, onClose, onRefresh }) => {
     return iconMap[source] || <FaInfoCircle className="w-3 h-3" />;
   };
 
+  // ============================================================
+  // LOADING & ERROR STATES
+  // ============================================================
   if (loading) {
     return (
       <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
@@ -391,8 +438,12 @@ const CustomerRequestModal = ({ requestNumber, onClose, onRefresh }) => {
     );
   }
 
+  // ============================================================
+  // MAIN RENDER
+  // ============================================================
   return (
     <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+      {/* Toast notifications */}
       {toast && (
         <Toast
           message={toast.message}
@@ -400,7 +451,9 @@ const CustomerRequestModal = ({ requestNumber, onClose, onRefresh }) => {
           onClose={() => setToast(null)}
         />
       )}
+
       <div className="bg-white rounded-2xl w-full max-w-3xl shadow-2xl max-h-[90vh] overflow-y-auto">
+        {/* ===== MODAL HEADER ===== */}
         <div className="sticky top-0 z-10 bg-white px-4 sm:px-6 py-4 border-b border-gray-200 rounded-t-2xl">
           <div className="flex justify-between items-center">
             <div className="flex items-center gap-3 min-w-0">
@@ -426,6 +479,7 @@ const CustomerRequestModal = ({ requestNumber, onClose, onRefresh }) => {
         </div>
 
         <div className="p-4 sm:p-6 space-y-6">
+          {/* ===== STATUS BADGES ===== */}
           <div className="flex flex-wrap items-center gap-2 sm:gap-3">
             {request.source && (
               <span
@@ -469,6 +523,7 @@ const CustomerRequestModal = ({ requestNumber, onClose, onRefresh }) => {
             )}
           </div>
 
+          {/* ===== ACCEPT/AMEND ACTIONS ===== */}
           {request.status === "Awaiting Customer Confirmation" &&
             !isAmending && (
               <div className="bg-blue-50 border-2 border-blue-200 rounded-xl p-4">
@@ -511,6 +566,7 @@ const CustomerRequestModal = ({ requestNumber, onClose, onRefresh }) => {
               </div>
             )}
 
+          {/* ===== AMENDMENT FORM ===== */}
           {isAmending && (
             <div className="bg-gray-50 rounded-xl p-4 border border-gray-200">
               <div className="flex items-center justify-between mb-4">
@@ -526,6 +582,7 @@ const CustomerRequestModal = ({ requestNumber, onClose, onRefresh }) => {
                 </button>
               </div>
               <form onSubmit={handleAmendRequest}>
+                {/* Items section */}
                 <div className="mb-4">
                   <label className="block text-sm font-medium text-gray-700 mb-2">
                     Bidhaa <span className="text-red-500">*</span>
@@ -621,6 +678,7 @@ const CustomerRequestModal = ({ requestNumber, onClose, onRefresh }) => {
                   </div>
                 </div>
 
+                {/* Delivery date */}
                 <div className="mb-4">
                   <label className="block text-sm font-medium text-gray-700 mb-1.5">
                     <FaCalendarAlt className="inline mr-1 text-gray-500" />
@@ -647,6 +705,7 @@ const CustomerRequestModal = ({ requestNumber, onClose, onRefresh }) => {
                   )}
                 </div>
 
+                {/* Customer comment */}
                 <div className="mb-4">
                   <label className="block text-sm font-medium text-gray-700 mb-1.5">
                     <FaStickyNote className="inline mr-1 text-gray-500" />
@@ -666,6 +725,7 @@ const CustomerRequestModal = ({ requestNumber, onClose, onRefresh }) => {
                   />
                 </div>
 
+                {/* Form actions */}
                 <div className="flex flex-col sm:flex-row gap-3 pt-3 border-t border-gray-200">
                   <button
                     type="button"
@@ -691,6 +751,7 @@ const CustomerRequestModal = ({ requestNumber, onClose, onRefresh }) => {
             </div>
           )}
 
+          {/* ===== CUSTOMER INFORMATION ===== */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 p-4 bg-gray-50 rounded-xl border border-gray-200">
             <div className="flex items-center gap-3">
               <FaUser className="text-emerald-500 flex-shrink-0" />
@@ -743,6 +804,7 @@ const CustomerRequestModal = ({ requestNumber, onClose, onRefresh }) => {
             )}
           </div>
 
+          {/* ===== ITEMS LIST ===== */}
           <div className="border border-gray-200 rounded-xl overflow-hidden">
             <button
               onClick={() =>
@@ -837,6 +899,7 @@ const CustomerRequestModal = ({ requestNumber, onClose, onRefresh }) => {
             )}
           </div>
 
+          {/* ===== REVIEW INFORMATION ===== */}
           {request.reviewedBy && (
             <div className="border border-gray-200 rounded-xl overflow-hidden">
               <button
@@ -911,6 +974,7 @@ const CustomerRequestModal = ({ requestNumber, onClose, onRefresh }) => {
             </div>
           )}
 
+          {/* ===== AMENDMENT HISTORY ===== */}
           {request.amendmentHistory?.length > 0 && (
             <div className="border border-gray-200 rounded-xl overflow-hidden">
               <button
@@ -1015,6 +1079,7 @@ const CustomerRequestModal = ({ requestNumber, onClose, onRefresh }) => {
             </div>
           )}
 
+          {/* ===== NOTES ===== */}
           {request.notes && (
             <div className="p-3 bg-amber-50 rounded-lg border border-amber-200">
               <div className="flex items-start gap-2">
@@ -1031,6 +1096,7 @@ const CustomerRequestModal = ({ requestNumber, onClose, onRefresh }) => {
             </div>
           )}
 
+          {/* ===== TIMELINE ===== */}
           {request.timeline?.length > 0 && (
             <div>
               <h3 className="text-sm font-semibold text-gray-700 mb-3 flex items-center gap-2">
@@ -1080,17 +1146,30 @@ const CustomerRequestModal = ({ requestNumber, onClose, onRefresh }) => {
   );
 };
 
-// Main RequestOrder Component
+// ============================================================
+// MAIN REQUEST ORDER COMPONENT
+// ============================================================
 const RequestOrder = () => {
+  // ============================================================
+  // STATE DECLARATIONS
+  // ============================================================
+
+  // Items and filtering
   const [items, setItems] = useState([]);
   const [filteredItems, setFilteredItems] = useState([]);
   const [searchTerm, setSearchTerm] = useState("");
+
+  // Shopping cart
   const [cart, setCart] = useState([]);
+
+  // Customer details
   const [customerName, setCustomerName] = useState("");
   const [customerPhone, setCustomerPhone] = useState("");
   const [notes, setNotes] = useState("");
   const [requestedDeliveryDate, setRequestedDeliveryDate] = useState("");
   const [source, setSource] = useState("Website");
+
+  // UI state
   const [submitted, setSubmitted] = useState(false);
   const [requestNumber, setRequestNumber] = useState("");
   const [loading, setLoading] = useState(false);
@@ -1098,21 +1177,30 @@ const RequestOrder = () => {
   const [toast, setToast] = useState(null);
   const [activeTab, setActiveTab] = useState("items");
   const [showOrderPage, setShowOrderPage] = useState(false);
+
+  // Request tracking
   const [showRequestModal, setShowRequestModal] = useState(false);
   const [modalRequestNumber, setModalRequestNumber] = useState("");
   const [checkNumber, setCheckNumber] = useState("");
   const [statusLoading, setStatusLoading] = useState(false);
   const [statusError, setStatusError] = useState("");
 
+  // Validation errors
   const [phoneError, setPhoneError] = useState("");
   const [nameError, setNameError] = useState("");
   const [dateError, setDateError] = useState("");
   const [cartError, setCartError] = useState("");
 
+  // ============================================================
+  // EFFECTS
+  // ============================================================
+
+  // Fetch items on component mount
   useEffect(() => {
     fetchItems();
   }, []);
 
+  // Filter items when search term changes
   useEffect(() => {
     setFilteredItems(
       searchTerm.trim() === ""
@@ -1122,6 +1210,10 @@ const RequestOrder = () => {
           ),
     );
   }, [searchTerm, items]);
+
+  // ============================================================
+  // API CALLS
+  // ============================================================
 
   const fetchItems = async () => {
     try {
@@ -1136,10 +1228,18 @@ const RequestOrder = () => {
     }
   };
 
+  // ============================================================
+  // TOAST NOTIFICATIONS
+  // ============================================================
+
   const showToast = (message, type = "error") => {
     setToast({ message, type });
     setTimeout(() => setToast(null), 4000);
   };
+
+  // ============================================================
+  // CART OPERATIONS
+  // ============================================================
 
   const addToCart = (item) => {
     setCart((prevCart) => {
@@ -1188,6 +1288,10 @@ const RequestOrder = () => {
     );
   };
 
+  // ============================================================
+  // VALIDATION FUNCTIONS
+  // ============================================================
+
   const validatePhone = (phone) => {
     setCustomerPhone(phone);
     if (phone.trim() === "") {
@@ -1224,16 +1328,22 @@ const RequestOrder = () => {
     }
   };
 
+  // ============================================================
+  // FORM SUBMISSION
+  // ============================================================
+
   const handleSubmit = async (e) => {
     e.preventDefault();
 
     let hasError = false;
 
+    // Validate name
     if (!customerName.trim()) {
       setNameError("Jina kamili linahitajika");
       hasError = true;
     }
 
+    // Validate phone
     if (!customerPhone.trim()) {
       setPhoneError("Namba ya simu inahitajika");
       hasError = true;
@@ -1242,6 +1352,7 @@ const RequestOrder = () => {
       hasError = true;
     }
 
+    // Validate date
     if (!requestedDeliveryDate) {
       setDateError("Tarehe ya uwasilishaji inahitajika");
       hasError = true;
@@ -1255,6 +1366,7 @@ const RequestOrder = () => {
       }
     }
 
+    // Validate cart
     if (cart.length === 0) {
       setCartError("Tafadhali ongeza angalau bidhaa moja");
       hasError = true;
@@ -1289,6 +1401,10 @@ const RequestOrder = () => {
     }
   };
 
+  // ============================================================
+  // REQUEST TRACKING
+  // ============================================================
+
   const openRequestModal = (number) => {
     setModalRequestNumber(number);
     setShowRequestModal(true);
@@ -1307,6 +1423,10 @@ const RequestOrder = () => {
     setStatusError("");
     openRequestModal(checkNumber.trim());
   };
+
+  // ============================================================
+  // FORM RESET FUNCTIONS
+  // ============================================================
 
   const resetForm = () => {
     setSubmitted(false);
@@ -1335,6 +1455,10 @@ const RequestOrder = () => {
     setCartError("");
   };
 
+  // ============================================================
+  // CALCULATIONS & FORMATTING
+  // ============================================================
+
   const calculateItemTotal = (cartItem) => {
     let unitPrice = cartItem.price || 0;
     if (
@@ -1361,6 +1485,10 @@ const RequestOrder = () => {
       .format(amount)
       .replace("TZS", "TSh");
   };
+
+  // ============================================================
+  // PRINT/SAVE HANDLER
+  // ============================================================
 
   const handlePrintOrSave = () => {
     const printContent = `
@@ -1477,7 +1605,9 @@ const RequestOrder = () => {
     }
   };
 
-  // Welcome Page
+  // ============================================================
+  // WELCOME PAGE RENDER
+  // ============================================================
   if (!showOrderPage && !submitted) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 flex items-center justify-center px-4 py-8">
@@ -1495,11 +1625,15 @@ const RequestOrder = () => {
             onRefresh={() => {}}
           />
         )}
+
+        {/* Welcome Card */}
         <div className="max-w-2xl w-full">
           <div className="bg-white rounded-3xl shadow-2xl p-6 sm:p-12 text-center border border-gray-100">
+            {/* Logo */}
             <div className="w-20 h-20 sm:w-28 sm:h-28 bg-gradient-to-br from-emerald-400 to-teal-400 rounded-2xl flex items-center justify-center mx-auto mb-6 shadow-xl shadow-emerald-200">
               <FaStore className="text-white text-3xl sm:text-5xl" />
             </div>
+
             <h1 className="text-2xl sm:text-5xl font-extrabold text-gray-800 mb-2">
               UZA{" "}
               <span className="text-transparent bg-gradient-to-r from-emerald-600 to-teal-600 bg-clip-text">
@@ -1513,7 +1647,9 @@ const RequestOrder = () => {
             <p className="text-gray-400 text-xs sm:text-sm mb-8">
               Bidhaa bora, zinawasilishwa kwa uangalifu
             </p>
+
             <div className="space-y-4">
+              {/* Start Order Button */}
               <button
                 onClick={() => {
                   setShowOrderPage(true);
@@ -1525,6 +1661,7 @@ const RequestOrder = () => {
                 Anza Ombi Lako
                 <FaArrowRight className="text-sm" />
               </button>
+
               <div className="relative">
                 <div className="absolute inset-0 flex items-center">
                   <div className="w-full border-t border-gray-200"></div>
@@ -1535,6 +1672,8 @@ const RequestOrder = () => {
                   </span>
                 </div>
               </div>
+
+              {/* Check Status Section */}
               <div className="bg-gray-50 rounded-xl p-4 sm:p-5 border border-gray-200">
                 <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
                   <div className="flex items-center gap-2 text-gray-600 flex-shrink-0">
@@ -1581,6 +1720,7 @@ const RequestOrder = () => {
                 )}
               </div>
             </div>
+
             <p className="text-xs text-gray-400 mt-6">
               © 2026 UZA ONLINE SHOP. Haki zote zimehifadhiwa.
             </p>
@@ -1590,6 +1730,9 @@ const RequestOrder = () => {
     );
   }
 
+  // ============================================================
+  // SUBMITTED PAGE RENDER
+  // ============================================================
   if (submitted) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 flex items-center justify-center px-4 py-8">
@@ -1606,10 +1749,13 @@ const RequestOrder = () => {
             onClose={closeRequestModal}
           />
         )}
+
         <div className="max-w-md w-full bg-white rounded-3xl shadow-2xl p-6 sm:p-10 text-center border border-gray-100">
+          {/* Success Icon */}
           <div className="w-20 h-20 sm:w-24 sm:h-24 bg-gradient-to-br from-emerald-400 to-teal-400 rounded-full flex items-center justify-center mx-auto mb-6 shadow-xl shadow-emerald-200 animate-bounce">
             <FaCheckCircle className="text-white text-4xl sm:text-5xl" />
           </div>
+
           <h2 className="text-xl sm:text-3xl font-bold text-gray-800 mb-2">
             Ombi Limetumwa! 🎉
           </h2>
@@ -1617,6 +1763,7 @@ const RequestOrder = () => {
           <p className="text-base sm:text-2xl font-mono font-bold text-transparent bg-gradient-to-r from-emerald-600 to-teal-600 bg-clip-text mb-4 break-all">
             {requestNumber}
           </p>
+
           <div className="bg-gradient-to-r from-emerald-50 to-teal-50 rounded-xl p-4 sm:p-5 mb-8 border border-emerald-200">
             <p className="text-sm text-gray-700">
               📌 Hifadhi namba hii ili kuangalia hali ya ombi lako baadaye.
@@ -1673,9 +1820,12 @@ const RequestOrder = () => {
     );
   }
 
-  // Main Order Page
+  // ============================================================
+  // MAIN ORDER PAGE RENDER
+  // ============================================================
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50">
+      {/* Toast notifications */}
       {toast && (
         <Toast
           message={toast.message}
@@ -1690,6 +1840,7 @@ const RequestOrder = () => {
         />
       )}
 
+      {/* ===== HEADER ===== */}
       <div className="bg-white border-b border-gray-200 sticky top-0 z-30 shadow-sm">
         <div className="max-w-7xl mx-auto px-3 sm:px-6 py-3 sm:py-5">
           <div className="flex items-center justify-between">
@@ -1712,6 +1863,8 @@ const RequestOrder = () => {
                 </p>
               </div>
             </div>
+
+            {/* Mobile cart toggle */}
             <button
               onClick={() => setIsCartOpen(!isCartOpen)}
               className="lg:hidden relative bg-emerald-50 px-3 sm:px-4 py-1.5 sm:py-2 rounded-full border border-emerald-200 flex items-center gap-2 hover:bg-emerald-100 transition-colors flex-shrink-0"
@@ -1724,6 +1877,8 @@ const RequestOrder = () => {
                 <span className="absolute -top-1 -right-1 w-2 h-2 sm:w-2.5 sm:h-2.5 bg-red-500 rounded-full animate-pulse"></span>
               )}
             </button>
+
+            {/* Desktop cart summary */}
             {cart.length > 0 && (
               <div className="hidden lg:flex items-center gap-3 bg-emerald-50 px-4 py-2 rounded-full border border-emerald-200">
                 <FaShoppingCart className="text-emerald-600" />
@@ -1740,7 +1895,8 @@ const RequestOrder = () => {
         </div>
       </div>
 
-      <div className="max-w-7xl mx-auto px-3 sm:px-6 py-4 sm:py-6 lg:py-10">
+      <div className="max-w-8xl mx-auto px-3 sm:px-6 py-4 sm:py-6 lg:py-10">
+        {/* ===== MOBILE TABS ===== */}
         <div className="lg:hidden mb-6">
           <div className="bg-white rounded-2xl shadow-md p-1 flex gap-1">
             <button
@@ -1777,9 +1933,11 @@ const RequestOrder = () => {
         </div>
 
         <div className="lg:grid lg:grid-cols-3 lg:gap-8">
+          {/* ===== LEFT COLUMN - ITEMS ===== */}
           <div
             className={`lg:col-span-2 ${activeTab === "cart" ? "hidden lg:block" : "block"}`}
           >
+            {/* Track Order Section */}
             <div className="bg-white rounded-2xl shadow-md p-4 sm:p-6 mb-6 border border-gray-100">
               <div className="flex flex-col gap-4">
                 <div className="flex items-center gap-2 text-gray-700">
@@ -1826,6 +1984,7 @@ const RequestOrder = () => {
               )}
             </div>
 
+            {/* Items Section */}
             <div>
               <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-6 gap-3">
                 <div>
@@ -1841,6 +2000,7 @@ const RequestOrder = () => {
                 </span>
               </div>
 
+              {/* Search Input */}
               <div className="mb-6">
                 <div className="relative">
                   <FaSearch className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" />
@@ -1867,56 +2027,98 @@ const RequestOrder = () => {
                 )}
               </div>
 
-              <div className="grid grid-cols-1 xs:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 gap-3 sm:gap-4">
+              {/* ============================================================
+                  GLASSY GRADIENT ITEMS LIST
+                  ============================================================ */}
+              <div className="space-y-3">
                 {filteredItems.map((item) => (
                   <div
                     key={item._id}
-                    className="group bg-white rounded-2xl shadow-sm hover:shadow-xl transition-all duration-300 border border-gray-200 hover:border-emerald-300 overflow-hidden"
+                    className="group relative overflow-hidden rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-300 hover:-translate-y-0.5"
+                    style={{
+                      background:
+                        "linear-gradient(135deg, rgba(16, 185, 129, 0.12), rgba(20, 184, 166, 0.12))",
+                      backdropFilter: "blur(20px)",
+                      WebkitBackdropFilter: "blur(20px)",
+                      border: "1px solid rgba(255, 255, 255, 0.3)",
+                    }}
                   >
-                    <div className="p-3 sm:p-5">
-                      <div className="flex items-start justify-between mb-3">
-                        <div className="flex-1 min-w-0">
-                          <h3 className="text-sm sm:text-base font-semibold text-gray-800 group-hover:text-emerald-600 transition-colors truncate">
-                            {item.name}
-                          </h3>
-                        </div>
-                        <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-xl flex items-center justify-center flex-shrink-0 group-hover:scale-110 transition-transform bg-gradient-to-br from-emerald-50 to-teal-50 border border-emerald-100">
-                          <FaBoxOpen className="text-base sm:text-lg text-emerald-500" />
+                    {/* Glass reflection shimmer */}
+                    <div className="absolute inset-0 bg-gradient-to-br from-white/40 via-transparent to-white/10 opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
+
+                    {/* Animated gradient background on hover */}
+                    <div className="absolute inset-0 bg-gradient-to-r from-emerald-400/10 via-teal-400/10 to-emerald-400/10 group-hover:from-emerald-400/20 group-hover:via-teal-400/20 group-hover:to-emerald-400/20 transition-all duration-500"></div>
+
+                    {/* Left glass accent bar */}
+                    <div className="absolute left-0 top-0 bottom-0 w-1.5 bg-gradient-to-b from-emerald-400/80 to-teal-400/80 backdrop-blur-sm opacity-0 group-hover:opacity-100 transition-opacity duration-300 rounded-l-full"></div>
+
+                    <div className="relative flex items-center gap-4 p-4 md:p-5">
+                      {/* Glassy icon with gradient */}
+                      <div className="flex-shrink-0">
+                        <div className="w-14 h-14 rounded-xl bg-gradient-to-br from-emerald-400 to-teal-400 flex items-center justify-center shadow-xl group-hover:shadow-2xl group-hover:scale-110 transition-all duration-300 relative overflow-hidden">
+                          <div className="absolute inset-0 bg-gradient-to-t from-white/40 to-transparent"></div>
+                          <div className="absolute inset-0 bg-gradient-to-br from-white/30 to-transparent"></div>
+                          <FaBoxOpen className="text-white text-xl relative z-10 drop-shadow-md" />
                         </div>
                       </div>
-                      <div className="mb-4">
-                        <p className="text-xl sm:text-2xl font-bold text-gray-900">
-                          {formatCurrency(item.price || 0)}
-                        </p>
-                        {item.enableWholesale && item.wholesalePrice > 0 && (
-                          <div className="mt-2 flex flex-wrap items-center gap-2">
-                            <span className="text-[10px] bg-emerald-100 text-emerald-700 px-2 py-0.5 rounded-full font-medium">
-                              Jumla
-                            </span>
-                            <span className="text-xs text-gray-500">
-                              {formatCurrency(item.wholesalePrice)} (kiwango cha
-                              chini {item.wholesaleMinQty})
-                            </span>
+
+                      {/* Item details */}
+                      <div className="flex-1 min-w-0">
+                        <div className="flex flex-wrap items-center justify-between gap-2">
+                          <div className="min-w-0">
+                            <h3 className="text-base font-semibold text-gray-800 group-hover:text-emerald-600 transition-colors">
+                              {item.name}
+                            </h3>
+                            <div className="flex flex-wrap items-center gap-3 mt-1">
+                              <span className="text-xl font-bold text-gray-900">
+                                {formatCurrency(item.price || 0)}
+                              </span>
+                              {item.enableWholesale &&
+                                item.wholesalePrice > 0 && (
+                                  <>
+                                    <span className="text-sm text-gray-400 line-through">
+                                      {formatCurrency(item.wholesalePrice)}
+                                    </span>
+                                    <span className="inline-flex items-center gap-1.5 px-3 py-0.5 bg-emerald-100/70 backdrop-blur-sm text-emerald-700 text-xs font-medium rounded-full border border-emerald-200/50">
+                                      <span className="w-1.5 h-1.5 bg-emerald-500 rounded-full"></span>
+                                      Bulk:{" "}
+                                      {formatCurrency(item.wholesalePrice)}
+                                    </span>
+                                  </>
+                                )}
+                            </div>
+                            {item.enableWholesale &&
+                              item.wholesalePrice > 0 && (
+                                <div className="mt-0.5 text-xs text-gray-400">
+                                  Min order: {item.wholesaleMinQty || 0} units
+                                </div>
+                              )}
                           </div>
-                        )}
-                        {item.itemQuantity !== undefined && (
-                          <div className="mt-1 text-xs text-gray-400">
-                            Zilizobaki: {item.itemQuantity}
-                          </div>
-                        )}
+
+                          {/* Glassy add button */}
+                          <button
+                            onClick={() => addToCart(item)}
+                            className="flex-shrink-0 px-5 py-2.5 bg-gradient-to-r from-emerald-500 to-teal-500 text-white font-semibold rounded-xl hover:shadow-xl hover:shadow-emerald-200/50 hover:scale-105 active:scale-95 transition-all duration-300 flex items-center gap-2 text-sm relative overflow-hidden group/btn"
+                          >
+                            <div className="absolute inset-0 bg-gradient-to-t from-white/30 to-transparent"></div>
+                            <div className="absolute inset-0 bg-gradient-to-r from-emerald-400/50 to-teal-400/50 opacity-0 group-hover/btn:opacity-100 transition-opacity duration-300"></div>
+                            <span className="relative z-10 flex items-center gap-2">
+                              <FaPlus className="text-xs" />
+                              <span>Add</span>
+                            </span>
+                          </button>
+                        </div>
                       </div>
-                      <button
-                        onClick={() => addToCart(item)}
-                        className="w-full font-semibold py-2.5 sm:py-3 px-3 sm:px-4 rounded-xl transition-all duration-300 bg-gradient-to-r from-emerald-500 to-teal-500 text-white hover:shadow-lg hover:shadow-emerald-200 hover:scale-[1.02] active:scale-95 flex items-center justify-center gap-2 text-xs sm:text-sm"
-                      >
-                        <FaPlus className="text-xs" />
-                        Weka kwenye Order
-                      </button>
                     </div>
+
+                    {/* Glass edge highlights */}
+                    <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-white/50 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+                    <div className="absolute bottom-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-white/30 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
                   </div>
                 ))}
               </div>
 
+              {/* Empty state */}
               {cart.length === 0 &&
                 items.length > 0 &&
                 filteredItems.length === 0 &&
@@ -1942,6 +2144,9 @@ const RequestOrder = () => {
             </div>
           </div>
 
+          {/* ============================================================
+              RIGHT COLUMN - CART SUMMARY (DESKTOP)
+              ============================================================ */}
           <div className="hidden lg:block lg:col-span-1">
             <div className="sticky top-24">
               <div className="bg-white rounded-2xl shadow-lg border border-gray-200 p-6">
@@ -1969,6 +2174,7 @@ const RequestOrder = () => {
                   </div>
                 ) : (
                   <form onSubmit={handleSubmit}>
+                    {/* Cart Items */}
                     <div className="space-y-3 mb-4 max-h-[400px] overflow-y-auto pr-2">
                       {cart.map((c) => {
                         const itemTotal = calculateItemTotal(c);
@@ -2026,16 +2232,12 @@ const RequestOrder = () => {
                                 {formatCurrency(itemTotal)}
                               </span>
                             </div>
-                            {c.stock !== undefined && (
-                              <div className="mt-2 text-[10px] text-gray-400 flex justify-end">
-                                Zilizobaki: {c.stock}
-                              </div>
-                            )}
                           </div>
                         );
                       })}
                     </div>
 
+                    {/* Total */}
                     <div className="bg-gradient-to-r from-emerald-50 to-teal-50 rounded-xl p-4 mb-4 border border-emerald-200">
                       <div className="flex justify-between items-center">
                         <span className="text-gray-700 font-medium">Jumla</span>
@@ -2045,6 +2247,7 @@ const RequestOrder = () => {
                       </div>
                     </div>
 
+                    {/* Customer Form */}
                     <div className="space-y-3.5">
                       <div>
                         <label className="block text-xs font-medium text-gray-500 mb-1">
@@ -2206,6 +2409,9 @@ const RequestOrder = () => {
         </div>
       </div>
 
+      {/* ============================================================
+          MOBILE CART DRAWER
+          ============================================================ */}
       <div
         className={`lg:hidden fixed inset-0 z-50 transition-all duration-400 ${isCartOpen ? "opacity-100 pointer-events-auto" : "opacity-0 pointer-events-none"}`}
       >
@@ -2312,11 +2518,6 @@ const RequestOrder = () => {
                             {formatCurrency(itemTotal)}
                           </span>
                         </div>
-                        {c.stock !== undefined && (
-                          <div className="mt-1 text-[10px] text-gray-400 text-right">
-                            Zilizobaki: {c.stock}
-                          </div>
-                        )}
                       </div>
                     );
                   })}
@@ -2485,6 +2686,9 @@ const RequestOrder = () => {
         </div>
       </div>
 
+      {/* ============================================================
+          FLOATING CART BUTTON (MOBILE)
+          ============================================================ */}
       {cart.length > 0 && !isCartOpen && (
         <button
           onClick={() => setIsCartOpen(true)}
