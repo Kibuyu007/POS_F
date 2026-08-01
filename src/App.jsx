@@ -20,17 +20,34 @@ import RequestOrder from "./Pages/Orders/ReuestOrder";
 import { Toaster } from "react-hot-toast";
 import Page404 from "./Components/Shared/Page404";
 
+// Valid routes list
+const VALID_ROUTES = [
+  "/",
+  "/auth",
+  "/request",
+  "/home",
+  "/orders",
+  "/menu",
+  "/reports",
+  "/settings",
+];
+
 function Layout() {
   const location = useLocation();
 
-  // Hide admin layout on public pages
-  const hideLayout =
-    location.pathname === "/auth" ||
+  // Check if current path is a valid route (not 404)
+  const isValidRoute = VALID_ROUTES.includes(location.pathname) || 
     location.pathname.startsWith("/request");
+
+  // Hide layout on auth, request, and 404 pages
+  const hideLayout = 
+    location.pathname === "/auth" ||
+    location.pathname.startsWith("/request") ||
+    !isValidRoute; // This catches 404 pages
 
   return (
     <div className="relative min-h-screen">
-      {/* Header */}
+      {/* Header - only show on valid protected routes */}
       {!hideLayout && <Header />}
 
       <Routes>
@@ -50,11 +67,11 @@ function Layout() {
           <Route path="/settings" element={<Settings />} />
         </Route>
 
-        {/* 404 */}
+        {/* 404 - standalone */}
         <Route path="*" element={<Page404 />} />
       </Routes>
 
-      {/* Navigation */}
+      {/* Navigation - only show on valid protected routes */}
       {!hideLayout && <Navigation />}
     </div>
   );
