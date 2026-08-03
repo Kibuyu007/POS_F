@@ -149,10 +149,15 @@ const Profit = () => {
     { key: "custom", label: "Custom" },
   ];
 
-  const getProfitColor = (value) =>
-    value >= 0 ? "text-green-600" : "text-red-600";
+  const getProfitColor = (value) => {
+    if (value === 0) return "text-yellow-600";
+    return value > 0 ? "text-green-600" : "text-red-600";
+  };
 
-  const getProfitBg = (value) => (value >= 0 ? "bg-green-50" : "bg-red-50");
+  const getProfitBg = (value) => {
+    if (value === 0) return "bg-yellow-50";
+    return value > 0 ? "bg-green-50" : "bg-red-50";
+  };
 
   const formatCurrency = (amount) => `${(amount || 0).toLocaleString()}`;
 
@@ -256,11 +261,15 @@ const Profit = () => {
       );
       doc.text(`Expenses: ${totalExpenses.toLocaleString()}`, 14, finalY + 21);
       doc.setFontSize(12);
-      doc.setTextColor(
-        finalProfit >= 0 ? 0 : 255,
-        finalProfit >= 0 ? 128 : 0,
-        0,
-      );
+
+      // Set color for net profit in PDF
+      if (finalProfit > 0) {
+        doc.setTextColor(0, 128, 0);
+      } else if (finalProfit === 0) {
+        doc.setTextColor(255, 255, 0);
+      } else {
+        doc.setTextColor(255, 0, 0);
+      }
       doc.text(`Net Profit: ${finalProfit.toLocaleString()}`, 14, finalY + 30);
 
       doc.save(`Profit_Report_${dayjs().format("YYYYMMDD")}.pdf`);
@@ -695,7 +704,8 @@ const Profit = () => {
             </div>
           ) : (
             currentData.map((row, idx) => {
-              const isProfit = row.profit >= 0;
+              const isProfit = row.profit > 0;
+              const isZeroProfit = row.profit === 0;
 
               return (
                 <div
@@ -707,12 +717,16 @@ const Profit = () => {
                     <div className="flex items-center gap-2 sm:gap-3 min-w-0 flex-1">
                       <div
                         className={`w-8 h-8 sm:w-9 sm:h-9 rounded-full flex items-center justify-center flex-shrink-0 border-2 ${
-                          isProfit
-                            ? "bg-green-300 border-green-400"
-                            : "bg-red-300 border-red-400"
+                          isZeroProfit
+                            ? "bg-yellow-300 border-yellow-400"
+                            : isProfit
+                              ? "bg-green-300 border-green-400"
+                              : "bg-red-300 border-red-400"
                         }`}
                       >
-                        {isProfit ? (
+                        {isZeroProfit ? (
+                          <Clock className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-black" />
+                        ) : isProfit ? (
                           <TrendingUp className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-black" />
                         ) : (
                           <TrendingDown className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-black" />
@@ -752,12 +766,18 @@ const Profit = () => {
                     <div className="flex items-center gap-1 sm:gap-1.5 flex-shrink-0">
                       <span
                         className={`px-1.5 sm:px-2 py-0.5 rounded-full text-[9px] sm:text-[11px] font-semibold border-2 ${
-                          isProfit
-                            ? "bg-green-300 text-black border-green-400"
-                            : "bg-red-100 text-red-700 border-red-200"
+                          isZeroProfit
+                            ? "bg-yellow-300 text-black border-yellow-400"
+                            : isProfit
+                              ? "bg-green-300 text-black border-green-400"
+                              : "bg-red-100 text-red-700 border-red-200"
                         }`}
                       >
-                        {isProfit ? "Profit" : "Loss"}
+                        {isZeroProfit
+                          ? "Break Even"
+                          : isProfit
+                            ? "Profit"
+                            : "Loss"}
                       </span>
                       <span className="px-1.5 sm:px-2 py-0.5 rounded-full text-[9px] sm:text-[11px] font-semibold border-2 bg-gray-100 text-gray-700 border-gray-300">
                         Qty: {row.qty}
@@ -801,17 +821,27 @@ const Profit = () => {
                       {/* Net Profit - Large, Bold, at the end */}
                       <div
                         className={`flex items-center gap-2 bg-white px-2 sm:px-4 py-1.5 sm:py-2 rounded-lg border-2 ${
-                          isProfit ? "border-green-400" : "border-red-400"
+                          isZeroProfit
+                            ? "border-yellow-200"
+                            : isProfit
+                              ? "border-green-400"
+                              : "border-red-400"
                         } shadow-sm`}
                       >
-                        {isProfit ? (
+                        {isZeroProfit ? (
+                          <Clock className="w-3.5 h-3.5 sm:w-5 sm:h-5 text-yellow-600" />
+                        ) : isProfit ? (
                           <TrendingUp className="w-3.5 h-3.5 sm:w-5 sm:h-5 text-green-600" />
                         ) : (
                           <TrendingDown className="w-3.5 h-3.5 sm:w-5 sm:h-5 text-red-600" />
                         )}
                         <span
                           className={`text-sm sm:text-lg md:text-xl font-bold ${
-                            isProfit ? "text-green-600" : "text-red-600"
+                            isZeroProfit
+                              ? "text-yellow-300"
+                              : isProfit
+                                ? "text-green-600"
+                                : "text-red-600"
                           }`}
                         >
                           {formatCurrency(row.profit)}
