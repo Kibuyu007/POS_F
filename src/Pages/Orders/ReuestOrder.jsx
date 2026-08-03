@@ -1567,7 +1567,7 @@ const RequestOrder = () => {
             Generated on ${new Date().toLocaleString("sw-TZ")}
           </p>
           <p style="color: #9ca3af; font-size: 11px; margin: 5px 0 0;">
-            UZA ONLINE SHOP
+            WISE STORE
           </p>
         </div>
       </div>
@@ -1635,17 +1635,14 @@ const RequestOrder = () => {
             </div>
 
             <h1 className="text-2xl sm:text-5xl font-extrabold text-gray-800 mb-2">
-              UZA{" "}
+              WISE{" "}
               <span className="text-transparent bg-gradient-to-r from-emerald-600 to-teal-600 bg-clip-text">
-                ONLINE SHOP
+                STORE
               </span>
             </h1>
             <div className="h-1 w-20 bg-gradient-to-r from-emerald-400 to-teal-400 rounded-full mx-auto mb-4"></div>
-            <p className="text-gray-600 text-sm sm:text-lg mb-1">
-              Karibu kwenye duka lako la mtandaoni
-            </p>
-            <p className="text-gray-400 text-xs sm:text-sm mb-8">
-              Bidhaa bora, zinawasilishwa kwa uangalifu
+            <p className="text-gray-400 text-sm sm:text-lg mb-1">
+              Tunahakikisha bidhaa bora zinawasilishwa kwa wakati.
             </p>
 
             <div className="space-y-4">
@@ -1658,7 +1655,7 @@ const RequestOrder = () => {
                 className="w-full bg-gradient-to-r from-emerald-500 to-teal-500 text-white font-semibold py-4 px-6 rounded-xl hover:shadow-xl hover:shadow-emerald-200 transition-all duration-300 hover:scale-[1.02] active:scale-95 flex items-center justify-center gap-3 text-base sm:text-lg"
               >
                 <FaShoppingBag className="text-lg sm:text-xl" />
-                Anza Ombi Lako
+                Weka Order yako hapa
                 <FaArrowRight className="text-sm" />
               </button>
 
@@ -1668,7 +1665,7 @@ const RequestOrder = () => {
                 </div>
                 <div className="relative flex justify-center text-xs">
                   <span className="px-4 bg-white text-gray-400">
-                    au fukilia ombi lako
+                    au fuatilia order yako ya awali hapa
                   </span>
                 </div>
               </div>
@@ -1681,7 +1678,7 @@ const RequestOrder = () => {
                       <FaSearch className="text-emerald-600" />
                     </div>
                     <span className="text-sm font-medium whitespace-nowrap">
-                      Fukilia Ombi
+                      Tafuta Order hapa
                     </span>
                   </div>
                   <div className="flex-1 w-full flex flex-col sm:flex-row gap-2">
@@ -1703,14 +1700,14 @@ const RequestOrder = () => {
                       ) : (
                         <>
                           <FaSearch className="w-4 h-4" />
-                          Angalia Hali
+                          Tafuta
                         </>
                       )}
                     </button>
                   </div>
                 </div>
                 <div className="mt-2 text-xs text-gray-400 text-left">
-                  💡 Ingiza namba yako ya ombi ili kuangalia hali yake
+                  💡 Hakikisha unaingiza number sahihi ya order
                 </div>
                 {statusError && (
                   <div className="mt-3 text-red-600 text-sm flex items-center gap-2 bg-red-50 p-2 rounded-lg border border-red-200">
@@ -1722,7 +1719,7 @@ const RequestOrder = () => {
             </div>
 
             <p className="text-xs text-gray-400 mt-6">
-              © 2026 UZA ONLINE SHOP. Haki zote zimehifadhiwa.
+              © 2025 Sys Tech. Haki zote zimehifadhiwa.
             </p>
           </div>
         </div>
@@ -1766,14 +1763,14 @@ const RequestOrder = () => {
 
           <div className="bg-gradient-to-r from-emerald-50 to-teal-50 rounded-xl p-4 sm:p-5 mb-8 border border-emerald-200">
             <p className="text-sm text-gray-700">
-              📌 Hifadhi namba hii ili kuangalia hali ya ombi lako baadaye.
+              📌 Hifadhi namba hii ili kufuatilia Order yako baadaye.
             </p>
             <button
               onClick={() => openRequestModal(requestNumber)}
               className="mt-3 text-sm text-emerald-600 font-medium hover:text-emerald-700 transition-colors flex items-center gap-2 mx-auto"
             >
               <FaSearch className="w-4 h-4" />
-              Fukilia ombi hili
+              Tafuta Order yako
             </button>
           </div>
 
@@ -1796,7 +1793,7 @@ const RequestOrder = () => {
                   d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"
                 />
               </svg>
-              <span>Chapisha / Hifadhi</span>
+              <span>Save / Hifadhi</span>
             </button>
 
             <button
@@ -1804,7 +1801,7 @@ const RequestOrder = () => {
               className="w-full bg-gradient-to-r from-emerald-500 to-teal-500 text-white font-semibold py-3.5 sm:py-4 px-4 sm:px-6 rounded-xl hover:shadow-xl hover:shadow-emerald-200 transition-all duration-300 hover:scale-[1.02] active:scale-95 flex items-center justify-center gap-3 text-sm sm:text-base"
             >
               <FaPlus className="w-4 h-4 sm:w-5 sm:h-5" />
-              Weka Ombi Lingine
+              Tuma Order nyingine
             </button>
           </div>
 
@@ -1813,7 +1810,7 @@ const RequestOrder = () => {
             className="text-sm text-emerald-600 hover:text-emerald-700 transition-colors flex items-center justify-center gap-2 mx-auto border border-emerald-200 bg-emerald-50 px-4 py-2.5 rounded-lg hover:bg-emerald-100 w-full"
           >
             <FaSearch className="w-4 h-4" />
-            Angalia Hali ya Ombi
+            Fuatilia Order yako
           </button>
         </div>
       </div>
@@ -2137,7 +2134,7 @@ const RequestOrder = () => {
                       onClick={() => setSearchTerm("")}
                       className="mt-4 text-emerald-600 font-medium hover:text-emerald-700 transition-colors text-sm"
                     >
-                      Futa utafutaji
+                      Futa
                     </button>
                   </div>
                 )}

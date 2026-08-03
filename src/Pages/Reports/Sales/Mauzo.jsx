@@ -726,7 +726,7 @@ const Mauzo = () => {
                   </div>
 
                   <div className="flex flex-wrap gap-1 mb-2">
-                    {txn.items.slice(0, 3).map((i) => (
+                    {txn.items.map((i) => (
                       <span
                         key={i.item._id}
                         className="inline-flex items-center px-2 py-0.5 bg-gray-100 rounded-full text-[10px] text-gray-700"
@@ -735,11 +735,6 @@ const Mauzo = () => {
                         {i.item.name} ×{i.quantity}
                       </span>
                     ))}
-                    {txn.items.length > 3 && (
-                      <span className="inline-flex items-center px-2 py-0.5 bg-gray-200 rounded-full text-[10px] text-gray-600">
-                        +{txn.items.length - 3}
-                      </span>
-                    )}
                   </div>
 
                   <div className="bg-gradient-to-r from-yellow-50 to-yellow-100 rounded-lg p-2.5 space-y-1.5">
@@ -839,7 +834,7 @@ const Mauzo = () => {
                         <td className="py-3 px-2 border-r border-gray-200">
                           <div className="items-center text-center">
                             <ul className="space-y-1">
-                              {txn.items.slice(0, 3).map((i) => (
+                              {txn.items.map((i) => (
                                 <li
                                   key={i.item._id}
                                   className="flex items-center text-xs text-gray-700 bg-gray-100 py-1 px-1 rounded-full shadow-[0px_2px_3px_-1px_rgba(0,0,0,0.1),0px_1px_0px_0px_rgba(25,28,33,0.02),0px_0px_0px_1px_rgba(25,28,33,0.08)] mt-2"
@@ -853,11 +848,6 @@ const Mauzo = () => {
                                   </span>
                                 </li>
                               ))}
-                              {txn.items.length > 3 && (
-                                <li className="flex items-center text-xs text-gray-600 bg-gray-200 py-1 px-2 rounded-full mt-2">
-                                  +{txn.items.length - 3} more
-                                </li>
-                              )}
                             </ul>
                           </div>
                         </td>

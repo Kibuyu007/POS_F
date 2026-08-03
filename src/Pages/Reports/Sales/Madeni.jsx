@@ -28,8 +28,12 @@ const Madeni = () => {
   const [load, setLoad] = useState(false);
   const [deductions, setDeductions] = useState({});
   const today = dayjs().startOf("day");
-  const [startDate, setStartDate] = useState(today);
-  const [endDate, setEndDate] = useState(dayjs());
+
+  // --- CHANGE 1: Initialize dates as null ---
+  const [startDate, setStartDate] = useState(null);
+  const [endDate, setEndDate] = useState(null);
+  const [dateRangePreset, setDateRangePreset] = useState("today"); // 'today', 'all', 'custom'
+
   const [customerFilter, setCustomerFilter] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 10;
@@ -64,28 +68,31 @@ const Madeni = () => {
     filterData();
   }, [startDate, endDate, customerFilter]);
 
+  // --- CHANGE 2: Update filterData to only apply date filters when dates are set ---
   const filterData = () => {
     let filtered = [...billedData];
 
+    // Only filter by date if startDate is set
     if (startDate) {
       filtered = filtered.filter((txn) =>
         dayjs(txn.createdAt).isSameOrAfter(dayjs(startDate), "day"),
       );
     }
 
+    // Only filter by date if endDate is set
     if (endDate) {
       filtered = filtered.filter((txn) =>
         dayjs(txn.createdAt).isSameOrBefore(dayjs(endDate), "day"),
       );
     }
 
+    // Customer search - ALWAYS works regardless of date
     if (customerFilter) {
+      const searchTerm = customerFilter.toLowerCase().trim();
       filtered = filtered.filter(
         (txn) =>
-          txn.customerDetails?.name
-            ?.toLowerCase()
-            .includes(customerFilter.toLowerCase()) ||
-          txn.customerDetails?.phone?.includes(customerFilter),
+          txn.customerDetails?.name?.toLowerCase().includes(searchTerm) ||
+          txn.customerDetails?.phone?.includes(searchTerm),
       );
     }
 
@@ -198,11 +205,26 @@ const Madeni = () => {
     }
   };
 
+  // --- CHANGE 3: Update clearFilters function ---
   const clearFilters = () => {
-    setStartDate(today);
-    setEndDate(dayjs());
+    setStartDate(null);
+    setEndDate(null);
+    setDateRangePreset("all"); // Set to 'all' when clearing
     setCustomerFilter("");
     toast.success("Filters cleared!");
+  };
+
+  // --- CHANGE 4: Add helper function for date presets ---
+  const setDatePreset = (preset) => {
+    setDateRangePreset(preset);
+    if (preset === "today") {
+      setStartDate(today);
+      setEndDate(dayjs());
+    } else if (preset === "all") {
+      setStartDate(null);
+      setEndDate(null);
+    }
+    // 'custom' is handled by the date pickers
   };
 
   const indexOfLast = currentPage * itemsPerPage;
@@ -214,13 +236,8 @@ const Madeni = () => {
 
   const activeFilterCount = [customerFilter].filter(Boolean).length;
 
-  const isDateFilterDefault =
-    startDate &&
-    endDate &&
-    dayjs(startDate).isSame(today, "day") &&
-    dayjs(endDate).isSame(dayjs(), "day");
-
-  const totalActiveFilters = activeFilterCount + (isDateFilterDefault ? 0 : 1);
+  // --- CHANGE 5: Update date filter detection ---
+  const totalActiveFilters = activeFilterCount + (startDate && endDate ? 1 : 0);
 
   const renderPagination = (currentPageNum, totalPagesNum, setPageFn) => {
     if (totalPagesNum === 0 || totalPagesNum === 1) return null;
@@ -469,17 +486,28 @@ const Madeni = () => {
                     Date Range
                   </p>
                   <p className="text-xs sm:text-sm font-bold text-black flex items-center gap-2">
-                    {dayjs(startDate).format("DD MMM YYYY")}
-                    <span className="text-gray-400">→</span>
-                    {dayjs(endDate).format("DD MMM YYYY")}
+                    {startDate && endDate ? (
+                      <>
+                        {dayjs(startDate).format("DD MMM YYYY")}
+                        <span className="text-gray-400">→</span>
+                        {dayjs(endDate).format("DD MMM YYYY")}
+                      </>
+                    ) : (
+                      <span className="text-green-600">All Dates</span>
+                    )}
                   </p>
                 </div>
               </div>
               <div className="flex items-center gap-2">
-                {isDateFilterDefault && (
+                {dateRangePreset === "today" && (
                   <span className="inline-flex items-center gap-1 px-3 py-1 bg-green-300 text-black text-[10px] sm:text-xs font-bold rounded-full border-2 border-green-400 shadow-sm">
                     <span className="w-1.5 h-1.5 bg-black rounded-full" />
                     Today
+                  </span>
+                )}
+                {dateRangePreset === "all" && (
+                  <span className="inline-flex items-center gap-1 px-3 py-1 bg-blue-300 text-black text-[10px] sm:text-xs font-bold rounded-full border-2 border-blue-400 shadow-sm">
+                    All Dates
                   </span>
                 )}
                 <span className="text-[10px] sm:text-xs text-gray-600 bg-white/80 backdrop-blur-sm px-3 py-1 rounded-full border border-gray-300">
@@ -545,6 +573,44 @@ const Madeni = () => {
               </button>
             </div>
 
+            {/* --- CHANGE 6: Add Date Preset Buttons --- */}
+            <div className="flex flex-wrap gap-2">
+              <button
+                onClick={() => setDatePreset("today")}
+                className={`px-4 py-1.5 rounded-lg text-sm font-semibold transition-all duration-200 ${
+                  dateRangePreset === "today"
+                    ? "bg-green-300 text-black border-2 border-green-400"
+                    : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+                }`}
+              >
+                Today
+              </button>
+              <button
+                onClick={() => setDatePreset("all")}
+                className={`px-4 py-1.5 rounded-lg text-sm font-semibold transition-all duration-200 ${
+                  dateRangePreset === "all"
+                    ? "bg-blue-300 text-black border-2 border-blue-400"
+                    : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+                }`}
+              >
+                All Dates
+              </button>
+              <button
+                onClick={() => {
+                  setDateRangePreset("custom");
+                  setStartDate(today);
+                  setEndDate(dayjs());
+                }}
+                className={`px-4 py-1.5 rounded-lg text-sm font-semibold transition-all duration-200 ${
+                  dateRangePreset === "custom"
+                    ? "bg-yellow-300 text-black border-2 border-yellow-400"
+                    : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+                }`}
+              >
+                Custom
+              </button>
+            </div>
+
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
               <div>
                 <label className="block text-xs font-medium text-gray-600 mb-1.5">
@@ -553,7 +619,10 @@ const Madeni = () => {
                 <LocalizationProvider dateAdapter={AdapterDayjs}>
                   <DatePicker
                     value={startDate}
-                    onChange={setStartDate}
+                    onChange={(newValue) => {
+                      setStartDate(newValue);
+                      setDateRangePreset("custom");
+                    }}
                     slotProps={{
                       textField: {
                         size: "small",
@@ -576,7 +645,10 @@ const Madeni = () => {
                 <LocalizationProvider dateAdapter={AdapterDayjs}>
                   <DatePicker
                     value={endDate}
-                    onChange={setEndDate}
+                    onChange={(newValue) => {
+                      setEndDate(newValue);
+                      setDateRangePreset("custom");
+                    }}
                     slotProps={{
                       textField: {
                         size: "small",
@@ -620,7 +692,7 @@ const Madeni = () => {
         {/* Active Filter Chips */}
         {totalActiveFilters > 0 && !showFilters && (
           <div className="flex flex-wrap gap-1 sm:gap-1.5 mb-3 sm:mb-4">
-            {!isDateFilterDefault && (
+            {startDate && endDate && dateRangePreset !== "all" && (
               <span className="inline-flex items-center gap-0.5 sm:gap-1 px-2 sm:px-3 py-0.5 sm:py-1 bg-blue-100 text-black text-[10px] sm:text-xs font-medium rounded-full border border-blue-200">
                 <svg
                   className="w-2.5 h-2.5 sm:w-3 sm:h-3 text-black"
@@ -638,10 +710,7 @@ const Madeni = () => {
                 {dayjs(startDate).format("DD/MM")} -{" "}
                 {dayjs(endDate).format("DD/MM")}
                 <button
-                  onClick={() => {
-                    setStartDate(today);
-                    setEndDate(dayjs());
-                  }}
+                  onClick={() => setDatePreset("all")}
                   className="hover:text-black/70"
                 >
                   <FiX className="w-2.5 h-2.5 sm:w-3 sm:h-3" />
