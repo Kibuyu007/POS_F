@@ -838,7 +838,7 @@ const Profit = () => {
                         <span
                           className={`text-sm sm:text-lg md:text-xl font-bold ${
                             isZeroProfit
-                              ? "text-yellow-300"
+                              ? "text-yellow-400"
                               : isProfit
                                 ? "text-green-600"
                                 : "text-red-600"

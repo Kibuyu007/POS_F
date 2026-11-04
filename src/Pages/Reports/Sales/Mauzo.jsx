@@ -33,7 +33,9 @@ const Mauzo = () => {
   const [endDate, setEndDate] = useState(dayjs());
   const [load, setLoad] = useState(false);
   const [cashier, setCashier] = useState("");
+  const [cashiers, setCashiers] = useState([]);
   const [searchQuery, setSearchQuery] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
   const [showFilters, setShowFilters] = useState(false);
 
   const [pagination, setPagination] = useState({
@@ -49,31 +51,56 @@ const Mauzo = () => {
 
   useEffect(() => {
     fetchTransactions();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const fetchTransactions = async (page = 1, limit = 10) => {
-    setLoad(true);
-    try {
-      const params = new URLSearchParams();
-      params.append("page", page);
-      params.append("limit", limit);
+  // Fetch cashiers from users API (not derived from transactions)
+  useEffect(() => {
+    axios
+      .get(`${BASE_URL}/api/users/all`)
+      .then((r) => {
+        const list = r.data?.data || r.data?.users || r.data || [];
+        setCashiers(Array.isArray(list) ? list : []);
+      })
+      .catch((err) => {
+        console.error("Failed to load cashiers:", err);
+      });
+  }, []);
 
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearch(searchQuery.trim());
+    }, 400);
+    return () => clearTimeout(timer);
+  }, [searchQuery]);
+
+  // Build params — matches the new backend (customer, not search)
+  const buildParams = (page, limit) => {
+    const params = new URLSearchParams();
+    params.append("page", page);
+    params.append("limit", limit);
+
+    // Skip date filters when searching → global customer lookup (all time)
+    if (!debouncedSearch) {
       if (startDate) {
         params.append("startDate", dayjs(startDate).format("YYYY-MM-DD"));
       }
       if (endDate) {
         params.append("endDate", dayjs(endDate).format("YYYY-MM-DD"));
       }
-      if (statusFilter !== "All") {
-        params.append("status", statusFilter);
-      }
-      if (cashier) {
-        params.append("cashier", cashier);
-      }
-      if (searchQuery) {
-        params.append("search", searchQuery);
-      }
+    }
 
+    if (statusFilter !== "All") params.append("status", statusFilter);
+    if (cashier) params.append("cashier", cashier);
+    if (debouncedSearch) params.append("customer", debouncedSearch);
+
+    return params;
+  };
+
+  const fetchTransactions = async (page = 1, limit = 10) => {
+    setLoad(true);
+    try {
+      const params = buildParams(page, limit);
       const res = await axios.get(
         `${BASE_URL}/api/transactions/all?${params.toString()}`,
       );
@@ -96,26 +123,7 @@ const Mauzo = () => {
   const fetchFilteredTransactions = async (page = 1, limit = 10) => {
     setLoad(true);
     try {
-      const params = new URLSearchParams();
-      params.append("page", page);
-      params.append("limit", limit);
-
-      if (startDate) {
-        params.append("startDate", dayjs(startDate).format("YYYY-MM-DD"));
-      }
-      if (endDate) {
-        params.append("endDate", dayjs(endDate).format("YYYY-MM-DD"));
-      }
-      if (statusFilter !== "All") {
-        params.append("status", statusFilter);
-      }
-      if (cashier) {
-        params.append("cashier", cashier);
-      }
-      if (searchQuery) {
-        params.append("search", searchQuery);
-      }
-
+      const params = buildParams(page, limit);
       const res = await axios.get(
         `${BASE_URL}/api/transactions/all?${params.toString()}`,
       );
@@ -136,7 +144,8 @@ const Mauzo = () => {
 
   useEffect(() => {
     fetchFilteredTransactions(1, itemsPerPage);
-  }, [statusFilter, startDate, endDate, cashier, searchQuery]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [statusFilter, startDate, endDate, cashier, debouncedSearch]);
 
   const handlePageChange = (newPage) => {
     if (newPage >= 1 && newPage <= pagination.totalPages) {
@@ -144,15 +153,18 @@ const Mauzo = () => {
     }
   };
 
+  // Backend already applied all filters — just render its response.
+  const visibleTransactions = filteredTransactions;
+
   const exportToExcel = () => {
     try {
-      const wsData = filteredTransactions.map((txn) => ({
+      const wsData = visibleTransactions.map((txn) => ({
         Date: dayjs(txn.createdAt).format("DD/MM/YYYY HH:mm"),
-        Customer: txn.customerDetails.name,
-        Phone: txn.customerDetails.phone,
+        Customer: txn.customerDetails?.name || "Walk-in",
+        Phone: txn.customerDetails?.phone || "-",
         Status: txn.status,
         Items: txn.items
-          .map((i) => `${i.item.name} x ${i.quantity}`)
+          .map((i) => `${i.item?.name || "Unknown"} x ${i.quantity}`)
           .join(", "),
         TotalAmount: txn.totalAmount,
         PaidAmount: txn.paidAmount || 0,
@@ -179,17 +191,19 @@ const Mauzo = () => {
       doc.text("Sales Report", 14, 15);
       doc.setFontSize(10);
       doc.text(`Generated: ${dayjs().format("DD/MM/YYYY HH:mm")}`, 14, 22);
-      doc.text(`Records: ${filteredTransactions.length}`, 14, 29);
+      doc.text(`Records: ${visibleTransactions.length}`, 14, 29);
 
-      const tableData = filteredTransactions.map((txn) => [
+      const tableData = visibleTransactions.map((txn) => [
         dayjs(txn.createdAt).format("DD/MM/YY HH:mm"),
-        txn.customerDetails.name,
-        txn.customerDetails.phone,
+        txn.customerDetails?.name || "Walk-in",
+        txn.customerDetails?.phone || "-",
         txn.status,
-        txn.items.map((i) => `${i.item.name} × ${i.quantity}`).join(", "),
+        txn.items
+          .map((i) => `${i.item?.name || "Unknown"} × ${i.quantity}`)
+          .join(", "),
         `${txn.totalAmount.toLocaleString()}`,
         `${(txn.paidAmount || txn.totalAmount).toLocaleString()}`,
-        `${txn.tradeDiscount.toLocaleString()}`,
+        `${(txn.tradeDiscount || 0).toLocaleString()}`,
       ]);
 
       autoTable(doc, {
@@ -217,27 +231,20 @@ const Mauzo = () => {
     }
   };
 
-  const alieUza = [
-    ...new Map(
-      transactions
-        .filter((txn) => txn.createdBy && txn.createdBy._id)
-        .map((txn) => [txn.createdBy._id, txn.createdBy]),
-    ).values(),
-  ];
-
   const clearFilters = () => {
     setStatusFilter("All");
     setStartDate(today);
     setEndDate(dayjs());
     setCashier("");
     setSearchQuery("");
+    setDebouncedSearch("");
     toast.success("Filters cleared!");
   };
 
   const activeFilterCount = [
     statusFilter !== "All",
     cashier,
-    searchQuery,
+    debouncedSearch,
   ].filter(Boolean).length;
 
   const isDateFilterDefault =
@@ -246,12 +253,13 @@ const Mauzo = () => {
     dayjs(startDate).isSame(today, "day") &&
     dayjs(endDate).isSame(dayjs(), "day");
 
-  const totalActiveFilters = activeFilterCount + (isDateFilterDefault ? 0 : 1);
+  const totalActiveFilters =
+    activeFilterCount + (!debouncedSearch && !isDateFilterDefault ? 1 : 0);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-gray-50">
       <div className="max-w-8xl mx-auto px-3 sm:px-4 md:px-6 py-4 sm:py-6 md:py-8">
-        {/* Header - Responsive */}
+        {/* Header */}
         <div className="flex flex-wrap items-center justify-between gap-3 sm:gap-4 mb-4 sm:mb-6">
           <div className="flex items-center gap-3 sm:gap-4">
             <div className="w-10 h-10 sm:w-12 sm:h-12 bg-green-300 rounded-2xl flex items-center justify-center shadow-lg shadow-green-200 border-2 border-green-400">
@@ -289,7 +297,7 @@ const Mauzo = () => {
           </button>
         </div>
 
-        {/* Stats Cards - Stacked on mobile */}
+        {/* Stats Cards */}
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 sm:gap-3 md:gap-4 mb-4 sm:mb-6">
           <div className="bg-white p-3 sm:p-4 md:p-5 rounded-2xl border-2 border-gray-400 shadow-md hover:shadow-xl transition-all duration-300 hover:scale-[1.02] group">
             <div className="flex items-center justify-between">
@@ -376,7 +384,7 @@ const Mauzo = () => {
           </div>
         </div>
 
-        {/* Date Range Display - Super Cool with Gradient */}
+        {/* Date Range Display */}
         <div className="relative mb-4 sm:mb-5 overflow-hidden">
           <div className="bg-gradient-to-r from-green-200 via-yellow-100 to-green-200 rounded-2xl p-3 sm:p-4 border-2 border-gray-300 shadow-md">
             <div className="absolute inset-0 bg-gradient-to-r from-green-300/20 via-transparent to-green-300/20" />
@@ -402,14 +410,22 @@ const Mauzo = () => {
                     Date Range
                   </p>
                   <p className="text-xs sm:text-sm font-bold text-black flex items-center gap-2">
-                    {dayjs(startDate).format("DD MMM YYYY")}
-                    <span className="text-gray-400">→</span>
-                    {dayjs(endDate).format("DD MMM YYYY")}
+                    {debouncedSearch ? (
+                      <span className="text-gray-500 italic">
+                        All time (search active)
+                      </span>
+                    ) : (
+                      <>
+                        {dayjs(startDate).format("DD MMM YYYY")}
+                        <span className="text-gray-400">→</span>
+                        {dayjs(endDate).format("DD MMM YYYY")}
+                      </>
+                    )}
                   </p>
                 </div>
               </div>
               <div className="flex items-center gap-2">
-                {isDateFilterDefault && (
+                {isDateFilterDefault && !debouncedSearch && (
                   <span className="inline-flex items-center gap-1 px-3 py-1 bg-green-300 text-black text-[10px] sm:text-xs font-bold rounded-full border-2 border-green-400 shadow-sm">
                     <span className="w-1.5 h-1.5 bg-black rounded-full" />
                     Today
@@ -423,7 +439,7 @@ const Mauzo = () => {
           </div>
         </div>
 
-        {/* Quick Status Filter + Search Bar - Responsive */}
+        {/* Quick Status Filter + Filters Button (search moved into panel) */}
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-4 mb-4 sm:mb-5">
           <div className="flex flex-wrap gap-1.5 sm:gap-2">
             {["All", "Paid", "Bill"].map((status) => (
@@ -445,7 +461,7 @@ const Mauzo = () => {
                   (
                   {status === "All"
                     ? pagination.totalItems
-                    : filteredTransactions.filter((t) => t.status === status)
+                    : visibleTransactions.filter((t) => t.status === status)
                         .length}
                   )
                 </span>
@@ -453,45 +469,25 @@ const Mauzo = () => {
             ))}
           </div>
 
-          <div className="flex gap-2 w-full sm:w-auto">
-            <div className="relative flex-1 sm:w-56 md:w-64">
-              <FaSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-black/50 w-3.5 h-3.5 sm:w-4 sm:h-4" />
-              <input
-                type="text"
-                placeholder="Search sales..."
-                className="w-full pl-8 sm:pl-9 pr-8 py-2 sm:py-2.5 bg-white border-2 border-gray-300 rounded-2xl focus:outline-none focus:ring-2 focus:ring-green-300 focus:border-transparent transition-all duration-200 text-black placeholder:text-black/50 text-xs sm:text-sm"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-              />
-              {searchQuery && (
-                <button
-                  onClick={() => setSearchQuery("")}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-black/40 hover:text-black/70"
-                >
-                  <FiX className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
-                </button>
-              )}
-            </div>
-            <button
-              onClick={() => setShowFilters(!showFilters)}
-              className={`flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-2 sm:py-2.5 rounded-2xl font-semibold text-xs sm:text-sm transition-all duration-200 border-2 ${
-                showFilters || totalActiveFilters > 0
-                  ? "bg-green-300 border-green-300 text-black shadow-md shadow-green-200"
-                  : "bg-white border-gray-300 text-gray-600 hover:bg-gray-100 hover:border-gray-400"
-              }`}
-            >
-              <FaFilter className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
-              <span className="hidden xs:inline">Filters</span>
-              {totalActiveFilters > 0 && (
-                <span className="bg-black text-white text-[10px] sm:text-xs w-4 h-4 sm:w-5 sm:h-5 rounded-full flex items-center justify-center font-bold">
-                  {totalActiveFilters}
-                </span>
-              )}
-            </button>
-          </div>
+          <button
+            onClick={() => setShowFilters(!showFilters)}
+            className={`flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-2 sm:py-2.5 rounded-2xl font-semibold text-xs sm:text-sm transition-all duration-200 border-2 w-full sm:w-auto justify-center ${
+              showFilters || totalActiveFilters > 0
+                ? "bg-green-300 border-green-300 text-black shadow-md shadow-green-200"
+                : "bg-white border-gray-300 text-gray-600 hover:bg-gray-100 hover:border-gray-400"
+            }`}
+          >
+            <FaFilter className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+            <span>Advanced Filters</span>
+            {totalActiveFilters > 0 && (
+              <span className="bg-black text-white text-[10px] sm:text-xs w-4 h-4 sm:w-5 sm:h-5 rounded-full flex items-center justify-center font-bold">
+                {totalActiveFilters}
+              </span>
+            )}
+          </button>
         </div>
 
-        {/* Expandable Filters Panel */}
+        {/* Expandable Filters Panel — Search lives here now */}
         {showFilters && (
           <div className="bg-white rounded-2xl p-4 sm:p-5 shadow-lg border-2 border-gray-200 mb-4 space-y-3 sm:space-y-4">
             <div className="flex items-center justify-between">
@@ -504,6 +500,38 @@ const Mauzo = () => {
               >
                 <FiX className="w-4 h-4 sm:w-5 sm:h-5" />
               </button>
+            </div>
+
+            {debouncedSearch && (
+              <div className="bg-yellow-50 border border-yellow-200 rounded-xl px-3 py-2 text-xs text-yellow-800">
+                Date filters are ignored while searching by customer. Clear the
+                search to use date range again.
+              </div>
+            )}
+
+            {/* Customer Search — moved here */}
+            <div>
+              <label className="block text-xs font-medium text-gray-600 mb-1.5">
+                Search Customer Name
+              </label>
+              <div className="relative">
+                <FaSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-black/50 w-4 h-4" />
+                <input
+                  type="text"
+                  placeholder="Type customer name (all-time search)..."
+                  className="w-full pl-9 pr-9 py-2.5 bg-white border-2 border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-green-300 focus:border-transparent transition-all duration-200 text-black placeholder:text-black/50 text-sm"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                />
+                {searchQuery && (
+                  <button
+                    onClick={() => setSearchQuery("")}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-black/40 hover:text-black/70"
+                  >
+                    <FiX className="w-4 h-4" />
+                  </button>
+                )}
+              </div>
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
@@ -565,8 +593,8 @@ const Mauzo = () => {
                 className="w-full px-4 py-2.5 text-sm border-2 border-gray-300 rounded-xl bg-white focus:outline-none focus:ring-2 focus:ring-green-300 focus:border-transparent transition-all duration-200 text-black"
               >
                 <option value="">All Cashiers</option>
-                {alieUza.map((u, idx) => (
-                  <option key={idx} value={u._id}>
+                {cashiers.map((u) => (
+                  <option key={u._id} value={u._id}>
                     {u.firstName} {u.lastName}
                   </option>
                 ))}
@@ -599,7 +627,7 @@ const Mauzo = () => {
         {/* Active Filter Chips */}
         {totalActiveFilters > 0 && !showFilters && (
           <div className="flex flex-wrap gap-1 sm:gap-1.5 mb-3 sm:mb-4">
-            {!isDateFilterDefault && (
+            {!debouncedSearch && !isDateFilterDefault && (
               <span className="inline-flex items-center gap-0.5 sm:gap-1 px-2 sm:px-3 py-0.5 sm:py-1 bg-blue-100 text-black text-[10px] sm:text-xs font-medium rounded-full border border-blue-200">
                 <svg
                   className="w-2.5 h-2.5 sm:w-3 sm:h-3 text-black"
@@ -640,7 +668,7 @@ const Mauzo = () => {
             )}
             {cashier && (
               <span className="inline-flex items-center gap-0.5 sm:gap-1 px-2 sm:px-3 py-0.5 sm:py-1 bg-purple-100 text-black text-[10px] sm:text-xs font-medium rounded-full border border-purple-200">
-                {alieUza.find((u) => u._id === cashier)?.firstName}
+                {cashiers.find((u) => u._id === cashier)?.firstName || "Cashier"}
                 <button
                   onClick={() => setCashier("")}
                   className="hover:text-black/70"
@@ -649,11 +677,14 @@ const Mauzo = () => {
                 </button>
               </span>
             )}
-            {searchQuery && (
+            {debouncedSearch && (
               <span className="inline-flex items-center gap-0.5 sm:gap-1 px-2 sm:px-3 py-0.5 sm:py-1 bg-gray-100 text-black text-[10px] sm:text-xs font-medium rounded-full border border-gray-200">
-                {searchQuery}
+                searching
                 <button
-                  onClick={() => setSearchQuery("")}
+                  onClick={() => {
+                    setSearchQuery("");
+                    setDebouncedSearch("");
+                  }}
                   className="hover:text-black/70"
                 >
                   <FiX className="w-2.5 h-2.5 sm:w-3 sm:h-3" />
@@ -665,22 +696,27 @@ const Mauzo = () => {
 
         <Loading load={load} />
 
-        {/* Results Count - Responsive */}
+        {/* Results Count */}
         <div className="flex items-center justify-between mb-2 sm:mb-3 px-1">
           <p className="text-[9px] sm:text-sm text-gray-500">
             <span className="font-semibold text-gray-700">
               {pagination.totalItems}
             </span>{" "}
             transactions found
+            {debouncedSearch && (
+              <span className="ml-1 text-gray-400">
+                for 
+              </span>
+            )}
           </p>
           <p className="text-[9px] sm:text-sm text-gray-400">
             Page {pagination.currentPage} of {pagination.totalPages || 1}
           </p>
         </div>
 
-        {/* Mobile Card View - Responsive */}
+        {/* Mobile Card View */}
         <div className="md:hidden space-y-2 sm:space-y-2.5 mb-4">
-          {filteredTransactions.length === 0 ? (
+          {visibleTransactions.length === 0 ? (
             <div className="bg-white rounded-2xl border-2 border-gray-300 shadow-sm py-12 sm:py-16 text-center">
               <div className="w-16 h-16 sm:w-20 sm:h-20 bg-gray-200 rounded-full flex items-center justify-center mx-auto mb-3 sm:mb-4 border-2 border-gray-300">
                 <svg
@@ -701,11 +737,13 @@ const Mauzo = () => {
                 No transactions found
               </p>
               <p className="text-xs sm:text-sm text-gray-500 mt-1">
-                Try adjusting your filters
+                {debouncedSearch
+                  ? `No results for "${debouncedSearch}"`
+                  : "Try adjusting your filters"}
               </p>
             </div>
           ) : (
-            filteredTransactions.map((txn) => (
+            visibleTransactions.map((txn) => (
               <div
                 key={txn._id}
                 className="bg-white rounded-xl border-2 border-gray-200 shadow-sm hover:shadow-lg hover:border-green-300 transition-all duration-300"
@@ -714,10 +752,14 @@ const Mauzo = () => {
                   <div className="flex items-center justify-between mb-2">
                     <div className="flex items-center gap-2 min-w-0">
                       <span
-                        className={`w-2 h-2 rounded-full flex-shrink-0 ${txn.status === "Paid" ? "bg-green-500" : "bg-yellow-500"}`}
+                        className={`w-2 h-2 rounded-full flex-shrink-0 ${
+                          String(txn.status).toLowerCase() === "paid"
+                            ? "bg-green-500"
+                            : "bg-yellow-500"
+                        }`}
                       />
                       <span className="text-xs font-bold text-black truncate">
-                        {txn.customerDetails.name || "Walk-in"}
+                        {txn.customerDetails?.name || "Walk-in"}
                       </span>
                     </div>
                     <span className="text-[10px] text-gray-500 flex-shrink-0">
@@ -726,19 +768,19 @@ const Mauzo = () => {
                   </div>
 
                   <div className="flex flex-wrap gap-1 mb-2">
-                    {txn.items.map((i) => (
+                    {txn.items.map((i, idx) => (
                       <span
-                        key={i.item._id}
+                        key={i.item?._id || idx}
                         className="inline-flex items-center px-2 py-0.5 bg-gray-100 rounded-full text-[10px] text-gray-700"
                       >
                         <span className="w-1 h-1 bg-green-500 rounded-full mr-1" />
-                        {i.item.name} ×{i.quantity}
+                        {i.item?.name || "Unknown"} ×{i.quantity}
                       </span>
                     ))}
                   </div>
 
                   <div className="bg-gradient-to-r from-yellow-50 to-yellow-100 rounded-lg p-2.5 space-y-1.5">
-                    {txn.status === "Bill" ? (
+                    {String(txn.status).toLowerCase() === "bill" ? (
                       <>
                         <div className="flex justify-between text-xs">
                           <span className="text-gray-600">Bill:</span>
@@ -768,7 +810,7 @@ const Mauzo = () => {
           )}
         </div>
 
-        {/* Desktop Table View - ORIGINAL DESIGN */}
+        {/* Desktop Table View */}
         <div className="hidden md:block rounded-xl shadow bg-white overflow-hidden">
           <div className="overflow-x-auto">
             <table className="min-w-full">
@@ -798,7 +840,7 @@ const Mauzo = () => {
               <tr className="h-3" />
 
               <tbody>
-                {filteredTransactions.length === 0 ? (
+                {visibleTransactions.length === 0 ? (
                   <tr>
                     <td colSpan={9} className="text-center py-12">
                       <div className="space-y-3">
@@ -807,13 +849,15 @@ const Mauzo = () => {
                           No sales transactions found
                         </p>
                         <p className="text-gray-600 text-sm">
-                          Try adjusting your filters
+                          {debouncedSearch
+                            ? `No results for "${debouncedSearch}"`
+                            : "Try adjusting your filters"}
                         </p>
                       </div>
                     </td>
                   </tr>
                 ) : (
-                  filteredTransactions.map((txn) => (
+                  visibleTransactions.map((txn) => (
                     <React.Fragment key={txn._id}>
                       <tr className="hover:bg-gray-50 transition-colors">
                         <td className="py-3 px-2 text-center bg-gray-200 border-r border-gray-300">
@@ -823,25 +867,25 @@ const Mauzo = () => {
                         </td>
                         <td className="py-3 px-2 text-center bg-gray-100 border-r border-gray-200">
                           <span className="font-bold text-black text-xs">
-                            {txn.customerDetails.name || "Walk-in Customer"}
+                            {txn.customerDetails?.name || "Walk-in Customer"}
                           </span>
                         </td>
                         <td className="py-3 px-2 text-center bg-green-200 border-r border-gray-200">
                           <span className="font-bold text-black text-xs">
-                            {txn.customerDetails.phone || "-"}
+                            {txn.customerDetails?.phone || "-"}
                           </span>
                         </td>
                         <td className="py-3 px-2 border-r border-gray-200">
                           <div className="items-center text-center">
                             <ul className="space-y-1">
-                              {txn.items.map((i) => (
+                              {txn.items.map((i, idx) => (
                                 <li
-                                  key={i.item._id}
+                                  key={i.item?._id || idx}
                                   className="flex items-center text-xs text-gray-700 bg-gray-100 py-1 px-1 rounded-full shadow-[0px_2px_3px_-1px_rgba(0,0,0,0.1),0px_1px_0px_0px_rgba(25,28,33,0.02),0px_0px_0px_1px_rgba(25,28,33,0.08)] mt-2"
                                 >
                                   <span className="w-1.5 h-1.5 bg-green-500 rounded-full mr-2"></span>
                                   <span className="font-medium text-gray-800">
-                                    {i.item.name || "Unknown Item"}
+                                    {i.item?.name || "Unknown Item"}
                                   </span>
                                   <span className="ml-1 text-gray-600">
                                     × {i.quantity}
@@ -853,14 +897,18 @@ const Mauzo = () => {
                         </td>
                         <td className="py-3 px-2 text-center border-r border-gray-200">
                           <span
-                            className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-bold ${txn.status === "Paid" ? "bg-green-100 text-green-700" : "bg-yellow-100 text-yellow-700"}`}
+                            className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-bold ${
+                              String(txn.status).toLowerCase() === "paid"
+                                ? "bg-green-100 text-green-700"
+                                : "bg-yellow-100 text-yellow-700"
+                            }`}
                           >
                             {txn.status}
                           </span>
                         </td>
                         <td className="py-3 px-2 text-center border-r border-gray-200">
                           <div className="flex flex-col space-y-2 max-w-xs bg-gradient-to-r from-yellow-100 via-yellow-50 to-yellow-100 rounded-xl p-4 shadow-lg">
-                            {txn.status === "Bill" ? (
+                            {String(txn.status).toLowerCase() === "bill" ? (
                               <>
                                 <div className="flex items-center gap-2">
                                   <MdReceipt className="text-yellow-500 text-sm" />
@@ -922,7 +970,7 @@ const Mauzo = () => {
                         </td>
                         <td className="py-3 px-2 text-center bg-yellow-100 border-r border-gray-200">
                           <span className="font-bold text-black text-xs">
-                            {txn.tradeDiscount.toLocaleString()}
+                            {(txn.tradeDiscount || 0).toLocaleString()}
                           </span>
                         </td>
                         <td className="py-3 px-2 text-center bg-gray-100 border-r border-gray-200">
@@ -996,7 +1044,7 @@ const Mauzo = () => {
           </div>
         </div>
 
-        {/* Pagination - Responsive */}
+        {/* Pagination */}
         {pagination.totalPages > 1 && (
           <div className="mt-3 sm:mt-4 bg-white px-3 sm:px-5 py-2.5 sm:py-4 rounded-xl border-2 border-gray-300 shadow-sm flex flex-col sm:flex-row justify-between items-center gap-2 sm:gap-3">
             <span className="text-[9px] sm:text-xs text-gray-500 text-center sm:text-left">
