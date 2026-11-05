@@ -22,7 +22,6 @@ import BASE_URL from "../../../Utils/config";
 import toast from "react-hot-toast";
 
 const Mauzo = () => {
-  const [transactions, setTransactions] = useState([]);
   const [filteredTransactions, setFilteredTransactions] = useState([]);
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage] = useState(10);
@@ -77,22 +76,33 @@ const Mauzo = () => {
   // Build params — matches the new backend (customer, not search)
   const buildParams = (page, limit) => {
     const params = new URLSearchParams();
+
     params.append("page", page);
     params.append("limit", limit);
 
-    // Skip date filters when searching → global customer lookup (all time)
-    if (!debouncedSearch) {
-      if (startDate) {
-        params.append("startDate", dayjs(startDate).format("YYYY-MM-DD"));
-      }
-      if (endDate) {
-        params.append("endDate", dayjs(endDate).format("YYYY-MM-DD"));
-      }
+    // Always apply date filters, including customer searches
+    if (startDate && dayjs(startDate).isValid()) {
+      params.append("startDate", dayjs(startDate).format("YYYY-MM-DD"));
     }
 
-    if (statusFilter !== "All") params.append("status", statusFilter);
-    if (cashier) params.append("cashier", cashier);
-    if (debouncedSearch) params.append("customer", debouncedSearch);
+    if (endDate && dayjs(endDate).isValid()) {
+      params.append("endDate", dayjs(endDate).format("YYYY-MM-DD"));
+    }
+
+    // Status filter
+    if (statusFilter !== "All") {
+      params.append("status", statusFilter);
+    }
+
+    // Cashier filter
+    if (cashier) {
+      params.append("cashier", cashier);
+    }
+
+    // Customer name filter
+    if (debouncedSearch.trim()) {
+      params.append("customer", debouncedSearch.trim());
+    }
 
     return params;
   };
@@ -105,7 +115,6 @@ const Mauzo = () => {
         `${BASE_URL}/api/transactions/all?${params.toString()}`,
       );
       if (res.data.success) {
-        setTransactions(res.data.data);
         setFilteredTransactions(res.data.data);
         setPagination(res.data.pagination);
         setTotals(res.data.totals || { paid: 0, bill: 0, discount: 0 });
@@ -128,7 +137,6 @@ const Mauzo = () => {
         `${BASE_URL}/api/transactions/all?${params.toString()}`,
       );
       if (res.data.success) {
-        setTransactions(res.data.data);
         setFilteredTransactions(res.data.data);
         setPagination(res.data.pagination);
         setTotals(res.data.totals || { paid: 0, bill: 0, discount: 0 });
@@ -253,8 +261,7 @@ const Mauzo = () => {
     dayjs(startDate).isSame(today, "day") &&
     dayjs(endDate).isSame(dayjs(), "day");
 
-  const totalActiveFilters =
-    activeFilterCount + (!debouncedSearch && !isDateFilterDefault ? 1 : 0);
+  const totalActiveFilters = activeFilterCount + (!isDateFilterDefault ? 1 : 0);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-gray-50">
@@ -410,17 +417,11 @@ const Mauzo = () => {
                     Date Range
                   </p>
                   <p className="text-xs sm:text-sm font-bold text-black flex items-center gap-2">
-                    {debouncedSearch ? (
-                      <span className="text-gray-500 italic">
-                        All time (search active)
-                      </span>
-                    ) : (
-                      <>
-                        {dayjs(startDate).format("DD MMM YYYY")}
-                        <span className="text-gray-400">→</span>
-                        {dayjs(endDate).format("DD MMM YYYY")}
-                      </>
-                    )}
+                    <>
+                      {dayjs(startDate).format("DD MMM YYYY")}
+                      <span className="text-gray-400">→</span>
+                      {dayjs(endDate).format("DD MMM YYYY")}
+                    </>
                   </p>
                 </div>
               </div>
@@ -518,7 +519,7 @@ const Mauzo = () => {
                 <FaSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-black/50 w-4 h-4" />
                 <input
                   type="text"
-                  placeholder="Type customer name (all-time search)..."
+                  placeholder="Search customer within selected date range..."
                   className="w-full pl-9 pr-9 py-2.5 bg-white border-2 border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-green-300 focus:border-transparent transition-all duration-200 text-black placeholder:text-black/50 text-sm"
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
@@ -627,7 +628,7 @@ const Mauzo = () => {
         {/* Active Filter Chips */}
         {totalActiveFilters > 0 && !showFilters && (
           <div className="flex flex-wrap gap-1 sm:gap-1.5 mb-3 sm:mb-4">
-            {!debouncedSearch && !isDateFilterDefault && (
+            {!isDateFilterDefault && (
               <span className="inline-flex items-center gap-0.5 sm:gap-1 px-2 sm:px-3 py-0.5 sm:py-1 bg-blue-100 text-black text-[10px] sm:text-xs font-medium rounded-full border border-blue-200">
                 <svg
                   className="w-2.5 h-2.5 sm:w-3 sm:h-3 text-black"
@@ -668,7 +669,8 @@ const Mauzo = () => {
             )}
             {cashier && (
               <span className="inline-flex items-center gap-0.5 sm:gap-1 px-2 sm:px-3 py-0.5 sm:py-1 bg-purple-100 text-black text-[10px] sm:text-xs font-medium rounded-full border border-purple-200">
-                {cashiers.find((u) => u._id === cashier)?.firstName || "Cashier"}
+                {cashiers.find((u) => u._id === cashier)?.firstName ||
+                  "Cashier"}
                 <button
                   onClick={() => setCashier("")}
                   className="hover:text-black/70"
@@ -703,11 +705,7 @@ const Mauzo = () => {
               {pagination.totalItems}
             </span>{" "}
             transactions found
-            {debouncedSearch && (
-              <span className="ml-1 text-gray-400">
-                for 
-              </span>
-            )}
+            {debouncedSearch && <span className="ml-1 text-gray-400">for</span>}
           </p>
           <p className="text-[9px] sm:text-sm text-gray-400">
             Page {pagination.currentPage} of {pagination.totalPages || 1}
