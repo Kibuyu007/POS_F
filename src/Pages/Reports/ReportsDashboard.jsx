@@ -6,6 +6,7 @@ import Mauzo from "./Sales/Mauzo";
 import BillNonPo from "./Procurement/BillNonPo";
 import BillPo from "./Procurement/BillPo";
 import Profit from "./Sales/Profit";
+import Ledger from "./Ledger/Ledger";
 
 const ReportsDashboard = () => {
   const [selectedReport, setSelectedReport] = useState(null);
@@ -32,6 +33,8 @@ const ReportsDashboard = () => {
         return <Madeni />;
       case "Faida ya Bidhaa":
         return <Profit />;
+      case "Ledger":
+        return <Ledger />;
       case "Report ya Madeni PO":
         return <BillPo />;
       case "Report ya Madeni Non PO":
@@ -139,7 +142,7 @@ const ReportsDashboard = () => {
 
         <ReportList
           title="Sales Reports"
-          reports={["Mauzo", "Madeni", "Faida ya Bidhaa"]}
+          reports={["Mauzo", "Madeni","Faida ya Bidhaa", "Ledger"]}
           selectedReport={selectedReport}
           handleSelect={handleSelect}
         />
