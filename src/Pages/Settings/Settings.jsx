@@ -21,6 +21,7 @@ import WalletReport from "./Customers/WalletReport";
 import Expenses from "./Procurement/Expenses";
 import Debts from "./Debts/Debts";
 import Orders from "./../Orders/Orders";
+import Adjustment from "./Products/Items/Adjustment";
 
 const Settings = () => {
   const [selectedSetting, setSelectedSetting] = useState(null);
@@ -49,6 +50,8 @@ const Settings = () => {
         return <Items />;
       case "Items Categories":
         return <ItemsCategories />;
+      case "Adjustment":
+        return <Adjustment />;
       case "Purchase Order":
         return <Manunuzi />;
       case "Completed PO":
@@ -215,7 +218,7 @@ const Settings = () => {
 
         <SettingsList
           title="Products Management"
-          settings={["Items", "Items Categories"]}
+          settings={["Items", "Items Categories", "Adjustment"]}
           selectedSetting={selectedSetting}
           handleSelect={handleSelect}
         />
