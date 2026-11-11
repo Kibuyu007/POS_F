@@ -142,7 +142,7 @@ const ReportsDashboard = () => {
 
         <ReportList
           title="Sales Reports"
-          reports={["Mauzo", "Madeni","Faida ya Bidhaa", "Ledger"]}
+          reports={["Mauzo", "Madeni","Faida ya Bidhaa"]}
           selectedReport={selectedReport}
           handleSelect={handleSelect}
         />
