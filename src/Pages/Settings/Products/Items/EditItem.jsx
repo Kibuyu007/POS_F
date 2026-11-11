@@ -6,7 +6,6 @@ import { fetchCategories } from "../../../../Redux/itemsCategories";
 import axios from "axios";
 import {
   FiBox,
-  FiDollarSign,
   FiTag,
   FiPackage,
   FiCalendar,
@@ -21,6 +20,7 @@ import {
   FiShoppingBag,
   FiMinus,
 } from "react-icons/fi";
+import { GiTakeMyMoney } from "react-icons/gi";
 
 //API
 import BASE_URL from "../../../../Utils/config";
@@ -112,14 +112,16 @@ const EditItem = ({ showModal, setShowModal, item, onItemUpdated }) => {
         setPhotoPreview(item.photo);
       }
 
+      // Reset file selection when item changes
+      setFile(null);
+
       // Calculate wholesale values (using 1 as minQty)
       const rawPrice = parseFloat(item.price) || 0;
       const rawWholesalePrice = parseFloat(item.wholesalePrice) || 0;
-      const rawWholesaleMinQty = 1; // Always 1
 
       if (item.enableWholesale && rawWholesalePrice > 0 && rawPrice > 0) {
-        const perUnitWholesalePrice = rawWholesalePrice; // Since minQty is 1
-        const totalRetailPrice = rawPrice; // Since minQty is 1
+        const perUnitWholesalePrice = rawWholesalePrice;
+        const totalRetailPrice = rawPrice;
         const savingsAmount = totalRetailPrice - rawWholesalePrice;
         const discountPercentage =
           totalRetailPrice > 0 ? (savingsAmount / totalRetailPrice) * 100 : 0;
@@ -129,6 +131,13 @@ const EditItem = ({ showModal, setShowModal, item, onItemUpdated }) => {
           discountPercentage: parseFloat(discountPercentage.toFixed(1)),
           totalRetailPrice: parseFloat(totalRetailPrice.toFixed(2)),
           savingsAmount: parseFloat(savingsAmount.toFixed(2)),
+        });
+      } else {
+        setCalculatedValues({
+          perUnitWholesalePrice: 0,
+          discountPercentage: 0,
+          totalRetailPrice: 0,
+          savingsAmount: 0,
         });
       }
     }
@@ -140,11 +149,10 @@ const EditItem = ({ showModal, setShowModal, item, onItemUpdated }) => {
     const rawWholesalePrice = parseCommaFormattedNumber(
       editData.wholesalePrice,
     );
-    const rawWholesaleMinQty = 1; // Always 1
 
     if (editData.enableWholesale && rawWholesalePrice > 0 && rawPrice > 0) {
-      const perUnitWholesalePrice = rawWholesalePrice; // Since minQty is 1
-      const totalRetailPrice = rawPrice; // Since minQty is 1
+      const perUnitWholesalePrice = rawWholesalePrice;
+      const totalRetailPrice = rawPrice;
       const savingsAmount = totalRetailPrice - rawWholesalePrice;
       const discountPercentage =
         totalRetailPrice > 0 ? (savingsAmount / totalRetailPrice) * 100 : 0;
@@ -243,10 +251,35 @@ const EditItem = ({ showModal, setShowModal, item, onItemUpdated }) => {
   };
 
   const handlePhotoChange = (e) => {
-    const file = e.target.files[0];
-    if (file) {
-      setFile(file);
-      setPhotoPreview(URL.createObjectURL(file));
+    const selectedFile = e.target.files[0];
+    if (selectedFile) {
+      setFile(selectedFile);
+      setPhotoPreview(URL.createObjectURL(selectedFile));
+    }
+  };
+
+  // Upload new photo (only called if user picked a new file).
+  // This is isolated so a photo-upload failure can't break the main update.
+  const uploadNewPhoto = async () => {
+    if (!file) return true; // nothing to upload
+
+    try {
+      const formData = new FormData();
+      formData.append("photo", file);
+
+      await axios.put(
+        `${BASE_URL}/api/items/editItemPhoto/${item._id}`,
+        formData,
+        {
+          withCredentials: true,
+          headers: { "Content-Type": "multipart/form-data" },
+        },
+      );
+      return true;
+    } catch (err) {
+      console.error("Photo upload failed:", err);
+      toast.error("Item updated, but photo upload failed.");
+      return false;
     }
   };
 
@@ -255,13 +288,11 @@ const EditItem = ({ showModal, setShowModal, item, onItemUpdated }) => {
 
     // Parse numeric values before validation
     const rawPrice = parseCommaFormattedNumber(editData.price);
-    const rawQuantity = parseCommaFormattedNumber(editData.itemQuantity);
     const rawReOrder = parseCommaFormattedNumber(editData.reOrder);
     const rawDiscount = parseCommaFormattedNumber(editData.discount);
     const rawWholesalePrice = parseCommaFormattedNumber(
       editData.wholesalePrice,
     );
-    const rawWholesaleMinQty = 1; // Always 1
 
     // Validation
     if (!editData.name.trim()) {
@@ -284,7 +315,7 @@ const EditItem = ({ showModal, setShowModal, item, onItemUpdated }) => {
       return;
     }
 
-    // Wholesale validation (simplified since minQty is always 1)
+    // Wholesale validation
     if (editData.enableWholesale) {
       if (!rawWholesalePrice || Number(rawWholesalePrice) <= 0) {
         toast.error(
@@ -304,22 +335,45 @@ const EditItem = ({ showModal, setShowModal, item, onItemUpdated }) => {
     setLoading(true);
 
     try {
-      // Prepare data with parsed numeric values
-      const updateData = {
-        ...editData,
+      // ✅ JSON payload — backend can actually parse this.
+      // ✅ itemQuantity is EXCLUDED — stock is managed elsewhere.
+      const payload = {
+        name: editData.name.trim(),
         price: rawPrice,
-        itemQuantity: rawQuantity,
+        category: editData.category,
+        barCode: editData.barCode || "",
         reOrder: rawReOrder,
         discount: rawDiscount,
+        manufactureDate: editData.manufactureDate
+          ? editData.manufactureDate.toISOString()
+          : null,
+        expireDate: editData.expireDate
+          ? editData.expireDate.toISOString()
+          : null,
         wholesalePrice: rawWholesalePrice,
-        wholesaleMinQty: 1, // Always 1 for API
+        wholesaleMinQty: 1, // Always 1
+        enableWholesale: editData.enableWholesale,
       };
+
+      console.log("📤 Update payload:", payload);
+      console.log("🆔 Item ID:", item._id);
 
       const response = await axios.put(
         `${BASE_URL}/api/items/editItem/${item._id}`,
-        updateData,
-        { withCredentials: true },
+        payload,
+        {
+          withCredentials: true,
+          headers: { "Content-Type": "application/json" },
+        },
       );
+
+      console.log("📥 Response:", response.data);
+
+      // If user picked a new photo, upload it after the main update succeeds.
+      // Failure here won't undo the field update.
+      if (file) {
+        await uploadNewPhoto();
+      }
 
       toast.success("Item updated successfully!");
 
@@ -329,6 +383,7 @@ const EditItem = ({ showModal, setShowModal, item, onItemUpdated }) => {
       }, 1200);
     } catch (error) {
       console.error("Update failed:", error);
+      console.error("Response data:", error.response?.data);
 
       if (error.response?.data) {
         toast.error(
@@ -366,6 +421,7 @@ const EditItem = ({ showModal, setShowModal, item, onItemUpdated }) => {
 
       setEditData(resetData);
       setPhotoPreview(item.photo || null);
+      setFile(null);
 
       // Recalculate values
       const rawPrice = parseFloat(item.price) || 0;
@@ -383,6 +439,13 @@ const EditItem = ({ showModal, setShowModal, item, onItemUpdated }) => {
           discountPercentage: parseFloat(discountPercentage.toFixed(1)),
           totalRetailPrice: parseFloat(totalRetailPrice.toFixed(2)),
           savingsAmount: parseFloat(savingsAmount.toFixed(2)),
+        });
+      } else {
+        setCalculatedValues({
+          perUnitWholesalePrice: 0,
+          discountPercentage: 0,
+          totalRetailPrice: 0,
+          savingsAmount: 0,
         });
       }
     }
@@ -459,7 +522,7 @@ const EditItem = ({ showModal, setShowModal, item, onItemUpdated }) => {
                       </div>
                       <div className="relative">
                         <div className="absolute inset-y-0 left-3 flex items-center">
-                          <FiDollarSign className="w-4 h-4 text-gray-500" />
+                          <GiTakeMyMoney className="w-4 h-4 text-gray-500" />
                         </div>
                         <input
                           type="text"
@@ -647,7 +710,7 @@ const EditItem = ({ showModal, setShowModal, item, onItemUpdated }) => {
                       </div>
                     </div>
 
-                    {/* WHOLESALE SECTION - IMPROVED */}
+                    {/* WHOLESALE SECTION */}
                     <div className="col-span-1 md:col-span-3 mt-6">
                       <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-xl p-4">
                         <div className="flex items-center justify-between mb-4">
@@ -728,7 +791,7 @@ const EditItem = ({ showModal, setShowModal, item, onItemUpdated }) => {
                               {/* Wholesale Price (Per Unit) */}
                               <div className="bg-white p-4 rounded-lg border border-blue-200 shadow-sm">
                                 <label className="block text-sm font-bold text-gray-900 mb-2 flex items-center gap-2">
-                                  <FiDollarSign className="w-4 h-4 text-blue-500" />
+                                  <GiTakeMyMoney className="w-4 h-4 text-blue-500" />
                                   Wholesale Price (per unit)
                                 </label>
                                 <p className="text-xs text-gray-500 mb-3">
