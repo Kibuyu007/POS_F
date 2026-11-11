@@ -138,7 +138,7 @@ const EditItem = ({ showModal, setShowModal, item, onItemUpdated }) => {
   useEffect(() => {
     const rawPrice = parseCommaFormattedNumber(editData.price);
     const rawWholesalePrice = parseCommaFormattedNumber(
-      editData.wholesalePrice
+      editData.wholesalePrice,
     );
     const rawWholesaleMinQty = 1; // Always 1
 
@@ -259,7 +259,7 @@ const EditItem = ({ showModal, setShowModal, item, onItemUpdated }) => {
     const rawReOrder = parseCommaFormattedNumber(editData.reOrder);
     const rawDiscount = parseCommaFormattedNumber(editData.discount);
     const rawWholesalePrice = parseCommaFormattedNumber(
-      editData.wholesalePrice
+      editData.wholesalePrice,
     );
     const rawWholesaleMinQty = 1; // Always 1
 
@@ -288,14 +288,14 @@ const EditItem = ({ showModal, setShowModal, item, onItemUpdated }) => {
     if (editData.enableWholesale) {
       if (!rawWholesalePrice || Number(rawWholesalePrice) <= 0) {
         toast.error(
-          "Wholesale price must be greater than 0 when wholesale is enabled"
+          "Wholesale price must be greater than 0 when wholesale is enabled",
         );
         return;
       }
 
       if (Number(rawWholesalePrice) >= rawPrice) {
         toast.error(
-          "Wholesale price must be less than retail price to offer a discount"
+          "Wholesale price must be less than retail price to offer a discount",
         );
         return;
       }
@@ -318,7 +318,7 @@ const EditItem = ({ showModal, setShowModal, item, onItemUpdated }) => {
       const response = await axios.put(
         `${BASE_URL}/api/items/editItem/${item._id}`,
         updateData,
-        { withCredentials: true }
+        { withCredentials: true },
       );
 
       toast.success("Item updated successfully!");
@@ -334,7 +334,7 @@ const EditItem = ({ showModal, setShowModal, item, onItemUpdated }) => {
         toast.error(
           error.response.data.message ||
             error.response.data.error ||
-            "Failed to update item."
+            "Failed to update item.",
         );
       } else {
         toast.error("An unexpected error occurred. Please contact the admin.");
@@ -506,7 +506,7 @@ const EditItem = ({ showModal, setShowModal, item, onItemUpdated }) => {
                       </div>
                     </div>
 
-                    {/* Quantity */}
+                    {/* Quantity — disabled, user cannot edit stock */}
                     <div>
                       <div className="mb-2">
                         <label className="block text-sm font-bold text-gray-900">
@@ -515,18 +515,39 @@ const EditItem = ({ showModal, setShowModal, item, onItemUpdated }) => {
                       </div>
                       <div className="relative">
                         <div className="absolute inset-y-0 left-3 flex items-center">
-                          <FiPackage className="w-4 h-4 text-gray-500" />
+                          <FiPackage className="w-4 h-4 text-gray-400" />
                         </div>
                         <input
                           type="text"
                           name="itemQuantity"
                           value={formatNumberWithCommas(editData.itemQuantity)}
-                          onChange={handleChange}
-                          className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg bg-white text-gray-900 focus:outline-none focus:border-green-400 focus:ring-2 focus:ring-green-100"
+                          readOnly
+                          disabled
+                          className="w-full pl-10 pr-10 py-2 border border-gray-300 rounded-lg bg-gray-100 text-gray-500 cursor-not-allowed focus:outline-none"
                           placeholder="0"
-                          disabled={loading}
+                          title="Stock quantity cannot be edited here"
                         />
+                        {/* Lock icon on the right */}
+                        <div className="absolute inset-y-0 right-3 flex items-center">
+                          <svg
+                            className="w-4 h-4 text-gray-400"
+                            fill="none"
+                            stroke="currentColor"
+                            viewBox="0 0 24 24"
+                          >
+                            <path
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              strokeWidth="2"
+                              d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"
+                            />
+                          </svg>
+                        </div>
                       </div>
+                      <p className="text-xs text-gray-500 mt-1">
+                        Stock quantity is managed elsewhere and cannot be edited
+                        here.
+                      </p>
                     </div>
 
                     {/* Manufacturing Date */}
@@ -721,7 +742,7 @@ const EditItem = ({ showModal, setShowModal, item, onItemUpdated }) => {
                                     type="text"
                                     name="wholesalePrice"
                                     value={formatNumberWithCommas(
-                                      editData.wholesalePrice
+                                      editData.wholesalePrice,
                                     )}
                                     onChange={handleChange}
                                     className="w-full pl-10 pr-12 py-2.5 border border-blue-300 rounded-lg bg-white text-gray-900 focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
@@ -738,7 +759,7 @@ const EditItem = ({ showModal, setShowModal, item, onItemUpdated }) => {
                             {/* Wholesale Calculation Summary */}
                             {editData.enableWholesale &&
                               parseCommaFormattedNumber(
-                                editData.wholesalePrice
+                                editData.wholesalePrice,
                               ) > 0 &&
                               parseCommaFormattedNumber(editData.price) > 0 && (
                                 <div className="bg-white rounded-xl border border-blue-200 shadow-sm overflow-hidden">
@@ -761,7 +782,7 @@ const EditItem = ({ showModal, setShowModal, item, onItemUpdated }) => {
                                             <p className="text-lg font-bold text-gray-800">
                                               Tsh{" "}
                                               {formatNumberWithCommas(
-                                                editData.price
+                                                editData.price,
                                               )}
                                             </p>
                                           </div>
@@ -782,7 +803,7 @@ const EditItem = ({ showModal, setShowModal, item, onItemUpdated }) => {
                                             <p className="text-lg font-bold text-blue-700">
                                               Tsh{" "}
                                               {formatNumberWithCommas(
-                                                editData.wholesalePrice
+                                                editData.wholesalePrice,
                                               )}
                                             </p>
                                           </div>
@@ -804,7 +825,7 @@ const EditItem = ({ showModal, setShowModal, item, onItemUpdated }) => {
                                                 : "Premium: "}
                                               Tsh{" "}
                                               {Math.abs(
-                                                calculatedValues.savingsAmount
+                                                calculatedValues.savingsAmount,
                                               ).toLocaleString()}
                                             </p>
                                           </div>
@@ -830,7 +851,7 @@ const EditItem = ({ showModal, setShowModal, item, onItemUpdated }) => {
                                               </p>
                                               <p className="text-base font-bold text-green-700">
                                                 {calculatedValues.discountPercentage.toFixed(
-                                                  1
+                                                  1,
                                                 )}
                                                 %
                                               </p>
@@ -846,7 +867,7 @@ const EditItem = ({ showModal, setShowModal, item, onItemUpdated }) => {
                                             <p className="text-base font-bold text-gray-800">
                                               Tsh{" "}
                                               {formatNumberWithCommas(
-                                                editData.price
+                                                editData.price,
                                               )}
                                             </p>
                                           </div>
@@ -854,7 +875,7 @@ const EditItem = ({ showModal, setShowModal, item, onItemUpdated }) => {
                                             className={`p-3 rounded-lg border text-center ${
                                               calculatedValues.perUnitWholesalePrice <=
                                               parseCommaFormattedNumber(
-                                                editData.price
+                                                editData.price,
                                               )
                                                 ? "bg-green-50 border-green-300"
                                                 : "bg-red-50 border-red-300"
@@ -867,7 +888,7 @@ const EditItem = ({ showModal, setShowModal, item, onItemUpdated }) => {
                                               className={`text-base font-bold ${
                                                 calculatedValues.perUnitWholesalePrice <=
                                                 parseCommaFormattedNumber(
-                                                  editData.price
+                                                  editData.price,
                                                 )
                                                   ? "text-green-700"
                                                   : "text-red-700"
@@ -1009,20 +1030,20 @@ const EditItem = ({ showModal, setShowModal, item, onItemUpdated }) => {
                               0
                               ? "text-green-700"
                               : editData.enableWholesale
-                              ? "text-yellow-600"
-                              : "text-gray-500"
+                                ? "text-yellow-600"
+                                : "text-gray-500"
                           }`}
                         >
                           <div
                             className={`w-2 h-2 rounded-full ${
                               editData.enableWholesale &&
                               parseCommaFormattedNumber(
-                                editData.wholesalePrice
+                                editData.wholesalePrice,
                               ) > 0
                                 ? "bg-green-500"
                                 : editData.enableWholesale
-                                ? "bg-yellow-500"
-                                : "bg-gray-400"
+                                  ? "bg-yellow-500"
+                                  : "bg-gray-400"
                             }`}
                           />
                           <span className="text-xs font-medium">Wholesale</span>
