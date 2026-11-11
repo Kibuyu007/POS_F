@@ -19,12 +19,10 @@ const Login = () => {
   const dispatch = useDispatch();
   const usernameRef = useRef(null);
 
-  // Auto-focus username
   useEffect(() => {
     usernameRef.current?.focus();
   }, []);
 
-  // Auto logout timer
   useEffect(() => {
     const interval = setInterval(() => {
       const token = localStorage.getItem("token");
@@ -39,7 +37,6 @@ const Login = () => {
         }
       }
     }, 5000);
-
     return () => clearInterval(interval);
   }, [dispatch, navigate]);
 
@@ -52,12 +49,10 @@ const Login = () => {
       await axios.get(`${BASE_URL}/api/auth/logout`, {
         withCredentials: true,
       });
-
       dispatch(logoutSuccess());
       localStorage.removeItem("token");
       localStorage.removeItem("user");
       localStorage.removeItem("exp");
-
       navigate("/auth");
     } catch (error) {
       console.error("Logout failed:", error);
@@ -98,7 +93,6 @@ const Login = () => {
     }
   };
 
-  // Small POS Icon for mobile
   const MobilePOSIcon = () => (
     <svg
       className="w-12 h-12 text-emerald-600"
@@ -115,14 +109,10 @@ const Login = () => {
     </svg>
   );
 
-  // Medium POS Icon for tablet
   const TabletPOSIcon = () => (
     <svg viewBox="0 0 300 250" className="w-48 h-auto">
-      {/* Background circles */}
       <circle cx="150" cy="125" r="120" fill="#10B981" fillOpacity="0.04" />
       <circle cx="150" cy="125" r="90" fill="#10B981" fillOpacity="0.06" />
-
-      {/* Tablet */}
       <rect
         x="60"
         y="40"
@@ -144,8 +134,6 @@ const Login = () => {
         stroke="#10B981"
         strokeWidth="1"
       />
-
-      {/* Screen content */}
       <rect
         x="76"
         y="56"
@@ -191,7 +179,6 @@ const Login = () => {
         fill="#10B981"
         fillOpacity="0.15"
       />
-
       <rect
         x="164"
         y="78"
@@ -228,8 +215,6 @@ const Login = () => {
         fill="#10B981"
         fillOpacity="0.2"
       />
-
-      {/* Total */}
       <rect
         x="76"
         y="134"
@@ -248,8 +233,6 @@ const Login = () => {
         fill="#10B981"
         fillOpacity="0.35"
       />
-
-      {/* Stand */}
       <rect
         x="130"
         y="160"
@@ -268,8 +251,6 @@ const Login = () => {
         fill="#10B981"
         fillOpacity="0.1"
       />
-
-      {/* Base */}
       <rect
         x="116"
         y="176"
@@ -279,8 +260,6 @@ const Login = () => {
         fill="#10B981"
         fillOpacity="0.2"
       />
-
-      {/* Terminal */}
       <rect
         x="90"
         y="192"
@@ -307,25 +286,177 @@ const Login = () => {
       <circle cx="162" cy="214" r="4" fill="#10B981" fillOpacity="0.1" />
       <circle cx="174" cy="204" r="4" fill="#10B981" fillOpacity="0.1" />
       <circle cx="174" cy="214" r="4" fill="#10B981" fillOpacity="0.08" />
-
-      {/* Decorative */}
       <circle cx="40" cy="80" r="4" fill="#10B981" fillOpacity="0.1" />
       <circle cx="250" cy="100" r="4" fill="#10B981" fillOpacity="0.1" />
     </svg>
   );
 
   return (
-    <div className="min-h-screen bg-white relative overflow-hidden flex flex-col">
-      {/* Corner Gradients - MASSIVE */}
+    <div className="min-h-screen relative overflow-hidden flex flex-col">
+      {/* ═══════════════════════════════════════════════════════════
+          AFRICAN SKETCHES — bold, visible line-art SVGs
+          ═══════════════════════════════════════════════════════════ */}
+
+      {/* Warm sand canvas */}
+      <div className="absolute inset-0 bg-gradient-to-br from-[#fdf6ec] via-[#f5e9d5] to-[#e8d4b8]" />
+
+      {/* ─── Sketch layer — bold African line art ─── */}
+      <svg
+        className="absolute inset-0 w-full h-full"
+        preserveAspectRatio="xMidYMid slice"
+        viewBox="0 0 1200 800"
+        fill="none"
+        stroke="#8b4513"
+        strokeWidth="3"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        opacity="0.42"
+      >
+        {/* ── 1. ACACIA TREE (savanna) — top left, bigger ── */}
+        <g transform="translate(140, 160) scale(1.4)">
+          <path d="M0,90 L0,40" strokeWidth="3" />
+          <path d="M0,40 Q-25,20 -35,0" strokeWidth="2.5" />
+          <path d="M0,40 Q25,20 40,-3" strokeWidth="2.5" />
+          <path d="M0,40 Q-8,22 -12,5" strokeWidth="2.5" />
+          <path d="M0,40 Q12,22 18,5" strokeWidth="2.5" />
+          {/* Wide flat canopy */}
+          <path
+            d="M-50,-8 Q-40,-22 -15,-18 Q10,-25 45,-10 Q40,-2 10,-5 Q-20,-8 -50,-8 Z"
+            fill="#8b4513"
+            fillOpacity="0.25"
+          />
+          <path d="M-50,-8 Q-40,-22 -15,-18 Q10,-25 45,-10" strokeWidth="2.5" />
+          <path d="M-10,5 L-10,90" strokeWidth="3" />
+          <line x1="-60" y1="90" x2="60" y2="90" strokeWidth="2" />
+        </g>
+
+        {/* ── 2. MAASAI SHIELD (with spears) — top right, bigger ── */}
+        <g transform="translate(1050, 170) scale(1.4)">
+          <ellipse
+            cx="0"
+            cy="0"
+            rx="40"
+            ry="60"
+            strokeWidth="3"
+            fill="#8b4513"
+            fillOpacity="0.08"
+          />
+          <ellipse cx="0" cy="0" rx="26" ry="46" strokeWidth="2.5" />
+          <ellipse cx="0" cy="0" rx="14" ry="30" strokeWidth="2" />
+          {/* Central spear */}
+          <line x1="0" y1="-70" x2="0" y2="70" strokeWidth="2.5" />
+          {/* Horizontal spear bands */}
+          <line x1="-28" y1="-20" x2="28" y2="-20" strokeWidth="2" />
+          <line x1="-28" y1="20" x2="28" y2="20" strokeWidth="2" />
+          {/* Crossed spears behind */}
+          <line x1="-45" y1="-60" x2="45" y2="60" strokeWidth="2" />
+          <line x1="45" y1="-60" x2="-45" y2="60" strokeWidth="2" />
+        </g>
+
+        {/* ── 3. DJEMBE DRUM — bottom left, bigger ── */}
+        <g transform="translate(160, 640) scale(1.5)">
+          <path
+            d="M-22,-40 Q-38,-28 -36,-2 Q-32,30 -22,44 L22,44 Q32,30 36,-2 Q38,-28 22,-40 Z"
+            strokeWidth="3"
+            fill="#8b4513"
+            fillOpacity="0.1"
+          />
+          <ellipse cx="0" cy="-40" rx="22" ry="8" strokeWidth="2.5" />
+          <path d="M-22,-20 Q0,-14 22,-20" strokeWidth="2" />
+          <path d="M-26,5 Q0,12 26,5" strokeWidth="2" />
+          <path d="M-22,28 Q0,34 22,28" strokeWidth="2" />
+          {/* Tension cords */}
+          <line x1="-22" y1="-40" x2="-18" y2="-15" strokeWidth="1.5" />
+          <line x1="-11" y1="-40" x2="-9" y2="-15" strokeWidth="1.5" />
+          <line x1="0" y1="-40" x2="0" y2="-15" strokeWidth="1.5" />
+          <line x1="11" y1="-40" x2="9" y2="-15" strokeWidth="1.5" />
+          <line x1="22" y1="-40" x2="18" y2="-15" strokeWidth="1.5" />
+        </g>
+
+        {/* ── 4. ADINKRA GYE NYAME — bottom right, bigger ── */}
+        <g transform="translate(1040, 650) scale(1.5)">
+          <path
+            d="M0,-40 Q-18,-45 -24,-28 Q-30,-10 -14,2 Q-5,9 -5,20 Q-5,34 12,36 Q26,38 32,22 Q38,6 24,-6 Q16,-14 16,-26 Q16,-38 5,-40"
+            strokeWidth="3"
+          />
+          <path
+            d="M0,-24 Q-10,-26 -13,-14 Q-15,-3 -4,4 Q3,8 3,16 Q3,26 14,26 Q24,26 26,14 Q27,4 18,-2 Q12,-8 12,-18 Q12,-26 4,-26"
+            strokeWidth="2.5"
+          />
+        </g>
+
+        {/* ── 5. SUN WITH RAYS — top center, bigger ── */}
+        <g transform="translate(600, 90) scale(1.3)">
+          <circle
+            cx="0"
+            cy="0"
+            r="28"
+            strokeWidth="3"
+            fill="#8b4513"
+            fillOpacity="0.12"
+          />
+          {[...Array(16)].map((_, i) => {
+            const angle = (i * 22.5 * Math.PI) / 180;
+            const x1 = Math.cos(angle) * 38;
+            const y1 = Math.sin(angle) * 38;
+            const x2 = Math.cos(angle) * 54;
+            const y2 = Math.sin(angle) * 54;
+            return (
+              <line key={i} x1={x1} y1={y1} x2={x2} y2={y2} strokeWidth="2.5" />
+            );
+          })}
+        </g>
+
+        {/* ── 6. KENTE GEOMETRIC BAND — bottom center ── */}
+        <g transform="translate(430, 750) scale(1.4)" strokeWidth="2.5">
+          {[...Array(12)].map((_, i) => (
+            <g key={i} transform={`translate(${i * 26}, 0)`}>
+              <rect x="0" y="0" width="16" height="16" />
+              <line x1="0" y1="0" x2="16" y2="16" />
+              <line x1="16" y1="0" x2="0" y2="16" />
+            </g>
+          ))}
+        </g>
+
+        {/* ── 7. SANKOFA BIRD — mid left, bigger ── */}
+        <g transform="translate(90, 420) scale(1.3)">
+          <path
+            d="M0,0 Q-14,-20 0,-34 Q20,-44 38,-30 Q48,-20 42,-6"
+            strokeWidth="3"
+            fill="#8b4513"
+            fillOpacity="0.1"
+          />
+          <path d="M0,0 Q-20,7 -28,28 Q-20,20 -8,14" strokeWidth="2.5" />
+          <path d="M42,-6 Q52,8 48,22" strokeWidth="2.5" />
+          <circle cx="28" cy="-26" r="2.5" fill="#8b4513" />
+          {/* Tail feathers */}
+          <path d="M-8,14 Q-14,26 -10,36" strokeWidth="2" />
+          <path d="M-4,12 Q-8,26 -4,38" strokeWidth="2" />
+        </g>
+
+        {/* ── 8. CALABASH BOWL — mid right ── */}
+        <g transform="translate(1120, 430) scale(1.4)">
+          <path
+            d="M-38,0 Q-50,24 -40,44 Q-28,60 0,60 Q28,60 40,44 Q50,24 38,0 Q28,-10 0,-10 Q-28,-10 -38,0 Z"
+            strokeWidth="3"
+            fill="#8b4513"
+            fillOpacity="0.1"
+          />
+          <path d="M-40,-2 Q0,-18 40,-2" strokeWidth="2.5" />
+          <path d="M-24,22 Q0,30 24,22" strokeWidth="2" />
+          <path d="M-28,40 Q0,48 28,40" strokeWidth="2" />
+        </g>
+      </svg>
+
+      {/* Soft white wash so UI cards stay clean */}
+      <div className="absolute inset-0 bg-white/55" />
+
+      {/* Emerald + amber corner glows */}
       <div className="absolute inset-0 pointer-events-none">
-        {/* Top-left */}
-        <div className="absolute -top-80 -left-80 w-[1000px] h-[1000px] bg-gradient-to-br from-emerald-500/30 via-emerald-400/10 to-transparent rounded-full blur-3xl"></div>
-        {/* Top-right */}
-        <div className="absolute -top-80 -right-80 w-[1000px] h-[1000px] bg-gradient-to-bl from-emerald-500/25 via-emerald-400/10 to-transparent rounded-full blur-3xl"></div>
-        {/* Bottom-left */}
-        <div className="absolute -bottom-80 -left-80 w-[800px] h-[800px] bg-gradient-to-tr from-emerald-300/8 to-transparent rounded-full blur-3xl"></div>
-        {/* Bottom-right */}
-        <div className="absolute -bottom-80 -right-80 w-[800px] h-[800px] bg-gradient-to-tl from-emerald-300/8 to-transparent rounded-full blur-3xl"></div>
+        <div className="absolute -top-80 -left-80 w-[1000px] h-[1000px] bg-gradient-to-br from-emerald-500/18 via-emerald-400/8 to-transparent rounded-full blur-3xl"></div>
+        <div className="absolute -top-80 -right-80 w-[1000px] h-[1000px] bg-gradient-to-bl from-emerald-500/15 via-emerald-400/8 to-transparent rounded-full blur-3xl"></div>
+        <div className="absolute -bottom-80 -left-80 w-[800px] h-[800px] bg-gradient-to-tr from-amber-500/12 to-transparent rounded-full blur-3xl"></div>
+        <div className="absolute -bottom-80 -right-80 w-[800px] h-[800px] bg-gradient-to-tl from-emerald-300/10 to-transparent rounded-full blur-3xl"></div>
       </div>
 
       {/* Floating particles */}
@@ -333,7 +464,7 @@ const Login = () => {
         {[...Array(25)].map((_, i) => (
           <div
             key={i}
-            className="absolute top-0 w-1 h-1 bg-emerald-400/20 rounded-full animate-bg-pulse"
+            className="absolute top-0 w-1 h-1 bg-emerald-600/30 rounded-full animate-bg-pulse"
             style={{
               left: `${Math.random() * 100}%`,
               animationDelay: `${Math.random() * 5}s`,
@@ -346,9 +477,8 @@ const Login = () => {
 
       {/* Main Content */}
       <div className="flex-1 flex flex-col items-center justify-center px-4 sm:px-6 lg:px-20 relative z-10">
-        {/* Mobile Layout (small screens) */}
+        {/* Mobile Layout */}
         <div className="lg:hidden w-full max-w-sm mx-auto">
-          {/* Mobile Header */}
           <div className="text-center mb-8">
             <div className="flex justify-center mb-4">
               <div className="w-20 h-20 bg-gradient-to-br from-emerald-100 to-green-100 rounded-2xl flex items-center justify-center shadow-lg">
@@ -361,10 +491,8 @@ const Login = () => {
             </p>
           </div>
 
-          {/* Mobile Login Card */}
           <div className="relative py-3 w-full">
             <div className="absolute inset-0 bg-gradient-to-r from-emerald-600 to-green-600 shadow-xl transform -skew-y-3 sm:skew-y-0 rounded-3xl opacity-60"></div>
-
             <div className="relative px-4 py-8 bg-white/95 backdrop-blur-sm shadow-2xl rounded-2xl">
               <form onSubmit={handleLogin} className="w-full">
                 <div className="relative group">
@@ -385,9 +513,7 @@ const Login = () => {
                   </div>
                   <input
                     ref={usernameRef}
-                    className="w-full pl-10 pr-4 py-3 rounded-lg font-semibold bg-gray-100 border-2 border-gray-200
-                    placeholder-gray-500 text-base focus:outline-none
-                    focus:border-emerald-500 focus:bg-white transition-all duration-300"
+                    className="w-full pl-10 pr-4 py-3 rounded-lg font-semibold bg-gray-100 border-2 border-gray-200 placeholder-gray-500 text-base focus:outline-none focus:border-emerald-500 focus:bg-white transition-all duration-300"
                     type="text"
                     name="userName"
                     value={userLogin.userName}
@@ -395,7 +521,6 @@ const Login = () => {
                     placeholder="Username"
                   />
                 </div>
-
                 <div className="relative mt-4 group">
                   <div className="absolute left-3 top-1/2 transform -translate-y-1/2 text-emerald-600">
                     <svg
@@ -413,9 +538,7 @@ const Login = () => {
                     </svg>
                   </div>
                   <input
-                    className="w-full pl-10 pr-4 py-3 rounded-lg font-semibold bg-gray-100 border-2 border-gray-200
-                    placeholder-gray-500 text-base focus:outline-none
-                    focus:border-green-500 focus:bg-white transition-all duration-300"
+                    className="w-full pl-10 pr-4 py-3 rounded-lg font-semibold bg-gray-100 border-2 border-gray-200 placeholder-gray-500 text-base focus:outline-none focus:border-green-500 focus:bg-white transition-all duration-300"
                     type="password"
                     name="password"
                     value={userLogin.password}
@@ -423,12 +546,9 @@ const Login = () => {
                     placeholder="Password"
                   />
                 </div>
-
                 <button
                   type="submit"
-                  className="mt-6 tracking-wide font-bold bg-gradient-to-r from-emerald-600 to-green-600 text-white w-full py-3
-                  rounded-lg hover:from-emerald-700 hover:to-green-700 transition-all duration-300 flex
-                  items-center justify-center shadow-lg hover:shadow-xl"
+                  className="mt-6 tracking-wide font-bold bg-gradient-to-r from-emerald-600 to-green-600 text-white w-full py-3 rounded-lg hover:from-emerald-700 hover:to-green-700 transition-all duration-300 flex items-center justify-center shadow-lg hover:shadow-xl"
                 >
                   {loading ? (
                     <>
@@ -443,13 +563,11 @@ const Login = () => {
                     </>
                   )}
                 </button>
-
                 {loginSuccessfuly && (
                   <div className="mt-3 p-2.5 bg-emerald-100 border-2 border-emerald-400 text-emerald-800 text-center rounded-lg text-sm">
                     ✓ {loginSuccessfuly}
                   </div>
                 )}
-
                 {loginError && (
                   <div className="mt-3 p-2.5 bg-red-100 border-2 border-red-400 text-red-600 text-center rounded-lg text-sm">
                     ✗ {loginError}
@@ -459,7 +577,6 @@ const Login = () => {
             </div>
           </div>
 
-          {/* Mobile Secure Badge */}
           <div className="mt-6 flex justify-center">
             <div className="flex items-center gap-2">
               <div className="w-1.5 h-1.5 bg-emerald-400 rounded-full animate-pulse"></div>
@@ -478,15 +595,12 @@ const Login = () => {
           </div>
         </div>
 
-        {/* Tablet Layout (medium screens) */}
+        {/* Tablet Layout */}
         <div className="hidden lg:hidden xl:hidden w-full max-w-2xl mx-auto">
           <div className="flex flex-col md:flex-row items-center gap-8">
-            {/* Tablet POS Illustration */}
             <div className="w-full md:w-1/2 flex justify-center">
               <TabletPOSIcon />
             </div>
-
-            {/* Tablet Login Card */}
             <div className="w-full md:w-1/2">
               <div className="text-center mb-6">
                 <h2 className="text-2xl font-bold text-gray-800">
@@ -496,10 +610,8 @@ const Login = () => {
                   Sign in to your account
                 </p>
               </div>
-
               <div className="relative py-3 w-full">
                 <div className="absolute inset-0 bg-gradient-to-r from-emerald-600 to-green-600 shadow-xl transform -skew-y-3 rounded-3xl opacity-60"></div>
-
                 <div className="relative px-5 py-8 bg-white/95 backdrop-blur-sm shadow-2xl rounded-2xl">
                   <form onSubmit={handleLogin} className="w-full">
                     <div className="relative group">
@@ -520,9 +632,7 @@ const Login = () => {
                       </div>
                       <input
                         ref={usernameRef}
-                        className="w-full pl-10 pr-4 py-3.5 rounded-lg font-semibold bg-gray-100 border-2 border-gray-200
-                        placeholder-gray-500 text-base focus:outline-none
-                        focus:border-emerald-500 focus:bg-white transition-all duration-300"
+                        className="w-full pl-10 pr-4 py-3.5 rounded-lg font-semibold bg-gray-100 border-2 border-gray-200 placeholder-gray-500 text-base focus:outline-none focus:border-emerald-500 focus:bg-white transition-all duration-300"
                         type="text"
                         name="userName"
                         value={userLogin.userName}
@@ -530,7 +640,6 @@ const Login = () => {
                         placeholder="Username"
                       />
                     </div>
-
                     <div className="relative mt-4 group">
                       <div className="absolute left-3 top-1/2 transform -translate-y-1/2 text-emerald-600">
                         <svg
@@ -548,9 +657,7 @@ const Login = () => {
                         </svg>
                       </div>
                       <input
-                        className="w-full pl-10 pr-4 py-3.5 rounded-lg font-semibold bg-gray-100 border-2 border-gray-200
-                        placeholder-gray-500 text-base focus:outline-none
-                        focus:border-green-500 focus:bg-white transition-all duration-300"
+                        className="w-full pl-10 pr-4 py-3.5 rounded-lg font-semibold bg-gray-100 border-2 border-gray-200 placeholder-gray-500 text-base focus:outline-none focus:border-green-500 focus:bg-white transition-all duration-300"
                         type="password"
                         name="password"
                         value={userLogin.password}
@@ -558,12 +665,9 @@ const Login = () => {
                         placeholder="Password"
                       />
                     </div>
-
                     <button
                       type="submit"
-                      className="mt-6 tracking-wide font-bold bg-gradient-to-r from-emerald-600 to-green-600 text-white w-full py-3.5
-                      rounded-lg hover:from-emerald-700 hover:to-green-700 transition-all duration-300 flex
-                      items-center justify-center shadow-lg hover:shadow-xl"
+                      className="mt-6 tracking-wide font-bold bg-gradient-to-r from-emerald-600 to-green-600 text-white w-full py-3.5 rounded-lg hover:from-emerald-700 hover:to-green-700 transition-all duration-300 flex items-center justify-center shadow-lg hover:shadow-xl"
                     >
                       {loading ? (
                         <>
@@ -578,13 +682,11 @@ const Login = () => {
                         </>
                       )}
                     </button>
-
                     {loginSuccessfuly && (
                       <div className="mt-3 p-2.5 bg-emerald-100 border-2 border-emerald-400 text-emerald-800 text-center rounded-lg text-sm">
                         ✓ {loginSuccessfuly}
                       </div>
                     )}
-
                     {loginError && (
                       <div className="mt-3 p-2.5 bg-red-100 border-2 border-red-400 text-red-600 text-center rounded-lg text-sm">
                         ✗ {loginError}
@@ -593,7 +695,6 @@ const Login = () => {
                   </form>
                 </div>
               </div>
-
               <div className="mt-4 flex justify-center">
                 <div className="flex items-center gap-2">
                   <div className="w-1.5 h-1.5 bg-emerald-400 rounded-full animate-pulse"></div>
@@ -614,14 +715,11 @@ const Login = () => {
           </div>
         </div>
 
-        {/* Desktop Layout (large screens) */}
+        {/* Desktop Layout */}
         <div className="hidden xl:flex w-full items-center justify-between">
-          {/* Left Side - POS Illustration */}
           <div className="w-1/2 flex items-center justify-center">
             <div className="relative">
-              {/* Desktop POS SVG */}
               <svg viewBox="0 0 500 450" className="w-[400px] h-auto">
-                {/* Background decorative circles */}
                 <circle
                   cx="250"
                   cy="225"
@@ -643,8 +741,6 @@ const Login = () => {
                   fill="#10B981"
                   fillOpacity="0.07"
                 />
-
-                {/* Main Tablet/Display */}
                 <rect
                   x="100"
                   y="60"
@@ -666,8 +762,6 @@ const Login = () => {
                   stroke="#10B981"
                   strokeWidth="1.5"
                 />
-
-                {/* Screen header bar */}
                 <rect
                   x="110"
                   y="70"
@@ -685,8 +779,6 @@ const Login = () => {
                   fill="#10B981"
                   fillOpacity="0.08"
                 />
-
-                {/* Status dots */}
                 <circle
                   cx="130"
                   cy="87"
@@ -708,8 +800,6 @@ const Login = () => {
                   fill="#10B981"
                   fillOpacity="0.2"
                 />
-
-                {/* Time */}
                 <rect
                   x="200"
                   y="84"
@@ -719,8 +809,6 @@ const Login = () => {
                   fill="#10B981"
                   fillOpacity="0.2"
                 />
-
-                {/* Battery */}
                 <rect
                   x="330"
                   y="82"
@@ -741,8 +829,6 @@ const Login = () => {
                   fill="#10B981"
                   fillOpacity="0.2"
                 />
-
-                {/* POS Interface */}
                 <rect
                   x="120"
                   y="115"
@@ -797,8 +883,6 @@ const Login = () => {
                   fill="#10B981"
                   fillOpacity="0.15"
                 />
-
-                {/* Price column */}
                 <rect
                   x="230"
                   y="115"
@@ -853,8 +937,6 @@ const Login = () => {
                   fill="#10B981"
                   fillOpacity="0.2"
                 />
-
-                {/* Total */}
                 <rect
                   x="120"
                   y="215"
@@ -873,8 +955,6 @@ const Login = () => {
                   fill="#10B981"
                   fillOpacity="0.35"
                 />
-
-                {/* Bottom navigation */}
                 <rect
                   x="120"
                   y="240"
@@ -911,8 +991,6 @@ const Login = () => {
                   fill="#10B981"
                   fillOpacity="0.2"
                 />
-
-                {/* Stand */}
                 <rect
                   x="220"
                   y="260"
@@ -940,8 +1018,6 @@ const Login = () => {
                   fill="#10B981"
                   fillOpacity="0.2"
                 />
-
-                {/* Modern Terminal/Base */}
                 <rect
                   x="160"
                   y="305"
@@ -973,8 +1049,6 @@ const Login = () => {
                 >
                   $0.00
                 </text>
-
-                {/* Terminal buttons */}
                 <circle
                   cx="250"
                   cy="320"
@@ -1017,8 +1091,6 @@ const Login = () => {
                   fill="#10B981"
                   fillOpacity="0.08"
                 />
-
-                {/* Card Reader */}
                 <rect
                   x="315"
                   y="315"
@@ -1057,8 +1129,6 @@ const Login = () => {
                   fill="#10B981"
                   fillOpacity="0.1"
                 />
-
-                {/* Receipt Printer */}
                 <rect
                   x="90"
                   y="360"
@@ -1088,8 +1158,6 @@ const Login = () => {
                   fill="#10B981"
                   fillOpacity="0.15"
                 />
-
-                {/* Receipt paper */}
                 <rect
                   x="105"
                   y="395"
@@ -1126,8 +1194,6 @@ const Login = () => {
                   fill="#10B981"
                   fillOpacity="0.05"
                 />
-
-                {/* Floating decorative elements */}
                 <circle
                   cx="50"
                   cy="100"
@@ -1156,8 +1222,6 @@ const Login = () => {
                   fill="#10B981"
                   fillOpacity="0.06"
                 />
-
-                {/* Animated sparkles */}
                 <circle
                   cx="70"
                   cy="250"
@@ -1186,8 +1250,6 @@ const Login = () => {
                     repeatCount="indefinite"
                   />
                 </circle>
-
-                {/* Price tags */}
                 <rect
                   x="420"
                   y="180"
@@ -1208,7 +1270,6 @@ const Login = () => {
                 >
                   $29.99
                 </text>
-
                 <rect
                   x="420"
                   y="210"
@@ -1229,7 +1290,6 @@ const Login = () => {
                 >
                   $14.99
                 </text>
-
                 <rect
                   x="30"
                   y="200"
@@ -1253,8 +1313,6 @@ const Login = () => {
               </svg>
             </div>
           </div>
-
-          {/* Right Side - Desktop Login Card */}
           <div className="w-1/2 flex items-center justify-center">
             <div className="w-full max-w-md">
               <div className="text-center mb-8">
@@ -1265,10 +1323,8 @@ const Login = () => {
                   Sign in to your account
                 </p>
               </div>
-
               <div className="relative py-3 w-full">
                 <div className="absolute inset-0 bg-gradient-to-r from-emerald-600 to-green-600 shadow-xl transform -skew-y-6 sm:skew-y-0 sm:-rotate-6 sm:rounded-3xl opacity-70"></div>
-
                 <div className="relative px-4 py-10 bg-white/95 backdrop-blur-sm shadow-2xl rounded-2xl sm:rounded-3xl sm:p-20">
                   <form onSubmit={handleLogin} className="w-full">
                     <div className="relative group">
@@ -1289,9 +1345,7 @@ const Login = () => {
                       </div>
                       <input
                         ref={usernameRef}
-                        className="w-full pl-12 pr-6 py-4 rounded-lg font-bold bg-gray-100 border-2 border-gray-200
-                        placeholder-gray-600 text-lg focus:outline-none
-                        focus:border-emerald-500 focus:bg-white focus:shadow-md transition-all duration-300"
+                        className="w-full pl-12 pr-6 py-4 rounded-lg font-bold bg-gray-100 border-2 border-gray-200 placeholder-gray-600 text-lg focus:outline-none focus:border-emerald-500 focus:bg-white focus:shadow-md transition-all duration-300"
                         type="text"
                         name="userName"
                         value={userLogin.userName}
@@ -1299,7 +1353,6 @@ const Login = () => {
                         placeholder="Username"
                       />
                     </div>
-
                     <div className="relative mt-5 group">
                       <div className="absolute left-3 top-1/2 transform -translate-y-1/2 text-emerald-600 group-focus-within:text-emerald-700 transition-colors">
                         <svg
@@ -1317,9 +1370,7 @@ const Login = () => {
                         </svg>
                       </div>
                       <input
-                        className="w-full pl-12 pr-6 py-4 rounded-lg font-bold bg-gray-100 border-2 border-gray-200
-                        placeholder-gray-600 text-lg focus:outline-none
-                        focus:border-green-500 focus:bg-white focus:shadow-md transition-all duration-300"
+                        className="w-full pl-12 pr-6 py-4 rounded-lg font-bold bg-gray-100 border-2 border-gray-200 placeholder-gray-600 text-lg focus:outline-none focus:border-green-500 focus:bg-white focus:shadow-md transition-all duration-300"
                         type="password"
                         name="password"
                         value={userLogin.password}
@@ -1327,12 +1378,9 @@ const Login = () => {
                         placeholder="Password"
                       />
                     </div>
-
                     <button
                       type="submit"
-                      className="mt-8 tracking-wide font-bold bg-gradient-to-r from-emerald-600 to-green-600 text-white w-full py-4
-                      rounded-lg hover:from-emerald-700 hover:to-green-700 transition-all duration-300 flex
-                      items-center justify-center shadow-lg hover:shadow-xl hover:scale-[1.02]"
+                      className="mt-8 tracking-wide font-bold bg-gradient-to-r from-emerald-600 to-green-600 text-white w-full py-4 rounded-lg hover:from-emerald-700 hover:to-green-700 transition-all duration-300 flex items-center justify-center shadow-lg hover:shadow-xl hover:scale-[1.02]"
                     >
                       {loading ? (
                         <>
@@ -1347,13 +1395,11 @@ const Login = () => {
                         </>
                       )}
                     </button>
-
                     {loginSuccessfuly && (
                       <div className="mt-4 p-3 bg-emerald-100 border-2 border-emerald-400 text-emerald-800 text-center rounded-lg animate-fade-in">
                         ✓ {loginSuccessfuly}
                       </div>
                     )}
-
                     {loginError && (
                       <div className="mt-4 p-3 bg-red-100 border-2 border-red-400 text-red-600 text-center rounded-lg animate-fade-in">
                         ✗ {loginError}
@@ -1362,8 +1408,6 @@ const Login = () => {
                   </form>
                 </div>
               </div>
-
-              {/* Desktop Secure Badge */}
               <div className="mt-6 flex justify-center">
                 <div className="flex items-center gap-2">
                   <div className="w-2 h-2 bg-emerald-400 rounded-full animate-pulse"></div>
@@ -1432,40 +1476,20 @@ const Login = () => {
         </div>
       </div>
 
-      {/* Bottom accent */}
       <div className="absolute bottom-0 left-0 right-0 h-1 bg-gradient-to-r from-teal-500 via-green-500 to-emerald-500 z-10"></div>
 
-      {/* CSS Animations */}
       <style>{`
         @keyframes bg-pulse {
-          0% {
-            transform: translateY(-100px) scale(1);
-            opacity: 0.2;
-          }
-          50% {
-            opacity: 0.5;
-          }
-          100% {
-            transform: translateY(100vh) scale(1.2);
-            opacity: 0.2;
-          }
+          0% { transform: translateY(-100px) scale(1); opacity: 0.2; }
+          50% { opacity: 0.5; }
+          100% { transform: translateY(100vh) scale(1.2); opacity: 0.2; }
         }
         @keyframes fade-in {
-          from {
-            opacity: 0;
-            transform: translateY(-10px);
-          }
-          to {
-            opacity: 1;
-            transform: translateY(0);
-          }
+          from { opacity: 0; transform: translateY(-10px); }
+          to { opacity: 1; transform: translateY(0); }
         }
-        .animate-bg-pulse {
-          animation: bg-pulse linear infinite;
-        }
-        .animate-fade-in {
-          animation: fade-in 0.3s ease-out;
-        }
+        .animate-bg-pulse { animation: bg-pulse linear infinite; }
+        .animate-fade-in { animation: fade-in 0.3s ease-out; }
       `}</style>
     </div>
   );
