@@ -28,10 +28,16 @@ import {
   ArrowRight,
   Sparkles,
 } from "lucide-react";
+import { hasPermission ,PERMISSIONS} from "../../../Utils/permissions";
 
 const Expenses = () => {
   const user = useSelector((state) => state.user.user);
-  const canEditExpenses = user?.roles?.canEditExpenses === true;
+
+  // 🔑 permission flag — works with legacy `roles` object and new `permissions` array
+  const canEditExpenses = hasPermission(user, PERMISSIONS.EDIT_EXPENSES);
+  // Only users who can edit expenses (Admin / Manager / Accountant)
+  // are allowed to add new expenses. Cashiers cannot.
+  const canAddExpense = canEditExpenses;
 
   const [itemHold, setItemHold] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -57,12 +63,19 @@ const Expenses = () => {
   const getExpenses = async () => {
     try {
       setLoading(true);
-      const res = await axios.get(`${BASE_URL}/api/manunuzi/matumiziYote`);
+      // withCredentials so verifyUser can authenticate
+      const res = await axios.get(`${BASE_URL}/api/manunuzi/matumiziYote`, {
+        withCredentials: true,
+      });
       setItemHold(res.data);
       toast.success("Expenses loaded successfully!");
     } catch (error) {
       console.log("Error fetching expenses:", error);
-      toast.error("Failed to load expenses");
+      const message =
+        error.response?.data?.error ||
+        error.response?.data?.message ||
+        "Failed to load expenses";
+      toast.error(message);
     } finally {
       setLoading(false);
     }
@@ -73,6 +86,10 @@ const Expenses = () => {
   }, []);
 
   const addExpense = async () => {
+    if (!canAddExpense) {
+      toast.error("You do not have permission to add expenses.");
+      return;
+    }
     if (!input.title || !input.amount || !input.date) {
       toast.error("Please fill all required fields");
       return;
@@ -87,7 +104,7 @@ const Expenses = () => {
           details: input.details || "",
           date: input.date,
         },
-        { withCredentials: true },
+        { withCredentials: true }
       );
       toast.success("Expense added successfully!");
       getExpenses();
@@ -95,6 +112,7 @@ const Expenses = () => {
     } catch (error) {
       console.log("Error adding expense:", error);
       const message =
+        error.response?.data?.error ||
         error.response?.data?.message ||
         error.message ||
         "Failed to add expense";
@@ -107,8 +125,8 @@ const Expenses = () => {
       itemHold.map((i) =>
         i.createdBy
           ? `${i.createdBy.firstName} ${i.createdBy.lastName}`
-          : "Unknown",
-      ),
+          : "Unknown"
+      )
     ),
   ].sort();
 
@@ -151,12 +169,12 @@ const Expenses = () => {
   const totalPages = Math.ceil(filtered.length / itemsPerPage);
   const paginated = filtered.slice(
     (currentPage - 1) * itemsPerPage,
-    currentPage * itemsPerPage,
+    currentPage * itemsPerPage
   );
 
   const totalAmount = filtered.reduce(
     (acc, exp) => acc + Number(exp.amount),
-    0,
+    0
   );
 
   const avgAmount = filtered.length > 0 ? totalAmount / filtered.length : 0;
@@ -172,13 +190,13 @@ const Expenses = () => {
           "Created By": e.createdBy
             ? `${e.createdBy.firstName} ${e.createdBy.lastName}`
             : "-",
-        })),
+        }))
       );
       const workbook = XLSX.utils.book_new();
       XLSX.utils.book_append_sheet(workbook, worksheet, "Expenses");
       XLSX.writeFile(
         workbook,
-        `Expenses_Report_${dayjs().format("YYYYMMDD")}.xlsx`,
+        `Expenses_Report_${dayjs().format("YYYYMMDD")}.xlsx`
       );
       toast.success("Excel report downloaded!");
     } catch (error) {
@@ -225,7 +243,7 @@ const Expenses = () => {
   };
 
   const activeFilterCount = [filterCreatedBy, fromDate, toDate].filter(
-    Boolean,
+    Boolean
   ).length;
 
   const formatCurrency = (amount) => {
@@ -249,7 +267,7 @@ const Expenses = () => {
 
     let startPage = Math.max(
       1,
-      currentPageNum - Math.floor(maxVisiblePages / 2),
+      currentPageNum - Math.floor(maxVisiblePages / 2)
     );
     let endPage = Math.min(totalPagesNum, startPage + maxVisiblePages - 1);
 
@@ -347,7 +365,7 @@ const Expenses = () => {
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-gray-50">
       <div className="max-w-8xl mx-auto px-3 sm:px-4 md:px-6 py-4 sm:py-6 md:py-8">
-        {/* Header - Responsive */}
+        {/* Header */}
         <div className="flex flex-wrap items-center justify-between gap-3 sm:gap-4 mb-4 sm:mb-6">
           <div className="flex items-center gap-3 sm:gap-4">
             <div className="w-10 h-10 sm:w-12 sm:h-12 bg-green-300 rounded-xl flex items-center justify-center shadow-lg shadow-green-200 border-2 border-green-400">
@@ -373,7 +391,7 @@ const Expenses = () => {
           </button>
         </div>
 
-        {/* Stats Cards - Stacked on mobile */}
+        {/* Stats Cards */}
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 sm:gap-3 md:gap-4 mb-4 sm:mb-6">
           {statsData.map((stat, index) => {
             const Icon = stat.icon;
@@ -400,184 +418,201 @@ const Expenses = () => {
           })}
         </div>
 
-        {/* Add New Expense - POLISHED SECTION */}
-        <div className="bg-white rounded-2xl border-2 border-gray-200 shadow-sm mb-4 sm:mb-6 overflow-hidden hover:shadow-lg transition-all duration-300">
-          {/* Header with gradient accent */}
-          <div className="relative px-4 sm:px-7 py-3 sm:py-5 bg-gradient-to-r from-green-300/20 via-transparent to-transparent border-b-2 border-gray-200">
-            <div className="flex items-center gap-3">
-              <div className="p-2 sm:p-2.5 bg-gradient-to-br from-green-300 to-green-400 rounded-xl shadow-md shadow-green-200/50 border-2 border-green-400">
-                <Plus className="text-black w-4 h-4 sm:w-5 sm:h-5" />
+        {/* Add New Expense — GATED */}
+        {canAddExpense ? (
+          <div className="bg-white rounded-2xl border-2 border-gray-200 shadow-sm mb-4 sm:mb-6 overflow-hidden hover:shadow-lg transition-all duration-300">
+            {/* Header with gradient accent */}
+            <div className="relative px-4 sm:px-7 py-3 sm:py-5 bg-gradient-to-r from-green-300/20 via-transparent to-transparent border-b-2 border-gray-200">
+              <div className="flex items-center gap-3">
+                <div className="p-2 sm:p-2.5 bg-gradient-to-br from-green-300 to-green-400 rounded-xl shadow-md shadow-green-200/50 border-2 border-green-400">
+                  <Plus className="text-black w-4 h-4 sm:w-5 sm:h-5" />
+                </div>
+                <div>
+                  <h2 className="font-bold text-gray-800 text-sm sm:text-lg flex items-center gap-2">
+                    Add New Expense
+                    <Sparkles className="w-3 h-3 sm:w-4 sm:h-4 text-green-400" />
+                  </h2>
+                  <p className="text-gray-500 text-[10px] sm:text-xs flex items-center gap-2 flex-wrap">
+                    <span>
+                      Fill in the details below to record a new expense
+                    </span>
+                    <span className="w-1 h-1 bg-gray-300 rounded-full hidden xs:inline" />
+                    <span className="text-red-500 font-medium">* required</span>
+                  </p>
+                </div>
               </div>
-              <div>
-                <h2 className="font-bold text-gray-800 text-sm sm:text-lg flex items-center gap-2">
-                  Add New Expense
-                  <Sparkles className="w-3 h-3 sm:w-4 sm:h-4 text-green-400" />
-                </h2>
-                <p className="text-gray-500 text-[10px] sm:text-xs flex items-center gap-2 flex-wrap">
-                  <span>Fill in the details below to record a new expense</span>
-                  <span className="w-1 h-1 bg-gray-300 rounded-full hidden xs:inline" />
-                  <span className="text-red-500 font-medium">* required</span>
-                </p>
-              </div>
+              <div className="absolute bottom-0 left-0 h-0.5 w-32 sm:w-48 bg-gradient-to-r from-green-300 to-green-400 rounded-full" />
             </div>
-            {/* Decorative accent line */}
-            <div className="absolute bottom-0 left-0 h-0.5 w-32 sm:w-48 bg-gradient-to-r from-green-300 to-green-400 rounded-full" />
-          </div>
 
-          <div className="p-4 sm:p-7">
-            {/* Form Grid */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-5">
-              {/* Title Field */}
-              <div className="group">
-                <label className="block text-xs font-semibold text-gray-700 mb-1.5 flex items-center gap-1">
-                  <span>Title</span>
-                  <span className="text-red-500 text-sm">*</span>
-                </label>
-                <div className="relative">
-                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                    <span className="text-gray-400 text-xs">📝</span>
-                  </div>
-                  <input
-                    type="text"
-                    placeholder="Enter expense title..."
-                    value={input.title}
-                    onChange={(e) =>
-                      setInput({ ...input, title: e.target.value })
-                    }
-                    className="w-full pl-8 pr-10 py-2.5 sm:py-3 text-sm border-2 border-gray-300 rounded-xl bg-white text-black placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-green-300 focus:border-transparent transition-all duration-200 group-hover:border-gray-400"
-                  />
-                  {input.title && (
-                    <div className="absolute right-3 top-1/2 -translate-y-1/2">
-                      <div className="w-1.5 h-1.5 sm:w-2 sm:h-2 bg-green-300 rounded-full animate-pulse" />
+            <div className="p-4 sm:p-7">
+              {/* Form Grid */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-5">
+                {/* Title */}
+                <div className="group">
+                  <label className="block text-xs font-semibold text-gray-700 mb-1.5 flex items-center gap-1">
+                    <span>Title</span>
+                    <span className="text-red-500 text-sm">*</span>
+                  </label>
+                  <div className="relative">
+                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                      <span className="text-gray-400 text-xs">📝</span>
                     </div>
-                  )}
-                </div>
-              </div>
-
-              {/* Amount Field */}
-              <div className="group">
-                <label className="block text-xs font-semibold text-gray-700 mb-1.5 flex items-center gap-1">
-                  <span>Amount</span>
-                  <span className="text-red-500 text-sm">*</span>
-                </label>
-                <div className="relative">
-                  <div className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 font-bold text-[10px] sm:text-xs bg-gray-100 px-1.5 sm:px-2 py-0.5 sm:py-1 rounded border border-gray-200">
-                    TSh
+                    <input
+                      type="text"
+                      placeholder="Enter expense title..."
+                      value={input.title}
+                      onChange={(e) =>
+                        setInput({ ...input, title: e.target.value })
+                      }
+                      className="w-full pl-8 pr-10 py-2.5 sm:py-3 text-sm border-2 border-gray-300 rounded-xl bg-white text-black placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-green-300 focus:border-transparent transition-all duration-200 group-hover:border-gray-400"
+                    />
+                    {input.title && (
+                      <div className="absolute right-3 top-1/2 -translate-y-1/2">
+                        <div className="w-1.5 h-1.5 sm:w-2 sm:h-2 bg-green-300 rounded-full animate-pulse" />
+                      </div>
+                    )}
                   </div>
-                  <input
-                    type="number"
-                    placeholder="0.00"
-                    value={input.amount}
-                    onChange={(e) =>
-                      setInput({ ...input, amount: e.target.value })
-                    }
-                    className="w-full pl-12 sm:pl-16 pr-10 sm:pr-12 py-2.5 sm:py-3 text-sm border-2 border-gray-300 rounded-xl bg-white text-black placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-green-300 focus:border-transparent transition-all duration-200 group-hover:border-gray-400"
-                  />
-                  {input.amount && (
-                    <div className="absolute right-2 sm:right-3 top-1/2 -translate-y-1/2 text-[10px] sm:text-xs text-gray-400 font-medium bg-gray-50 px-1.5 sm:px-2 py-0.5 rounded border border-gray-200">
-                      .00
+                </div>
+
+                {/* Amount */}
+                <div className="group">
+                  <label className="block text-xs font-semibold text-gray-700 mb-1.5 flex items-center gap-1">
+                    <span>Amount</span>
+                    <span className="text-red-500 text-sm">*</span>
+                  </label>
+                  <div className="relative">
+                    <div className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 font-bold text-[10px] sm:text-xs bg-gray-100 px-1.5 sm:px-2 py-0.5 sm:py-1 rounded border border-gray-200">
+                      TSh
                     </div>
-                  )}
-                </div>
-              </div>
-
-              {/* Details Field */}
-              <div className="group">
-                <label className="block text-xs font-semibold text-gray-700 mb-1.5">
-                  Details
-                </label>
-                <div className="relative">
-                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                    <span className="text-gray-400 text-xs">📋</span>
+                    <input
+                      type="number"
+                      placeholder="0.00"
+                      value={input.amount}
+                      onChange={(e) =>
+                        setInput({ ...input, amount: e.target.value })
+                      }
+                      className="w-full pl-12 sm:pl-16 pr-10 sm:pr-12 py-2.5 sm:py-3 text-sm border-2 border-gray-300 rounded-xl bg-white text-black placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-green-300 focus:border-transparent transition-all duration-200 group-hover:border-gray-400"
+                    />
+                    {input.amount && (
+                      <div className="absolute right-2 sm:right-3 top-1/2 -translate-y-1/2 text-[10px] sm:text-xs text-gray-400 font-medium bg-gray-50 px-1.5 sm:px-2 py-0.5 rounded border border-gray-200">
+                        .00
+                      </div>
+                    )}
                   </div>
-                  <input
-                    type="text"
-                    placeholder="Additional info..."
-                    value={input.details}
-                    onChange={(e) =>
-                      setInput({ ...input, details: e.target.value })
-                    }
-                    className="w-full pl-8 pr-4 py-2.5 sm:py-3 text-sm border-2 border-gray-300 rounded-xl bg-white text-black placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-green-300 focus:border-transparent transition-all duration-200 group-hover:border-gray-400"
-                  />
                 </div>
-              </div>
 
-              {/* Date Field */}
-              <div className="group">
-                <label className="block text-xs font-semibold text-gray-700 mb-1.5 flex items-center gap-1">
-                  <span>Date</span>
-                  <span className="text-red-500 text-sm">*</span>
-                </label>
-                <LocalizationProvider dateAdapter={AdapterDayjs}>
-                  <DatePicker
-                    value={input.date}
-                    onChange={(newValue) =>
-                      setInput({ ...input, date: newValue })
-                    }
-                    maxDate={dayjs()}
-                    slotProps={{
-                      textField: {
-                        size: "small",
-                        fullWidth: true,
-                        sx: {
-                          "& .MuiOutlinedInput-root": {
-                            borderRadius: "12px",
-                            fontSize: "14px",
-                            backgroundColor: "white",
-                            "& fieldset": {
-                              borderColor: "#d1d5db",
-                              borderWidth: "2px",
+                {/* Details */}
+                <div className="group">
+                  <label className="block text-xs font-semibold text-gray-700 mb-1.5">
+                    Details
+                  </label>
+                  <div className="relative">
+                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                      <span className="text-gray-400 text-xs">📋</span>
+                    </div>
+                    <input
+                      type="text"
+                      placeholder="Additional info..."
+                      value={input.details}
+                      onChange={(e) =>
+                        setInput({ ...input, details: e.target.value })
+                      }
+                      className="w-full pl-8 pr-4 py-2.5 sm:py-3 text-sm border-2 border-gray-300 rounded-xl bg-white text-black placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-green-300 focus:border-transparent transition-all duration-200 group-hover:border-gray-400"
+                    />
+                  </div>
+                </div>
+
+                {/* Date */}
+                <div className="group">
+                  <label className="block text-xs font-semibold text-gray-700 mb-1.5 flex items-center gap-1">
+                    <span>Date</span>
+                    <span className="text-red-500 text-sm">*</span>
+                  </label>
+                  <LocalizationProvider dateAdapter={AdapterDayjs}>
+                    <DatePicker
+                      value={input.date}
+                      onChange={(newValue) =>
+                        setInput({ ...input, date: newValue })
+                      }
+                      maxDate={dayjs()}
+                      slotProps={{
+                        textField: {
+                          size: "small",
+                          fullWidth: true,
+                          sx: {
+                            "& .MuiOutlinedInput-root": {
+                              borderRadius: "12px",
+                              fontSize: "14px",
+                              backgroundColor: "white",
+                              "& fieldset": {
+                                borderColor: "#d1d5db",
+                                borderWidth: "2px",
+                              },
+                              "&:hover fieldset": {
+                                borderColor: "#9ca3af",
+                              },
+                              "&.Mui-focused fieldset": {
+                                borderColor: "#86efac",
+                                borderWidth: "2px",
+                              },
                             },
-                            "&:hover fieldset": {
-                              borderColor: "#9ca3af",
+                            "& .MuiOutlinedInput-input": {
+                              padding: "8px 14px",
+                              color: "black",
                             },
-                            "&.Mui-focused fieldset": {
-                              borderColor: "#86efac",
-                              borderWidth: "2px",
-                            },
-                          },
-                          "& .MuiOutlinedInput-input": {
-                            padding: "8px 14px",
-                            color: "black",
                           },
                         },
-                      },
-                    }}
-                  />
-                </LocalizationProvider>
-              </div>
-            </div>
-
-            {/* Action Buttons */}
-            <div className="flex flex-col sm:flex-row items-center justify-between gap-4 mt-5 sm:mt-6 pt-4 sm:pt-5 border-t-2 border-gray-200">
-              <div className="flex items-center gap-3 text-[10px] sm:text-xs text-gray-400">
-                <div className="flex items-center gap-1.5">
-                  <span className="w-1.5 h-1.5 bg-green-300 rounded-full" />
-                  <span>All fields with</span>
-                  <span className="text-red-500 font-bold">*</span>
-                  <span>are required</span>
+                      }}
+                    />
+                  </LocalizationProvider>
                 </div>
               </div>
-              <button
-                onClick={addExpense}
-                className="group relative w-full sm:w-auto px-5 sm:px-8 py-2.5 sm:py-3.5 bg-gradient-to-r from-green-300 to-green-400 hover:from-green-400 hover:to-green-500 text-black font-bold rounded-xl shadow-md hover:shadow-lg hover:shadow-green-200/50 hover:scale-[1.02] active:scale-95 transition-all duration-300 text-sm flex items-center justify-center gap-2 border-2 border-green-400 overflow-hidden"
-              >
-                <span className="absolute inset-0 bg-white opacity-0 group-hover:opacity-20 transition-opacity duration-300" />
-                <Plus
-                  size={18}
-                  className="text-black group-hover:rotate-90 transition-transform duration-300"
-                />
-                <span>Add Expense</span>
-                <ArrowRight
-                  size={16}
-                  className="text-black/70 group-hover:translate-x-1 transition-transform duration-300"
-                />
-              </button>
+
+              {/* Action Buttons */}
+              <div className="flex flex-col sm:flex-row items-center justify-between gap-4 mt-5 sm:mt-6 pt-4 sm:pt-5 border-t-2 border-gray-200">
+                <div className="flex items-center gap-3 text-[10px] sm:text-xs text-gray-400">
+                  <div className="flex items-center gap-1.5">
+                    <span className="w-1.5 h-1.5 bg-green-300 rounded-full" />
+                    <span>All fields with</span>
+                    <span className="text-red-500 font-bold">*</span>
+                    <span>are required</span>
+                  </div>
+                </div>
+                <button
+                  onClick={addExpense}
+                  className="group relative w-full sm:w-auto px-5 sm:px-8 py-2.5 sm:py-3.5 bg-gradient-to-r from-green-300 to-green-400 hover:from-green-400 hover:to-green-500 text-black font-bold rounded-xl shadow-md hover:shadow-lg hover:shadow-green-200/50 hover:scale-[1.02] active:scale-95 transition-all duration-300 text-sm flex items-center justify-center gap-2 border-2 border-green-400 overflow-hidden"
+                >
+                  <span className="absolute inset-0 bg-white opacity-0 group-hover:opacity-20 transition-opacity duration-300" />
+                  <Plus
+                    size={18}
+                    className="text-black group-hover:rotate-90 transition-transform duration-300"
+                  />
+                  <span>Add Expense</span>
+                  <ArrowRight
+                    size={16}
+                    className="text-black/70 group-hover:translate-x-1 transition-transform duration-300"
+                  />
+                </button>
+              </div>
             </div>
           </div>
-        </div>
+        ) : (
+          /* Permission notice instead of the form */
+          <div className="bg-amber-50 rounded-2xl border-2 border-amber-200 shadow-sm mb-4 sm:mb-6 p-4 sm:p-5 flex items-start gap-3">
+            <Clock className="w-5 h-5 text-amber-600 flex-shrink-0 mt-0.5" />
+            <div className="text-sm text-amber-800">
+              <p className="font-bold">Read-only access</p>
+              <p className="text-xs mt-1">
+                You need the{" "}
+                <span className="font-semibold">Edit Expenses</span> permission
+                to add or modify expenses. You can still browse the records
+                below.
+              </p>
+            </div>
+          </div>
+        )}
 
-        {/* Search + Filters - Responsive */}
+        {/* Search + Filters */}
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-4 mb-4 sm:mb-5">
           <div className="flex gap-2 w-full sm:w-auto">
             <div className="relative flex-1 sm:w-56 md:w-64">
@@ -775,7 +810,7 @@ const Expenses = () => {
           </p>
         </div>
 
-        {/* Card List - Responsive */}
+        {/* Card List */}
         <div className="space-y-2 sm:space-y-3">
           {loading ? (
             <div className="flex flex-col items-center justify-center py-12 sm:py-16 bg-gray-100 rounded-2xl border-2 border-gray-300 shadow-sm">
@@ -869,7 +904,7 @@ const Expenses = () => {
           )}
         </div>
 
-        {/* Pagination - Responsive */}
+        {/* Pagination */}
         {filtered.length > 0 && (
           <div className="mt-3 sm:mt-4 bg-white px-3 sm:px-5 py-2.5 sm:py-4 rounded-xl border-2 border-gray-200 shadow-sm flex flex-col sm:flex-row justify-between items-center gap-2 sm:gap-3">
             <span className="text-[9px] sm:text-xs text-gray-500 text-center sm:text-left">
@@ -891,7 +926,7 @@ const Expenses = () => {
           </div>
         )}
 
-        {/* Edit Modal */}
+        {/* Edit Modal — gated */}
         {editModalOpen && canEditExpenses && (
           <EditExpense
             expense={editingExpense}

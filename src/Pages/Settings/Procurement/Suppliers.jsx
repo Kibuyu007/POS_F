@@ -20,6 +20,7 @@ import Loading from "../../../Components/Shared/Loading";
 
 // API
 import BASE_URL from "../../../Utils/config";
+import { PERMISSIONS,hasPermission } from "../../../Utils/permissions";
 import {
   Search,
   X,
@@ -47,6 +48,12 @@ const Suppliers = () => {
   const [showFilters, setShowFilters] = useState(false);
   const suppliersPerPage = 10;
 
+  // Permission — works with both legacy `roles` object and new `permissions` array
+  const canManageSuppliers = hasPermission(
+    user,
+    PERMISSIONS.ACCESS_SUPPLIER_MANAGEMENT
+  );
+
   useEffect(() => {
     setLoad(true);
     dispatch(fetchAllSuppliers());
@@ -54,10 +61,10 @@ const Suppliers = () => {
   }, [dispatch]);
 
   const activeSuppliers = allSuppliers.filter(
-    (s) => s.status === "Active",
+    (s) => s.status === "Active"
   ).length;
   const inactiveSuppliers = allSuppliers.filter(
-    (s) => s.status === "Inactive",
+    (s) => s.status === "Inactive"
   ).length;
   const totalSuppliers = allSuppliers.length;
 
@@ -67,7 +74,7 @@ const Suppliers = () => {
       (s.supplierName?.toLowerCase().includes(searchQuery.toLowerCase()) ||
         s.email?.toLowerCase().includes(searchQuery.toLowerCase()) ||
         s.company?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        s.phone?.includes(searchQuery)),
+        s.phone?.includes(searchQuery))
   );
 
   const indexOfLast = currentPage * suppliersPerPage;
@@ -76,29 +83,38 @@ const Suppliers = () => {
   const totalPages = Math.ceil(filteredSuppliers.length / suppliersPerPage);
 
   const toggleStatus = async (supplierId, currentStatus) => {
+    if (!canManageSuppliers) {
+      toast.error("You do not have permission to update suppliers.");
+      return;
+    }
     const newStatus = currentStatus === "Active" ? "Inactive" : "Active";
     try {
       const res = await axios.put(
         `${BASE_URL}/api/suppliers/status/${supplierId}`,
         { status: newStatus },
+        { withCredentials: true }
       );
 
       if (res.status === 200) {
         dispatch(supplierStatusUpdate({ supplierId, newStatus }));
         toast.success(
-          `Supplier ${newStatus === "Active" ? "activated" : "deactivated"} successfully!`,
+          `Supplier ${
+            newStatus === "Active" ? "activated" : "deactivated"
+          } successfully!`
         );
       }
     } catch (err) {
       console.error("Failed to update status:", err);
-      toast.error("Failed to update supplier status");
+      const msg =
+        err.response?.data?.error ||
+        err.response?.data?.message ||
+        "Failed to update supplier status";
+      toast.error(msg);
     }
   };
 
-  const canEditSupplier = user?.roles?.canAccessSupplierManagement === true;
-
   const activeFilterCount = [statusFilter !== "all", searchQuery].filter(
-    Boolean,
+    Boolean
   ).length;
 
   const clearFilters = () => {
@@ -115,7 +131,7 @@ const Suppliers = () => {
 
     let startPage = Math.max(
       1,
-      currentPageNum - Math.floor(maxVisiblePages / 2),
+      currentPageNum - Math.floor(maxVisiblePages / 2)
     );
     let endPage = Math.min(totalPagesNum, startPage + maxVisiblePages - 1);
 
@@ -224,16 +240,42 @@ const Suppliers = () => {
               </p>
             </div>
           </div>
-          <button
-            onClick={() => setShowModalAdd(true)}
-            className="flex items-center gap-1.5 sm:gap-2 px-3 sm:px-5 py-2 sm:py-2.5 bg-green-300 text-black rounded-xl hover:bg-green-400 transition-all duration-300 hover:shadow-lg hover:shadow-green-200 hover:scale-[1.02] active:scale-95 text-xs sm:text-sm font-semibold shadow-md border-2 border-green-400"
-          >
-            <FiUserPlus className="w-4 h-4 sm:w-5 sm:h-5" />
-            <span className="hidden xs:inline">Add Supplier</span>
-          </button>
+
+          {/* Add Supplier — gated */}
+          {canManageSuppliers ? (
+            <button
+              onClick={() => setShowModalAdd(true)}
+              className="flex items-center gap-1.5 sm:gap-2 px-3 sm:px-5 py-2 sm:py-2.5 bg-green-300 text-black rounded-xl hover:bg-green-400 transition-all duration-300 hover:shadow-lg hover:shadow-green-200 hover:scale-[1.02] active:scale-95 text-xs sm:text-sm font-semibold shadow-md border-2 border-green-400"
+            >
+              <FiUserPlus className="w-4 h-4 sm:w-5 sm:h-5" />
+              <span className="hidden xs:inline">Add Supplier</span>
+            </button>
+          ) : (
+            <div className="relative group">
+              <button
+                disabled
+                className="flex items-center gap-1.5 sm:gap-2 px-3 sm:px-5 py-2 sm:py-2.5 bg-gray-300 text-gray-500 rounded-xl cursor-not-allowed text-xs sm:text-sm font-semibold border-2 border-gray-300"
+              >
+                <FiUserPlus className="w-4 h-4 sm:w-5 sm:h-5" />
+                <span className="hidden xs:inline">Add Supplier</span>
+              </button>
+              <div className="absolute right-0 top-full mt-2 w-64 p-3 bg-gray-800 text-white text-sm rounded-2xl shadow-xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50">
+                <p className="font-bold mb-1 text-xs sm:text-sm">
+                  Permission Required
+                </p>
+                <p className="text-gray-300 text-xs">
+                  You need the{" "}
+                  <span className="font-bold text-green-300">
+                    Supplier Management
+                  </span>{" "}
+                  permission to add suppliers.
+                </p>
+              </div>
+            </div>
+          )}
         </div>
 
-        {/* Stats Cards - Stacked on mobile */}
+        {/* Stats Cards */}
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 sm:gap-3 md:gap-4 mb-4 sm:mb-6">
           {statsData.map((stat, index) => {
             const Icon = stat.icon;
@@ -260,7 +302,7 @@ const Suppliers = () => {
           })}
         </div>
 
-        {/* Search + Filters - Responsive */}
+        {/* Search + Filters */}
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-4 mb-4 sm:mb-5">
           <div className="flex flex-wrap gap-1.5 sm:gap-2">
             {["all", "Active", "Inactive"].map((status) => (
@@ -278,7 +320,9 @@ const Suppliers = () => {
               >
                 {status === "all" ? "All" : status}
                 <span
-                  className={`text-[9px] sm:text-xs ${statusFilter === status ? "text-black/70" : "text-gray-400"}`}
+                  className={`text-[9px] sm:text-xs ${
+                    statusFilter === status ? "text-black/70" : "text-gray-400"
+                  }`}
                 >
                   (
                   {status === "all"
@@ -444,7 +488,9 @@ const Suppliers = () => {
                           }`}
                         >
                           <Building
-                            className={`w-4 h-4 ${isActive ? "text-black" : "text-gray-600"}`}
+                            className={`w-4 h-4 ${
+                              isActive ? "text-black" : "text-gray-600"
+                            }`}
                           />
                         </div>
                         <div className="min-w-0">
@@ -463,23 +509,29 @@ const Suppliers = () => {
                         </div>
                       </div>
                       <div className="flex items-center gap-1">
-                        <button
-                          onClick={() =>
-                            toggleStatus(supplier._id, supplier.status)
-                          }
-                          className={`p-1.5 font-semibold rounded-full text-[9px] transition-all duration-200 border-2 shadow-sm ${
-                            isActive
-                              ? "bg-white border-gray-300 text-gray-700 hover:bg-gray-100"
-                              : "bg-green-300 border-green-400 text-black hover:bg-green-400"
-                          }`}
-                        >
-                          {isActive ? (
-                            <FiToggleLeft className="w-3.5 h-3.5" />
-                          ) : (
-                            <FiToggleRight className="w-3.5 h-3.5" />
-                          )}
-                        </button>
-                        {canEditSupplier ? (
+                        {canManageSuppliers ? (
+                          <button
+                            onClick={() =>
+                              toggleStatus(supplier._id, supplier.status)
+                            }
+                            className={`p-1.5 font-semibold rounded-full text-[9px] transition-all duration-200 border-2 shadow-sm ${
+                              isActive
+                                ? "bg-white border-gray-300 text-gray-700 hover:bg-gray-100"
+                                : "bg-green-300 border-green-400 text-black hover:bg-green-400"
+                            }`}
+                          >
+                            {isActive ? (
+                              <FiToggleLeft className="w-3.5 h-3.5" />
+                            ) : (
+                              <FiToggleRight className="w-3.5 h-3.5" />
+                            )}
+                          </button>
+                        ) : (
+                          <span className="px-2 py-1 bg-gray-200 text-gray-400 text-[9px] font-semibold rounded-full border-2 border-gray-300">
+                            No Access
+                          </span>
+                        )}
+                        {canManageSuppliers ? (
                           <button
                             onClick={() => {
                               setShowModalEdit(true);
@@ -571,7 +623,9 @@ const Suppliers = () => {
                         }`}
                       >
                         <Building
-                          className={`w-5 h-5 ${isActive ? "text-black" : "text-gray-600"}`}
+                          className={`w-5 h-5 ${
+                            isActive ? "text-black" : "text-gray-600"
+                          }`}
                         />
                       </div>
                       <div className="min-w-0 flex-1">
@@ -619,40 +673,42 @@ const Suppliers = () => {
 
                     {/* Right: Actions */}
                     <div className="flex items-center gap-2 flex-shrink-0">
-                      <button
-                        onClick={() =>
-                          toggleStatus(supplier._id, supplier.status)
-                        }
-                        className={`px-3 sm:px-4 py-1.5 sm:py-2 font-semibold rounded-full text-[10px] sm:text-xs transition-all duration-200 border-2 shadow-sm flex items-center gap-1.5 sm:gap-2 ${
-                          isActive
-                            ? "bg-white border-gray-300 text-gray-700 hover:bg-gray-100"
-                            : "bg-green-300 border-green-400 text-black hover:bg-green-400"
-                        }`}
-                      >
-                        {isActive ? (
-                          <>
-                            <FiToggleLeft className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
-                            Deactivate
-                          </>
-                        ) : (
-                          <>
-                            <FiToggleRight className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
-                            Activate
-                          </>
-                        )}
-                      </button>
+                      {canManageSuppliers ? (
+                        <>
+                          <button
+                            onClick={() =>
+                              toggleStatus(supplier._id, supplier.status)
+                            }
+                            className={`px-3 sm:px-4 py-1.5 sm:py-2 font-semibold rounded-full text-[10px] sm:text-xs transition-all duration-200 border-2 shadow-sm flex items-center gap-1.5 sm:gap-2 ${
+                              isActive
+                                ? "bg-white border-gray-300 text-gray-700 hover:bg-gray-100"
+                                : "bg-green-300 border-green-400 text-black hover:bg-green-400"
+                            }`}
+                          >
+                            {isActive ? (
+                              <>
+                                <FiToggleLeft className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+                                Deactivate
+                              </>
+                            ) : (
+                              <>
+                                <FiToggleRight className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+                                Activate
+                              </>
+                            )}
+                          </button>
 
-                      {canEditSupplier ? (
-                        <button
-                          onClick={() => {
-                            setShowModalEdit(true);
-                            setModifiedUser(supplier);
-                          }}
-                          className="px-3 sm:px-4 py-1.5 sm:py-2 bg-white border-2 border-gray-300 text-gray-700 hover:bg-gray-100 font-semibold rounded-full text-[10px] sm:text-xs transition-all duration-200 shadow-sm flex items-center gap-1.5 sm:gap-2"
-                        >
-                          <FiEdit className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
-                          Edit
-                        </button>
+                          <button
+                            onClick={() => {
+                              setShowModalEdit(true);
+                              setModifiedUser(supplier);
+                            }}
+                            className="px-3 sm:px-4 py-1.5 sm:py-2 bg-white border-2 border-gray-300 text-gray-700 hover:bg-gray-100 font-semibold rounded-full text-[10px] sm:text-xs transition-all duration-200 shadow-sm flex items-center gap-1.5 sm:gap-2"
+                          >
+                            <FiEdit className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+                            Edit
+                          </button>
+                        </>
                       ) : (
                         <span className="px-3 sm:px-4 py-1.5 sm:py-2 bg-gray-200 text-gray-400 font-semibold rounded-full text-[10px] sm:text-xs border-2 border-gray-300">
                           No Access
@@ -688,13 +744,17 @@ const Suppliers = () => {
           </div>
         )}
 
-        {/* Modals */}
-        <AddSupplier showModal={showModalAdd} setShowModal={setShowModalAdd} />
-        <EditSupplier
-          showModal={showModalEdit}
-          setShowModal={setShowModalEdit}
-          supplier={modifiedUser}
-        />
+        {/* Modals — gated */}
+        {canManageSuppliers && (
+          <AddSupplier showModal={showModalAdd} setShowModal={setShowModalAdd} />
+        )}
+        {canManageSuppliers && modifiedUser && (
+          <EditSupplier
+            showModal={showModalEdit}
+            setShowModal={setShowModalEdit}
+            supplier={modifiedUser}
+          />
+        )}
       </div>
     </div>
   );

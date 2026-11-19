@@ -21,6 +21,7 @@ import {
   ChevronDown as ChevronDownIcon,
   ChevronRight,
 } from "lucide-react";
+import { hasPermission ,PERMISSIONS} from "../../../../Utils/permissions";
 
 const MadeniNonPo = () => {
   const user = useSelector((state) => state.user.user);
@@ -30,7 +31,7 @@ const MadeniNonPo = () => {
   const [supplierFilter, setSupplierFilter] = useState("");
   const [startDate, setStartDate] = useState(null);
   const [endDate, setEndDate] = useState(null);
-  const [statusFilter, setStatusFilter] = useState("pending"); // Default to "pending"
+  const [statusFilter, setStatusFilter] = useState("pending");
   const [currentPage, setCurrentPage] = useState(1);
   const [selectedSupplier, setSelectedSupplier] = useState(null);
   const [paymentDialogOpen, setPaymentDialogOpen] = useState(false);
@@ -38,6 +39,9 @@ const MadeniNonPo = () => {
   const [showFilters, setShowFilters] = useState(false);
 
   const itemsPerPage = 10;
+
+  // 🔑 permission flag — works with legacy `roles` object and new `permissions` array
+  const canPayBilledGrn = hasPermission(user, PERMISSIONS.PAY_BILLED_GRN);
 
   useEffect(() => {
     fetchSupplierBills();
@@ -50,20 +54,26 @@ const MadeniNonPo = () => {
   const fetchSupplierBills = async () => {
     setLoad(true);
     try {
-      const res = await axios.get(`${BASE_URL}/api/grn/unpaidNonPo`);
+      // withCredentials so verifyUser can authenticate
+      const res = await axios.get(`${BASE_URL}/api/grn/unpaidNonPo`, {
+        withCredentials: true,
+      });
       if (res.data.success) {
         setSupplierBills(res.data.data);
       }
     } catch (err) {
       console.error(err);
-      toast.error("Failed to load supplier bills.");
+      const message =
+        err.response?.data?.error ||
+        err.response?.data?.message ||
+        "Failed to load supplier bills.";
+      toast.error(message);
     } finally {
       setLoad(false);
     }
   };
 
   const filteredData = supplierBills.filter((supplier) => {
-    // Supplier name filter
     if (
       supplierFilter &&
       !supplier.supplierName
@@ -73,7 +83,6 @@ const MadeniNonPo = () => {
       return false;
     }
 
-    // Date range filter
     if (startDate || endDate) {
       const hasItemsInRange = supplier.items.some((item) => {
         const itemDate = dayjs(item.createdAt);
@@ -88,7 +97,6 @@ const MadeniNonPo = () => {
       if (!hasItemsInRange) return false;
     }
 
-    // Status filter
     if (statusFilter === "pending") {
       return supplier.totalRemainingBalance > 0;
     }
@@ -101,26 +109,26 @@ const MadeniNonPo = () => {
 
   const totalDebt = filteredData.reduce(
     (sum, supplier) => sum + (supplier.totalBilledAmount || 0),
-    0,
+    0
   );
   const totalRemaining = filteredData.reduce(
     (sum, supplier) => sum + (supplier.totalRemainingBalance || 0),
-    0,
+    0
   );
   const totalPaid = totalDebt - totalRemaining;
 
   const suppliersWithBalance = filteredData.filter(
-    (s) => s.totalRemainingBalance > 0,
+    (s) => s.totalRemainingBalance > 0
   ).length;
   const suppliersFullyPaid = filteredData.filter(
-    (s) => s.totalRemainingBalance <= 0,
+    (s) => s.totalRemainingBalance <= 0
   ).length;
 
   const totalPages = Math.ceil(filteredData.length / itemsPerPage);
 
   const currentSuppliers = filteredData.slice(
     (currentPage - 1) * itemsPerPage,
-    currentPage * itemsPerPage,
+    currentPage * itemsPerPage
   );
 
   const toggleSupplierExpansion = (supplierId) => {
@@ -139,6 +147,11 @@ const MadeniNonPo = () => {
   };
 
   const handleSupplierPayment = async (supplier) => {
+    if (!canPayBilledGrn) {
+      toast.error("You do not have permission to pay supplier bills.");
+      return;
+    }
+
     const amount = parseFloat(bulkPaymentAmount || 0);
 
     if (!amount || amount <= 0) {
@@ -159,12 +172,12 @@ const MadeniNonPo = () => {
           supplierId: supplier.supplierId,
           paymentAmount: amount,
         },
-        { withCredentials: true },
+        { withCredentials: true }
       );
 
       if (res.data.success) {
         toast.success(
-          `Payment of ${amount.toLocaleString()} processed successfully!`,
+          `Payment of ${amount.toLocaleString()} processed successfully!`
         );
         setBulkPaymentAmount("");
         setPaymentDialogOpen(false);
@@ -173,13 +186,21 @@ const MadeniNonPo = () => {
       }
     } catch (err) {
       console.error(err);
-      toast.error(err.response?.data?.message || "Failed to process payment.");
+      const message =
+        err.response?.data?.error ||
+        err.response?.data?.message ||
+        "Failed to process payment.";
+      toast.error(message);
     } finally {
       setLoad(false);
     }
   };
 
   const openPaymentDialog = (supplier) => {
+    if (!canPayBilledGrn) {
+      toast.error("You do not have permission to pay supplier bills.");
+      return;
+    }
     setSelectedSupplier(supplier);
     setBulkPaymentAmount("");
     setPaymentDialogOpen(true);
@@ -196,8 +217,6 @@ const MadeniNonPo = () => {
     return value.replace(/,/g, "");
   };
 
-  const canPayBilledGrn = user?.roles?.canPayBilledGrn === true;
-
   const activeFilterCount = [
     supplierFilter,
     startDate,
@@ -209,7 +228,7 @@ const MadeniNonPo = () => {
     setSupplierFilter("");
     setStartDate(null);
     setEndDate(null);
-    setStatusFilter("pending"); // Reset to "pending"
+    setStatusFilter("pending");
   };
 
   const formatCurrency = (amount) => {
@@ -233,7 +252,7 @@ const MadeniNonPo = () => {
 
     let startPage = Math.max(
       1,
-      currentPageNum - Math.floor(maxVisiblePages / 2),
+      currentPageNum - Math.floor(maxVisiblePages / 2)
     );
     let endPage = Math.min(totalPagesNum, startPage + maxVisiblePages - 1);
 
@@ -359,7 +378,7 @@ const MadeniNonPo = () => {
           </button>
         </div>
 
-        {/* Stats Cards - Stack vertically on mobile */}
+        {/* Stats Cards */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-3 md:gap-4 mb-4 sm:mb-6">
           {statsData.map((stat, index) => {
             const Icon = stat.icon;
@@ -495,7 +514,6 @@ const MadeniNonPo = () => {
               </div>
             </div>
 
-            {/* Status Filter */}
             <div>
               <label className="block text-xs font-medium text-gray-600 mb-1.5">
                 Payment Status
@@ -619,7 +637,7 @@ const MadeniNonPo = () => {
           </p>
         </div>
 
-        {/* Card List - Vertical on mobile */}
+        {/* Card List */}
         <div className="space-y-2 sm:space-y-2.5">
           {load ? (
             <div className="flex flex-col items-center justify-center py-12 sm:py-16 bg-gray-100 rounded-2xl border-2 border-gray-300 shadow-sm">
@@ -692,7 +710,6 @@ const MadeniNonPo = () => {
 
                       {/* Right: Actions */}
                       <div className="flex items-center gap-1.5 sm:gap-2 w-full xs:w-auto justify-end">
-                        {/* Financial Summary - Mobile */}
                         <div className="text-right mr-1 sm:mr-2">
                           <div className="text-xs sm:text-sm font-bold text-gray-800">
                             {formatCurrency(supplier.totalRemainingBalance)}
@@ -702,7 +719,6 @@ const MadeniNonPo = () => {
                           </span>
                         </div>
 
-                        {/* Expand Button */}
                         <button
                           onClick={() =>
                             toggleSupplierExpansion(supplier.supplierId)
@@ -716,7 +732,7 @@ const MadeniNonPo = () => {
                           )}
                         </button>
 
-                        {/* Pay Button */}
+                        {/* Pay Button — gated */}
                         {!isFullyPaid && canPayBilledGrn && (
                           <button
                             onClick={() => openPaymentDialog(supplier)}
@@ -728,14 +744,20 @@ const MadeniNonPo = () => {
                       </div>
                     </div>
 
-                    {/* Progress Bar - Mobile friendly */}
+                    {/* Progress Bar */}
                     {!isFullyPaid && (
                       <div className="mt-2">
                         <div className="h-1.5 bg-white/60 rounded-full overflow-hidden">
                           <div
                             className="h-full bg-gradient-to-r from-yellow-400 to-green-300 rounded-full transition-all"
                             style={{
-                              width: `${supplier.totalBilledAmount > 0 ? (supplier.totalPaidAmount / supplier.totalBilledAmount) * 100 : 0}%`,
+                              width: `${
+                                supplier.totalBilledAmount > 0
+                                  ? (supplier.totalPaidAmount /
+                                      supplier.totalBilledAmount) *
+                                    100
+                                  : 0
+                              }%`,
                             }}
                           />
                         </div>
@@ -802,7 +824,7 @@ const MadeniNonPo = () => {
                                     </td>
                                     <td className="px-2 sm:px-3 py-1.5 text-[9px] sm:text-[10px] text-right font-semibold text-gray-800 border-r border-gray-100">
                                       {formatCurrency(
-                                        item.billedTotalCost || 0,
+                                        item.billedTotalCost || 0
                                       )}
                                     </td>
                                     <td className="px-2 sm:px-3 py-1.5 text-[9px] sm:text-[10px] text-right text-green-600 border-r border-gray-100">
@@ -860,7 +882,7 @@ const MadeniNonPo = () => {
         )}
 
         {/* Payment Dialog Modal */}
-        {paymentDialogOpen && selectedSupplier && (
+        {paymentDialogOpen && selectedSupplier && canPayBilledGrn && (
           <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
             <div className="bg-white rounded-2xl max-w-md w-full shadow-2xl max-h-[90vh] overflow-y-auto">
               <div className="sticky top-0 z-10 bg-white px-6 sm:px-8 py-5 border-b-2 border-gray-200 rounded-t-2xl">
@@ -940,7 +962,7 @@ const MadeniNonPo = () => {
                   <button
                     onClick={() =>
                       setBulkPaymentAmount(
-                        selectedSupplier.totalRemainingBalance.toString(),
+                        selectedSupplier.totalRemainingBalance.toString()
                       )
                     }
                     className="text-xs text-green-600 font-semibold mt-1.5 hover:text-green-700 transition-colors"

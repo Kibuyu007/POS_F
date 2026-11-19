@@ -1,12 +1,9 @@
-import React from "react";
 import { useEffect, useState } from "react";
 import AddCategory from "./AddCategory";
 import EditCategory from "./EditCategory";
 import {
   FaSearch,
   FaTags,
-  FaFilter,
-  FaInfoCircle,
   FaPlus,
   FaSync,
   FaExclamationTriangle,
@@ -21,6 +18,7 @@ import toast from "react-hot-toast";
 
 //URL
 import BASE_URL from "../../../../Utils/config";
+import { hasPermission, PERMISSIONS } from "../../../../Utils/permissions";
 
 const ItemsCategories = () => {
   const user = useSelector((state) => state.user.user);
@@ -48,10 +46,20 @@ const ItemsCategories = () => {
 
   const fetchData = async () => {
     try {
+      // Include credentials so verifyUser can authenticate
       const response = await fetch(
         `${BASE_URL}/api/itemsCategories/getItemCategories`,
+        { credentials: "include" },
       );
+
+      if (response.status === 401) {
+        throw new Error("Your session has expired. Please log in again.");
+      }
+      if (response.status === 403) {
+        throw new Error("You do not have permission to view categories.");
+      }
       if (!response.ok) throw new Error("Failed to fetch categories");
+
       const data = await response.json();
       dispatch(categoriesFetch({ data: data.data }));
       setShowError("");
@@ -59,9 +67,10 @@ const ItemsCategories = () => {
     } catch (error) {
       console.error("Error fetching categories:", error);
       setShowError(
-        "An error occurred. Please contact the system administrator.",
+        error.message ||
+          "An error occurred. Please contact the system administrator.",
       );
-      toast.error("Failed to load categories");
+      toast.error(error.message || "Failed to load categories");
     }
   };
 
@@ -90,9 +99,9 @@ const ItemsCategories = () => {
     setCurrentPage(1);
   };
 
-  // Check permissions
-  const canAddCategory = user?.roles?.canAddCategory === true;
-  const canEditCategory = user?.roles?.canEditCategory === true;
+  // Check permissions — works with both legacy `roles` object and new `permissions` array
+  const canAddCategory = hasPermission(user, PERMISSIONS.ADD_CATEGORY);
+  const canEditCategory = hasPermission(user, PERMISSIONS.EDIT_CATEGORY);
 
   return (
     <div className="p-2 sm:p-3 md:p-4 lg:p-5 bg-gray-50 min-h-screen">
@@ -148,7 +157,7 @@ const ItemsCategories = () => {
         </div>
       </div>
 
-      {/* Stats Cards - Grey border, rounded-2xl */}
+      {/* Stats Cards */}
       <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 mb-4">
         <div className="bg-white p-4 rounded-2xl border-2 border-gray-300 shadow-sm text-center">
           <p className="text-[10px] sm:text-xs text-gray-500 font-medium mb-1">

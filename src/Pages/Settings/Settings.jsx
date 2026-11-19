@@ -22,11 +22,20 @@ import Expenses from "./Procurement/Expenses";
 import Debts from "./Debts/Debts";
 import Orders from "./../Orders/Orders";
 import Adjustment from "./Products/Items/Adjustment";
+import {
+  hasPermission,
+  getUserRole,
+  PERMISSIONS,
+} from "../../Utils/permissions";
 
 const Settings = () => {
   const [selectedSetting, setSelectedSetting] = useState(null);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const user = useSelector((state) => state.user.user);
+
+  // Derived once per render — cheap
+  const role = getUserRole(user);
+  const can = (perm) => hasPermission(user, perm);
 
   // Close sidebar when pressing Escape
   useEffect(() => {
@@ -45,7 +54,8 @@ const Settings = () => {
   const renderContent = () => {
     switch (selectedSetting) {
       case "All Users":
-        return <UserManagement />;
+        // Pass the current user's role so AddUser/EditUser can gate Admin-only fields
+        return <UserManagement currentUserRole={role} />;
       case "Items":
         return <Items />;
       case "Items Categories":
@@ -185,19 +195,40 @@ const Settings = () => {
           </button>
         </div>
 
+        {/* =============================================
+            PRE-PURCHASE — always visible
+            (Madeni Binafsi = customer debts the Cashier
+             needs to record; Orders = order list they need)
+           ============================================= */}
         <SettingsList
           title="Pre-Purchase"
           settings={[
             {
               group: "Vendors",
-              items: ["Suppliers", "Madeni Binafsi", "Orders"],
+              items: ["Madeni Binafsi", "Orders"],
             },
           ]}
           selectedSetting={selectedSetting}
           handleSelect={handleSelect}
         />
 
-        {user?.roles?.canApproveNewGrn && (
+        {/* =============================================
+            VENDOR MANAGEMENT — only visible to users
+            who can manage suppliers (Admin / Manager)
+           ============================================= */}
+        {can(PERMISSIONS.ACCESS_SUPPLIER_MANAGEMENT) && (
+          <SettingsList
+            title="Vendor Management"
+            settings={["Suppliers"]}
+            selectedSetting={selectedSetting}
+            handleSelect={handleSelect}
+          />
+        )}
+
+        {/* =============================================
+            GRN — gated by APPROVE_NEW_GRN
+           ============================================= */}
+        {can(PERMISSIONS.APPROVE_NEW_GRN) && (
           <SettingsList
             title="GRN"
             settings={[
@@ -216,6 +247,11 @@ const Settings = () => {
           />
         )}
 
+        {/* =============================================
+            PRODUCTS MANAGEMENT — always visible
+            (Cashiers need Items list to see stock levels;
+             the Items component itself gates add/edit)
+           ============================================= */}
         <SettingsList
           title="Products Management"
           settings={["Items", "Items Categories", "Adjustment"]}
@@ -223,7 +259,10 @@ const Settings = () => {
           handleSelect={handleSelect}
         />
 
-        {user?.roles?.canAccessCustomerManagement && (
+        {/* =============================================
+            CUSTOMER MANAGEMENT — gated by ACCESS_CUSTOMER_MANAGEMENT
+           ============================================= */}
+        {can(PERMISSIONS.ACCESS_CUSTOMER_MANAGEMENT) && (
           <SettingsList
             title="Customer Management"
             settings={["All Customers"]}
@@ -232,7 +271,10 @@ const Settings = () => {
           />
         )}
 
-        {user?.roles?.canAccessUserManagement && (
+        {/* =============================================
+            USER MANAGEMENT — gated by ACCESS_USER_MANAGEMENT
+           ============================================= */}
+        {can(PERMISSIONS.ACCESS_USER_MANAGEMENT) && (
           <SettingsList
             title="User Management"
             settings={["All Users", "User Logs"]}

@@ -1,179 +1,289 @@
 import { useEffect, useState } from "react";
 import axios from "axios";
 import {
-  FiUser,
-  FiX,
-  FiCheck,
-  FiMail,
-  FiPhone,
-  FiHome,
-  FiCalendar,
-  FiUpload,
-  FiSettings,
-  FiFileText,
-  FiShoppingCart,
-  FiShield,
-  FiTrendingUp,
-  FiUsers,
-  FiLock,
-  FiBox,
-  FiPackage,
-  FiDollarSign,
-  FiCreditCard,
-  FiCheckCircle,
-  FiClipboard,
-  FiFile,
-  FiBarChart2,
-  FiChevronRight,
-  FiChevronDown,
-  FiSave,
-  FiRefreshCw,
-  FiEdit,
+  FiUser, FiX, FiCheck, FiMail, FiPhone, FiHome, FiCalendar,
+  FiUpload, FiSettings, FiFileText, FiShoppingCart, FiShield,
+  FiTrendingUp, FiUsers, FiLock, FiBox, FiPackage, FiDollarSign,
+  FiCreditCard, FiCheckCircle, FiClipboard, FiFile, FiBarChart2,
+  FiChevronRight, FiChevronDown, FiSave, FiRefreshCw, FiEdit, FiKey,
 } from "react-icons/fi";
 import { FaUserTie, FaWarehouse } from "react-icons/fa";
-import {
-  MdSecurity,
-  MdOutlineAdminPanelSettings,
-  MdCategory,
-} from "react-icons/md";
+import { MdSecurity, MdOutlineAdminPanelSettings, MdCategory } from "react-icons/md";
 import { HiOutlineChartBar } from "react-icons/hi";
 import { BsPeople } from "react-icons/bs";
 import toast from "react-hot-toast";
 import BASE_URL from "../../../Utils/config";
+import {
+  PERMISSIONS, ROLES, ROLE_NAMES, ALL_PERMISSIONS, PERMISSION_LABELS,
+} from "../../../Utils/permissions";
 
-const EditUser = ({ showModal, setShowModal, onUserUpdated, user }) => {
+const PROTECTED_USER_ID = "67dac1d71e4020e195b0b590";
+
+// Permission groups → used only for the visual grouping of the
+// permissions grid. Keys must match backend permission strings.
+const PERMISSION_GROUPS = [
+  {
+    id: "inventory",
+    title: "Inventory Management",
+    icon: <FaWarehouse />,
+    color: "from-blue-500 to-cyan-500",
+    bgColor: "from-blue-50 to-cyan-50",
+    permissions: [
+      { key: PERMISSIONS.ADD_ITEMS, icon: <FiBox /> },
+      { key: PERMISSIONS.EDIT_ITEMS, icon: <FiPackage /> },
+      { key: PERMISSIONS.ADD_CATEGORY, icon: <MdCategory /> },
+      { key: PERMISSIONS.EDIT_CATEGORY, icon: <FiSettings /> },
+    ],
+  },
+  {
+    id: "transactions",
+    title: "Transaction Management",
+    icon: <FiCreditCard />,
+    color: "from-emerald-500 to-green-500",
+    bgColor: "from-emerald-50 to-green-50",
+    permissions: [
+      { key: PERMISSIONS.MAKE_TRANSACTION, icon: <FiTrendingUp /> },
+      { key: PERMISSIONS.PAY_BILL_TRANSACTIONS, icon: <FiDollarSign /> },
+      { key: PERMISSIONS.EDIT_EXPENSES, icon: <FiEdit /> },
+    ],
+  },
+  {
+    id: "grn",
+    title: "GRN Management",
+    icon: <FiClipboard />,
+    color: "from-purple-500 to-violet-500",
+    bgColor: "from-purple-50 to-violet-50",
+    permissions: [
+      { key: PERMISSIONS.APPROVE_NEW_GRN, icon: <FiCheckCircle /> },
+      { key: PERMISSIONS.PAY_BILLED_GRN, icon: <FiCreditCard /> },
+    ],
+  },
+  {
+    id: "debts",
+    title: "Debt Management",
+    icon: <FiCreditCard />,
+    color: "from-amber-500 to-yellow-500",
+    bgColor: "from-amber-50 to-yellow-50",
+    permissions: [
+      { key: PERMISSIONS.CHANGE_DEBT_STATUS, icon: <FiTrendingUp /> },
+      { key: PERMISSIONS.PAY_DEBT, icon: <FiDollarSign /> },
+    ],
+  },
+  {
+    id: "administration",
+    title: "System Administration",
+    icon: <MdOutlineAdminPanelSettings />,
+    color: "from-amber-500 to-orange-500",
+    bgColor: "from-amber-50 to-orange-50",
+    permissions: [
+      { key: PERMISSIONS.ACCESS_SETTINGS, icon: <FiSettings /> },
+      { key: PERMISSIONS.ACCESS_USER_MANAGEMENT, icon: <FiUsers /> },
+      { key: PERMISSIONS.ACCESS_CUSTOMER_MANAGEMENT, icon: <FiUser /> },
+      { key: PERMISSIONS.ACCESS_SUPPLIER_MANAGEMENT, icon: <BsPeople /> },
+    ],
+  },
+  {
+    id: "reports",
+    title: "Reports & Analytics",
+    icon: <HiOutlineChartBar />,
+    color: "from-indigo-500 to-purple-500",
+    bgColor: "from-indigo-50 to-purple-50",
+    permissions: [
+      { key: PERMISSIONS.SEE_REPORTS, icon: <FiBarChart2 /> },
+      { key: PERMISSIONS.ACCESS_MADENI_REPORT, icon: <FiFile /> },
+    ],
+  },
+];
+
+// Same ordering the backend enum uses
+const ROLE_OPTIONS = ["Admin", "Manager", "Cashier", "Accountant"];
+
+const buildEmptyUser = () => ({
+  firstName: "",
+  secondName: "",
+  lastName: "",
+  userName: "",
+  dateOfBirth: "",
+  gender: "",
+  email: "",
+  contacts: "",
+  address: "",
+  title: "",
+  password: "",
+  role: "Cashier",
+  permissions: [],
+  customizePermissions: false,
+});
+
+// Compare two arrays as sets
+const samePermissions = (a = [], b = []) => {
+  if (a.length !== b.length) return false;
+  const setB = new Set(b);
+  return a.every((p) => setB.has(p));
+};
+
+const EditUser = ({
+  showModal,
+  setShowModal,
+  onUserUpdated,        // keep parity with UserManagement (rename to onUserAdded if preferred)
+  user,
+  currentUserRole,
+}) => {
+  const isAdmin = currentUserRole === "Admin";
+
   const [showError, setShowError] = useState("");
   const [loading, setLoading] = useState(false);
   const [file, setFile] = useState(null);
   const [photoPreview, setPhotoPreview] = useState(null);
   const [activeTab, setActiveTab] = useState("personal");
   const [collapsedSections, setCollapsedSections] = useState({});
+  const [editUser, setEditUser] = useState(buildEmptyUser());
 
-  const [editUser, setEditUser] = useState({
-    firstName: "",
-    secondName: "",
-    lastName: "",
-    userName: "",
-    dateOfBirth: "",
-    gender: "",
-    email: "",
-    contacts: "",
-    address: "",
-    title: "",
-    photo: "",
-    roles: {
-      canAddItems: false,
-      canEditItems: false,
-      canAddCategory: false,
-      canEditCategory: false,
-      canMakeTransaction: false,
-      canPayBillTransaction: false,
-      canApproveNewGrn: false,
-      canPayBilledGrn: false,
-      canChangeDebtStatus: false,
-      canPayDebt: false,
-      canEditExpenses: false, // New permission added here
-      canAccessSettings: false,
-      canAccessUserManagement: false,
-      canAccessCustomerManagement: false,
-      canAccessSupplierManagement: false,
-      canSeeReports: false,
-      canAccessMadeniReport: false,
-    },
-    password: "",
-  });
+  const isProtected = user?._id === PROTECTED_USER_ID;
 
+  // Hydrate on open / user change
   useEffect(() => {
-    if (user) {
-      setEditUser({
-        firstName: user.firstName || "",
-        secondName: user.secondName || "",
-        lastName: user.lastName || "",
-        userName: user.userName || "",
-        dateOfBirth: user.dateOfBirth ? user.dateOfBirth.split("T")[0] : "",
-        gender: user.gender || "",
-        email: user.email || "",
-        contacts: user.contacts || "",
-        address: user.address || "",
-        title: user.title || "",
-        password: "",
-        roles: {
-          canAddItems: user.roles?.canAddItems || false,
-          canEditItems: user.roles?.canEditItems || false,
-          canAddCategory: user.roles?.canAddCategory || false,
-          canEditCategory: user.roles?.canEditCategory || false,
-          canMakeTransaction: user.roles?.canMakeTransaction || false,
-          canPayBillTransaction: user.roles?.canPayBillTransaction  || false,
-          canApproveNewGrn: user.roles?.canApproveNewGrn || false,
-          canPayBilledGrn: user.roles?.canPayBilledGrn || false,
-          canChangeDebtStatus: user.roles?.canChangeDebtStatus || false,
-          canPayDebt: user.roles?.canPayDebt || false,
-          canEditExpenses: user.roles?.canEditExpenses || false, // New permission added here
-          canAccessSettings: user.roles?.canAccessSettings || false,
-          canAccessUserManagement: user.roles?.canAccessUserManagement || false,
-          canAccessCustomerManagement:
-            user.roles?.canAccessCustomerManagement || false,
-          canAccessSupplierManagement:
-            user.roles?.canAccessSupplierManagement || false,
-          canSeeReports: user.roles?.canSeeReports || false,
-          canAccessMadeniReport: user.roles?.canAccessMadeniReport || false,
-        },
-      });
-      setPhotoPreview(user.photo ? `${BASE_URL}/pfps/${user.photo}` : null);
-      setFile(null);
-      setShowError("");
-    }
+    if (!user) return;
+
+    const storedPermissions = Array.isArray(user.permissions) ? user.permissions : [];
+    const roleDefaults = ROLES[user.role]?.permissions || [];
+    // Consider "customized" only if the stored set differs from role defaults
+    const isCustomized = !samePermissions(storedPermissions, roleDefaults);
+
+    setEditUser({
+      firstName: user.firstName || "",
+      secondName: user.secondName || "",
+      lastName: user.lastName || "",
+      userName: user.userName || "",
+      dateOfBirth: user.dateOfBirth ? user.dateOfBirth.split("T")[0] : "",
+      gender: user.gender || "",
+      email: user.email || "",
+      contacts: user.contacts || "",
+      address: user.address || "",
+      title: user.title || "",
+      password: "",
+      role: user.role || "Cashier",
+      permissions: isCustomized ? storedPermissions : [],
+      customizePermissions: isCustomized,
+    });
+
+    setPhotoPreview(user.photo ? `${BASE_URL}/pfps/${user.photo}` : null);
+    setFile(null);
+    setShowError("");
   }, [user]);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
-    setEditUser((prevUser) => ({ ...prevUser, [name]: value }));
+    setEditUser((prev) => {
+      // When role changes and not customizing, sync permissions to role defaults
+      if (name === "role") {
+        return {
+          ...prev,
+          role: value,
+          permissions: prev.customizePermissions
+            ? prev.permissions
+            : [],
+        };
+      }
+      return { ...prev, [name]: value };
+    });
     if (showError) setShowError("");
   };
 
-  const handleCheckboxChange = (e) => {
-    const { name, checked } = e.target;
-    setEditUser((prevUser) => ({
-      ...prevUser,
-      roles: { ...prevUser.roles, [name]: checked },
+  const handleToggleCustomize = (checked) => {
+    setEditUser((prev) => {
+      if (checked) {
+        // Seed from current role defaults so user can tweak
+        return {
+          ...prev,
+          customizePermissions: true,
+          permissions: [...(ROLES[prev.role]?.permissions || [])],
+        };
+      }
+      // Unchecking = revert to role defaults (clear custom list)
+      return { ...prev, customizePermissions: false, permissions: [] };
+    });
+  };
+
+  const handleTogglePermission = (perm) => {
+    setEditUser((prev) => {
+      const has = prev.permissions.includes(perm);
+      return {
+        ...prev,
+        permissions: has
+          ? prev.permissions.filter((p) => p !== perm)
+          : [...prev.permissions, perm],
+      };
+    });
+  };
+
+  const handleApplyPreset = (roleName) => {
+    setEditUser((prev) => ({
+      ...prev,
+      role: roleName,
+      permissions: prev.customizePermissions
+        ? [...(ROLES[roleName]?.permissions || [])]
+        : [],
     }));
   };
 
   const handleFileChange = (e) => {
-    const file = e.target.files[0];
-    if (file) {
-      setFile(file);
-      setPhotoPreview(URL.createObjectURL(file));
+    const f = e.target.files[0];
+    if (f) {
+      setFile(f);
+      setPhotoPreview(URL.createObjectURL(f));
     }
+  };
+
+  const handleReset = () => {
+    if (!user) return;
+    const storedPermissions = Array.isArray(user.permissions) ? user.permissions : [];
+    const roleDefaults = ROLES[user.role]?.permissions || [];
+    const isCustomized = !samePermissions(storedPermissions, roleDefaults);
+
+    setEditUser({
+      firstName: user.firstName || "",
+      secondName: user.secondName || "",
+      lastName: user.lastName || "",
+      userName: user.userName || "",
+      dateOfBirth: user.dateOfBirth ? user.dateOfBirth.split("T")[0] : "",
+      gender: user.gender || "",
+      email: user.email || "",
+      contacts: user.contacts || "",
+      address: user.address || "",
+      title: user.title || "",
+      password: "",
+      role: user.role || "Cashier",
+      permissions: isCustomized ? storedPermissions : [],
+      customizePermissions: isCustomized,
+    });
+    setPhotoPreview(user.photo ? `${BASE_URL}/pfps/${user.photo}` : null);
+    setFile(null);
+    setShowError("");
   };
 
   const handleEditUser = async (e) => {
     e.preventDefault();
 
+    // Basic validation
     if (!editUser.firstName.trim() || !editUser.lastName.trim()) {
-      setShowError("First name and last name are required");
-      return;
+      return setShowError("First name and last name are required");
     }
-
     if (!editUser.email.trim()) {
-      setShowError("Email is required");
-      return;
+      return setShowError("Email is required");
     }
-
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(editUser.email)) {
-      setShowError("Please enter a valid email address");
-      return;
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(editUser.email)) {
+      return setShowError("Please enter a valid email address");
     }
-
     if (editUser.password && editUser.password.length < 6) {
-      setShowError("Password must be at least 6 characters long");
-      return;
+      return setShowError("Password must be at least 6 characters long");
     }
 
     setLoading(true);
     try {
       const formData = new FormData();
+
+      // Basic fields
       formData.append("firstName", editUser.firstName);
       formData.append("secondName", editUser.secondName);
       formData.append("lastName", editUser.lastName);
@@ -184,12 +294,19 @@ const EditUser = ({ showModal, setShowModal, onUserUpdated, user }) => {
       formData.append("contacts", editUser.contacts);
       formData.append("address", editUser.address);
       formData.append("title", editUser.title);
-      if (editUser.password) {
-        formData.append("password", editUser.password);
-      }
-      formData.append("roles", JSON.stringify(editUser.roles));
-      if (file) {
-        formData.append("photo", file);
+
+      if (editUser.password) formData.append("password", editUser.password);
+      if (file) formData.append("photo", file);
+
+      // Role/permissions → only Admins may send these
+      if (isAdmin) {
+        formData.append("role", editUser.role);
+        if (editUser.customizePermissions) {
+          formData.append("permissions", JSON.stringify(editUser.permissions));
+        } else {
+          // Sending an empty array signals "use role defaults"
+          formData.append("permissions", JSON.stringify([]));
+        }
       }
 
       await axios.put(`${BASE_URL}/api/users/update/${user._id}`, formData, {
@@ -198,291 +315,47 @@ const EditUser = ({ showModal, setShowModal, onUserUpdated, user }) => {
       });
 
       toast.success("User updated successfully!");
-
       setTimeout(() => {
         setShowModal(false);
-        onUserUpdated();
-      }, 1500);
+        onUserUpdated?.();
+      }, 1000);
     } catch (error) {
-      if (error.response && error.response.data) {
-        setShowError(
-          error.response.data.error ||
-            error.response.data.message ||
-            "Failed to update user. Please try again."
-        );
-      } else {
-        setShowError("An error occurred. Please contact support.");
-      }
+      const msg =
+        error.response?.data?.error ||
+        error.response?.data?.message ||
+        "Failed to update user. Please try again.";
+      setShowError(msg);
       console.error("Update error:", error);
     } finally {
       setLoading(false);
     }
   };
 
-  const toggleSection = (section) => {
-    setCollapsedSections((prev) => ({
-      ...prev,
-      [section]: !prev[section],
-    }));
-  };
+  const toggleSection = (section) =>
+    setCollapsedSections((prev) => ({ ...prev, [section]: !prev[section] }));
 
-  // Navigation tabs
   const tabs = [
     { id: "personal", label: "Personal Info", icon: <FiUser /> },
     { id: "security", label: "Security", icon: <FiLock /> },
-    { id: "permissions", label: "Permissions", icon: <FiShield /> },
+    { id: "permissions", label: "Role & Permissions", icon: <FiShield /> },
     { id: "summary", label: "Summary", icon: <FiFileText /> },
   ];
 
-  // Permission groups with original colors
-  const permissionGroups = [
-    {
-      id: "inventory",
-      title: "Inventory Management",
-      icon: <FaWarehouse />,
-      color: "from-blue-500 to-cyan-500",
-      bgColor: "from-blue-50 to-cyan-50",
-      permissions: [
-        { key: "canAddItems", label: "Add Items", icon: <FiBox /> },
-        { key: "canEditItems", label: "Edit Items", icon: <FiPackage /> },
-        {
-          key: "canAddCategory",
-          label: "Add Categories",
-          icon: <MdCategory />,
-        },
-        {
-          key: "canEditCategory",
-          label: "Edit Categories",
-          icon: <FiSettings />,
-        },
-      ],
-    },
-    {
-      id: "transactions",
-      title: "Transaction Management",
-      icon: <FiCreditCard />,
-      color: "from-emerald-500 to-green-500",
-      bgColor: "from-emerald-50 to-green-50",
-      permissions: [
-        {
-          key: "canMakeTransaction",
-          label: "Make Transactions",
-          icon: <FiTrendingUp />,
-        },
-        {
-          key: "canPayBillTransaction",
-          label: "Pay Bill Transactions",
-          icon: <FiDollarSign />,
-        },
-        {
-          key: "canEditExpenses", // Moved to Transaction Management
-          label: "Edit Expenses",
-          icon: <FiEdit />,
-        },
-      ],
-    },
-    {
-      id: "grn",
-      title: "GRN Management",
-      icon: <FiClipboard />,
-      color: "from-purple-500 to-violet-500",
-      bgColor: "from-purple-50 to-violet-50",
-      permissions: [
-        {
-          key: "canApproveNewGrn",
-          label: "Approve New GRN",
-          icon: <FiCheckCircle />,
-        },
-        {
-          key: "canPayBilledGrn",
-          label: "Pay Billed GRN",
-          icon: <FiCreditCard />,
-        },
-      ],
-    },
-    {
-      id: "debts",
-      title: "Debt Management",
-      icon: <FiCreditCard />,
-      color: "from-amber-500 to-yellow-500",
-      bgColor: "from-amber-50 to-yellow-50",
-      permissions: [
-        {
-          key: "canChangeDebtStatus",
-          label: "Change Debt Status",
-          icon: <FiTrendingUp />,
-        },
-        { key: "canPayDebt", label: "Pay Debts", icon: <FiDollarSign /> },
-      ],
-    },
-    {
-      id: "administration",
-      title: "System Administration",
-      icon: <MdOutlineAdminPanelSettings />,
-      color: "from-amber-500 to-orange-500",
-      bgColor: "from-amber-50 to-orange-50",
-      permissions: [
-        {
-          key: "canAccessSettings",
-          label: "Access Settings",
-          icon: <FiSettings />,
-        },
-        {
-          key: "canAccessUserManagement",
-          label: "User Management",
-          icon: <FiUsers />,
-        },
-        {
-          key: "canAccessCustomerManagement",
-          label: "Customer Management",
-          icon: <FiUser />,
-        },
-        {
-          key: "canAccessSupplierManagement",
-          label: "Supplier Management",
-          icon: <BsPeople />,
-        },
-      ],
-    },
-    {
-      id: "reports",
-      title: "Reports & Analytics",
-      icon: <HiOutlineChartBar />,
-      color: "from-indigo-500 to-purple-500",
-      bgColor: "from-indigo-50 to-purple-50",
-      permissions: [
-        { key: "canSeeReports", label: "View Reports", icon: <FiBarChart2 /> },
-        {
-          key: "canAccessMadeniReport",
-          label: "Madeni Reports",
-          icon: <FiFile />,
-        },
-      ],
-    },
-  ];
+  if (!showModal || !user) return null;
 
-  // Role presets with original colors
-  const rolePresets = [
-    {
-      id: "admin",
-      name: "Administrator",
-      description: "Full system access",
-      icon: <FiShield />,
-      color: "from-red-500 to-pink-500",
-      roles: {
-        canAddItems: true,
-        canEditItems: true,
-        canAddCategory: true,
-        canEditCategory: true,
-        canMakeTransaction: true,
-        canPayBillTransaction: true,
-        canApproveNewGrn: true,
-        canPayBilledGrn: true,
-        canChangeDebtStatus: true,
-        canPayDebt: true,
-        canEditExpenses: true, // Added to admin preset
-        canAccessSettings: true,
-        canAccessUserManagement: true,
-        canAccessCustomerManagement: true,
-        canAccessSupplierManagement: true,
-        canSeeReports: true,
-        canAccessMadeniReport: true,
-      },
-    },
-    {
-      id: "manager",
-      name: "Store Manager",
-      description: "Complete operational access",
-      icon: <FiUser />,
-      color: "from-blue-500 to-cyan-500",
-      roles: {
-        canAddItems: true,
-        canEditItems: true,
-        canAddCategory: true,
-        canEditCategory: true,
-        canMakeTransaction: true,
-        canPayBillTransaction: true,
-        canApproveNewGrn: true,
-        canPayBilledGrn: true,
-        canChangeDebtStatus: true,
-        canPayDebt: true,
-        canEditExpenses: true, // Added to manager preset
-        canAccessSettings: false,
-        canAccessUserManagement: false,
-        canAccessCustomerManagement: true,
-        canAccessSupplierManagement: true,
-        canSeeReports: true,
-        canAccessMadeniReport: true,
-      },
-    },
-    {
-      id: "staff",
-      name: "Sales Staff",
-      description: "Basic sales operations",
-      icon: <FiShoppingCart />,
-      color: "from-emerald-500 to-green-500",
-      roles: {
-        canAddItems: true,
-        canEditItems: true,
-        canAddCategory: false,
-        canEditCategory: false,
-        canMakeTransaction: true,
-        canPayBillTransaction: false,
-        canApproveNewGrn: false,
-        canPayBilledGrn: false,
-        canChangeDebtStatus: false,
-        canPayDebt: false,
-        canEditExpenses: false, // Added to staff preset
-        canAccessSettings: false,
-        canAccessUserManagement: false,
-        canAccessCustomerManagement: false,
-        canAccessSupplierManagement: false,
-        canSeeReports: false,
-        canAccessMadeniReport: false,
-      },
-    },
-    {
-      id: "accountant",
-      name: "Accountant",
-      description: "Financial management",
-      icon: <FiCreditCard />,
-      color: "from-purple-500 to-violet-500",
-      roles: {
-        canAddItems: false,
-        canEditItems: false,
-        canAddCategory: false,
-        canEditCategory: false,
-        canMakeTransaction: true,
-        canPayBillTransaction: true,
-        canApproveNewGrn: true,
-        canPayBilledGrn: true,
-        canChangeDebtStatus: true,
-        canPayDebt: true,
-        canEditExpenses: true, // Added to accountant preset
-        canAccessSettings: false,
-        canAccessUserManagement: false,
-        canAccessCustomerManagement: true,
-        canAccessSupplierManagement: true,
-        canSeeReports: true,
-        canAccessMadeniReport: true,
-      },
-    },
-  ];
-
-  if (!showModal) return null;
+  const effectivePermissions = editUser.customizePermissions
+    ? editUser.permissions
+    : ROLES[editUser.role]?.permissions || [];
 
   return (
     <div className="fixed inset-0 z-50 overflow-y-auto">
-      {/* Backdrop */}
       <div
         className="fixed inset-0 bg-black bg-opacity-50 transition-opacity"
         onClick={() => !loading && setShowModal(false)}
       />
 
-      {/* Modal Container */}
       <div className="flex min-h-screen items-center justify-center p-2 sm:p-4">
         <div className="relative w-full max-w-6xl mx-auto">
-          {/* Modal Content */}
           <div className="relative bg-white rounded-2xl shadow-2xl overflow-hidden">
             {/* Header */}
             <div className="bg-gradient-to-r from-green-400 to-emerald-500 px-4 sm:px-6 py-4 sm:py-6">
@@ -509,12 +382,12 @@ const EditUser = ({ showModal, setShowModal, onUserUpdated, user }) => {
                 </button>
               </div>
 
-              {/* Tabs Navigation */}
               <div className="mt-4 sm:mt-6">
                 <div className="flex space-x-1 overflow-x-auto pb-2">
                   {tabs.map((tab) => (
                     <button
                       key={tab.id}
+                      type="button"
                       onClick={() => setActiveTab(tab.id)}
                       className={`flex items-center space-x-2 px-3 sm:px-4 py-2 sm:py-2.5 rounded-lg text-sm sm:text-base font-medium whitespace-nowrap transition-colors ${
                         activeTab === tab.id
@@ -523,24 +396,27 @@ const EditUser = ({ showModal, setShowModal, onUserUpdated, user }) => {
                       }`}
                     >
                       {tab.icon}
-                      <span className="hidden sm:inline">{tab.label}</span>
-                      <span className="sm:hidden">
-                        {tab.label.split(" ")[0]}
-                      </span>
+                      <span>{tab.label}</span>
                     </button>
                   ))}
                 </div>
               </div>
             </div>
 
-            {/* Content Area */}
+            {/* Content */}
             <div className="p-4 sm:p-6 max-h-[calc(100vh-200px)] overflow-y-auto">
+              {isProtected && (
+                <div className="mb-4 p-3 bg-red-50 border-2 border-red-200 rounded-xl text-sm text-red-700">
+                  This is a protected account. Editing is disabled by the server.
+                </div>
+              )}
+
               <form onSubmit={handleEditUser}>
-                {/* Personal Info Tab */}
+                {/* ================== PERSONAL ================== */}
                 {activeTab === "personal" && (
                   <div className="space-y-6 text-black">
                     <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                      {/* Left Column - Profile Photo */}
+                      {/* Photo */}
                       <div className="lg:col-span-1">
                         <div className="bg-gradient-to-br from-gray-50 to-white p-4 sm:p-6 rounded-xl border border-gray-200">
                           <h3 className="text-lg font-semibold text-gray-900 mb-4">
@@ -568,19 +444,19 @@ const EditUser = ({ showModal, setShowModal, onUserUpdated, user }) => {
                                     onClick={() => {
                                       setPhotoPreview(
                                         user?.photo
-                                          ? `${BASE_URL}/uploads/${user.photo}`
+                                          ? `${BASE_URL}/pfps/${user.photo}`
                                           : null
                                       );
                                       setFile(null);
                                     }}
                                     className="absolute bottom-2 right-2 w-8 h-8 bg-gradient-to-br from-red-500 to-pink-500 text-white rounded-full flex items-center justify-center shadow-lg"
+                                    title="Remove new photo"
                                   >
                                     <FiX className="w-4 h-4" />
                                   </button>
                                 )}
                               </div>
                             </div>
-
                             <div>
                               <input
                                 type="file"
@@ -605,10 +481,7 @@ const EditUser = ({ showModal, setShowModal, onUserUpdated, user }) => {
                               </label>
                               {file && (
                                 <p className="text-sm text-gray-600 mt-2 text-center">
-                                  Selected:{" "}
-                                  <span className="font-medium">
-                                    {file.name}
-                                  </span>
+                                  Selected: <span className="font-medium">{file.name}</span>
                                 </p>
                               )}
                             </div>
@@ -616,144 +489,37 @@ const EditUser = ({ showModal, setShowModal, onUserUpdated, user }) => {
                         </div>
                       </div>
 
-                      {/* Right Column - Personal Info Form */}
+                      {/* Form fields */}
                       <div className="lg:col-span-2">
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
-                          {/* Basic Information */}
                           <div className="sm:col-span-2">
                             <h3 className="text-lg font-semibold text-gray-900 mb-4">
                               Basic Information
                             </h3>
                             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                              <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">
-                                  First Name{" "}
-                                  <span className="text-red-500">*</span>
-                                </label>
-                                <input
-                                  type="text"
-                                  name="firstName"
-                                  value={editUser.firstName}
-                                  onChange={handleChange}
-                                  className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-colors"
-                                  placeholder="Enter first name"
-                                  required
-                                  disabled={loading}
-                                />
-                              </div>
-                              <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">
-                                  Middle Name
-                                </label>
-                                <input
-                                  type="text"
-                                  name="secondName"
-                                  value={editUser.secondName}
-                                  onChange={handleChange}
-                                  className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-colors"
-                                  placeholder="Enter middle name"
-                                  disabled={loading}
-                                />
-                              </div>
-                              <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">
-                                  Last Name{" "}
-                                  <span className="text-red-500">*</span>
-                                </label>
-                                <input
-                                  type="text"
-                                  name="lastName"
-                                  value={editUser.lastName}
-                                  onChange={handleChange}
-                                  className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-colors"
-                                  placeholder="Enter last name"
-                                  required
-                                  disabled={loading}
-                                />
-                              </div>
-                              <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">
-                                  Username
-                                </label>
-                                <input
-                                  type="text"
-                                  name="userName"
-                                  value={editUser.userName}
-                                  onChange={handleChange}
-                                  className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-colors"
-                                  placeholder="Enter username"
-                                  disabled={loading}
-                                />
-                              </div>
+                              <TextField name="firstName" label="First Name" required value={editUser.firstName} onChange={handleChange} disabled={loading} />
+                              <TextField name="secondName" label="Middle Name" value={editUser.secondName} onChange={handleChange} disabled={loading} />
+                              <TextField name="lastName" label="Last Name" required value={editUser.lastName} onChange={handleChange} disabled={loading} />
+                              <TextField name="userName" label="Username" value={editUser.userName} onChange={handleChange} disabled={loading} />
                             </div>
                           </div>
 
-                          {/* Contact Information */}
                           <div className="sm:col-span-2">
                             <h3 className="text-lg font-semibold text-gray-900 mb-4">
                               Contact Information
                             </h3>
                             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                              <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">
-                                  Email <span className="text-red-500">*</span>
-                                </label>
-                                <div className="relative">
-                                  <FiMail className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
-                                  <input
-                                    type="email"
-                                    name="email"
-                                    value={editUser.email}
-                                    onChange={handleChange}
-                                    className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-colors"
-                                    placeholder="user@example.com"
-                                    required
-                                    disabled={loading}
-                                  />
-                                </div>
-                              </div>
-                              <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">
-                                  Phone Number
-                                </label>
-                                <div className="relative">
-                                  <FiPhone className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
-                                  <input
-                                    type="tel"
-                                    name="contacts"
-                                    value={editUser.contacts}
-                                    onChange={handleChange}
-                                    className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-colors"
-                                    placeholder="+255 XXX XXX XXX"
-                                    disabled={loading}
-                                  />
-                                </div>
-                              </div>
+                              <TextField name="email" label="Email" type="email" required value={editUser.email} onChange={handleChange} disabled={loading} icon={<FiMail className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />} />
+                              <TextField name="contacts" label="Phone Number" type="tel" value={editUser.contacts} onChange={handleChange} disabled={loading} icon={<FiPhone className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />} />
                             </div>
                           </div>
 
-                          {/* Additional Information */}
                           <div className="sm:col-span-2">
                             <h3 className="text-lg font-semibold text-gray-900 mb-4">
                               Additional Information
                             </h3>
                             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                              <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">
-                                  Date of Birth
-                                </label>
-                                <div className="relative">
-                                  <FiCalendar className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
-                                  <input
-                                    type="date"
-                                    name="dateOfBirth"
-                                    value={editUser.dateOfBirth}
-                                    onChange={handleChange}
-                                    className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-colors"
-                                    disabled={loading}
-                                  />
-                                </div>
-                              </div>
+                              <TextField name="dateOfBirth" label="Date of Birth" type="date" value={editUser.dateOfBirth} onChange={handleChange} disabled={loading} icon={<FiCalendar className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />} />
                               <div>
                                 <label className="block text-sm font-medium text-gray-700 mb-1">
                                   Gender
@@ -762,8 +528,8 @@ const EditUser = ({ showModal, setShowModal, onUserUpdated, user }) => {
                                   name="gender"
                                   value={editUser.gender}
                                   onChange={handleChange}
-                                  className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-colors"
                                   disabled={loading}
+                                  className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-emerald-500"
                                 >
                                   <option value="">Select Gender</option>
                                   <option value="Male">Male</option>
@@ -771,23 +537,7 @@ const EditUser = ({ showModal, setShowModal, onUserUpdated, user }) => {
                                   <option value="Other">Other</option>
                                 </select>
                               </div>
-                              <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">
-                                  Job Title
-                                </label>
-                                <div className="relative">
-                                  <FaUserTie className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
-                                  <input
-                                    type="text"
-                                    name="title"
-                                    value={editUser.title}
-                                    onChange={handleChange}
-                                    className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-colors"
-                                    placeholder="Enter job title"
-                                    disabled={loading}
-                                  />
-                                </div>
-                              </div>
+                              <TextField name="title" label="Job Title" value={editUser.title} onChange={handleChange} disabled={loading} icon={<FaUserTie className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />} />
                               <div className="sm:col-span-2">
                                 <label className="block text-sm font-medium text-gray-700 mb-1">
                                   Address
@@ -799,7 +549,7 @@ const EditUser = ({ showModal, setShowModal, onUserUpdated, user }) => {
                                     value={editUser.address}
                                     onChange={handleChange}
                                     rows="3"
-                                    className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-colors"
+                                    className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-emerald-500"
                                     placeholder="Enter complete address"
                                     disabled={loading}
                                   />
@@ -813,7 +563,7 @@ const EditUser = ({ showModal, setShowModal, onUserUpdated, user }) => {
                   </div>
                 )}
 
-                {/* Security Tab */}
+                {/* ================== SECURITY ================== */}
                 {activeTab === "security" && (
                   <div className="space-y-6 text-black">
                     <div className="bg-gradient-to-br from-emerald-50 to-green-50 p-6 rounded-2xl border border-emerald-100">
@@ -822,261 +572,224 @@ const EditUser = ({ showModal, setShowModal, onUserUpdated, user }) => {
                           <FiLock className="w-6 h-6 text-emerald-600" />
                         </div>
                         <div>
-                          <h3 className="text-lg font-semibold text-gray-900">
-                            Account Security
-                          </h3>
+                          <h3 className="text-lg font-semibold text-gray-900">Account Security</h3>
+                          <p className="text-sm text-gray-600">Update the user's password</p>
+                        </div>
+                      </div>
+                      <div className="max-w-md">
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                          New Password
+                          <span className="text-xs text-gray-500 ml-2">(Optional - leave blank to keep current)</span>
+                        </label>
+                        <div className="relative">
+                          <FiLock className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+                          <input
+                            type="password"
+                            name="password"
+                            value={editUser.password}
+                            onChange={handleChange}
+                            className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-emerald-500"
+                            placeholder="Enter new password (min 6 characters)"
+                            disabled={loading}
+                          />
+                        </div>
+                        {editUser.password && (
+                          <div className={`mt-2 text-sm ${editUser.password.length >= 6 ? "text-green-600" : "text-amber-600"}`}>
+                            {editUser.password.length >= 6
+                              ? "✓ Strong password"
+                              : "Password must be at least 6 characters"}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* ================== ROLE & PERMISSIONS ================== */}
+                {activeTab === "permissions" && (
+                  <div className="space-y-6">
+                    {/* Role selector */}
+                    <div className="bg-gradient-to-br from-gray-50 to-white p-4 sm:p-6 rounded-2xl border border-gray-200">
+                      <div className="flex items-center space-x-3 mb-6">
+                        <div className="p-2 bg-gray-100 rounded-lg">
+                          <MdSecurity className="w-6 h-6 text-gray-700" />
+                        </div>
+                        <div>
+                          <h3 className="text-lg font-semibold text-gray-900">Role</h3>
                           <p className="text-sm text-gray-600">
-                            Update password and security settings
+                            The role defines default permissions
                           </p>
                         </div>
                       </div>
 
-                      <div className="space-y-4 max-w-md">
-                        <div>
-                          <label className="block text-sm font-medium text-gray-700 mb-1">
-                            New Password
-                            <span className="text-xs text-gray-500 ml-2">
-                              (Optional - leave blank to keep current)
-                            </span>
-                          </label>
-                          <div className="relative">
-                            <FiLock className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
-                            <input
-                              type="password"
-                              name="password"
-                              value={editUser.password}
-                              onChange={handleChange}
-                              className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-colors"
-                              placeholder="Enter new password (min 6 characters)"
-                              disabled={loading}
-                            />
-                          </div>
-                          {editUser.password && (
-                            <div
-                              className={`mt-2 text-sm ${
-                                editUser.password.length >= 6
-                                  ? "text-green-600"
-                                  : "text-amber-600"
-                              }`}
-                            >
-                              {editUser.password.length >= 6
-                                ? "✓ Strong password"
-                                : "Password must be at least 6 characters"}
-                            </div>
-                          )}
+                      {!isAdmin && (
+                        <div className="mb-4 p-3 bg-amber-50 border border-amber-200 rounded-xl text-sm text-amber-700">
+                          Only Admins can change role or permissions. Fields below are read-only.
                         </div>
+                      )}
 
-                        <div className="pt-4 border-t border-emerald-100">
-                          <h4 className="font-medium text-gray-700 mb-2">
-                            Password Requirements
-                          </h4>
-                          <ul className="text-sm text-gray-600 space-y-1">
-                            <li className="flex items-center">
-                              <div
-                                className={`w-2 h-2 rounded-full mr-2 ${
-                                  editUser.password.length >= 6
-                                    ? "bg-green-500"
-                                    : "bg-gray-300"
-                                }`}
-                              />
-                              Minimum 6 characters
-                            </li>
-                            <li className="flex items-center">
-                              <div className="w-2 h-2 rounded-full mr-2 bg-emerald-500" />
-                              Can include letters, numbers, and symbols
-                            </li>
-                            <li className="flex items-center">
-                              <div className="w-2 h-2 rounded-full mr-2 bg-emerald-500" />
-                              Case sensitive
-                            </li>
-                          </ul>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                )}
-
-                {/* Permissions Tab */}
-                {activeTab === "permissions" && (
-                  <div className="space-y-6">
-                    {/* Quick Role Presets */}
-                    <div className="bg-gradient-to-br from-gray-50 to-white p-4 sm:p-6 rounded-2xl border border-gray-200">
-                      <div className="flex items-center justify-between mb-6">
-                        <div className="flex items-center space-x-3">
-                          <div className="p-2 bg-gray-100 rounded-lg">
-                            <MdSecurity className="w-6 h-6 text-gray-700" />
-                          </div>
-                          <div>
-                            <h3 className="text-lg font-semibold text-gray-900">
-                              Quick Role Presets
-                            </h3>
-                            <p className="text-sm text-gray-600">
-                              Apply predefined permission sets
-                            </p>
-                          </div>
-                        </div>
-                      </div>
-
-                      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                        {rolePresets.map((preset) => (
-                          <button
-                            key={preset.id}
-                            type="button"
-                            onClick={() =>
-                              setEditUser((prev) => ({
-                                ...prev,
-                                roles: preset.roles,
-                              }))
-                            }
-                            className={`group p-4 rounded-xl border transition-all text-left ${
-                              Object.keys(editUser.roles).every(
-                                (key) =>
-                                  editUser.roles[key] === preset.roles[key]
-                              )
-                                ? `border-emerald-500 bg-gradient-to-br ${
-                                    preset.bgColor || "from-gray-50 to-white"
-                                  } ring-2 ring-emerald-200`
-                                : "border-gray-200 hover:border-gray-300 hover:shadow-md"
-                            }`}
-                          >
-                            <div className="flex items-start justify-between mb-3">
-                              <div
-                                className={`p-2 rounded-lg bg-gradient-to-br ${preset.color}`}
-                              >
-                                <div className="text-white">{preset.icon}</div>
-                              </div>
-                              <div
-                                className={`w-6 h-6 rounded-full border-2 flex items-center justify-center ${
-                                  Object.keys(editUser.roles).every(
-                                    (key) =>
-                                      editUser.roles[key] === preset.roles[key]
-                                  )
-                                    ? "border-emerald-500 bg-emerald-500"
-                                    : "border-gray-300"
-                                }`}
-                              >
-                                {Object.keys(editUser.roles).every(
-                                  (key) =>
-                                    editUser.roles[key] === preset.roles[key]
-                                ) && <FiCheck className="w-3 h-3 text-white" />}
-                              </div>
-                            </div>
-                            <h4 className="font-bold text-gray-900 mb-1">
-                              {preset.name}
-                            </h4>
-                            <p className="text-sm text-gray-600">
-                              {preset.description}
-                            </p>
-                          </button>
-                        ))}
-                      </div>
-                    </div>
-
-                    {/* Detailed Permissions */}
-                    <div className="space-y-4">
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center space-x-3">
-                          <div className="p-2 bg-gray-100 rounded-lg">
-                            <FiShield className="w-6 h-6 text-gray-700" />
-                          </div>
-                          <div>
-                            <h3 className="text-lg font-semibold text-gray-900">
-                              Detailed Permissions
-                            </h3>
-                            <p className="text-sm text-gray-600">
-                              Customize individual permissions
-                            </p>
-                          </div>
-                        </div>
-                        <div className="text-sm text-gray-600">
-                          <span className="font-semibold text-emerald-600">
-                            {
-                              Object.values(editUser.roles).filter(Boolean)
-                                .length
-                            }
-                          </span>{" "}
-                          of {Object.keys(editUser.roles).length} permissions
-                          enabled
-                        </div>
-                      </div>
-
-                      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-                        {permissionGroups.map((group) => (
-                          <div
-                            key={group.id}
-                            className={`bg-gradient-to-br ${group.bgColor} border border-gray-200 rounded-xl overflow-hidden hover:shadow-md transition-shadow`}
-                          >
-                            <div
-                              className={`p-4 bg-gradient-to-r ${group.color}`}
+                      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+                        {ROLE_OPTIONS.map((roleName) => {
+                          const disabled =
+                            !isAdmin ||
+                            (["Admin", "Manager"].includes(roleName) &&
+                              currentUserRole !== "Admin");
+                          const selected = editUser.role === roleName;
+                          return (
+                            <button
+                              type="button"
+                              key={roleName}
+                              disabled={disabled || loading}
+                              onClick={() => handleApplyPreset(roleName)}
+                              className={`text-left p-4 rounded-xl border transition-all ${
+                                selected
+                                  ? "border-emerald-500 bg-emerald-50 ring-2 ring-emerald-200"
+                                  : "border-gray-200 bg-white hover:border-emerald-300"
+                              } ${disabled ? "opacity-50 cursor-not-allowed" : ""}`}
                             >
                               <div className="flex items-center justify-between">
-                                <div className="flex items-center space-x-3">
-                                  <div className="bg-white/20 p-2 rounded-lg backdrop-blur-sm">
-                                    <div className="text-white">
-                                      {group.icon}
-                                    </div>
+                                <span className="font-semibold text-gray-900">{roleName}</span>
+                                {selected && (
+                                  <div className="w-5 h-5 rounded-full bg-emerald-500 flex items-center justify-center">
+                                    <FiCheck className="w-3 h-3 text-white" />
                                   </div>
-                                  <h4 className="font-bold text-white">
-                                    {group.title}
-                                  </h4>
-                                </div>
-                                <button
-                                  type="button"
-                                  onClick={() => toggleSection(group.id)}
-                                  className="text-white hover:bg-white/10 p-1 rounded-lg"
-                                >
-                                  {collapsedSections[group.id] ? (
-                                    <FiChevronRight />
-                                  ) : (
-                                    <FiChevronDown />
-                                  )}
-                                </button>
+                                )}
                               </div>
-                            </div>
+                              <p className="text-xs text-gray-500 mt-1">
+                                {(ROLES[roleName]?.permissions.length ?? 0)} default permissions
+                              </p>
+                            </button>
+                          );
+                        })}
+                      </div>
 
-                            {!collapsedSections[group.id] && (
-                              <div className="p-4 space-y-3">
-                                {group.permissions.map((permission) => (
-                                  <div
-                                    key={permission.key}
-                                    className="flex items-center justify-between p-3 bg-white rounded-lg border border-gray-100 hover:border-gray-200 transition-colors"
+                      {isAdmin && (
+                        <div className="mt-6">
+                          <label className="flex items-center space-x-3 cursor-pointer">
+                            <input
+                              type="checkbox"
+                              checked={editUser.customizePermissions}
+                              onChange={(e) => handleToggleCustomize(e.target.checked)}
+                              className="w-5 h-5 text-emerald-600 rounded focus:ring-emerald-500"
+                              disabled={loading}
+                            />
+                            <span className="text-sm font-medium text-gray-700">
+                              Customize permissions for this user (overrides role defaults)
+                            </span>
+                          </label>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Permission grid — only editable when customizing + admin */}
+                    {isAdmin && editUser.customizePermissions ? (
+                      <div className="space-y-4">
+                        <div className="flex items-center justify-between">
+                          <h3 className="text-lg font-semibold text-gray-900">Permissions</h3>
+                          <div className="text-sm text-gray-600">
+                            <span className="font-semibold text-emerald-600">
+                              {editUser.permissions.length}
+                            </span>{" "}
+                            of {ALL_PERMISSIONS.length} enabled
+                          </div>
+                        </div>
+
+                        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                          {PERMISSION_GROUPS.map((group) => (
+                            <div
+                              key={group.id}
+                              className={`bg-gradient-to-br ${group.bgColor} border border-gray-200 rounded-xl overflow-hidden`}
+                            >
+                              <div className={`p-4 bg-gradient-to-r ${group.color}`}>
+                                <div className="flex items-center justify-between">
+                                  <div className="flex items-center space-x-3">
+                                    <div className="bg-white/20 p-2 rounded-lg backdrop-blur-sm">
+                                      <div className="text-white">{group.icon}</div>
+                                    </div>
+                                    <h4 className="font-bold text-white">{group.title}</h4>
+                                  </div>
+                                  <button
+                                    type="button"
+                                    onClick={() => toggleSection(group.id)}
+                                    className="text-white hover:bg-white/10 p-1 rounded-lg"
                                   >
-                                    <div className="flex items-center space-x-3">
-                                      <div className="p-1.5 rounded-lg bg-gray-100 text-gray-600">
-                                        {permission.icon}
-                                      </div>
-                                      <div>
+                                    {collapsedSections[group.id] ? <FiChevronRight /> : <FiChevronDown />}
+                                  </button>
+                                </div>
+                              </div>
+
+                              {!collapsedSections[group.id] && (
+                                <div className="p-4 space-y-3">
+                                  {group.permissions.map(({ key, icon }) => (
+                                    <div
+                                      key={key}
+                                      className="flex items-center justify-between p-3 bg-white rounded-lg border border-gray-100"
+                                    >
+                                      <div className="flex items-center space-x-3">
+                                        <div className="p-1.5 rounded-lg bg-gray-100 text-gray-600">
+                                          {icon}
+                                        </div>
                                         <div className="font-medium text-gray-900">
-                                          {permission.label}
+                                          {PERMISSION_LABELS[key] || key}
                                         </div>
                                       </div>
+                                      <label className="relative inline-flex items-center cursor-pointer">
+                                        <input
+                                          type="checkbox"
+                                          checked={editUser.permissions.includes(key)}
+                                          onChange={() => handleTogglePermission(key)}
+                                          className="sr-only peer"
+                                          disabled={loading}
+                                        />
+                                        <div className="w-11 h-6 bg-gray-200 rounded-full peer peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-emerald-500" />
+                                      </label>
                                     </div>
-                                    <label className="relative inline-flex items-center cursor-pointer">
-                                      <input
-                                        type="checkbox"
-                                        name={permission.key}
-                                        checked={editUser.roles[permission.key]}
-                                        onChange={handleCheckboxChange}
-                                        className="sr-only peer"
-                                        disabled={loading}
-                                      />
-                                      <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-gradient-to-r peer-checked:from-emerald-500 peer-checked:to-green-500"></div>
-                                    </label>
-                                  </div>
-                                ))}
-                              </div>
-                            )}
-                          </div>
-                        ))}
+                                  ))}
+                                </div>
+                              )}
+                            </div>
+                          ))}
+                        </div>
                       </div>
-                    </div>
+                    ) : (
+                      <div className="bg-gradient-to-br from-gray-50 to-white p-6 rounded-2xl border border-gray-200">
+                        <div className="flex items-center space-x-3 mb-4">
+                          <div className="p-2 bg-gray-100 rounded-lg">
+                            <FiKey className="w-6 h-6 text-gray-700" />
+                          </div>
+                          <div>
+                            <h3 className="text-lg font-semibold text-gray-900">
+                              Effective Permissions
+                            </h3>
+                            <p className="text-sm text-gray-600">
+                              {editUser.customizePermissions
+                                ? "Custom set"
+                                : `Inherited from ${editUser.role} role`}
+                            </p>
+                          </div>
+                        </div>
+                        <div className="flex flex-wrap gap-2">
+                          {effectivePermissions.length === 0 ? (
+                            <span className="text-sm text-gray-500">No permissions</span>
+                          ) : (
+                            effectivePermissions.map((p) => (
+                              <span
+                                key={p}
+                                className="px-3 py-1 rounded-full bg-emerald-100 text-emerald-700 text-xs font-medium"
+                              >
+                                {PERMISSION_LABELS[p] || p}
+                              </span>
+                            ))
+                          )}
+                        </div>
+                      </div>
+                    )}
                   </div>
                 )}
 
-                {/* Summary Tab */}
+                {/* ================== SUMMARY ================== */}
                 {activeTab === "summary" && (
                   <div className="space-y-6">
-                    {/* Validation Status */}
                     <div className="bg-gradient-to-br from-emerald-50 to-green-50 p-6 rounded-2xl border border-emerald-100">
                       <div className="flex items-center space-x-3 mb-6">
                         <div className="p-2 bg-emerald-100 rounded-lg">
@@ -1086,162 +799,58 @@ const EditUser = ({ showModal, setShowModal, onUserUpdated, user }) => {
                           <h3 className="text-lg font-semibold text-gray-900">
                             Validation Summary
                           </h3>
-                          <p className="text-sm text-gray-600">
-                            Review all information before saving
-                          </p>
+                          <p className="text-sm text-gray-600">Review all information before saving</p>
                         </div>
                       </div>
-
-                      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                         {[
-                          {
-                            label: "First Name",
-                            value: editUser.firstName,
-                            required: true,
-                          },
-                          {
-                            label: "Last Name",
-                            value: editUser.lastName,
-                            required: true,
-                          },
-                          {
-                            label: "Email",
-                            value: editUser.email,
-                            required: true,
-                          },
-                          {
-                            label: "Password",
-                            value: editUser.password,
-                            required: false,
-                          },
-                        ].map((field, idx) => (
-                          <div
-                            key={idx}
-                            className={`p-4 rounded-xl border ${
-                              field.required && !field.value
-                                ? "border-red-200 bg-red-50"
-                                : "border-green-200 bg-green-50"
-                            }`}
-                          >
-                            <div className="flex items-center justify-between mb-2">
-                              <span className="text-sm font-medium text-gray-700">
-                                {field.label}
-                              </span>
-                              <div
-                                className={`w-6 h-6 rounded-full flex items-center justify-center ${
-                                  field.required && !field.value
-                                    ? "bg-red-500"
-                                    : "bg-green-500"
-                                }`}
-                              >
-                                {field.required && !field.value ? (
-                                  <FiX className="w-3 h-3 text-white" />
-                                ) : (
-                                  <FiCheck className="w-3 h-3 text-white" />
-                                )}
-                              </div>
-                            </div>
-                            <p
-                              className={`text-sm ${
-                                field.required && !field.value
-                                  ? "text-red-600"
-                                  : "text-green-600"
-                              }`}
-                            >
-                              {field.required && !field.value
-                                ? "Required field missing"
-                                : field.value
-                                ? "✓ Valid"
-                                : "Optional"}
-                            </p>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-
-                    {/* Permission Summary */}
-                    <div className="bg-gradient-to-br from-gray-50 to-white p-6 rounded-2xl border border-gray-200">
-                      <div className="flex items-center justify-between mb-6">
-                        <div className="flex items-center space-x-3">
-                          <div className="p-2 bg-gray-100 rounded-lg">
-                            <FiFileText className="w-6 h-6 text-gray-700" />
-                          </div>
-                          <div>
-                            <h3 className="text-lg font-semibold text-gray-900">
-                              Permission Summary
-                            </h3>
-                            <p className="text-sm text-gray-600">
-                              Overview of enabled permissions
-                            </p>
-                          </div>
-                        </div>
-                      </div>
-
-                      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-                        {permissionGroups.map((group) => {
-                          const totalPermissions = group.permissions.length;
-                          const enabledPermissions = group.permissions.filter(
-                            (p) => editUser.roles[p.key]
-                          ).length;
-                          const percentage =
-                            (enabledPermissions / totalPermissions) * 100;
-
+                          { label: "First Name", value: editUser.firstName, required: true },
+                          { label: "Last Name", value: editUser.lastName, required: true },
+                          { label: "Email", value: editUser.email, required: true },
+                          { label: "Role", value: editUser.role, required: true },
+                          { label: "Password", value: editUser.password, required: false },
+                        ].map((field, idx) => {
+                          const ok = !field.required || !!field.value;
                           return (
                             <div
-                              key={group.id}
-                              className="p-4 rounded-xl border border-gray-200 hover:border-gray-300 transition-colors"
+                              key={idx}
+                              className={`p-4 rounded-xl border ${ok ? "border-green-200 bg-green-50" : "border-red-200 bg-red-50"}`}
                             >
-                              <div className="flex items-center justify-between mb-3">
-                                <div className="flex items-center space-x-2">
-                                  <div
-                                    className={`p-1.5 rounded-lg bg-gradient-to-br ${group.color} bg-opacity-20`}
-                                  >
-                                    <div className="text-gray-700">
-                                      {group.icon}
-                                    </div>
-                                  </div>
-                                  <span className="font-medium text-gray-900">
-                                    {group.title}
-                                  </span>
-                                </div>
-                                <span
-                                  className={`text-sm font-semibold ${
-                                    percentage === 100
-                                      ? "text-green-600"
-                                      : percentage > 50
-                                      ? "text-emerald-600"
-                                      : "text-gray-600"
-                                  }`}
-                                >
-                                  {enabledPermissions}/{totalPermissions}
-                                </span>
-                              </div>
-                              <div className="space-y-2">
-                                <div className="w-full bg-gray-200 rounded-full h-2">
-                                  <div
-                                    className={`h-2 rounded-full bg-gradient-to-r ${group.color}`}
-                                    style={{ width: `${percentage}%` }}
-                                  />
-                                </div>
-                                <div className="text-xs text-gray-500">
-                                  {percentage === 100
-                                    ? "All permissions enabled"
-                                    : percentage === 0
-                                    ? "No permissions enabled"
-                                    : `${Math.round(
-                                        percentage
-                                      )}% of permissions enabled`}
+                              <div className="flex items-center justify-between mb-2">
+                                <span className="text-sm font-medium text-gray-700">{field.label}</span>
+                                <div className={`w-6 h-6 rounded-full flex items-center justify-center ${ok ? "bg-green-500" : "bg-red-500"}`}>
+                                  {ok ? <FiCheck className="w-3 h-3 text-white" /> : <FiX className="w-3 h-3 text-white" />}
                                 </div>
                               </div>
+                              <p className={`text-sm ${ok ? "text-green-600" : "text-red-600"}`}>
+                                {ok ? (field.value || "Optional") : "Required"}
+                              </p>
                             </div>
                           );
                         })}
                       </div>
                     </div>
+
+                    <div className="bg-gradient-to-br from-gray-50 to-white p-6 rounded-2xl border border-gray-200">
+                      <div className="flex items-center space-x-3 mb-6">
+                        <div className="p-2 bg-gray-100 rounded-lg">
+                          <FiFileText className="w-6 h-6 text-gray-700" />
+                        </div>
+                        <div>
+                          <h3 className="text-lg font-semibold text-gray-900">
+                            Permission Summary
+                          </h3>
+                          <p className="text-sm text-gray-600">
+                            {editUser.customizePermissions
+                              ? `${editUser.permissions.length} custom permissions`
+                              : `Using ${editUser.role} role defaults (${ROLES[editUser.role]?.permissions.length || 0})`}
+                          </p>
+                        </div>
+                      </div>
+                    </div>
                   </div>
                 )}
 
-                {/* Error Message */}
                 {showError && (
                   <div className="mt-6 p-4 bg-gradient-to-r from-red-50 to-pink-50 border border-red-200 rounded-xl">
                     <div className="flex items-center space-x-3">
@@ -1253,23 +862,16 @@ const EditUser = ({ showModal, setShowModal, onUserUpdated, user }) => {
                   </div>
                 )}
 
-                {/* Action Buttons */}
                 <div className="mt-8 pt-6 border-t border-gray-200">
                   <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
                     <div className="flex items-center space-x-2 text-sm text-gray-600">
-                      <div
-                        className={`w-3 h-3 rounded-full ${
-                          editUser.firstName &&
-                          editUser.lastName &&
-                          editUser.email
-                            ? "bg-green-500"
-                            : "bg-amber-500"
-                        }`}
-                      />
+                      <div className={`w-3 h-3 rounded-full ${
+                        editUser.firstName && editUser.lastName && editUser.email
+                          ? "bg-green-500"
+                          : "bg-amber-500"
+                      }`} />
                       <span>
-                        {editUser.firstName &&
-                        editUser.lastName &&
-                        editUser.email
+                        {editUser.firstName && editUser.lastName && editUser.email
                           ? "All required fields are valid"
                           : "Fill in all required fields"}
                       </span>
@@ -1278,68 +880,9 @@ const EditUser = ({ showModal, setShowModal, onUserUpdated, user }) => {
                     <div className="flex items-center space-x-3 w-full sm:w-auto">
                       <button
                         type="button"
-                        onClick={() => {
-                          if (user) {
-                            setEditUser({
-                              firstName: user.firstName || "",
-                              secondName: user.secondName || "",
-                              lastName: user.lastName || "",
-                              userName: user.userName || "",
-                              dateOfBirth: user.dateOfBirth
-                                ? user.dateOfBirth.split("T")[0]
-                                : "",
-                              gender: user.gender || "",
-                              email: user.email || "",
-                              contacts: user.contacts || "",
-                              address: user.address || "",
-                              title: user.title || "",
-                              password: "",
-                              roles: {
-                                canAddItems: user.roles?.canAddItems || false,
-                                canEditItems: user.roles?.canEditItems || false,
-                                canAddCategory:
-                                  user.roles?.canAddCategory || false,
-                                canEditCategory:
-                                  user.roles?.canEditCategory || false,
-                                canMakeTransaction:
-                                  user.roles?.canMakeTransaction || false,
-                                canPayBillTransaction:
-                                  user.roles?.canPayBillTransaction || false,
-                                canApproveNewGrn:
-                                  user.roles?.canApproveNewGrn || false,
-                                canPayBilledGrn:
-                                  user.roles?.canPayBilledGrn || false,
-                                canChangeDebtStatus:
-                                  user.roles?.canChangeDebtStatus || false,
-                                canPayDebt: user.roles?.canPayDebt || false,
-                                canEditExpenses: user.roles?.canEditExpenses || false, // Added here
-                                canAccessSettings:
-                                  user.roles?.canAccessSettings || false,
-                                canAccessUserManagement:
-                                  user.roles?.canAccessUserManagement || false,
-                                canAccessCustomerManagement:
-                                  user.roles?.canAccessCustomerManagement ||
-                                  false,
-                                canAccessSupplierManagement:
-                                  user.roles?.canAccessSupplierManagement ||
-                                  false,
-                                canSeeReports:
-                                  user.roles?.canSeeReports || false,
-                                canAccessMadeniReport:
-                                  user.roles?.canAccessMadeniReport || false,
-                              },
-                            });
-                            setPhotoPreview(
-                              user.photo
-                                ? `${BASE_URL}/pfps/${user.photo}`
-                                : null
-                            );
-                            setFile(null);
-                            setShowError("");
-                          }
-                        }}
+                        onClick={handleReset}
                         disabled={loading}
-                        className="flex items-center justify-center space-x-2 px-6 py-3 bg-gray-100 hover:bg-gray-200 text-gray-700 font-medium rounded-xl transition-colors w-full sm:w-auto"
+                        className="flex items-center justify-center space-x-2 px-6 py-3 bg-gray-100 hover:bg-gray-200 text-gray-700 font-medium rounded-xl w-full sm:w-auto"
                       >
                         <FiRefreshCw className="w-4 h-4" />
                         <span>Reset</span>
@@ -1347,41 +890,18 @@ const EditUser = ({ showModal, setShowModal, onUserUpdated, user }) => {
 
                       <button
                         type="submit"
-                        disabled={
-                          loading ||
-                          !editUser.firstName ||
-                          !editUser.lastName ||
-                          !editUser.email
-                        }
-                        className={`flex items-center justify-center space-x-2 px-8 py-3 font-medium rounded-xl transition-all w-full sm:w-auto ${
-                          loading ||
-                          !editUser.firstName ||
-                          !editUser.lastName ||
-                          !editUser.email
+                        disabled={loading || isProtected}
+                        className={`flex items-center justify-center space-x-2 px-8 py-3 font-medium rounded-xl w-full sm:w-auto ${
+                          loading || isProtected
                             ? "bg-gray-300 text-gray-500 cursor-not-allowed"
-                            : "bg-gradient-to-r from-emerald-500 to-green-500 hover:from-emerald-600 hover:to-green-600 text-white shadow-lg hover:shadow-xl"
+                            : "bg-gradient-to-r from-emerald-500 to-green-500 hover:from-emerald-600 hover:to-green-600 text-white shadow-lg"
                         }`}
                       >
                         {loading ? (
                           <>
-                            <svg
-                              className="animate-spin h-5 w-5"
-                              fill="none"
-                              viewBox="0 0 24 24"
-                            >
-                              <circle
-                                className="opacity-25"
-                                cx="12"
-                                cy="12"
-                                r="10"
-                                stroke="currentColor"
-                                strokeWidth="4"
-                              />
-                              <path
-                                className="opacity-75"
-                                fill="currentColor"
-                                d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                              />
+                            <svg className="animate-spin h-5 w-5" fill="none" viewBox="0 0 24 24">
+                              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
                             </svg>
                             <span>Saving...</span>
                           </>
@@ -1403,5 +923,29 @@ const EditUser = ({ showModal, setShowModal, onUserUpdated, user }) => {
     </div>
   );
 };
+
+// Small helper
+function TextField({ name, label, type = "text", required, value, onChange, disabled, icon }) {
+  return (
+    <div>
+      <label className="block text-sm font-medium text-gray-700 mb-1">
+        {label} {required && <span className="text-red-500">*</span>}
+      </label>
+      <div className="relative">
+        {icon}
+        <input
+          type={type}
+          name={name}
+          value={value}
+          onChange={onChange}
+          className={`w-full ${icon ? "pl-10" : "pl-4"} pr-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-colors`}
+          placeholder={`Enter ${label.toLowerCase()}`}
+          disabled={disabled}
+          required={required}
+        />
+      </div>
+    </div>
+  );
+}
 
 export default EditUser;

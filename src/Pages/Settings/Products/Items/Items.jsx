@@ -31,6 +31,7 @@ import { FiAlertCircle, FiFilter, FiX } from "react-icons/fi";
 
 //API
 import BASE_URL from "../../../../Utils/config";
+import { PERMISSIONS, hasPermission } from "../../../../Utils/permissions";
 import toast from "react-hot-toast";
 
 // Export libraries
@@ -67,6 +68,11 @@ const Items = () => {
   const [expandedItem, setExpandedItem] = useState(null);
   const [showExportMenu, setShowExportMenu] = useState(false);
 
+  // Check permissions — works with both legacy `roles` object and new `permissions` array
+  const canAddItem = hasPermission(user, PERMISSIONS.ADD_ITEMS);
+  const canEditItem = hasPermission(user, PERMISSIONS.EDIT_ITEMS);
+  const canExport = hasPermission(user, PERMISSIONS.SEE_REPORTS);
+
   // Fetch data
   const fetchData = async () => {
     try {
@@ -81,7 +87,15 @@ const Items = () => {
         url += `&category=${categoryFilter}`;
       }
 
-      const response = await fetch(url);
+      // Include cookies so verifyUser can authenticate the request
+      const response = await fetch(url, { credentials: "include" });
+
+      if (response.status === 401) {
+        throw new Error("Your session has expired. Please log in again.");
+      }
+      if (response.status === 403) {
+        throw new Error("You do not have permission to view items.");
+      }
       if (!response.ok) throw new Error("Failed to fetch items");
 
       const data = await response.json();
@@ -92,20 +106,17 @@ const Items = () => {
     } catch (error) {
       console.error("Error fetching items:", error);
       setShowError(
-        "An error occurred. Please contact the system administrator.",
+        error.message ||
+          "An error occurred. Please contact the system administrator.",
       );
       dispatch(itemsError(error.message));
-      toast.error("Failed to load items");
+      toast.error(error.message || "Failed to load items");
     }
   };
 
   useEffect(() => {
     fetchData();
   }, [searchQuery, categoryFilter, filterStatus]);
-
-  // Check permissions
-  const canAddItem = user?.roles?.canAddItems === true;
-  const canEditItem = user?.roles?.canEditItems === true;
 
   // Filter items
   const filteredItems = items.filter((item) => {
@@ -418,38 +429,40 @@ const Items = () => {
               <span className="hidden xs:inline">Refresh</span>
             </button>
 
-            {/* Export Button with Dropdown */}
-            <div className="relative">
-              <button
-                onClick={() => setShowExportMenu(!showExportMenu)}
-                className="flex items-center gap-1.5 px-3 sm:px-4 py-2 sm:py-2.5 bg-green-300 hover:bg-green-400 text-black font-semibold rounded-xl transition-all duration-200 shadow-sm text-xs sm:text-sm border-2 border-green-400"
-              >
-                <FaFileExport className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
-                <span className="hidden xs:inline">Export</span>
-              </button>
-              {showExportMenu && (
-                <div className="absolute right-0 mt-2 w-48 bg-white rounded-xl shadow-lg border-2 border-gray-200 z-50 overflow-hidden">
-                  <button
-                    onClick={exportToPDF}
-                    className="w-full px-4 py-2.5 text-left text-sm text-gray-700 hover:bg-gray-100 transition-colors border-b border-gray-100"
-                  >
-                    📄 Export as PDF
-                  </button>
-                  <button
-                    onClick={exportToExcel}
-                    className="w-full px-4 py-2.5 text-left text-sm text-gray-700 hover:bg-gray-100 transition-colors border-b border-gray-100"
-                  >
-                    📊 Export as Excel
-                  </button>
-                  <button
-                    onClick={exportToCSV}
-                    className="w-full px-4 py-2.5 text-left text-sm text-gray-700 hover:bg-gray-100 transition-colors"
-                  >
-                    📋 Export as CSV
-                  </button>
-                </div>
-              )}
-            </div>
+            {/* Export Button with Dropdown — gated by SEE_REPORTS */}
+            {canExport && (
+              <div className="relative">
+                <button
+                  onClick={() => setShowExportMenu(!showExportMenu)}
+                  className="flex items-center gap-1.5 px-3 sm:px-4 py-2 sm:py-2.5 bg-green-300 hover:bg-green-400 text-black font-semibold rounded-xl transition-all duration-200 shadow-sm text-xs sm:text-sm border-2 border-green-400"
+                >
+                  <FaFileExport className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+                  <span className="hidden xs:inline">Export</span>
+                </button>
+                {showExportMenu && (
+                  <div className="absolute right-0 mt-2 w-48 bg-white rounded-xl shadow-lg border-2 border-gray-200 z-50 overflow-hidden">
+                    <button
+                      onClick={exportToPDF}
+                      className="w-full px-4 py-2.5 text-left text-sm text-gray-700 hover:bg-gray-100 transition-colors border-b border-gray-100"
+                    >
+                      📄 Export as PDF
+                    </button>
+                    <button
+                      onClick={exportToExcel}
+                      className="w-full px-4 py-2.5 text-left text-sm text-gray-700 hover:bg-gray-100 transition-colors border-b border-gray-100"
+                    >
+                      📊 Export as Excel
+                    </button>
+                    <button
+                      onClick={exportToCSV}
+                      className="w-full px-4 py-2.5 text-left text-sm text-gray-700 hover:bg-gray-100 transition-colors"
+                    >
+                      📋 Export as CSV
+                    </button>
+                  </div>
+                )}
+              </div>
+            )}
 
             {canAddItem ? (
               <button
@@ -483,7 +496,7 @@ const Items = () => {
           </div>
         </div>
 
-        {/* Stats Cards - Stacked on mobile */}
+        {/* Stats Cards */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-3 md:gap-4 mb-4 sm:mb-6">
           <div className="bg-white p-3 sm:p-4 md:p-5 rounded-2xl border-2 border-gray-300 shadow-md hover:shadow-lg transition-all duration-300 hover:scale-[1.02]">
             <div className="flex items-center justify-between">
@@ -589,7 +602,7 @@ const Items = () => {
           </div>
         </div>
 
-        {/* Category & Status Filters - Responsive */}
+        {/* Category Filter */}
         <div className="flex flex-wrap items-center gap-2 mb-3 sm:mb-4">
           <select
             value={categoryFilter}
@@ -608,7 +621,7 @@ const Items = () => {
           </select>
         </div>
 
-        {/* Status Filter Pills - Responsive */}
+        {/* Status Filter Pills */}
         <div className="flex flex-wrap gap-1.5 sm:gap-2 mb-4 sm:mb-5">
           {["All", "Active", "Low Stock", "Expires Soon", "Expired"].map(
             (status) => (
@@ -835,13 +848,15 @@ const Items = () => {
                       </div>
 
                       <div className="flex flex-col gap-2 pt-2 border-t border-gray-200">
-                        <button
-                          onClick={() => handlePrint(item)}
-                          className="flex items-center justify-center gap-1.5 px-3 py-2 bg-gray-200 hover:bg-gray-300 text-black font-bold rounded-lg text-xs transition-all border border-gray-300"
-                        >
-                          <FaPrint className="w-3.5 h-3.5" />
-                          Print Barcode
-                        </button>
+                        {canEditItem && (
+                          <button
+                            onClick={() => handlePrint(item)}
+                            className="flex items-center justify-center gap-1.5 px-3 py-2 bg-gray-200 hover:bg-gray-300 text-black font-bold rounded-lg text-xs transition-all border border-gray-300"
+                          >
+                            <FaPrint className="w-3.5 h-3.5" />
+                            Print Barcode
+                          </button>
+                        )}
                         {canEditItem && (
                           <button
                             onClick={() => {
@@ -1065,13 +1080,15 @@ const Items = () => {
                       </div>
 
                       <div className="flex flex-col sm:flex-row gap-3 pt-3 border-t-2 border-gray-200">
-                        <button
-                          onClick={() => handlePrint(item)}
-                          className="px-4 py-2 bg-gray-200 hover:bg-gray-300 text-black font-semibold rounded-xl text-sm transition-all flex items-center justify-center gap-2 border border-gray-300"
-                        >
-                          <FaPrint className="w-4 h-4" />
-                          Print Barcode
-                        </button>
+                        {canEditItem && (
+                          <button
+                            onClick={() => handlePrint(item)}
+                            className="px-4 py-2 bg-gray-200 hover:bg-gray-300 text-black font-semibold rounded-xl text-sm transition-all flex items-center justify-center gap-2 border border-gray-300"
+                          >
+                            <FaPrint className="w-4 h-4" />
+                            Print Barcode
+                          </button>
+                        )}
                         {canEditItem && (
                           <button
                             onClick={() => {
@@ -1093,7 +1110,7 @@ const Items = () => {
           )}
         </div>
 
-        {/* Pagination - Responsive */}
+        {/* Pagination */}
         {totalPages > 1 && (
           <div className="mt-3 sm:mt-4 bg-white px-3 sm:px-5 py-2.5 sm:py-4 rounded-xl border-2 border-gray-200 shadow-sm flex flex-col sm:flex-row justify-between items-center gap-2">
             <span className="text-[9px] sm:text-xs text-gray-500 text-center sm:text-left">

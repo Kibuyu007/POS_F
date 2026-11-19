@@ -22,6 +22,7 @@ import {
   Clock,
   Package,
 } from "lucide-react";
+import { hasPermission,PERMISSIONS } from "../../../Utils/permissions";
 
 const Debts = () => {
   const user = useSelector((state) => state.user.user);
@@ -40,6 +41,14 @@ const Debts = () => {
   const [statusUpdating, setStatusUpdating] = useState(false);
   const [showFilters, setShowFilters] = useState(false);
   const itemsPerPage = 10;
+
+  // 🔑 permission flags
+  const canCreateDebt = hasPermission(user, PERMISSIONS.MAKE_TRANSACTION);
+  const canPayDebts = hasPermission(user, PERMISSIONS.PAY_DEBT);
+  const canChangeDebtStatus = hasPermission(
+    user,
+    PERMISSIONS.CHANGE_DEBT_STATUS
+  );
 
   const debtStatusOptions = [
     { value: "Asset", label: "Asset" },
@@ -69,11 +78,15 @@ const Debts = () => {
   const fetchDebts = async () => {
     setLoad(true);
     try {
-      const res = await axios.get(`${BASE_URL}/api/debts/allDebts`);
+      // withCredentials so verifyUser can authenticate
+      const res = await axios.get(`${BASE_URL}/api/debts/allDebts`, {
+        withCredentials: true,
+      });
       setDebts(res.data);
     } catch (error) {
       console.error("Error fetching debts:", error);
       const message =
+        error.response?.data?.error ||
         error.response?.data?.message ||
         error.message ||
         "Failed to load debts";
@@ -84,6 +97,10 @@ const Debts = () => {
   };
 
   const handlePay = async (debt) => {
+    if (!canPayDebts) {
+      toast.error("You do not have permission to pay debts.");
+      return;
+    }
     const id = debt._id;
     const amount = parseFloat(deductions[id] || 0);
 
@@ -97,21 +114,30 @@ const Debts = () => {
     }
 
     try {
-      const res = await axios.post(`${BASE_URL}/api/debts/payDebt/${id}`, {
-        amount,
-      });
+      const res = await axios.post(
+        `${BASE_URL}/api/debts/payDebt/${id}`,
+        { amount },
+        { withCredentials: true }
+      );
       toast.success(res.data.message || "Payment successful");
       setDeductions((prev) => ({ ...prev, [id]: "" }));
       fetchDebts();
     } catch (err) {
       console.error("Error paying:", err);
       const message =
-        err.response?.data?.message || err.message || "Payment failed";
+        err.response?.data?.error ||
+        err.response?.data?.message ||
+        err.message ||
+        "Payment failed";
       toast.error(message);
     }
   };
 
   const handleStatusEdit = (debt) => {
+    if (!canChangeDebtStatus) {
+      toast.error("You do not have permission to change debt status.");
+      return;
+    }
     setEditingStatusId(debt._id);
     setTempStatus(debt.debtStatus || "Asset");
   };
@@ -122,6 +148,7 @@ const Debts = () => {
   };
 
   const handleStatusUpdate = async (debtId) => {
+    if (!canChangeDebtStatus) return;
     if (!tempStatus) {
       toast.error("Please select a status");
       return;
@@ -131,17 +158,16 @@ const Debts = () => {
     try {
       const res = await axios.put(
         `${BASE_URL}/api/debts/updateDebt/${debtId}`,
-        {
-          debtStatus: tempStatus,
-        },
+        { debtStatus: tempStatus },
+        { withCredentials: true }
       );
 
       toast.success(res.data.message || "Status updated successfully");
 
       setDebts((prevDebts) =>
         prevDebts.map((debt) =>
-          debt._id === debtId ? { ...debt, debtStatus: tempStatus } : debt,
-        ),
+          debt._id === debtId ? { ...debt, debtStatus: tempStatus } : debt
+        )
       );
 
       setEditingStatusId(null);
@@ -149,15 +175,15 @@ const Debts = () => {
     } catch (err) {
       console.error("Error updating status:", err);
       const message =
-        err.response?.data?.message || err.message || "Failed to update status";
+        err.response?.data?.error ||
+        err.response?.data?.message ||
+        err.message ||
+        "Failed to update status";
       toast.error(message);
     } finally {
       setStatusUpdating(false);
     }
   };
-
-  const canChangeDebtStatus = user?.roles?.canChangeDebtStatus === true;
-  const canPayDebts = user?.roles?.canPayDebt === true;
 
   const filteredData = debts.filter((d) => {
     if (!d.createdAt) return false;
@@ -195,11 +221,11 @@ const Debts = () => {
 
   const totalDebt = filteredData.reduce(
     (sum, d) => sum + (d.totalAmount || 0),
-    0,
+    0
   );
   const totalRemaining = filteredData.reduce(
     (sum, d) => sum + (d.remainingAmount || 0),
-    0,
+    0
   );
   const totalPaid = totalDebt - totalRemaining;
   const paidDebts = filteredData.filter((d) => d.remainingAmount <= 0).length;
@@ -212,7 +238,7 @@ const Debts = () => {
   const totalPages = Math.ceil(filteredData.length / itemsPerPage);
   const currentList = filteredData.slice(
     (currentPage - 1) * itemsPerPage,
-    currentPage * itemsPerPage,
+    currentPage * itemsPerPage
   );
 
   const activeFilterCount = [
@@ -271,7 +297,7 @@ const Debts = () => {
 
     let startPage = Math.max(
       1,
-      currentPageNum - Math.floor(maxVisiblePages / 2),
+      currentPageNum - Math.floor(maxVisiblePages / 2)
     );
     let endPage = Math.min(totalPagesNum, startPage + maxVisiblePages - 1);
 
@@ -380,16 +406,40 @@ const Debts = () => {
               </p>
             </div>
           </div>
-          <button
-            onClick={() => setOpenAdd(true)}
-            className="flex items-center gap-1.5 sm:gap-2 px-3 sm:px-5 py-2 sm:py-2.5 bg-green-300 text-black rounded-xl hover:bg-green-400 transition-all duration-300 hover:shadow-lg hover:shadow-green-200 hover:scale-[1.02] active:scale-95 text-xs sm:text-sm font-semibold shadow-md border-2 border-green-400"
-          >
-            <span className="hidden xs:inline">+ Add New Debt</span>
-            <span className="xs:inline">+ Add</span>
-          </button>
+
+          {/* + Add New Debt — gated */}
+          {canCreateDebt ? (
+            <button
+              onClick={() => setOpenAdd(true)}
+              className="flex items-center gap-1.5 sm:gap-2 px-3 sm:px-5 py-2 sm:py-2.5 bg-green-300 text-black rounded-xl hover:bg-green-400 transition-all duration-300 hover:shadow-lg hover:shadow-green-200 hover:scale-[1.02] active:scale-95 text-xs sm:text-sm font-semibold shadow-md border-2 border-green-400"
+            >
+              <span className="hidden xs:inline">+ Add New Debt</span>
+              <span className="xs:inline">+ Add</span>
+            </button>
+          ) : (
+            <div className="relative group">
+              <button
+                disabled
+                className="flex items-center gap-1.5 sm:gap-2 px-3 sm:px-5 py-2 sm:py-2.5 bg-gray-300 text-gray-500 rounded-xl cursor-not-allowed text-xs sm:text-sm font-semibold border-2 border-gray-300"
+              >
+                <span className="hidden xs:inline">+ Add New Debt</span>
+                <span className="xs:inline">+ Add</span>
+              </button>
+              <div className="absolute right-0 top-full mt-2 w-64 p-3 bg-gray-800 text-white text-sm rounded-2xl shadow-xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50">
+                <p className="font-bold mb-1 text-xs">Permission Required</p>
+                <p className="text-gray-300 text-xs">
+                  You need the{" "}
+                  <span className="font-bold text-green-300">
+                    Make Transactions
+                  </span>{" "}
+                  permission to record debts.
+                </p>
+              </div>
+            </div>
+          )}
         </div>
 
-        {/* Stats Cards - Stacked on mobile */}
+        {/* Stats Cards */}
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 sm:gap-3 md:gap-4 mb-4 sm:mb-6">
           {statsData.map((stat, index) => {
             const Icon = stat.icon;
@@ -416,7 +466,7 @@ const Debts = () => {
           })}
         </div>
 
-        {/* Search + Filters - Responsive */}
+        {/* Search + Filters */}
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-4 mb-4 sm:mb-5">
           <div className="flex flex-wrap gap-1.5 sm:gap-2">
             {paymentStatusOptions.map((option) => (
@@ -596,7 +646,7 @@ const Debts = () => {
               <span className="inline-flex items-center gap-0.5 sm:gap-1 px-2 sm:px-3 py-0.5 sm:py-1 bg-green-100 text-black text-[10px] sm:text-xs font-medium rounded-full border border-green-200">
                 {
                   paymentStatusOptions.find(
-                    (o) => o.value === paymentStatusFilter,
+                    (o) => o.value === paymentStatusFilter
                   )?.label
                 }
                 <button
@@ -787,8 +837,7 @@ const Debts = () => {
                           onClick={() => handleStatusEdit(d)}
                           className="px-2 py-1 bg-white border-2 border-gray-300 text-gray-700 hover:bg-gray-100 font-semibold rounded-lg text-[9px] transition-all duration-200 shadow-sm"
                           disabled={
-                            editingStatusId !== null &&
-                            editingStatusId !== d._id
+                            editingStatusId !== null && editingStatusId !== d._id
                           }
                         >
                           <FiEdit className="w-3 h-3" />
@@ -1023,8 +1072,7 @@ const Debts = () => {
                           onClick={() => handleStatusEdit(d)}
                           className="px-2.5 sm:px-4 py-1 sm:py-1.5 bg-white border-2 border-gray-300 text-gray-700 hover:bg-gray-100 font-semibold rounded-lg text-[10px] sm:text-xs transition-all duration-200 shadow-sm flex items-center gap-1 sm:gap-1.5"
                           disabled={
-                            editingStatusId !== null &&
-                            editingStatusId !== d._id
+                            editingStatusId !== null && editingStatusId !== d._id
                           }
                         >
                           <FiEdit className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
@@ -1147,7 +1195,8 @@ const Debts = () => {
           </div>
         )}
 
-        {openAdd && (
+        {/* AddDebt modal — only mounts when user has permission */}
+        {openAdd && canCreateDebt && (
           <AddDebt
             close={() => {
               setOpenAdd(false);

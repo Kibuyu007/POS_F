@@ -14,8 +14,15 @@ import BASE_URL from "../../../../Utils/config";
 import Loading from "../../../../Components/Shared/Loading";
 import toast from "react-hot-toast";
 import axios from "axios";
+import { useSelector } from "react-redux";
+import { PERMISSIONS ,hasPermission} from "../../../../Utils/permissions";
 
 const Adjustment = () => {
+  const user = useSelector((state) => state.user.user);
+
+  // Permission check
+  const canAdjustStock = hasPermission(user, PERMISSIONS.ADJUST_STOCK);
+
   // --- STATE ---
   const [items, setItems] = useState([]);
   const [searchTerm, setSearchTerm] = useState("");
@@ -41,13 +48,22 @@ const Adjustment = () => {
   const fetchItems = async () => {
     try {
       setLoad(true);
-      const response = await fetch(`${BASE_URL}/api/items/getAllItems`);
+      const response = await fetch(`${BASE_URL}/api/items/getAllItems`, {
+        credentials: "include",
+      });
+
+      if (response.status === 401) {
+        throw new Error("Your session has expired. Please log in again.");
+      }
+      if (response.status === 403) {
+        throw new Error("You do not have permission to view items.");
+      }
       if (!response.ok) throw new Error("Failed to fetch items");
 
       const result = await response.json();
       setItems(result.data || []);
     } catch (err) {
-      toast.error("Failed to load items");
+      toast.error(err.message || "Failed to load items");
       console.error(err);
     } finally {
       setLoad(false);
@@ -62,7 +78,7 @@ const Adjustment = () => {
   const filteredItems = items.filter(
     (item) =>
       item.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      item.barCode.includes(searchTerm),
+      item.barCode.includes(searchTerm)
   );
 
   const indexOfLastItem = currentPage * itemsPerPage;
@@ -97,12 +113,14 @@ const Adjustment = () => {
       const response = await axios.post(
         `${BASE_URL}/api/items/adjust-stock/${selectedItem._id}`,
         payload,
-        { withCredentials: true },
+        { withCredentials: true }
       );
 
       if (response.data.success) {
         toast.success(
-          `Successfully adjusted ${selectedItem.name} by ${adjustType === "IN" ? "+" : "-"}${quantity}`,
+          `Successfully adjusted ${selectedItem.name} by ${
+            adjustType === "IN" ? "+" : "-"
+          }${quantity}`
         );
         setIsModalOpen(false);
         fetchItems();
@@ -110,13 +128,21 @@ const Adjustment = () => {
         toast.error(response.data.message || "Failed to adjust stock");
       }
     } catch (error) {
-      toast.error(error.response?.data?.message || "An error occurred");
+      const msg =
+        error.response?.data?.error ||
+        error.response?.data?.message ||
+        "An error occurred";
+      toast.error(msg);
     } finally {
       setIsSubmitting(false);
     }
   };
 
   const openModal = (item) => {
+    if (!canAdjustStock) {
+      toast.error("You do not have permission to adjust stock.");
+      return;
+    }
     setSelectedItem(item);
     setAdjustType("IN");
     setQuantity("");
@@ -249,11 +275,28 @@ const Adjustment = () => {
             className="flex items-center gap-1.5 px-3 sm:px-4 py-2 sm:py-2.5 bg-white border-2 border-gray-300 text-gray-700 hover:bg-gray-100 font-semibold rounded-xl transition-all duration-200 shadow-sm text-xs sm:text-sm"
           >
             <FiRefreshCw
-              className={`w-3.5 h-3.5 sm:w-4 sm:h-4 ${load ? "animate-spin" : ""}`}
+              className={`w-3.5 h-3.5 sm:w-4 sm:h-4 ${
+                load ? "animate-spin" : ""
+              }`}
             />
             <span className="hidden xs:inline">Refresh</span>
           </button>
         </div>
+
+        {/* ================= NO-PERMISSION BANNER ================= */}
+        {!canAdjustStock && (
+          <div className="mb-4 p-4 bg-amber-50 border-2 border-amber-200 rounded-xl flex items-start gap-3">
+            <FaExclamationTriangle className="w-5 h-5 text-amber-600 flex-shrink-0 mt-0.5" />
+            <div className="text-sm text-amber-800">
+              <p className="font-bold">Read-only view</p>
+              <p className="text-xs mt-1">
+                You need the{" "}
+                <span className="font-semibold">Adjust Stock</span> permission
+                to make changes. You can still browse current stock levels.
+              </p>
+            </div>
+          </div>
+        )}
 
         {/* ================= SEARCH BAR ================= */}
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-4 mb-4 sm:mb-5">
@@ -280,7 +323,7 @@ const Adjustment = () => {
           </span>
         </div>
 
-        {/* ================= ROWS (Matches Items.jsx Style) ================= */}
+        {/* ================= ROWS ================= */}
         <div className="space-y-2.5 sm:space-y-3">
           {currentItems.length === 0 ? (
             <div className="bg-gray-100 rounded-2xl border-2 border-gray-300 shadow-sm py-12 text-center">
@@ -297,9 +340,7 @@ const Adjustment = () => {
           ) : (
             currentItems.map((item) => {
               const isExpanded = expandedItem === item._id;
-
-              // Determine dynamic styling based on stock level
-              const isLowStock = item.itemQuantity <= 5; // Adjust this logic to match your reOrder logic
+              const isLowStock = item.itemQuantity <= 5;
 
               return (
                 <div
@@ -388,13 +429,19 @@ const Adjustment = () => {
                           </p>
                         </div>
                         <div
-                          className={`rounded-lg p-3 border ${isLowStock ? "bg-red-50 border-red-200" : "bg-blue-50 border-blue-200"}`}
+                          className={`rounded-lg p-3 border ${
+                            isLowStock
+                              ? "bg-red-50 border-red-200"
+                              : "bg-blue-50 border-blue-200"
+                          }`}
                         >
                           <p className="text-xs text-gray-500 font-medium">
                             Current Qty
                           </p>
                           <p
-                            className={`text-sm font-bold ${isLowStock ? "text-red-600" : "text-black"}`}
+                            className={`text-sm font-bold ${
+                              isLowStock ? "text-red-600" : "text-black"
+                            }`}
                           >
                             {item.itemQuantity}
                           </p>
@@ -403,16 +450,40 @@ const Adjustment = () => {
 
                       {/* Action Buttons */}
                       <div className="flex flex-col sm:flex-row gap-3 pt-3 border-t-2 border-gray-200">
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            openModal(item);
-                          }}
-                          className="flex-1 sm:flex-none px-4 py-2 bg-green-300 hover:bg-green-400 text-black font-semibold rounded-xl text-sm transition-all flex items-center justify-center gap-2 border border-green-400"
-                        >
-                          <FiEdit3 className="w-4 h-4" />
-                          Adjust Stock Now
-                        </button>
+                        {canAdjustStock ? (
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              openModal(item);
+                            }}
+                            className="flex-1 sm:flex-none px-4 py-2 bg-green-300 hover:bg-green-400 text-black font-semibold rounded-xl text-sm transition-all flex items-center justify-center gap-2 border border-green-400"
+                          >
+                            <FiEdit3 className="w-4 h-4" />
+                            Adjust Stock Now
+                          </button>
+                        ) : (
+                          <div className="relative group flex-1 sm:flex-none">
+                            <button
+                              disabled
+                              className="w-full px-4 py-2 bg-gray-300 text-gray-500 font-semibold rounded-xl text-sm cursor-not-allowed flex items-center justify-center gap-2"
+                            >
+                              <FiEdit3 className="w-4 h-4" />
+                              Adjust Stock
+                            </button>
+                            <div className="absolute bottom-full left-0 mb-2 w-64 p-3 bg-gray-800 text-white text-sm rounded-2xl shadow-xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50">
+                              <p className="font-bold mb-1 text-xs">
+                                Permission Required
+                              </p>
+                              <p className="text-gray-300 text-xs">
+                                You need the{" "}
+                                <span className="font-bold text-green-300">
+                                  Adjust Stock
+                                </span>{" "}
+                                permission to adjust inventory.
+                              </p>
+                            </div>
+                          </div>
+                        )}
                       </div>
                     </div>
                   )}
@@ -427,7 +498,7 @@ const Adjustment = () => {
       </div>
 
       {/* ================= ADJUSTMENT MODAL ================= */}
-      {isModalOpen && (
+      {isModalOpen && canAdjustStock && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
           <div className="bg-white rounded-2xl w-full max-w-md shadow-2xl overflow-hidden animate-in fade-in zoom-in duration-200">
             {/* Modal Header */}
@@ -544,8 +615,16 @@ const Adjustment = () => {
                   type="submit"
                   disabled={isSubmitting}
                   className={`w-full py-3 rounded-xl font-bold text-white shadow-lg transition-all flex items-center justify-center gap-2
-                    ${adjustType === "IN" ? "bg-green-500 hover:bg-green-600" : "bg-red-500 hover:bg-red-600"}
-                    ${isSubmitting ? "opacity-70 cursor-not-allowed" : "hover:-translate-y-0.5"}
+                    ${
+                      adjustType === "IN"
+                        ? "bg-green-500 hover:bg-green-600"
+                        : "bg-red-500 hover:bg-red-600"
+                    }
+                    ${
+                      isSubmitting
+                        ? "opacity-70 cursor-not-allowed"
+                        : "hover:-translate-y-0.5"
+                    }
                   `}
                 >
                   {isSubmitting ? (
