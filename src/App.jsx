@@ -19,6 +19,7 @@ import ProtectedRoute from "./Components/Shared/ProtectedRoute";
 import RequestOrder from "./Pages/Orders/ReuestOrder";
 import { Toaster } from "react-hot-toast";
 import Page404 from "./Components/Shared/Page404";
+import useAuthExpiry from "./Hooks/useAuthExpiry";
 
 // Valid routes list
 const VALID_ROUTES = [
@@ -34,13 +35,15 @@ const VALID_ROUTES = [
 
 function Layout() {
   const location = useLocation();
+  useAuthExpiry(); // Custom hook to handle auth expiry
 
   // Check if current path is a valid route (not 404)
-  const isValidRoute = VALID_ROUTES.includes(location.pathname) || 
+  const isValidRoute =
+    VALID_ROUTES.includes(location.pathname) ||
     location.pathname.startsWith("/request");
 
   // Hide layout on auth, request, and 404 pages
-  const hideLayout = 
+  const hideLayout =
     location.pathname === "/auth" ||
     location.pathname.startsWith("/request") ||
     !isValidRoute; // This catches 404 pages

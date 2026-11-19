@@ -1,9 +1,8 @@
 import { useEffect, useState, useRef } from "react";
 import axios from "axios";
-import { jwtDecode } from "jwt-decode";
 import { useNavigate } from "react-router-dom";
 import { useDispatch } from "react-redux";
-import { loginSuccess, logoutSuccess } from "../../Redux/userSlice";
+import { loginSuccess } from "../../Redux/userSlice";
 import BASE_URL from "./../../Utils/config";
 
 const Login = () => {
@@ -23,40 +22,8 @@ const Login = () => {
     usernameRef.current?.focus();
   }, []);
 
-  useEffect(() => {
-    const interval = setInterval(() => {
-      const token = localStorage.getItem("token");
-      if (token) {
-        const payload = JSON.parse(atob(token.split(".")[1]));
-        const expiry = payload.exp * 1000;
-        if (Date.now() > expiry) {
-          localStorage.removeItem("token");
-          localStorage.removeItem("user");
-          dispatch(loginSuccess(null));
-          navigate("/login");
-        }
-      }
-    }, 5000);
-    return () => clearInterval(interval);
-  }, [dispatch, navigate]);
-
   const handleChange = (e) => {
     setUserLogin({ ...userLogin, [e.target.name]: e.target.value });
-  };
-
-  const handleLogout = async () => {
-    try {
-      await axios.get(`${BASE_URL}/api/auth/logout`, {
-        withCredentials: true,
-      });
-      dispatch(logoutSuccess());
-      localStorage.removeItem("token");
-      localStorage.removeItem("user");
-      localStorage.removeItem("exp");
-      navigate("/auth");
-    } catch (error) {
-      console.error("Logout failed:", error);
-    }
   };
 
   const handleLogin = async (e) => {
@@ -72,19 +39,14 @@ const Login = () => {
 
       const token = res.data.token;
       const user = res.data.user;
-      const decoded = jwtDecode(token);
-      const expirationTime = decoded.exp * 1000;
 
       localStorage.setItem("token", token);
       localStorage.setItem("user", JSON.stringify(user));
-      localStorage.setItem("exp", expirationTime);
 
       dispatch(loginSuccess({ token, user }));
 
-      setTimeout(() => {
-        handleLogout();
-      }, expirationTime - Date.now());
-
+      // useAuthExpiry (mounted at app root) will now watch this token
+      // and auto-logout when it expires. No timer needed here.
       navigate("/home");
     } catch (err) {
       setLoginError(err.response?.data?.error || "Login failed");

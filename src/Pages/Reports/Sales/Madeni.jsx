@@ -20,19 +20,26 @@ import Loading from "../../../Components/Shared/Loading";
 import BASE_URL from "../../../Utils/config";
 import toast from "react-hot-toast";
 import { useSelector } from "react-redux";
+import { hasPermission, PERMISSIONS } from "../../../Utils/permissions";
 
 const Madeni = () => {
   const user = useSelector((state) => state.user.user);
+
+  // 🔑 permission flag — works with legacy `roles` object and new `permissions` array
+  const canPayBillTransactions = hasPermission(
+    user,
+    PERMISSIONS.PAY_BILL_TRANSACTIONS,
+  );
+
   const [billedData, setBilledData] = useState([]);
   const [filteredData, setFilteredData] = useState([]);
   const [load, setLoad] = useState(false);
   const [deductions, setDeductions] = useState({});
   const today = dayjs().startOf("day");
 
-  // --- CHANGE 1: Initialize dates as null ---
   const [startDate, setStartDate] = useState(null);
   const [endDate, setEndDate] = useState(null);
-  const [dateRangePreset, setDateRangePreset] = useState("today"); // 'today', 'all', 'custom'
+  const [dateRangePreset, setDateRangePreset] = useState("today");
 
   const [customerFilter, setCustomerFilter] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
@@ -58,7 +65,11 @@ const Madeni = () => {
       }
     } catch (error) {
       console.error("Error fetching billed transactions:", error);
-      toast.error("Failed to load billed transactions");
+      const message =
+        error.response?.data?.error ||
+        error.response?.data?.message ||
+        "Failed to load billed transactions";
+      toast.error(message);
     } finally {
       setLoad(false);
     }
@@ -68,25 +79,21 @@ const Madeni = () => {
     filterData();
   }, [startDate, endDate, customerFilter]);
 
-  // --- CHANGE 2: Update filterData to only apply date filters when dates are set ---
   const filterData = () => {
     let filtered = [...billedData];
 
-    // Only filter by date if startDate is set
     if (startDate) {
       filtered = filtered.filter((txn) =>
         dayjs(txn.createdAt).isSameOrAfter(dayjs(startDate), "day"),
       );
     }
 
-    // Only filter by date if endDate is set
     if (endDate) {
       filtered = filtered.filter((txn) =>
         dayjs(txn.createdAt).isSameOrBefore(dayjs(endDate), "day"),
       );
     }
 
-    // Customer search - ALWAYS works regardless of date
     if (customerFilter) {
       const searchTerm = customerFilter.toLowerCase().trim();
       filtered = filtered.filter(
@@ -120,6 +127,11 @@ const Madeni = () => {
   };
 
   const handleDeduct = async (id) => {
+    if (!canPayBillTransactions) {
+      toast.error("You do not have permission to pay bills.");
+      return;
+    }
+
     const amount = parseFloat(deductions[id] || 0);
     if (!amount || amount <= 0) {
       toast.error("Enter valid amount");
@@ -139,7 +151,11 @@ const Madeni = () => {
       }
     } catch (err) {
       console.error("Error deducting amount:", err);
-      toast.error("Failed to update payment");
+      const message =
+        err.response?.data?.error ||
+        err.response?.data?.message ||
+        "Failed to update payment";
+      toast.error(message);
     }
   };
 
@@ -205,16 +221,14 @@ const Madeni = () => {
     }
   };
 
-  // --- CHANGE 3: Update clearFilters function ---
   const clearFilters = () => {
     setStartDate(null);
     setEndDate(null);
-    setDateRangePreset("all"); // Set to 'all' when clearing
+    setDateRangePreset("all");
     setCustomerFilter("");
     toast.success("Filters cleared!");
   };
 
-  // --- CHANGE 4: Add helper function for date presets ---
   const setDatePreset = (preset) => {
     setDateRangePreset(preset);
     if (preset === "today") {
@@ -224,7 +238,6 @@ const Madeni = () => {
       setStartDate(null);
       setEndDate(null);
     }
-    // 'custom' is handled by the date pickers
   };
 
   const indexOfLast = currentPage * itemsPerPage;
@@ -232,11 +245,8 @@ const Madeni = () => {
   const currentTransactions = filteredData.slice(indexOfFirst, indexOfLast);
   const totalPages = Math.ceil(filteredData.length / itemsPerPage);
 
-  const canPayBillTransaction = user?.roles?.canPayBillTransaction === true;
-
   const activeFilterCount = [customerFilter].filter(Boolean).length;
 
-  // --- CHANGE 5: Update date filter detection ---
   const totalActiveFilters = activeFilterCount + (startDate && endDate ? 1 : 0);
 
   const renderPagination = (currentPageNum, totalPagesNum, setPageFn) => {
@@ -335,7 +345,7 @@ const Madeni = () => {
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-gray-50">
       <div className="max-w-8xl mx-auto px-3 sm:px-4 md:px-6 py-4 sm:py-6 md:py-8">
-        {/* Header - Responsive */}
+        {/* Header */}
         <div className="flex flex-wrap items-center justify-between gap-3 sm:gap-4 mb-4 sm:mb-6">
           <div className="flex items-center gap-3 sm:gap-4">
             <div className="w-10 h-10 sm:w-12 sm:h-12 bg-green-300 rounded-2xl flex items-center justify-center shadow-lg shadow-green-200 border-2 border-green-400">
@@ -373,7 +383,7 @@ const Madeni = () => {
           </button>
         </div>
 
-        {/* Stats Cards - Stacked on mobile */}
+        {/* Stats Cards */}
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 sm:gap-3 md:gap-4 mb-4 sm:mb-6">
           <div className="bg-white p-3 sm:p-4 md:p-5 rounded-2xl border-2 border-gray-400 shadow-md hover:shadow-xl transition-all duration-300 hover:scale-[1.02] group">
             <div className="flex items-center justify-between">
@@ -518,7 +528,7 @@ const Madeni = () => {
           </div>
         </div>
 
-        {/* Search + Filters - Responsive */}
+        {/* Search + Filters */}
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-4 mb-4 sm:mb-5">
           <div className="flex gap-2 w-full sm:w-auto">
             <div className="relative flex-1 sm:w-56 md:w-64">
@@ -573,7 +583,6 @@ const Madeni = () => {
               </button>
             </div>
 
-            {/* --- CHANGE 6: Add Date Preset Buttons --- */}
             <div className="flex flex-wrap gap-2">
               <button
                 onClick={() => setDatePreset("today")}
@@ -733,7 +742,7 @@ const Madeni = () => {
 
         <Loading load={load} />
 
-        {/* Results Count - Responsive */}
+        {/* Results Count */}
         <div className="flex items-center justify-between mb-2 sm:mb-3 px-1">
           <p className="text-[9px] sm:text-sm text-gray-500">
             <span className="font-semibold text-gray-700">
@@ -746,7 +755,7 @@ const Madeni = () => {
           </p>
         </div>
 
-        {/* Mobile Card View - Fixed Pay Button */}
+        {/* Mobile Card View */}
         <div className="md:hidden space-y-2 sm:space-y-2.5 mb-4">
           {currentTransactions.length === 0 ? (
             <div className="bg-white rounded-2xl border-2 border-gray-300 shadow-sm py-12 sm:py-16 text-center">
@@ -775,7 +784,7 @@ const Madeni = () => {
           ) : (
             currentTransactions.map((sale) => {
               const remaining = sale.totalAmount - (sale.paidAmount || 0);
-              const canPay = canPayBillTransaction && remaining > 0;
+              const canPay = canPayBillTransactions && remaining > 0;
 
               return (
                 <div
@@ -835,7 +844,6 @@ const Madeni = () => {
                       </div>
                     </div>
 
-                    {/* Pay Section - Fixed for mobile */}
                     {canPay && (
                       <div className="mt-3 pt-2 border-t border-gray-200">
                         <div className="flex flex-col sm:flex-row gap-2">
@@ -869,7 +877,7 @@ const Madeni = () => {
                         </div>
                       </div>
                     )}
-                    {!canPayBillTransaction && remaining > 0 && (
+                    {!canPayBillTransactions && remaining > 0 && (
                       <div className="mt-2 text-center">
                         <span className="inline-flex items-center px-3 py-1 bg-gray-200 text-gray-500 text-xs font-bold rounded-full border border-gray-300">
                           Not Allowed
@@ -929,7 +937,7 @@ const Madeni = () => {
                 ) : (
                   currentTransactions.map((sale, idx) => {
                     const remaining = sale.totalAmount - (sale.paidAmount || 0);
-                    const canPay = canPayBillTransaction && remaining > 0;
+                    const canPay = canPayBillTransactions && remaining > 0;
 
                     return (
                       <React.Fragment key={sale._id}>
@@ -1107,7 +1115,7 @@ const Madeni = () => {
           </div>
         </div>
 
-        {/* Pagination - Responsive */}
+        {/* Pagination */}
         {totalPages > 1 && (
           <div className="mt-3 sm:mt-4 bg-white px-3 sm:px-5 py-2.5 sm:py-4 rounded-xl border-2 border-gray-300 shadow-sm flex flex-col sm:flex-row justify-between items-center gap-2 sm:gap-3">
             <span className="text-[9px] sm:text-xs text-gray-500 text-center sm:text-left">

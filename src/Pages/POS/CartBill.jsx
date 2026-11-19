@@ -14,6 +14,7 @@ import toast from "react-hot-toast";
 // API
 import BASE_URL from "../../Utils/config";
 import { fetchAllCustomers } from "../../Redux/customerSlice";
+import { hasPermission, PERMISSIONS } from "../../Utils/permissions";
 
 // Icons
 import { FaTimes, FaCheckCircle, FaShoppingCart, FaBox } from "react-icons/fa";
@@ -31,6 +32,9 @@ const Cart = ({
   const cartData = useSelector((state) => state.cart.cart);
   const originalTotal = useSelector(getSubTotal);
   const totalItemDiscount = useSelector(getTotalItemDiscount);
+
+  // 🔑 permission flag — works with legacy `roles` object and new `permissions` array
+  const canMakeTransaction = hasPermission(user, PERMISSIONS.MAKE_TRANSACTION);
 
   // Local Component States
   const [errorMsg, setErrorMsg] = useState("");
@@ -97,6 +101,12 @@ const Cart = ({
 
   // ==================== ORDER PAYMENT FUNCTIONS ====================
   const startOrderPayment = (order) => {
+    // 🔑 Extra gate: only users who can make transactions may fulfill orders
+    if (!canMakeTransaction) {
+      toast.error("You do not have permission to process transactions.");
+      return;
+    }
+
     // Check if order is already completed
     if (order.status === "Completed") {
       toast.error(`Order #${order.orderNumber} is already completed!`);
@@ -212,9 +222,12 @@ const Cart = ({
   const finalTotal = taxableAmount + tax;
 
   // ==================== TRANSACTION PROCESSOR ====================
-  // components/CartBill.jsx - Update the handleTransaction function
-
   const handleTransaction = async (status) => {
+    if (!canMakeTransaction) {
+      toast.error("You do not have permission to process transactions.");
+      return;
+    }
+
     if (cartData.length === 0) {
       toast.error("Please add items to the cart before proceeding!");
       return;
@@ -252,16 +265,13 @@ const Cart = ({
 
       // If there are order items in cart, find the order ID
       if (orderItemsInCart.length > 0) {
-        // Get unique order IDs from cart
         const orderIds = [
           ...new Set(orderItemsInCart.map((item) => item.orderId)),
         ];
 
-        // If there's only one order, use it
         if (orderIds.length === 1) {
           payload.orderId = orderIds[0];
 
-          // Build orderItemsToFulfill from cart items
           const itemsToFulfill = orderItemsInCart.map((item) => ({
             orderItemId: item.orderItemId,
             itemId: item.id,
@@ -344,10 +354,8 @@ const Cart = ({
             );
           }
         } else {
-          // If no order update but we had order items, check if order was updated
           if (payload.orderId) {
             toast.info("Order is being processed. Refreshing...");
-            // Refresh orders to see updated status
             setTimeout(() => {
               triggerRefreshMenu();
             }, 1000);
@@ -381,7 +389,9 @@ const Cart = ({
       setShowLoadingModal(false);
       console.error("Transaction error:", error);
       const errorMessage =
-        error.response?.data?.message || "Something went wrong.";
+        error.response?.data?.error ||
+        error.response?.data?.message ||
+        "Something went wrong.";
       setErrorMsg(errorMessage);
       toast.error(errorMessage);
     } finally {
@@ -869,7 +879,7 @@ const Cart = ({
         {/* Action Buttons */}
         {!showPrintButton ? (
           <div className="flex gap-4">
-            {user?.roles?.canMakeTransaction ? (
+            {canMakeTransaction ? (
               <>
                 <button
                   onClick={() => handleTransaction("Paid")}
