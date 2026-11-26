@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useSelector } from "react-redux";
 import ReportList from "./ReportList";
 import cover from "../../assets/cover1.jpg";
 import Madeni from "./Sales/Madeni";
@@ -7,8 +8,14 @@ import BillNonPo from "./Procurement/BillNonPo";
 import BillPo from "./Procurement/BillPo";
 import Profit from "./Sales/Profit";
 import Ledger from "./Ledger/Ledger";
+import { hasPermission,PERMISSIONS } from "../../Utils/permissions";
 
 const ReportsDashboard = () => {
+  const user = useSelector((state) => state.user.user);
+
+  // 🔑 permission gate — works with legacy `roles` object and new `permissions` array
+  const canSeeLedger = hasPermission(user, PERMISSIONS.SEE_LEDGER_REPORTS);
+
   const [selectedReport, setSelectedReport] = useState(null);
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
@@ -34,7 +41,9 @@ const ReportsDashboard = () => {
       case "Faida ya Bidhaa":
         return <Profit />;
       case "Ledger":
-        return <Ledger />;
+        // Extra safety: even if state somehow gets set to "Ledger"
+        // for a user without permission, don't render the component.
+        return canSeeLedger ? <Ledger /> : null;
       case "Report ya Madeni PO":
         return <BillPo />;
       case "Report ya Madeni Non PO":
@@ -140,13 +149,33 @@ const ReportsDashboard = () => {
           </button>
         </div>
 
+        {/* =============================================
+            SALES REPORTS — visible to everyone
+            (Mauzo, Madeni, Faida are general reports;
+             every logged-in user needs visibility on them)
+           ============================================= */}
         <ReportList
           title="Sales Reports"
-          reports={["Mauzo", "Madeni","Faida ya Bidhaa"]}
+          reports={["Mauzo", "Madeni", "Faida ya Bidhaa"]}
           selectedReport={selectedReport}
           handleSelect={handleSelect}
         />
 
+        {/* =============================================
+            LEDGER REPORT — gated by SEE_LEDGER_REPORTS
+           ============================================= */}
+        {canSeeLedger && (
+          <ReportList
+            title="Inventory Reports"
+            reports={["Ledger"]}
+            selectedReport={selectedReport}
+            handleSelect={handleSelect}
+          />
+        )}
+
+        {/* =============================================
+            MANUNUZI (Procurement) REPORTS
+           ============================================= */}
         <ReportList
           title="Manunuzi"
           reports={["Report ya Madeni Non PO"]}
@@ -154,6 +183,9 @@ const ReportsDashboard = () => {
           handleSelect={handleSelect}
         />
 
+        {/* =============================================
+            USER MANAGEMENT REPORTS
+           ============================================= */}
         <ReportList
           title="User Management Reports"
           reports={[

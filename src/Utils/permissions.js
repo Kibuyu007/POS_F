@@ -4,6 +4,7 @@ export const PERMISSIONS = {
   EDIT_ITEMS: "canEditItems",
   ADD_CATEGORY: "canAddCategory",
   EDIT_CATEGORY: "canEditCategory",
+  ADJUST_STOCK: "canAdjustStock",
 
   MAKE_TRANSACTION: "canMakeTransaction",
   PAY_BILL_TRANSACTIONS: "canPayBillTransactions",
@@ -21,7 +22,7 @@ export const PERMISSIONS = {
   ACCESS_CUSTOMER_MANAGEMENT: "canAccessCustomerManagement",
   ACCESS_SUPPLIER_MANAGEMENT: "canAccessSupplierManagement",
 
-  SEE_REPORTS: "canSeeReports",
+  SEE_LEDGER_REPORTS: "canSeeLedgerReports",
   ACCESS_MADENI_REPORT: "canAccessMadeniReport",
 };
 
@@ -33,6 +34,7 @@ export const PERMISSION_LABELS = {
   canEditItems: "Edit Items",
   canAddCategory: "Add Category",
   canEditCategory: "Edit Category",
+  canAdjustStock: "Adjust Stock",
   canMakeTransaction: "Make Transaction",
   canPayBillTransactions: "Pay Bill Transactions",
   canApproveNewGrn: "Approve New GRN",
@@ -44,7 +46,7 @@ export const PERMISSION_LABELS = {
   canAccessUserManagement: "Access User Management",
   canAccessCustomerManagement: "Access Customer Management",
   canAccessSupplierManagement: "Access Supplier Management",
-  canSeeReports: "See Reports",
+  canSeeLedgerReports: "See Ledger Reports",
   canAccessMadeniReport: "Access Madeni Report",
 };
 
@@ -70,7 +72,7 @@ export const ROLES = {
       PERMISSIONS.EDIT_EXPENSES,
       PERMISSIONS.ACCESS_CUSTOMER_MANAGEMENT,
       PERMISSIONS.ACCESS_SUPPLIER_MANAGEMENT,
-      PERMISSIONS.SEE_REPORTS,
+      PERMISSIONS.SEE_LEDGER_REPORTS,
       PERMISSIONS.ACCESS_MADENI_REPORT,
     ],
   },
@@ -90,13 +92,11 @@ export const ROLES = {
       PERMISSIONS.CHANGE_DEBT_STATUS,
       PERMISSIONS.PAY_DEBT,
       PERMISSIONS.EDIT_EXPENSES,
-      PERMISSIONS.SEE_REPORTS,
+      PERMISSIONS.SEE_LEDGER_REPORTS,
       PERMISSIONS.ACCESS_MADENI_REPORT,
     ],
   },
 };
-
-
 
 export const hasPermission = (user, permission) => {
   if (!user) return false;
@@ -149,7 +149,7 @@ const LEGACY_KEY = {
   [PERMISSIONS.ACCESS_USER_MANAGEMENT]: "canAccessUserManagement",
   [PERMISSIONS.ACCESS_CUSTOMER_MANAGEMENT]: "canAccessCustomerManagement",
   [PERMISSIONS.ACCESS_SUPPLIER_MANAGEMENT]: "canAccessSupplierManagement",
-  [PERMISSIONS.SEE_REPORTS]: "canSeeReports",
+  [PERMISSIONS.SEE_LEDGER_REPORTS]: "canSeeLedgerReports",
   [PERMISSIONS.ACCESS_MADENI_REPORT]: "canAccessMadeniReport",
 };
 
